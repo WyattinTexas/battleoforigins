@@ -1,0 +1,7 @@
+name = "gary-chat-proxy"
+main = "worker.js"
+compatibility_date = "2026-04-10"
+
+# ANTHROPIC_API_KEY is set as a secret via:
+#   wrangler secret put ANTHROPIC_API_KEY
+# Do NOT put the key here. This file is committed to git.

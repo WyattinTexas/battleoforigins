@@ -1,0 +1,13 @@
+# Carpenter / Welder / Foreman — Blue-Collar Evolution Chain
+# 2026-04-13 — 3 cards, Volcanic Activity set
+# Art direction: tools/items focus, Spiritkin doing real jobs
+# ----------------------------------------------------------------------------
+
+# 1. Carpenter (VA uncommon) — woodworking Spiritkin on a rocking chair
+loose watercolor illustration, ethereal creature made of warm seasoned wood grain and golden sawdust, a sturdy broad-shouldered being with kind patient eyes carefully working on an old rocking chair in a sunlit timber workshop, wood shavings floating in the warm afternoon light, tools hanging on the wall behind, sawdust trailing from its hands, not a human not a child, a charming woodworking Spiritkin with wispy grain-textured trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 2. Welder (VA uncommon) — welding mask cowboy shooting sparks upward
+loose watercolor illustration, ethereal creature made of dark steel and molten orange seams, a compact powerful being wearing a flip-down welding mask tilted up to show a confident grin, holding a welding torch pointed straight up shooting a fountain of bright sparks into the air like a cowboy firing into the sky, standing in a dim industrial workshop with orange firelight dancing on dark metal surfaces, not a human not a child, a charming metalworker Spiritkin with wispy spark-trail edges glowing hot, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 3. Foreman (VA rare) — blueprints slammed down, detective-show energy
+loose watercolor illustration, ethereal creature made of brass and weathered copper with a commanding stocky build, a broad dignified being with sleeves rolled up leaning forward over a table of glowing blueprints with both hands planted on the plans, intense focused expression like a detective who has had it up to here, hard hat slightly tilted back, a massive construction site visible through the window behind, not a human not a child, a charming foreman Spiritkin with wispy metallic trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1

@@ -1,0 +1,126 @@
+# Final 17 Card Designs — Filling to 200
+# 10 commons, 7 uncommons
+# VA: 5 common + 3 uncommon = 8
+# RH: 4 common + 4 uncommon = 8
+# DC: 1 common = 1
+# ============================================================================
+
+# ============================================================================
+# VOLCANIC ACTIVITY — 8 cards (5 common, 3 uncommon)
+# Theme: beings made of heat, pressure, stone, magma, underground energy
+# ============================================================================
+
+# VA-1. Kindle (common, 3 HP)
+# A tiny wispy being made of the first spark of a fire — the moment before ignition.
+# Ability: "Warmth" — Entry: gain 1 Sacred Fire.
+# Design note: Simple entry resource. The most basic VA common — you play it, you get fire.
+# Low HP because it's a spark, not a flame. Does its job and moves on.
+
+# VA-2. Rumbler (common, 5 HP)
+# A dense, round being made of compacted volcanic rock that vibrates constantly.
+# Ability: "Tremor" — Win: deal +1 damage.
+# Design note: The VA Doom-lite. +1 on all wins is proven elite math on a 5HP body.
+# Simple, reliable, the common workhorse that just hits a little harder.
+
+# VA-3. Vent (common, 4 HP)
+# A tall thin being made of steam and pressure, always on the verge of releasing.
+# Ability: "Release" — Lose: gain 1 Surge.
+# Design note: Generates resources even when losing. Pairs with Rook (Surge → damage),
+# Carpenter chain (Surge → evolution), Clink (Surge on win AND lose).
+# The patient card that gets value no matter what happens.
+
+# VA-4. Cinder (common, 3 HP)
+# A small glowing being that's the last ember of a dying fire — fading but warm.
+# Ability: "Afterglow" — When defeated: your next ghost enters with +1 die on its first roll.
+# Design note: Death trigger that empowers the next fighter. 3HP means it dies fast
+# but that's the point — its death IS the value. Pairs with Lucas (Kindling).
+
+# VA-5. Basalt (common, 6 HP)
+# A heavy, slow being made of cooled dark volcanic rock. Patient and immovable.
+# Ability: "Endure" — While below half HP: take -1 damage from all rolls.
+# Design note: The VA tank common. 6HP is generous for common but the ability only
+# fires when hurt. Below 3HP he becomes very hard to finish off. Simple, tough, honest.
+
+# VA-6. Crucible (uncommon, 5 HP)
+# A being shaped like a vessel — hollow body of dark stone with molten light inside.
+# Ability: "Meltdown" — Win with doubles: gain 1 Sacred Fire and 1 Surge.
+# Design note: Dual resource gen on a 41.7% trigger. Feeds both the Sacred Fire economy
+# and the Surge economy. The bridge card between fire-users and surge-users.
+
+# VA-7. Fissure (uncommon, 4 HP)
+# A being made of cracked earth with light bleeding through the cracks.
+# Ability: "Fault Line" — Before rolling: you may spend 1 Surge to give opponent -1 die this roll.
+# Design note: Offensive Surge spend. Disruption category (only 4 cards!). Reducing
+# opponent dice from 3 to 2 is a 67% vs 20% matchup — massive swing for 1 Surge.
+
+# VA-8. Pressure (uncommon, 5 HP)
+# A dense being that seems to compress the air around it — everything feels heavier nearby.
+# Ability: "Crush" — Sideline: your active ghost's doubles deal +1 damage.
+# Design note: Sideline damage amplifier. Doubles go from 2 → 3 damage (50% increase).
+# Fires 41.7% of the time from the bench. Reliable, strong, good deckbuilding glue.
+
+# ============================================================================
+# ROLLING HILLS — 8 cards (4 common, 4 uncommon)
+# Theme: beings made of wind, wheat, warm earth, meadow energy, gentle growth
+# ============================================================================
+
+# RH-1. Pebble (common, 4 HP)
+# A small smooth being made of river stone — round, warm, comforting.
+# Ability: "Skip" — Win: gain 1 Lucky Stone.
+# Design note: Lucky Stone generator. Pairs with Twyla (Lucky Dance), Boopies pipeline.
+# Simple, does one thing. The RH common that quietly stocks your toolbox.
+
+# RH-2. Sprout (common, 3 HP)
+# A tiny being emerging from the soil — fresh, new, green energy wisping upward.
+# Ability: "Bloom" — Entry: gain 2 Healing Seeds.
+# Design note: Entry resource burst. 2 seeds immediately fuels Chester, Chow, Harrison,
+# Young Cap, Zippa. The starter card that enables the entire RH seed economy.
+
+# RH-3. Gust (common, 4 HP)
+# A playful being made of swirling wind — constantly moving, never still.
+# Ability: "Tailwind" — Sideline: your active ghost gains +1 die on its first roll each game.
+# Design note: One-time sideline boost. Your active ghost enters a little stronger.
+# Simple, useful, the kind of common that's always welcome on a team.
+
+# RH-4. Thatch (common, 5 HP)
+# A sturdy being woven from dried grass and straw — humble but resilient.
+# Ability: "Stubborn" — Win with singles: gain 1 Healing Seed.
+# Design note: Singles fire 55.6% of the time. Reliable seed gen on the most common
+# roll type. 5HP common body that grinds value every turn. The farmer's card.
+
+# RH-5. Dewdrop (uncommon, 4 HP)
+# A small shimmering being made of morning dew — fragile, beautiful, brief.
+# Ability: "Refresh" — Win: heal 1 HP to any ghost on your team (including sideline).
+# Design note: The first card that can heal sideline ghosts. Unique utility.
+# Keeps your bench healthy, extends the game. Uncommon-level complexity.
+
+# RH-6. Bramble (uncommon, 5 HP)
+# A tangled being of thorny vines and wildflower — beautiful but sharp.
+# Ability: "Thorns" — When hit: attacker takes 1 damage back.
+# Design note: Contact punishment. Every time Bramble takes damage, the attacker
+# takes 1 back. On a 5HP body that's potentially 5 reflected damage over its life.
+
+# RH-7. Harvest (uncommon, 4 HP)
+# A being made of golden wheat and warm autumn air — the feeling of a full field.
+# Ability: "Reap" — Win: gain 1 of a random special (Surge, Ice, Fire, Seed, or Lucky Stone).
+# Design note: The RH slot machine. Every win gives something useful but unpredictable.
+# Fun to play, always exciting, never useless. Good deckbuilding wildcard.
+
+# RH-8. Hilltop (uncommon, 6 HP)
+# A broad, quiet being made of the hill itself — grass and soil and stone.
+# Ability: "Overlook" — Sideline: if your active ghost wins with 3+ dice, gain 1 Healing Seed.
+# Design note: Sideline passive that rewards having extra dice. Synergizes with Surge
+# commits, Haywire bonus dice, Foreman's Blueprint. The more dice you roll, the more
+# seeds you earn. 6HP makes it a decent fighter too.
+
+# ============================================================================
+# DARK CASTLE — 1 card (1 common)
+# Theme: beings made of shadow, stone, cold flame, castle energy
+# ============================================================================
+
+# DC-1. Flicker (common, 3 HP)
+# A small being made of a candle flame that won't stay lit — guttering, fighting to exist.
+# Ability: "Spite" — When defeated: opponent loses 1 random special.
+# Design note: Death trigger disruption. When Flicker dies, it takes something with it.
+# 3HP means it dies fast, which is fine — the death IS the ability. Fills the
+# Disruption category gap. The common that makes opponents think twice about KO'ing it.

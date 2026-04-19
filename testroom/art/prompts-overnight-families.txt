@@ -1,0 +1,305 @@
+# Overnight Family Generations — 2026-04-14
+# 5 families × 5 creatures × 5 variations = 125 prompts
+# Same creature style as Carpenter/Welder/Foreman: dark imp body, glowing amber eyes, antenna ears
+# Watercolor with ink weight and gouache, not the loose ethereal style
+# ============================================================================
+
+# ============================================================================
+# FAMILY 1: WORKSHOP PESTS (Volcanic Activity)
+# Little creatures that infest workshops — sawdust sprites, rust mites, tool gremlins
+# ============================================================================
+
+# 1A. Sawdust Sprite — tiny creature made of compressed sawdust, lives in wood shavings
+loose watercolor illustration, tiny ethereal creature made of compressed golden sawdust with bright amber eyes, barely six inches tall, hiding inside a pile of wood shavings on a workshop floor, peeking out mischievously, sawdust particles floating around it like a halo, warm workshop light, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, tiny golden sawdust creature with glowing eyes sitting on a wood plane, legs dangling off the edge, playfully kicking sawdust into the air, cozy timber workshop background, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small creature made entirely of packed sawdust and wood shavings, crumbling slightly at the edges, standing proudly on a workbench next to oversized chisels and hammers, warm amber tones, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tiny sawdust spirit tumbling through the air in a shaft of golden workshop light, body dissolving into floating particles, joyful spinning motion, timber beams and tool racks in the background, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, three tiny sawdust sprites huddled together on a saw blade, whispering to each other conspiratorially, golden glowing eyes in the dim workshop, sawdust trailing from their bodies, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 1B. Rust Mite — metallic creature that feeds on rust and corrodes things
+loose watercolor illustration, small metallic creature with a body of oxidized copper and iron, orange-brown rust patches across its shell, gnawing on a large rusty nail in a dim forge, sparks of rust flaking off, glowing orange eyes, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a rust-colored beetle-like spirit creature clinging to an old anvil, its body leaving trails of oxidation wherever it touches, dark industrial workshop, warm orange rust tones against cool grey metal, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small creature made of layered rust and corroded metal, sitting on a pile of old nails and screws, contentedly eating a bolt, its body flaking beautiful orange-red particles, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a rust spirit emerging from an old toolbox, body of oxidized iron with patches of original silver showing through, curious expression looking at a shiny new wrench, dim workshop light, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, tiny rust creature perched on a chain link, its weight causing the chain to corrode and turn orange beneath it, dark forge background with embers, beautiful decay aesthetic, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 1C. Splinter — sharp jagged creature made of broken wood fragments
+loose watercolor illustration, aggressive small creature made of sharp broken wood splinters and fragments, bristling outward like a porcupine, standing on a cracked cutting board in a workshop, jagged and dangerous looking but with oddly cute eyes, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a spiky creature of broken wood shards launching itself off a workbench, splinters trailing behind like a comet tail, dynamic action pose, warm workshop light catching the sharp edges, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small jagged being made of fractured timber and broken dowels, curled up defensively with splinters pointing outward, sitting in a dark corner of a carpenter's shop, wary glowing eyes, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a splinter spirit embedded in a wooden beam, half-emerging from the grain, its body an extension of the wood itself but cracked and sharp, one glowing eye visible, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, creature made of a hundred tiny wood splinters arranged like feathers, perched on the handle of a hammer, looking proud and dangerous despite being small, warm golden light, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 1D. Grease Gremlin — oily slippery creature that lives in machinery
+loose watercolor illustration, small dark oily creature with iridescent rainbow sheen on its skin like motor oil on water, crouching on a gear mechanism, leaving greasy handprints everywhere, mischievous grin, dim industrial workshop, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a slippery oil-black creature sliding down a metal pipe, its body reflecting rainbow colors in the forge light, trail of grease behind it, gleeful expression, dark workshop with copper pipes, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, tiny creature made of dark lubricant and machine grease, sitting inside an open gear box, surrounded by cogs and springs, contentedly coating everything in oil, glowing yellow eyes in the dark, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, an oil slick spirit pooled on a workshop floor, rising up into a small humanoid shape with dripping edges, rainbow reflections in the puddle around it, dark industrial setting, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small greasy creature perched on a lathe, its oily body making the metal gleam, one hand on a lever it definitely should not be touching, workshop chaos energy, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 1E. Ember Rat — small fire creature that scurries through forges
+loose watercolor illustration, small rat-like creature made of glowing embers and ash, scurrying across a forge floor leaving tiny fire footprints, tail made of trailing smoke, bright orange glow against dark sooty workshop, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tiny ember creature curled up sleeping inside a cold forge, its body the only source of warm orange light in the dark workshop, peaceful glow, ash and soot everywhere, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small ember rat spirit standing on its hind legs on an anvil, sniffing the air with a glowing nose, body of smoldering coals with cracks of bright orange, dark forge background, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, three tiny ember creatures chasing each other through a forge, leaving trails of sparks and small fires, playful chaos, warm orange light filling a dark workshop, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, an ember rat perched on the edge of a crucible of molten metal, dangling its glowing tail into the liquid, completely unbothered by the heat, intense orange light from below, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# ============================================================================
+# FAMILY 2: DEEP TUNNELERS (Volcanic Activity)
+# Ancient creatures from deep underground — blind, heavy, geological
+# ============================================================================
+
+# 2A. Bore Worm — massive segmented tunnel creature
+loose watercolor illustration, large segmented worm creature made of compacted earth and stone, emerging from a tunnel in a cavern wall, rings of glowing orange between each segment, blind with no eyes just a grinding circular mouth, underground cavern lit by lava veins, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, enormous earth worm spirit coiled in an underground chamber, body of layered sediment and rock with glowing magma seams between segments, ancient and patient, stalactites hanging above, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a massive tunnel worm breaking through a cavern floor from below, rock and dirt exploding upward, glowing segments pulsing with underground heat, dramatic underground lighting, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, segmented stone worm creature resting in a spiral in a deep cave, each segment a different layer of geological strata, amber and rust and grey, crystals growing where it touches the walls, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, the tail end of a massive burrowing creature disappearing into a tunnel, glowing segments fading into darkness, rubble and dust settling, underground cavern with lava light, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 2B. Crystal Mole — blind digging creature that finds gems
+loose watercolor illustration, small stocky mole creature with crystalline growths covering its back and claws, digging into a cavern wall with massive crystal-tipped paws, gems and minerals scattered around it, underground purple and amber light, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a blind mole spirit with no eyes and a flat sensitive nose, body studded with raw amethyst and quartz crystals, holding a glowing gem in its oversized paws, deep underground chamber, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, crystal-encrusted mole creature emerging from a tunnel it just dug, surrounded by freshly exposed gemstones in the cave wall, crystals on its back catching the underground light, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small mole being made of dark earth with brilliant crystal formations growing from its spine, sitting in a nest of raw gems deep underground, content and ancient, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a crystal mole spirit sleeping curled up on a bed of raw diamonds and minerals, its own body growing matching crystals, soft underground glow, peaceful ancient creature, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 2C. Stalactite Guardian — ancient stone creature hanging from cave ceiling
+loose watercolor illustration, an ancient creature made of stalactite formations hanging from a cavern ceiling, face formed in the mineral deposits with glowing eyes looking down, water dripping from its body, vast underground chamber below, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a stone guardian spirit attached to a cave ceiling, body of layered mineral deposits built up over millennia, arms reaching down like stalactites, watching over an underground passage, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, stalactite creature detaching from the ceiling and falling through a cavern, stone body trailing water droplets, ancient face with surprised expression at finally letting go, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a row of stalactites on a cave ceiling with one of them having a face and tiny arms, the others are normal stalactites, subtle and hidden, dim underground light, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, massive stalactite creature spanning floor to ceiling in a cavern, its body both stalagmite and stalactite fused together into a pillar with a face, ancient beyond measure, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 2D. Magma Slug — slow glowing creature that leaves molten trails
+loose watercolor illustration, a large slow slug creature made of cooling magma, black crusty exterior with bright orange molten cracks, leaving a trail of glowing lava behind it on a cave floor, patient ancient expression, underground cavern, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, magma slug spirit climbing up a cavern wall, its molten body sagging and dripping, trail of cooled obsidian behind it, glowing from within like a lantern, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a small magma slug curled up on a warm rock in a lava tube, glowing softly orange, steam rising from its body, peaceful and content, dark cave around it, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, two magma slugs meeting on a cave floor, their molten trails intersecting and merging, warm orange glow where they touch, dark underground setting, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a magma slug crossing a underground river, steam erupting where its molten body touches the water, dramatic contrast of orange fire and blue water, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 2E. Echo — a sound-based creature that lives in deep caves
+loose watercolor illustration, translucent creature made of visible sound waves and vibrations, rippling circular body hovering in a vast echoing cavern, its form pulsing outward like sonar rings, dark cave with distant stalactites, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a creature of pure resonance, body made of concentric rings of energy expanding outward, floating in a deep cave shaft, the walls around it vibrating visibly, ethereal purple and blue tones, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small bat-like creature with enormous ears made of visible sound waves, perched on a stalactite, listening intently, rings of sonic energy emanating from its ears into the darkness, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a creature that IS an echo, a fading afterimage of something that was once there, translucent and repeating, standing in a vast empty underground chamber, lonely and beautiful, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a sound spirit shouting into a cave tunnel, visible sound waves blasting forward and bouncing off walls, the echoes taking on their own tiny creature shapes, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# ============================================================================
+# FAMILY 3: CASTLE SERVANTS (Dark Castle)
+# The staff that keeps the Dark Castle running — butler, chandelier, door guardian
+# ============================================================================
+
+# 3A. The Butler — tall thin formal creature, always watching
+loose watercolor illustration, tall impossibly thin creature in a dark formal butler's coat, standing perfectly still in a grand castle hallway, holding a silver tray with a single candle, glowing eyes in a featureless dark face, impeccable posture, gothic castle interior, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a skeletal butler spirit bowing deeply in a castle doorway, its body impossibly elongated, formal black attire, one glowing eye visible mid-bow, grand staircase behind, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a dark butler creature polishing a suit of armor in a castle hallway, meticulous careful movements, its thin dark body reflected in the armor's surface, candlelight, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, tall shadow butler standing at attention beside a grand castle door, hands clasped behind its back, glowing amber eyes the only feature in its dark face, perfectly still, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a butler spirit carrying a towering stack of plates through a dark castle kitchen, impossibly balanced, calm expression despite the chaos, steam and firelight, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 3B. Chandelier — a creature that IS the chandelier, hanging and watching
+loose watercolor illustration, a living chandelier creature hanging from a castle ballroom ceiling, its body the iron frame with candles for fingers, dripping wax, a face formed in the central hub with glowing eyes looking down at an empty ballroom, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a chandelier spirit swinging gently in a dark castle hall, candle flames flickering as eyes, chains and crystal drops forming a ghostly body, warm light in a cold dark room, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a fallen chandelier creature on a castle floor, candles still lit, trying to pull itself back up by its chain, determined expression, broken crystals scattered around, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, enormous chandelier being in a vast castle throne room, hundreds of candle-flames forming a constellation pattern in its body, illuminating faded tapestries below, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a small chandelier creature hanging from a doorframe in a castle corridor, only three candles, modest and humble compared to the grand ones, flickering nervously, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 3C. Door Guardian — a creature embedded in or made from a castle door
+loose watercolor illustration, a massive face emerging from a castle door, the wood grain forming features, iron studs as eyes, the door knocker as a nose ring, ancient and immovable, torchlit castle entrance, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a door spirit standing guard, its body made of thick oak planks and iron bands, a keyhole in its chest, stern watchful expression, standing in a dark castle archway, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a small creature made of door hinges and locks, perched on top of a castle door, jangling with keys hanging from its body, watchful protector, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a castle door slightly ajar with a creature's glowing eye peering through the crack, its body the door itself, one wooden hand gripping the frame, deciding whether to let you in, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, an ancient door guardian spirit fully emerged from its door, leaving the empty doorframe behind, body of dark wood with iron reinforcements, standing in a castle hallway for the first time, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 3D. Candelabra — small walking candle holder creature
+loose watercolor illustration, a small three-armed candelabra creature walking through a dark castle corridor on tiny legs, each arm holding a lit candle, wax dripping down its bronze body, casting dancing shadows, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a candelabra spirit sitting on a windowsill in a castle tower, its candle-flames guttering in the wind, huddling to protect its light, rain outside, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a brave little candelabra creature leading the way down a dark castle staircase, its three candles the only light, shadows retreating from its warm glow, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a candelabra creature with its candles blown out, sitting sadly in a dark castle room, wisps of smoke rising from its empty holders, waiting to be relit, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, two candelabra creatures touching their candle-flames together to share light, a tender moment in a dark castle hallway, warm golden glow between them, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 3E. Tapestry — a creature woven into a castle tapestry, can emerge from it
+loose watercolor illustration, a creature emerging halfway from a woven tapestry on a castle wall, its body half-thread half-flesh, one arm reaching out of the fabric, the tapestry scene distorting around it, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a flat woven creature moving across a tapestry on a castle wall like a shadow, its stitched body sliding between scenes, thread-eyes glowing, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tapestry spirit fully emerged and standing on the castle floor, its body still made of colored threads and fabric, fraying at the edges, the tapestry behind it now has a creature-shaped hole, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a creature hiding in a castle tapestry, only its glowing eyes visible among the woven knights and dragons of the scene, subtle and watching, candlelight on the fabric, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tapestry creature unraveling at the edges, threads trailing behind it as it walks down a castle corridor, leaving the wall hanging increasingly bare, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# ============================================================================
+# FAMILY 4: HOLLOW BONES (Rolling Hills)
+# Skeletal farm spirits — scarecrow's horse, bone-bird, wind-rattlers
+# ============================================================================
+
+# 4A. Bone Horse — skeletal farm horse spirit, gentle despite appearance
+loose watercolor illustration, a gentle skeletal horse spirit standing in a misty rolling hills meadow at dawn, bones held together by soft blue-green spirit energy, wildflowers growing through its ribcage, peaceful ancient expression, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a bone horse grazing in a field, its jaw moving through ghost-grass, translucent spirit muscle visible over white bones, morning fog on the rolling hills, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, skeletal horse creature walking along a country fence line at sunset, bones glowing warm in the golden light, tail made of trailing spirit energy, rolling green hills behind, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a bone horse lying down in tall grass, resting its skull on the ground, flowers and vines growing up through its ribs, peaceful afternoon on the rolling hills, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, small skeletal foal spirit standing next to a large bone horse on a hilltop, both looking out over misty rolling farmland, protective parent energy, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 4B. Rattlebird — skeletal bird that makes music in the wind
+loose watercolor illustration, a skeletal bird creature perched on a fence post in rolling farmland, its hollow bones whistling in the wind like a flute, feathers made of dried leaves, autumn colors, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a bone bird spirit in flight over rolling hills, its skeleton visible through translucent wings, wind whistling through its hollow bones creating visible sound waves, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a rattlebird perched on a scarecrow's arm in a farm field, both skeletal, both still, wind blowing through them, subtle movement, rolling hills at dusk, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, three bone birds sitting on a wire fence, each a different size, their hollow bodies clinking together in the breeze, rural rolling hills sunset, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a rattlebird building a nest from small bones and dried flowers on a barn windowsill, careful precise movements, warm light from inside the barn, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 4C. Tumbleweed Skull — rolling skeletal creature carried by the wind
+loose watercolor illustration, a round skeletal creature curled into a ball rolling across a dusty farm path, bones and dried vines woven together, tumbling in the wind, rolling hills and farmhouses in the background, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tumbleweed skull creature uncurling from its ball form, stretching out skeletal limbs wrapped in dried grass and vine, standing up on a hilltop, wind-blown, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, multiple tumbleweed skull creatures rolling together across a wide open field, a herd of bone-balls bouncing over the rolling hills, chaotic fun energy, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tumbleweed creature stuck against a farm fence, trying to free itself, bones rattling, dried vines tangled in the wire, slightly annoyed expression, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tumbleweed skull spirit at rest, uncurled and sitting by a campfire on the rolling hills at night, warming its bone hands, dried vine body glowing in firelight, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 4D. Fence Post — a creature that IS an old fence post, watching the fields
+loose watercolor illustration, an old wooden fence post with a face carved by time and weather, watching over a rolling hills farm field, mossy beard, rusty nail eyes, birds perched on its head, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a fence post spirit pulling itself out of the ground, trailing roots and dirt, other fence posts in the row looking alarmed, rolling farmland, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, an ancient fence post creature leaning to one side, exhausted from decades of standing, wire still attached to its arms, sunset over rolling hills, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a young fresh fence post spirit just planted in the ground, bright clean wood, eager expression, surrounded by old weathered fence post elders, farm field, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a fence post creature in winter, covered in frost and snow, stoically standing guard over a frozen field, icicles hanging from its crossbeam arms, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 4E. Harvest Mouse — tiny skeletal field mouse spirit
+loose watercolor illustration, a tiny skeletal mouse spirit sitting on a wheat stalk in a farm field, bones delicate and beautiful, holding a single grain of wheat, rolling hills at golden hour, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a bone mouse creature running through tall grass on the rolling hills, its tiny skeleton visible through translucent spirit body, carrying a seed bigger than its head, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a harvest mouse spirit peeking out of a hole in a barn wall, tiny glowing eyes and delicate bone whiskers, warm hay and lantern light inside, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a family of tiny bone mice spirits huddled in a bird's nest on the ground, surrounded by seeds and dried flowers, cozy despite being skeletal, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a harvest mouse skeleton standing on a mushroom cap in a dewy morning field, surveying the rolling hills like a tiny king, first light catching its translucent body, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# ============================================================================
+# FAMILY 5: TIDE POOL (Frost Valley / could be new)
+# Tiny sea creatures — hermit crab, sea urchin, jellyfish, anemone, starfish
+# ============================================================================
+
+# 5A. Hermit — a spirit hermit crab that steals shells and buffs
+loose watercolor illustration, a ghostly hermit crab creature peeking out of a glowing shell on a rocky tide pool, translucent blue-green body, oversized curious eyes, tiny bubbles rising, cold coastal rocks and sea spray, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a hermit crab spirit trying on different shells lined up on a tide pool rock, its translucent body exposed between shells, considering its options, coastal sunset, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a large hermit crab creature wearing a human skull as its shell, sitting in a tide pool, barnacles growing on the skull, unbothered, cold rocky coast, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a hermit crab spirit fighting another hermit crab over a beautiful iridescent shell, tiny claws clashing, tide pool drama, sea spray and rocks, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a hermit crab creature walking along a frozen beach, its shell covered in frost and ice crystals, cold blue tones, winter coastal landscape, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 5B. Urchin — spiky sea creature that punishes contact
+loose watercolor illustration, a sea urchin spirit creature in a tide pool, body of long purple-black spines radiating outward, a small shy face hidden in the center looking up, clear cold water, coastal rocks, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a sea urchin creature sitting on a rock above the waterline, spines dripping with seawater, catching the cold sunset light, each spine tipped with a tiny glow, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a sea urchin spirit puffing up its spines defensively, making itself look twice its size, a startled fish nearby, underwater tide pool scene, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a tiny sea urchin creature carried by a wave onto a frozen shore, spines covered in ice crystals, beautiful and dangerous, cold blue winter coast, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a group of sea urchin spirits in a tide pool, different colors and sizes, spines interlocking like a defensive formation, cold rocky coast, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 5C. Drift — a jellyfish spirit that floats and stings
+loose watercolor illustration, a translucent jellyfish creature floating above a frozen tide pool, its body a bell of pale blue ice, trailing tentacles of frost, beautiful and alien, cold coastal winter scene, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a jellyfish spirit drifting through cold air above a rocky beach, tentacles trailing like ribbons in the wind, bioluminescent glow in the fog, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a small jellyfish creature trapped in a tide pool at low tide, pulsing gently, its glow the only color in a grey rocky landscape, patient and waiting, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a massive jellyfish spirit hovering over a frozen bay, tentacles dragging across the ice leaving glowing trails, aurora borealis above, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a jellyfish creature at night in a tide pool, its entire body glowing bright blue-green bioluminescence, illuminating the underwater rocks and small fish around it, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 5D. Anemone — a rooted creature that sways and traps
+loose watercolor illustration, a sea anemone spirit creature rooted to a tide pool rock, colorful waving tentacles that look like flower petals, a hidden mouth in the center, hypnotic swaying motion, cold coastal water, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a large anemone creature with tentacles reaching out of a tide pool, each tentacle a different bright color, trying to catch snowflakes falling into the water, playful, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, an anemone spirit that has pulled itself off its rock and is slowly walking on its base through a tide pool, tentacles swaying, other tide pool creatures staring in shock, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a closed-up anemone creature at low tide, tentacles retracted into a smooth dome, looking like an ordinary rock until you notice the faint glow inside, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, an anemone creature in full bloom in a deep tide pool, surrounded by a clownfish-like spirit that lives in its tentacles, symbiotic pair, cold clear water, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+# 5E. Starfish — a slow regenerating creature
+loose watercolor illustration, a large starfish spirit creature clinging to a tide pool rock, each arm a different color, one arm visibly regenerating and smaller than the others, determined expression in its center, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a starfish creature slowly climbing out of a tide pool onto dry rock, pulling itself up one arm at a time, cold coastal sunset, determined and slow, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a starfish spirit flipped on its back in a tide pool, hundreds of tiny tube feet waving trying to right itself, comically struggling, cold blue water, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a massive ancient starfish creature spanning an entire tide pool, its body encrusted with barnacles and small shells, other creatures living on its surface, patient ancient being, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1
+
+loose watercolor illustration, a starfish spirit walking across a frozen beach at night, leaving star-shaped glowing footprints in the frost, cold blue moonlight, beautiful and strange, watercolor with visible ink outlines and gouache weight, not a human not a child --ar 1:1 --s 150 --v 6.1

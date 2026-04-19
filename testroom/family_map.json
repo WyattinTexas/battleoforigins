@@ -1,0 +1,118 @@
+{
+  "_meta": {
+    "purpose": "Seed map of code-path families in testroom/index.html for the refiner's Family-Audit Protocol. Each family is defined by a SHARED CODE PATH, not a design category. When the refiner fixes a bug, it consults this map alongside grep to find siblings that may be broken the same way. The refiner must queue broken siblings via NEXT/AFTER [FAMILY:name] tags so the single-change-per-cycle rule is preserved.",
+    "created": "2026-04-11",
+    "source_file": "/Users/drbango/DrBango/testroom/index.html",
+    "update_rule": "When a new family emerges during refiner cycles, add it here. Do NOT add categories that are too broad to be useful (e.g. 'sideline ability' is not a family). The test: can you describe the shared code path in one sentence?"
+  },
+
+  "tie-vs-win-doubles-parity": {
+    "description": "Abilities triggered by doubles need TWO implementations: one in the tie-queue (~line 8560, abilityQueueMode for ties) and one in the win-queue (~line 10500, post-KO/win branch). If you fix one branch and forget the other, the ability fires in one outcome but not the other.",
+    "members": [43, 68, 19, 20, 28, 78, 302],
+    "grep_hints": ["outRoll\\.type === 'doubles'", "kaiRoll\\.type === 'doubles'", "wR\\.type === 'doubles'"],
+    "anchor_lines": [8564, 10503],
+    "sister_bug_risk": "Ship a fix to Outlaw's Thief in the tie branch, ship Outlaw broken in the win branch. The ability fires on tie-doubles but not win-doubles (or vice versa)."
+  },
+
+  "steal-dice-transfer": {
+    "description": "Abilities that subtract/transfer dice from the opponent on a future roll. All use per-card dice-reduction flags (pendingSteal, dallasQuickDraw, jeffSnicker) checked at roll-setup time.",
+    "members": [43, 60, 61],
+    "grep_hints": ["pendingSteal", "dallasQuickDraw", "Snicker", "steal 1.*die", "steal.*opponent"],
+    "anchor_lines": [3565, 6724, 8600, 10516, 10524],
+    "sister_bug_risk": "Gary's canonical example: fix Outlaw's Thief to actually remove the opponent die but forget Dallas's Quick Draw + Jeff's Snicker that use the same flow. Wyatt's saved feedback: steal abilities must TRANSFER dice to the thief, not just subtract from the enemy."
+  },
+
+  "heal-overclock": {
+    "description": "Healing abilities that MUST overclock past maxHp (f.hp += N, never Math.min(maxHp, hp+N)). Two and only two exceptions: Biscuit (324) Warm Up has explicit 'Cannot exceed max' text, and the Healing Seed resource EARLY-RETURN path at f.hp >= f.maxHp is not an overclock (it's the resource declining to be spent).",
+    "members": [342, 343, 70, 89, 83, 17, 13, 48, 22, 75, 66, 32, 11, 14],
+    "exceptions": [324, "Healing Seed early-return path only"],
+    "grep_hints": ["f\\.hp \\+=", "Math\\.min\\(f\\.maxHp", "Math\\.min\\(maxHp", "overclocked!"],
+    "anchor_lines": [3528, 3749, 4574, 4639, 6833, 7004, 8717, 10012, 10395],
+    "sister_bug_risk": "Add a Math.min(maxHp, ...) cap to Calvin's heal because it 'felt wrong'. Boris, Katrina, Mallow all use the same pattern — they all get silently capped too. UI has .hp-overclock class expecting uncapped hp."
+  },
+
+  "entry-effect-dispatch": {
+    "description": "Abilities that fire when a ghost enters the active slot. All dispatch from triggerEntry() (line 3406) via per-id if blocks. Shared context: f, team, entryCallouts array, skipEntryEffects flag.",
+    "members": [201, 306, 302, 98, 94, 312, 34, 47, 56, 62, 60],
+    "grep_hints": ["function triggerEntry", "entryCallouts\\.push"],
+    "anchor_lines": [3406, 3432, 3442, 3457, 3465, 3473, 3493, 3508, 3523, 3539, 3553, 3565],
+    "sister_bug_risk": "Change how entryCallouts get flushed or reorder the stagger timing — you can break one entry effect without noticing the others. Entry ability timing (v93 fix) is critical: VS splash FIRST, then Red entry, then Blue entry, staggered."
+  },
+
+  "pre-roll-modal-used-flag": {
+    "description": "Abilities that require player choice before rolling, gated by per-team B.xUsed/B.xArmed/B.xDecided flags set in doPreRollSetup() and checked in rollReady()/abilityStatus. Modal shows -> flag flips -> roll proceeds.",
+    "members": [114, 97, 85, 53, 31, 63, 7],
+    "grep_hints": ["B\\.\\w+Used", "B\\.\\w+Armed", "B\\.\\w+Decided", "B\\.\\w+Declared"],
+    "anchor_lines": [5958, 5973, 5983, 6089, 6097, 6134, 6161, 6334],
+    "sister_bug_risk": "doPreRollSetup() and rollReady() are on the freeze-bug blacklist. Changing how one pre-roll flag clears can silently break every other one. v377 freeze was exactly this pattern."
+  },
+
+  "sandwiches-mirror": {
+    "description": "Sandwiches (33) has 'Dependable' — mirrors any resource grant the opponent's sideline generates. Every queueAbility() that grants resources (surge, fire, ice, moonstone, luckyStone, healingSeed) MUST have a sandwichMirrors check and a mirror queueAbility() right after.",
+    "members": [33],
+    "affects_all": "every card that grants resources from the sideline",
+    "grep_hints": ["hasSideline\\(.*, 33\\)", "sandwichMirror", "DEPENDABLE!"],
+    "anchor_lines": [8584, 10499, 10505, 10513],
+    "sister_bug_risk": "Add a new resource-granting sideline ability (e.g. Granny's Bedtime Story), forget the Sandwiches mirror. Sandwiches silently stops mirroring for that card."
+  },
+
+  "knight-reaction": {
+    "description": "Knight Terror (401) Heavy Air and Knight Light (402) Retribution react to every ability trigger. Every queueAbility() call for a named ability MUST be followed by checkKnightEffects(tName, abilityName, ghostRef) while abilityQueueMode is true — NOT inside the onShow callback (that fires outside queue mode and stomps callouts).",
+    "members": [401, 402],
+    "affects_all": "every card with a named ability callout",
+    "grep_hints": ["checkKnightEffects", "HEAVY AIR", "RETRIBUTION"],
+    "call_site_count": 61,
+    "sister_bug_risk": "Add a new ability callout, forget checkKnightEffects. Knight Terror/Light silently stops reacting for that card. Also: putting checkKnightEffects inside an onShow callback causes the v305-class callout-stomp bug."
+  },
+
+  "dylan-negate-guard": {
+    "description": "Dylan (301) Scarecrow ability negates pre-roll effects for the opponent. Piper (107) Slick Coat also negates via the same dylanNegates() helper — both are already checked inside that single function, so there is no separate piperNegates variable. Every pre-roll ability that can be negated MUST wrap its trigger in !dylanNegates(enemy) and also have an else-branch that shows the negation callout. Forgetting the guard means Dylan/Piper stop negating that ability.",
+    "members": [301, 107],
+    "affects_all": "every pre-roll ability",
+    "grep_hints": ["dylanNegates", "SCARECROW"],
+    "anchor_lines": [6369, 6402, 6461, 6502],
+    "sister_bug_risk": "Add a new pre-roll ability, forget the dylanNegates check. Dylan silently stops negating it. This breaks a whole counter-strategy archetype."
+  },
+
+  "first-roll-flag": {
+    "description": "Abilities that only trigger on the ghost's FIRST roll after entering the active slot. Uses per-ghost boolean flag (hankFirstRoll, maximoFirstRoll, reddFirstRoll) set in triggerEntry and cleared in doPreRollSetup after firing. Nikon (2) and Cave Dweller (46) use the shared _rolledOnce flag instead.",
+    "members": [201, 302, 98, 2, 46],
+    "grep_hints": ["hankFirstRoll", "maximoFirstRoll", "reddFirstRoll", "_rolledOnce", "FirstRoll"],
+    "anchor_lines": [3463, 3488, 3496, 6718, 6728, 6741, 8874, 9010],
+    "sister_bug_risk": "Change when the first-roll flag gets set/cleared on one card, the others desync. KO-swap replacement specifically — Nikon and Cave Dweller use _rolledOnce because it works for both starters AND KO-swap replacements."
+  },
+
+  "committed-resource-gating": {
+    "description": "Abilities that commit resources to specific ghosts via B.committed[tName].X counters (as opposed to the general team resource pool). Committed resources can only be spent by the specific ghost they were committed to. Currently Harrison (315) and Aunt Susan (309). If you change the committed data structure, both break.",
+    "members": [315, 309],
+    "grep_hints": ["B\\.committed\\[", "auntSusan", "harrison"],
+    "anchor_lines": [6618, 6642, 6646, 11562, 11609],
+    "sister_bug_risk": "Add a new ghost that commits resources, forget to initialize the committed counter in state setup. Aunt Susan's commit desyncs across a Harrison swap."
+  },
+
+  "sideline-tie-trigger": {
+    "description": "Sideline abilities that fire specifically on a TIE outcome. All read from the tie-branch queue section (~line 8564) via hasSideline(team, id) + tie-specific resource/effect grant.",
+    "members": [303, 352, 22],
+    "grep_hints": ["Tie.*gain", "tie-round", "Roaring Crowd", "Chirp", "FRIEND TO ALL"],
+    "anchor_lines": [8569, 8717],
+    "sister_bug_risk": "Change how ties are detected (e.g. classify(dice).type === 'tie' vs wF.ko logic), break all three tie-triggered sidelines at once."
+  },
+
+  "wins-a-battle-defeat-gate": {
+    "description": "Cards whose abilityDesc contains the phrase 'wins a battle' (or equivalent 'defeat' / 'defeats a ghost' language). Per Wyatt: 'winning a battle' means KO'ing an enemy ghost, NOT merely winning a single roll. Implementation must gate on lF.ko (losing fighter was defeated this round), not just on the winning-roll path. Introduced after v593 when Jeffery (14) Chuckle and Suspicious Jeff (61) Snicker were found firing on every win instead of only on KOs.",
+    "members": [14, 61, 91],
+    "already_correct": [91],
+    "broken_at_v593": [14, 61],
+    "grep_hints": ["wins a battle", "defeat a ghost", "defeats a ghost", "Upon defeating", "When you defeat", "hasSideline\\(winTeam, \\d+\\) && !wF\\.ko(?! && lF\\.ko)"],
+    "anchor_lines": [10642, 10660, 10799, 11042],
+    "sister_bug_risk": "Any card whose text says 'wins a battle' but code checks only the winning-roll path (hasSideline(winTeam, X) && !wF.ko) will fire on every win instead of only on KOs. Massively overpowers healers and stacks debuffs. The fix is always the same: add `&& lF.ko` to the condition. Calvin & Anna (91) is the reference implementation — it already gets this right. When designing a new card with 'defeat' / 'wins a battle' language, always check lF.ko."
+  },
+
+  "post-roll-choice-modal": {
+    "description": "Cards with their own modal overlay that pauses the post-roll resolution flow until the player makes a choice. Each has a dedicated overlay id (#timberOverlay, #seleneOverlay, #bogeyOverlay) and a pending-deferred flow (selenePending, etc.). Modal handlers are on the freeze-bug blacklist — do NOT refactor them.",
+    "members": [305, 210, 53, 313],
+    "grep_hints": ["Overlay", "pending:", "doSeleneChoice", "showTimberModal", "doBogeyChoice", "doSylviaRoll"],
+    "anchor_lines": [7244],
+    "sister_bug_risk": "Change how overlay dismissal resumes the flow on one card, the others desync. v377 freeze was from a state-machine continuation that skipped a block."
+  }
+}

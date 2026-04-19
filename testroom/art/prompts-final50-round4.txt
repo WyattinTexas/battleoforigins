@@ -1,0 +1,64 @@
+# Final 50 Art Prompts — Round 4
+# 2026-04-11 — 20 cards (3 flame-family + 17 classic fiends)
+# Skipped 7: Glorp, Brimstone, Fumarole, Fluxling, Boggart, Bracken, Rushwick
+# ----------------------------------------------------------------------------
+
+# 1. Cindergrub (VA common) — lava-worm fiend
+loose watercolor illustration, ethereal creature made of cooling magma, a plump segmented worm with a coal-black exterior and glowing orange cracks between its segments like cooling lava, peek-a-boo emerging from a dark lava tunnel mouth with a genuinely friendly caterpillar face, not a human not a child, a charming lava-worm Spiritkin with wispy trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 2. Glass Fang (VA common) — obsidian creature fiend
+loose watercolor illustration, ethereal creature made of obsidian volcanic glass, a translucent jet-black glass being with razor-sharp edges catching lava-light like a prism, backlit in deep orange inside a volcanic cavern, impossibly beautiful and impossibly sharp, not a human not a child, a Spiritkin of living volcanic glass with wispy trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 3. Obsidian Eel (VA uncommon) — glass eel fiend
+loose watercolor illustration, ethereal creature shaped like a long sinuous eel made of polished semi-transparent obsidian glass swimming through a lava stream, cool blue-white glow pulsing along its spine, slow hypnotic movement, beautiful and alien, not a human not a child, a Spiritkin eel of volcanic glass with wispy trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 4. Ember Mole (VA uncommon) — cozy mole fiend
+loose watercolor illustration, ethereal creature, a plump cozy mole with velvety ashen-grey fur and tiny pink claws, glowing ember-red eyes, wearing a small dirt-stained waistcoat, peering up from a warm lava-tube tunnel mouth with a gentle contented expression, not a human not a child, a charming mole Spiritkin with wispy edges glowing softly from within, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 5. Spout (VA uncommon) — geyser fiend
+loose watercolor illustration, ethereal creature made of superheated steam and white mineral deposits, a tall narrow pressure-column being with a wide-open panicked mouth always on the verge of erupting, built-up anxious pressure on its face, standing on a cracked volcanic plain beside a geyser vent, not a human not a child, a charming geyser Spiritkin with wispy billowing steam edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 6. Pyroclast (VA rare) — living eruption fiend
+loose watercolor illustration, ethereal creature made of cooling and glowing lava rock, a jagged irregular mass mid-explosion with chunks of molten magma orbiting it like attendants, furious alive eyes peering out from cracked stone, standing on an erupting volcanic ridge under a blood-red sky, not a human not a child, a Spiritkin of living eruption with wispy smoking edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 7. Hesta (VA rare) — FLAME-FAMILY grandmother hearth spirit
+loose watercolor illustration, small humanoid Spiritkin ghost with a kind ancient grandmotherly face and a head made of warm low-banked hearthfire and embers, body of old stone with glowing orange cracks, wearing a soft woven orange shawl, tending a small hearth-fire in a warm volcanic cavern with firelight flickering on the walls, kind wrinkled expression radiating warmth, not a human not a child, a charming flame-headed Spiritkin grandmother with a chunky wispy body trailing into gentle ember-glow, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 8. Pip (VA ghost-rare) — ember dragon fiend (pure joy)
+loose watercolor illustration, ethereal creature, a tiny translucent ember dragon ghost caught mid-loop-de-loop in the air, wings spread in pure delight, open-mouthed giggle with tiny smoke puffs from its nostrils, surrounded by floating warm sparks, warm orange-gold backlight, pure uncontainable joy, Spiritkin ghost transparency, not a human not a child, a little dragon Spiritkin with wispy trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 9. Vela (VA rare) — FLAME-FAMILY ember resurrection
+loose watercolor illustration, small humanoid Spiritkin ghost with a warm amber-gold ember-shaped flame head and big round glowing golden cartoon eyes, wearing an amber scarf and little amber mittens, cradling a single bright glowing ember in cupped hands, tender hopeful expression, standing on a glowing volcanic ridge at dusk with molten lava flows far below and sparks drifting upward in the warm air, not a human not a child, a charming flame-headed Spiritkin with a chunky wispy body trailing into candlesmoke, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 10. Vigil (VA rare) — FLAME-FAMILY torchflame guardian
+loose watercolor illustration, small humanoid Spiritkin ghost with an orange-and-red torchflame-shaped head and big round glowing yellow cartoon eyes, wearing a flame-orange scarf and little orange mittens, standing in a patient watchful guardian pose at the mouth of a volcanic cavern with six small flame-wisp companions orbiting around its head and shoulders like loyal candles, rivers of lava reflecting on the cavern walls, not a human not a child, a charming flame-headed Spiritkin sentinel with a chunky wispy body trailing into smoke, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 11. Hedgeling (RH common) — hedge sprite fiend
+loose watercolor illustration, small ethereal creature, a 6-inch spirit with mossy green skin peering out through a gap in a thorny green hedgerow wearing a tiny acorn cap, bright curious eyes, nearly invisible against the foliage, an English countryside hedgerow at golden hour, not a human not a child, a tiny charming hedge Spiritkin with wispy edges blending into the leaves, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 12. Gourdling (RH common) — happy pumpkin fiend
+loose watercolor illustration, ethereal creature, a round gently glowing jack-o-lantern pumpkin being with an authentically joyful carved expression (NOT spooky, genuinely happy), warm amber light pouring from within, autumn leaves orbiting it in the breeze, standing in a pumpkin patch at dusk with rolling hills behind, not a human not a child, a charming autumn Spiritkin with wispy warm-glowing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 13. Beewick (RH uncommon) — bee beekeeper fiend
+loose watercolor illustration, ethereal creature, a small humanoid spirit wrapped in a living golden cloak of bees, beekeeper veil half-raised revealing a calm knowing face, warm golden buzzing light from the swarm, standing in a wildflower meadow at golden hour with a beehive in the background, not a human not a child, a charming bee-tender Spiritkin with a body more bees than person, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 14. Digby (RH uncommon) — mole farmer fiend
+loose watercolor illustration, ethereal creature, a stout friendly mole in a dirt-stained work vest holding up a glowing blue moonstone triumphantly, mud still on his snout, enormously pleased with himself, standing at the entrance of his dig site on a rolling hillside at sunset, not a human not a child, a charming mole Spiritkin with wispy glowing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 15. Chester (RH uncommon) — cheese cellar fiend
+loose watercolor illustration, ethereal creature, a round softly luminous spirit shaped like a wheel of aged cheese with an impossibly dignified expression, surrounded by floating cheese wheels in a warm candlelit stone cellar with moonlight streaming through a cellar grate, not a human not a child, a charming cheese-cellar Spiritkin with wispy warm edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 16. Brock (RH uncommon) — badger warden fiend
+loose watercolor illustration, ethereal creature, a dignified standing badger spirit in a dark well-worn coat, protective expression, his signature white head stripe catching the last light, standing upright on a rolling hillside at dusk overlooking his sett, not a human not a child, a charming badger Spiritkin with wispy trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 17. Pickwick (RH rare) — joyful wanderer fiend
+loose watercolor illustration, ethereal creature, a round happy wanderer Spiritkin in a well-worn travelling coat with a bulging pack slung over one shoulder, big infectious grin, glowing blue footsteps trailing behind him on a rolling hill path at golden hour, not a human not a child, a charming wanderer Spiritkin with wispy trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 18. Old Cap (RH rare) — mushroom elder fiend
+loose watercolor illustration, ethereal creature, a large ancient mushroom cap being in earthy browns and mossy greens, face like a very old tree with gentle wise eyes, slowly releasing golden spores as it begins its quiet final bloom, standing in a forest clearing on a hillside, gentle and warm not dramatic just quietly complete, not a human not a child, a charming mushroom elder Spiritkin, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 19. Millicent (RH rare) — cunning folk hedge-witch fiend
+loose watercolor illustration, ethereal creature, a sharp-eyed older woman-shaped Spiritkin in a patchwork cloak standing at a fork in the rolling hill paths, wisps of blue-grey smoke curling from her hands, deeply knowing expression (she already knows what you're going to say), evening sky, not a human not a child, a cunning-folk hedge-witch Spiritkin with wispy trailing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1
+
+# 20. The Overcast (RH ghost-rare) — cloud giant fiend
+loose watercolor illustration, ethereal creature, a massive cumulus cloud ghost floating above rolling green hills at golden hour, enormous white-grey body with a face of deep weather-patience, subtle crown of static-grey stormclouds on his head, smaller clouds orbiting him like attendants, distant mountain peaks visible on the horizon, warm and huge and ancient, not a human not a child, a Spiritkin cloud-giant with wispy billowing edges, soft visible brushstrokes --ar 1:1 --s 150 --v 6.1

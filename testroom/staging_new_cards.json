@@ -1,0 +1,382 @@
+{
+  "cards": [
+    {
+      "id": 407,
+      "name": "Glorp",
+      "rarity": "common",
+      "maxHp": 3,
+      "ability": "Pop",
+      "abilityDesc": "Entry: gain 2 Lucky Stones.",
+      "category": "Resource Generation",
+      "set": "Volcanic Activity",
+      "designNote": "A perfectly round lava bubble that surfaces from the magma field and pops with pure glee the moment it arrives. Low HP means it's a quick resource spike \u2014 bring it in, collect luck, move on. Art direction: a glossy orange-red sphere hovering just above a lava pool, big wide eyes, caught mid-pop like a soap bubble, warm and ridiculous.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 408,
+      "name": "Brimstone",
+      "rarity": "common",
+      "maxHp": 4,
+      "ability": "Sulfur Sting",
+      "abilityDesc": "Win: deal +1 damage. If opponent spent a resource this round: deal +2 damage instead.",
+      "category": "Damage Multiplier",
+      "set": "Volcanic Activity",
+      "designNote": "A stinky little sulfur sprite from the volcanic gas vents \u2014 permanently smug, permanently smells awful. Reliable +1 on all wins; scales to +2 when the opponent is playing fancy. Punishes resource-heavy decks passively. Art direction: a small wispy yellow-green creature trailing wisps of gas, crinkled nose, perpetual half-grin, floating just above a sulfur vent crack.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 409,
+      "name": "Cindergrub",
+      "rarity": "common",
+      "maxHp": 4,
+      "ability": "Underpass",
+      "abilityDesc": "Win: deal +1 damage if your opponent's active ghost currently has more HP than you.",
+      "category": "Damage Multiplier",
+      "set": "Volcanic Activity",
+      "designNote": "A fat, plump magma worm that tunnels through the lava tube networks beneath the volcano. Classic underdog puncher \u2014 hits harder when outmatched. HP comparison is live and visible, zero tracking needed. Art direction: a plump segmented worm with coal-black exterior, glowing orange between segments like cooling lava cracks, genuinely friendly caterpillar face, peek-a-boo emerging from a dark tunnel mouth.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 410,
+      "name": "Glass Fang",
+      "rarity": "common",
+      "maxHp": 3,
+      "ability": "Shatter",
+      "abilityDesc": "Win: deal +2 damage. Then take 1 damage yourself. Volcanic glass cuts both ways.",
+      "category": "Damage Multiplier",
+      "set": "Volcanic Activity",
+      "designNote": "A being made of obsidian volcanic glass \u2014 impossibly beautiful, impossibly sharp. Big burst damage but punishes itself on every win. At 3HP the self-damage is genuinely consequential. Wyatt flag: combined with other VA self-damage sources (Wick, Glass Fang loops) this could snowball; worth watching. Art direction: a translucent jet-black glass creature with razor edges catching lava-light like a prism, ethereal and beautiful, backlit in deep orange.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 411,
+      "name": "Fumarole",
+      "rarity": "uncommon",
+      "maxHp": 5,
+      "ability": "Vent Burst",
+      "abilityDesc": "Win with doubles or better: gain 2 Surges.",
+      "category": "Resource Generation",
+      "set": "Volcanic Activity",
+      "designNote": "A geothermal vent spirit \u2014 patient, still, and then suddenly screaming with pressure. Doubles trigger fires ~44% of wins so it's a reliable engine; 2 Surges at once is a meaningful burst that fuels Forge Fire and Pyroclast combos. VA's Surge generator. Art direction: a column of steam and mineral-white deposits rising from a cracked earth vent, face forming mid-burst in the gas cloud, expression permanently mid-surprise.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 412,
+      "name": "Fluxling",
+      "rarity": "uncommon",
+      "maxHp": 5,
+      "ability": "Flow State",
+      "abilityDesc": "Win: change one of your winning dice to any value you choose.",
+      "category": "Dice Modifier",
+      "set": "Volcanic Activity",
+      "designNote": "A lava river spirit that never stops moving and flows around every obstacle. On-win die manipulation without spending a Moonstone \u2014 upgrade a near-double into a double, or set a specific number for a Spout prediction. Wyatt flag: free die-change on every win may be slightly undercosted at uncommon \u2014 effectively a free Moonstone each time. Worth watching. Art direction: a fluid constantly morphing figure made of flowing lava, half-formed face always mid-shift, trailing slow orange-red drips.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 413,
+      "name": "Obsidian Eel",
+      "rarity": "uncommon",
+      "maxHp": 5,
+      "ability": "Glass Scales",
+      "abilityDesc": "Win with doubles or better: gain 1 Moonstone.",
+      "category": "Resource Generation",
+      "set": "Volcanic Activity",
+      "designNote": "A long sinuous being made of polished black volcanic glass that swims through lava streams \u2014 beautiful and alien. Doubles \u2192 Moonstone (~44% trigger on wins) creates the first real Moonstone generation engine in VA. Synergizes with Fluxling: nudge dice into doubles, Eel refills the Moonstone you spent nudging. Art direction: a sleek eel of polished obsidian glass, semi-transparent, cool blue-white glow pulsing along its spine, slow and hypnotic.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 414,
+      "name": "Ember Mole",
+      "rarity": "uncommon",
+      "maxHp": 5,
+      "ability": "Warm Pocket",
+      "abilityDesc": "Entry: gain 1 Healing Seed.",
+      "category": "Resource Generation",
+      "set": "Volcanic Activity",
+      "designNote": "THE cozy card of Volcanic Activity. A stubby little mole who has lived underground in the lava tubes for so long it radiates warmth and contentment. Modest entry Healing Seed \u2014 not flashy, just warm and helpful. Bridges VA into cross-set Healing Seed strategies. The card that makes players go 'aww' before dropping it. Art direction: a plump mole with velvety ashen-grey fur, tiny pink claws, eyes glowing like embers, wears a small dirt-stained waistcoat, peering up from a tunnel mouth.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 415,
+      "name": "Spout",
+      "rarity": "uncommon",
+      "maxHp": 6,
+      "ability": "Pressure Release",
+      "abilityDesc": "Before rolling: declare a number 1\u20136. If any of your dice show that number this roll, deal +2 damage.",
+      "category": "Prediction/Reaction",
+      "set": "Volcanic Activity",
+      "designNote": "A geyser spirit \u2014 builds pressure and erupts when the right conditions align. Calling a specific number fires ~42% of time (1-(5/6)^3), so it rewards prediction skill. Skilled players use Moonstones or Fluxling to guarantee a trigger; beginners will miss often but love it when they hit. 6HP gives the gambler some staying power. Art direction: a tall narrow pressure-column creature made of superheated steam and white mineral deposits, wide-open mouth, always on the verge of going off, slightly panicked energy.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 416,
+      "name": "Pyroclast",
+      "rarity": "rare",
+      "maxHp": 6,
+      "ability": "Blow Your Stack",
+      "abilityDesc": "Spend 1 Sacred Fire before rolling: if you win this round, singles deal 3 damage and doubles deal 5 damage.",
+      "category": "Damage Multiplier",
+      "set": "Volcanic Activity",
+      "designNote": "Born from eruption itself \u2014 a jagged lava fragment given explosive, furious life. Transforms your entire damage profile at Sacred Fire cost. 5 damage on a doubles win can one-shot most ghosts. Best deployed as a finisher once resources are banked. Wyatt flag: Pyroclast + Humar (336 \u2014 generates Sacred Fire on wins) is a very powerful loop. Worth dedicated testing. Art direction: a jagged irregular mass of cooling-and-glowing lava rock, mid-explosion state, chunks of magma orbiting it, furious and alive.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 417,
+      "name": "Hesta",
+      "rarity": "rare",
+      "maxHp": 6,
+      "ability": "Hearthkeeper",
+      "abilityDesc": "Win: heal 1 HP. Win with doubles or better: heal 2 HP instead. Heals can exceed max HP.",
+      "category": "HP Recovery",
+      "set": "Volcanic Activity",
+      "designNote": "The grandmother of the volcano \u2014 an ancient hearth spirit who has been keeping the fire alive since the first eruption. Named for Hestia (goddess of the hearth) but gentler and more lived-in. Clean tiered healer: singles win = 1HP, doubles+ = 2HP. Overclock allowed per Gary's rules. Gives VA critical sustain to counterbalance the set's glass-cannon tendencies. Art direction: a warm ancient figure made of low-banked hearthfire and old stone, like a grandmother literally made of embers \u2014 kind expression, soft orange glow, not scary, radiates warmth.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 418,
+      "name": "Pip",
+      "rarity": "ghost-rare",
+      "maxHp": 5,
+      "ability": "Ember Loop",
+      "abilityDesc": "Win: deal +1 damage. Win with triples: deal +3 bonus damage instead, and Pip heals 2 HP from pure elation (can exceed max HP).",
+      "category": "Damage Multiplier",
+      "set": "Volcanic Activity",
+      "designNote": "THE one. A tiny ember dragon who passed away mid-giggle while doing a delighted spin-jump near a hot geyser. The ghost still does the spin. Cannot stop. Genuinely does not understand death and has no plans to start. The +1 on all wins is the reliable floor; the triples payoff (+3 damage + 2HP from sheer joy) is the unforgettable jackpot at 2.8% \u2014 rare but legendary when it lands. NOT Dragonclaw. Dragonclaw rakes. Pip giggles. Mandatory holo foil. Midjourney art direction: tiny translucent ember dragon ghost mid-loop-de-loop, wings spread in delight, open-mouthed giggle with tiny smoke puffs from nostrils, surrounded by floating warm sparks, Spiritkin ghost transparency, warm orange-gold backlight, pure JOY.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 419,
+      "name": "Hedgeling",
+      "rarity": "common",
+      "maxHp": 4,
+      "ability": "Hedge Magic",
+      "abilityDesc": "Sideline: whenever your active ghost spends a Healing Seed, gain 1 Lucky Stone.",
+      "category": "Resource Generation",
+      "set": "Rolling Hills",
+      "designNote": "A tiny sprite that lives inside the hedgerows between fields \u2014 you can only see it if you know to look. Passive synergy that rewards Healing Seed builds: every seed spent also generates luck. Combos with Chester, Gourdling, Beewick, and The Overcast naturally. Art direction: a 6-inch figure peering through a gap in a thorny green hedgerow, mossy green skin, bright curious eyes, small acorn cap, nearly invisible against the hedge.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 420,
+      "name": "Gourdling",
+      "rarity": "common",
+      "maxHp": 4,
+      "ability": "Autumn Offering",
+      "abilityDesc": "Entry: gain 2 Healing Seeds.",
+      "category": "Resource Generation",
+      "set": "Rolling Hills",
+      "designNote": "A pumpkin-spirit \u2014 round, orange, genuinely delighted by autumn. Entry 2 Healing Seeds is a resource burst that fuels The Overcast, Magnolia, Beewick, and Chester combos. Feels like opening a harvest basket. Pairs naturally with any Healing Seed payoff card. Art direction: a round gently glowing jack-o-lantern creature with an authentically HAPPY carved expression (not spooky \u2014 joyful), autumn leaves orbiting it, warm amber light from within.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 421,
+      "name": "Boggart",
+      "rarity": "common",
+      "maxHp": 3,
+      "ability": "Mischief Night",
+      "abilityDesc": "Win: opponent loses 1 resource of your choice. Boggart gains 1 Lucky Stone.",
+      "category": "Disruption",
+      "set": "Rolling Hills",
+      "designNote": "A classic Rolling Hills fiend \u2014 not evil, just deeply committed to harmless trouble. On a win it steals something from the opponent AND pockets a Lucky Stone for itself. The dual payoff makes this feel gleefully chaotic. 3HP keeps it honest \u2014 it's a pest, not a monster. Art direction: a small hunched figure with crinkle-eyed mischievous grin, pockets stuffed with stolen goods (pie crust sticking out, a turnip, a pocket watch), twinkling troublemaker eyes.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 422,
+      "name": "Bracken",
+      "rarity": "common",
+      "maxHp": 4,
+      "ability": "Cover",
+      "abilityDesc": "Sideline: your active ghost takes -1 damage from all hits while Bracken has more HP than they do.",
+      "category": "Defense/Negation",
+      "set": "Rolling Hills",
+      "designNote": "A rustle-in-the-undergrowth spirit \u2014 bracken fern given quiet watchful form. Protects a weakened teammate from the bench in a way that scales naturally: when your fighter is battered below Bracken's HP (both face-up, no tracking), the bracken covers them. Grows more valuable as the battle wears on. Art direction: a creature woven from bracken ferns and undergrowth, half-visible against a green hillside, protective earthy-brown eyes, nearly camouflaged.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 423,
+      "name": "Beewick",
+      "rarity": "uncommon",
+      "maxHp": 5,
+      "ability": "Swarm Share",
+      "abilityDesc": "Win: gain 1 Lucky Stone for each Healing Seed your team currently holds.",
+      "category": "Resource Generation",
+      "set": "Rolling Hills",
+      "designNote": "A beekeeper spirit who has become, over time, more bees than person. The bees represent the Healing Seeds; when the swarm wins they bring back luck. Can whiff entirely (0 Seeds = 0 Lucky Stones) so it actively rewards stacking the Healing Seed economy before swinging. Hard synergy with Gourdling and Chester. Wyatt flag: in a full Healing Seed stack (4\u20135 seeds) this generates a lot of Lucky Stones per win. Art direction: a small humanoid wrapped in a living golden cloak of bees, beekeeper veil half-raised, calm expression, warm golden buzzing light from the swarm.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 424,
+      "name": "Digby",
+      "rarity": "uncommon",
+      "maxHp": 5,
+      "ability": "Lucky Find",
+      "abilityDesc": "Entry: gain 1 Moonstone.",
+      "category": "Resource Generation",
+      "set": "Rolling Hills",
+      "designNote": "A mole farmer who has dug through enough hills to know exactly where the shiny things are. Moonstone on entry is clean uncommon-level power \u2014 fuels any Moonstone strategy, bridges RH into the Fluxling/Obsidian Eel VA cross-play, and rewards deckbuilders who value die control. Art direction: a stout mole in a dirt-stained work vest, holding a discovered moonstone triumphantly, still has mud on his snout, enormously pleased with himself.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 425,
+      "name": "Rushwick",
+      "rarity": "uncommon",
+      "maxHp": 5,
+      "ability": "Rush Light",
+      "abilityDesc": "Sideline: your active ghost is immune to debuff abilities while Rushwick is on the bench.",
+      "category": "Defense/Negation",
+      "set": "Rolling Hills",
+      "designNote": "A lantern-bearer who lights safe paths through the hills at night. Rush light is an old English candle made from rush-grass \u2014 the humblest and most reliable light there is. Sideline debuff immunity is soft but meaningful: counters Scorch's permanent HP reduction, Slag Heap's burn, and Brimstone's resource-spend punishment. The card whose name makes you say 'of course that's its name.' Art direction: a small robed figure carrying a glowing rush-light, walking a nighttime hill path, warm circle of light pushing back the dark, deeply cozy.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 426,
+      "name": "Chester",
+      "rarity": "uncommon",
+      "maxHp": 6,
+      "ability": "Aged to Perfection",
+      "abilityDesc": "Win: gain 1 Healing Seed. Win with doubles or better: gain 2 Healing Seeds instead.",
+      "category": "Resource Generation",
+      "set": "Rolling Hills",
+      "designNote": "A cheese-cellar dweller who has been down there with the wheels of cheese for a very long time and is extremely satisfied about this. Tiered Healing Seed gen: modest on singles wins, bursts to 2 on doubles+. At 6HP he stays in the fight long enough for those seeds to stack into something meaningful. Core engine for Beewick and The Overcast builds. Art direction: a round softly luminous figure shaped somewhat like a wheel of aged cheese, impossibly dignified expression, surrounded by floating cheese wheels in a warm candlelit stone cellar, moonlight through a cellar grate.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 427,
+      "name": "Brock",
+      "rarity": "uncommon",
+      "maxHp": 6,
+      "ability": "Sett Warden",
+      "abilityDesc": "Win: deal +1 damage. Lose: take -1 damage.",
+      "category": "Defense/Negation",
+      "set": "Rolling Hills",
+      "designNote": "The rolling hills' unofficial guardian \u2014 a badger, specifically. 'Brock' is the old English name for badger. The sett is the stable center of any field. Win or lose, Brock cushions every exchange: hits harder when ahead, takes less when behind. Reliable two-way modifier on a 6HP body. Works as a fighter or a bench presence that makes your active ghost feel safer. Art direction: a dignified badger in a dark well-worn coat, standing on a hillside at dusk, protective expression, white stripe catching the last light.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 428,
+      "name": "Pickwick",
+      "rarity": "rare",
+      "maxHp": 6,
+      "ability": "Traveller's Pack",
+      "abilityDesc": "Entry: gain 1 Lucky Stone, 1 Healing Seed, and 1 Surge.",
+      "category": "Resource Generation",
+      "set": "Rolling Hills",
+      "designNote": "The ghost of a joyful wanderer who never stopped moving in life and hasn't stopped in death either. Entry resource burst \u2014 one of each immediately usable resource (no Sacred Fire keeps it balanced). 6HP means he can fight, not just be hit-and-swap. RH's merchant hero. Wyatt flag: Pickwick + The Shepherd resurrection loop could refuel resources repeatedly \u2014 worth testing. Art direction: a round happy wanderer in a well-worn travelling coat, bulging pack slung over one shoulder, big grin, glowing footsteps trailing behind him on a rolling hill path.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 429,
+      "name": "Old Cap",
+      "rarity": "rare",
+      "maxHp": 5,
+      "ability": "Final Bloom",
+      "abilityDesc": "When Old Cap is KO'd: your next ghost enters play with +3 HP (can exceed max HP).",
+      "category": "HP Recovery",
+      "set": "Rolling Hills",
+      "designNote": "An ancient mushroom spirit \u2014 slow, unremarkable, deeply wise, and quietly spectacular at the very end. The death trigger creates a genuine sacrifice archetype: deliberately send Old Cap into danger, let it die, empower the next ghost with an HP surge. Risk-reward deckbuilding that rewards planning. +3HP overclocks per Gary's rules. Art direction: a large ancient mushroom cap creature in earthy browns and mossy greens, face like a very old tree, slowly releasing spores as it begins to fade, gentle and warm, not dramatic \u2014 just quietly complete.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 430,
+      "name": "Millicent",
+      "rarity": "rare",
+      "maxHp": 5,
+      "ability": "Cunning Folk",
+      "abilityDesc": "Spend 1 Moonstone: look at all of your opponent's current resources, then take 1 of your choice. They lose it.",
+      "category": "Disruption",
+      "set": "Rolling Hills",
+      "designNote": "The cunning folk of the Rolling Hills \u2014 hedge-witch, wise-woman, someone you bring a pie to before you bring a problem. Moonstone-powered full information + theft: see everything they have, take the worst thing for them to lose. Spending Moonstone (rare resource) for information and theft is elegant. Active, decisive, satisfying for the person playing it. Art direction: a sharp-eyed older woman-shaped figure in a patchwork cloak, standing at a fork in the hill paths, wisps of blue-grey smoke curling from her hands, deeply knowing expression \u2014 she already knows what you're going to say.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 431,
+      "name": "The Overcast",
+      "rarity": "ghost-rare",
+      "maxHp": 7,
+      "ability": "For The King",
+      "abilityDesc": "Win: spend any number of Healing Seeds. Deal +2 damage for each Healing Seed spent.",
+      "category": "Damage Multiplier",
+      "set": "Rolling Hills",
+      "designNote": "A massive cumulus giant that drifts silently above the Rolling Hills, paying tribute to the Mountain King above the peaks. THE payoff card for the entire RH Healing Seed economy \u2014 converts accumulated seeds into a single devastating hit. With 4 Healing Seeds banked: a win deals 2 base + 8 bonus = 10 damage. With zero seeds: no bonus (player decides how much to spend). Ghost-rare holo treatment on a cloud texture will look extraordinary. Lore: The Mountain King commands the cloud giants to watch the hills. The Overcast is the oldest and most loyal. Slightly somber, enormous, warm when you look closely. Midjourney art direction: a massive cumulus cloud ghost floating above rolling green hills at golden hour, enormous white-grey body with a face of deep weather-patience, subtle crown of static-grey stormclouds on its head, smaller clouds orbiting it like attendants, Spiritkin ghost aesthetic, distant mountain peaks visible on the horizon with the Mountain King's presence implied, warm and huge and ancient.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 453,
+      "name": "Kaylee",
+      "rarity": "ghost-rare",
+      "maxHp": 5,
+      "ability": "Slipstream",
+      "abilityDesc": "For each 2 you roll, steal 1 die result from your opponent.",
+      "category": "Dice Modifier",
+      "set": "Rolling Hills",
+      "designNote": "A joyful aquatic spirit of impossible intelligence — not a dolphin, not an orca, but its own luminous being that lives in the glassy mirror-still lakes of the Rolling Hills. Inspired by Drake Lake from Wave Race 64: the name 'Kaylee' is derived from the letters of Drake Lake (K,A,L,R,E,E). Slipstream is the most dramatic single moment in the game — turning a loss into a win by swapping dice. Once per game keeps it fair but guarantees a story every time it fires. Playful, optimistic, the smartest creature in the water. Art direction: a sleek ethereal creature made of shimmering teal water bursting upward from a perfectly still reflective lake, branching antler-like fins dissolving into mist, one dark knowing eye, ripple rings spreading below, dark treeline silhouette reflected in the water, Drake Lake color palette — deep teal, pale lavender sky, luminous white-green body, loose watercolor illustration style.",
+      "tags": [
+        "Final 50"
+      ]
+    },
+    {
+      "id": 454,
+      "name": "Miyoshi",
+      "rarity": "ghost-rare",
+      "maxHp": 6,
+      "ability": "Bonzai!",
+      "abilityDesc": "Before rolling: you may declare 'Bonzai!' — lose 3 HP first, then gain +5 dice.",
+      "category": "Dice Modifier",
+      "set": "Volcanic Activity",
+      "designNote": "A ferocious water-and-fire spirit that charges headfirst into everything. Born where volcanic lava meets ocean rapids — a creature of pure reckless courage. The Bonzai ability is the biggest gamble in the game: sacrifice half your HP for a massive dice surge. At 6 HP you drop to 3, meaning one bad loss after a Bonzai could KO you. But the +5 dice swing can end fights instantly. Players must literally yell 'Bonzai!' at the table to activate it — a mandatory battle cry that becomes a ritual. Art direction: a fierce white water dragon-spirit with red-tipped fins and sharp teeth charging through churning rapids, volcano erupting behind it with fire and ash, watercolor chaos of orange fire and white-blue water crashing together, mouth open mid-scream, pure adrenaline energy.",
+      "tags": [
+        "Final 50"
+      ]
+    }
+  ]
+}

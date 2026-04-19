@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle of Origins — Tournament of the Century</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+  <!-- TITLE -->
+  <div class="screen title-screen active" id="titleScreen">
+    <div class="title-main">Battle of Origins</div>
+    <div class="title-divider"></div>
+    <div class="title-sub">Tournament of the Century</div>
+    <div class="title-tagline">1 Life per Ghost. No Mercy.</div>
+    <div class="title-desc">
+      Your ghosts don't come back. Build your team, use items wisely, and fight your way through the gauntlet. Run out of ghosts and it's over.
+    </div>
+    <div class="title-buttons">
+      <button class="action-btn cyan ready" onclick="beginRun()">Enter the Tournament</button>
+      <button class="action-btn gold" id="continueBtn" onclick="continueRun()" style="font-size:1.1rem;padding:10px 36px;">Continue Run</button>
+      <button class="action-btn red ready" onclick="startVsMode()" style="font-size:1.1rem;padding:10px 36px;">VS Mode</button>
+      <button class="action-btn gold ready" onclick="startCoopMode()" style="font-size:1.1rem;padding:10px 36px;">2v2 Co-op</button>
+      <button class="small-btn" id="hofBtn" onclick="showHallOfFame()" style="display:none;">Hall of Fame</button>
+    </div>
+    <div class="version-tag">v0.3</div>
+  </div>
+
+  <!-- INITIAL PICK -->
+  <div class="screen pick-screen" id="pickScreen">
+    <div class="pick-header">
+      <div class="pick-tournament-title">Battle of Origins</div>
+      <div class="pick-tournament-sub">Tournament of the Century</div>
+    </div>
+    <div class="pick-label" id="pickLabel">Choose Your Spiritkin</div>
+    <div class="ghost-grid" id="ghostGrid"></div>
+    <div class="selected-info" id="selectedInfo">
+      <div class="si-name" id="siName"></div>
+      <div class="si-stats">
+        <span class="si-ability-name" id="siAbilityName"></span>
+        <span class="si-stats-divider"></span>
+        <span class="si-hp" id="siHp"></span>
+      </div>
+      <div class="si-desc" id="siDesc"></div>
+      <div class="si-hp-pips" id="siHpPips"></div>
+    </div>
+    <button class="action-btn cyan" id="pickBtn" onclick="confirmPick()">Confirm your choice</button>
+    <div class="pick-flavor">Every ghost counts. Choose wisely.<br>Can you defeat the Mountain King?</div>
+  </div>
+
+  <!-- MAP -->
+  <div class="screen map-screen" id="mapScreen">
+    <div class="tournament-progress" id="tournamentProgress"></div>
+    <div class="opponent-reveal" id="opponentReveal">
+      <div class="fight-number" id="fightNumber"></div>
+      <div class="location-banner" id="locationBanner"></div>
+      <div class="boss-entrance" id="bossEntrance">
+        <div class="boss-card-showcase" id="bossCardShowcase"></div>
+        <div class="boss-name-reveal" id="bossNameReveal"></div>
+        <div class="boss-stats-reveal" id="bossStatsReveal"></div>
+        <div class="boss-ability-card" id="bossAbilityCard"></div>
+      </div>
+      <div class="stakes-text" id="stakesText"></div>
+    </div>
+    <div class="team-status-bar" id="teamStatusBar">
+      <div class="select-fighter-label">Choose your Spiritkin</div>
+      <div class="team-ghosts" id="teamGhosts"></div>
+      <div class="selected-fighter-name" id="selectedFighterName"></div>
+      <div class="team-items" id="teamItems"></div>
+      <button class="fight-btn" id="fightBtn" onclick="startBattle()">FIGHT!</button>
+    </div>
+  </div>
+
+  <!-- PRE-BATTLE -->
+  <div class="screen prebattle-screen" id="prebattleScreen">
+    <div class="pb-title" id="pbTitle">Boss Battle</div>
+    <div class="pb-vs">
+      <div>
+        <div class="pb-card player-side" id="pbPlayerCard"></div>
+        <div class="pb-card-label" style="color:var(--player);" id="pbPlayerName"></div>
+      </div>
+      <div class="pb-vs-text">VS</div>
+      <div>
+        <div class="pb-card enemy-side" id="pbEnemyCard"></div>
+        <div class="pb-card-label" style="color:var(--enemy);" id="pbEnemyName"></div>
+      </div>
+    </div>
+    <div class="pb-stats" id="pbStats"></div>
+    <div class="map-section-label" style="margin-top:8px;">Select your ghost</div>
+    <div class="pb-ghost-select" id="pbGhostSelect"></div>
+    <button class="action-btn cyan" id="pbFightBtn" onclick="startBattle()">Fight!</button>
+    <button class="small-btn" onclick="showMap()">Back to Map</button>
+  </div>
+
+  <!-- CO-OP MATCHUP -->
+  <div class="screen coop-matchup-screen" id="coopMatchupScreen">
+    <div class="coop-matchup-title">2v2 Co-op Battle</div>
+    <div class="coop-matchup-teams">
+      <div class="coop-team-side">
+        <div class="coop-team-label" style="color:var(--player);">Your Team</div>
+        <div class="coop-team-cards">
+          <div class="coop-match-card" id="coopMatchP1"></div>
+          <div class="coop-match-card" id="coopMatchP2"></div>
+        </div>
+      </div>
+      <div class="coop-matchup-vs">VS</div>
+      <div class="coop-team-side">
+        <div class="coop-team-label" style="color:var(--enemy);">Enemies</div>
+        <div class="coop-team-cards">
+          <div class="coop-match-card" id="coopMatchE1"></div>
+          <div class="coop-match-card" id="coopMatchE2"></div>
+        </div>
+      </div>
+    </div>
+    <button class="action-btn cyan ready" onclick="startCoopBattle()" style="font-size:1.3rem;">FIGHT!</button>
+    <button class="small-btn" onclick="coopMode=false;showScreen('titleScreen');initTitle();">Back to Menu</button>
+  </div>
+
+  <!-- BATTLE -->
+  <div class="screen battle-screen" id="battleScreen">
+    <div class="spirit-particles" id="spiritParticles"></div>
+    <!-- Co-op team panels -->
+    <div class="coop-panel coop-enemy-panel" id="coopEnemyPanel">
+      <div class="coop-slot" id="coopE1Slot" onclick="coopSelectTarget(1)">
+        <img id="coopE1Img" src="">
+        <div class="coop-slot-name" id="coopE1Name"></div>
+        <div class="coop-slot-hp" id="coopE1HpText"></div>
+        <div class="coop-slot-hpbar"><div class="coop-hpbar-fill enemy" id="coopE1Bar"></div></div>
+      </div>
+      <div class="coop-slot" id="coopE2Slot" onclick="coopSelectTarget(2)">
+        <img id="coopE2Img" src="">
+        <div class="coop-slot-name" id="coopE2Name"></div>
+        <div class="coop-slot-hp" id="coopE2HpText"></div>
+        <div class="coop-slot-hpbar"><div class="coop-hpbar-fill enemy" id="coopE2Bar"></div></div>
+      </div>
+    </div>
+    <div class="coop-panel coop-player-panel" id="coopPlayerPanel">
+      <div class="coop-slot" id="coopP1Slot">
+        <img id="coopP1Img" src="">
+        <div class="coop-slot-name" id="coopP1Name"></div>
+        <div class="coop-slot-hp" id="coopP1HpText"></div>
+        <div class="coop-slot-hpbar"><div class="coop-hpbar-fill player" id="coopP1Bar"></div></div>
+      </div>
+      <div class="coop-slot" id="coopP2Slot">
+        <img id="coopP2Img" src="">
+        <div class="coop-slot-name" id="coopP2Name"></div>
+        <div class="coop-slot-hp" id="coopP2HpText"></div>
+        <div class="coop-slot-hpbar"><div class="coop-hpbar-fill player" id="coopP2Bar"></div></div>
+      </div>
+    </div>
+    <div class="coop-turn-indicator" id="coopTurnIndicator"></div>
+    <div class="red-action-bar" id="redActionBar"></div>
+    <div class="vs-red-roll-area" id="vsRedRollArea">
+      <button class="vs-red-roll-btn" onclick="vsRedRoll()">RED — ROLL!</button>
+    </div>
+    <div class="vs-blue-roll-area" id="vsBlueRollArea">
+      <button class="vs-blue-roll-btn" onclick="vsBlueRoll()">BLUE — ROLL!</button>
+    </div>
+    <div class="enemy-zone">
+      <div class="name-plate enemy-plate" id="enemyPlate">
+        <div class="np-name" id="enemyNameText"></div>
+        <div class="hp-bar-wrap"><div class="hp-bar" id="enemyHpBar"></div></div>
+        <div class="hp-text"><span class="hp-num" id="enemyHpText"></span></div>
+      </div>
+      <div class="battle-card enemy-card" id="enemyCard"></div>
+    </div>
+    <div class="vs-red-narrator" id="vsRedNarrator"><div class="narrator-inner" id="redNarrator"></div></div>
+    <div class="red-predict-area" id="redPredictArea">
+      <div class="predict-label">RED — Pick a number: if a die matches, +3 damage!</div>
+      <div class="predict-btns">
+        <button class="predict-btn" onclick="pickRedPrediction(1)">1</button>
+        <button class="predict-btn" onclick="pickRedPrediction(2)">2</button>
+        <button class="predict-btn" onclick="pickRedPrediction(3)">3</button>
+        <button class="predict-btn" onclick="pickRedPrediction(4)">4</button>
+        <button class="predict-btn" onclick="pickRedPrediction(5)">5</button>
+        <button class="predict-btn" onclick="pickRedPrediction(6)">6</button>
+      </div>
+    </div>
+    <div class="player-zone">
+      <div class="battle-card player-card" id="playerCard"></div>
+      <div class="name-plate player-plate" id="playerPlate">
+        <div class="np-name" id="playerNameText"></div>
+        <div class="hp-bar-wrap"><div class="hp-bar" id="playerHpBar"></div></div>
+        <div class="hp-text"><span class="hp-num" id="playerHpText"></span></div>
+      </div>
+    </div>
+    <div class="battle-center">
+      <div class="dice-area" id="diceArea">
+        <div class="dice-row">
+          <div class="dice-owner enemy" id="diceOwnerEnemy">Enemy</div>
+          <div class="die e" id="eDie0"></div>
+          <div class="die e" id="eDie1"></div>
+          <div class="die e" id="eDie2"></div>
+          <div class="die e bonus" id="eDie3" style="display:none;"></div>
+          <div class="die e bonus" id="eDie4" style="display:none;"></div>
+          <div class="die e bonus" id="eDie5" style="display:none;"></div>
+          <div class="die e bonus" id="eDie6" style="display:none;"></div>
+        </div>
+        <div class="vs-line">VS</div>
+        <div class="dice-row" id="playerDiceRow">
+          <div class="dice-owner player" id="diceOwnerPlayer">You</div>
+          <div class="die p" id="pDie0"></div>
+          <div class="die p" id="pDie1"></div>
+          <div class="die p" id="pDie2"></div>
+          <div class="die p bonus" id="pDie3" style="display:none;"></div>
+          <div class="die p bonus" id="pDie4" style="display:none;"></div>
+          <div class="die p bonus" id="pDie5" style="display:none;"></div>
+          <div class="die p bonus" id="pDie6" style="display:none;"></div>
+        </div>
+      </div>
+      <div class="battle-ui-row">
+        <div class="narrator-box"><div class="narrator-inner" id="narrator"></div></div>
+        <div class="predict-area" id="predictArea">
+          <div class="predict-label">Predict a number — if a die matches, +3 damage!</div>
+          <div class="predict-btns">
+            <button class="predict-btn" onclick="pickPrediction(1)">1</button>
+            <button class="predict-btn" onclick="pickPrediction(2)">2</button>
+            <button class="predict-btn" onclick="pickPrediction(3)">3</button>
+            <button class="predict-btn" onclick="pickPrediction(4)">4</button>
+            <button class="predict-btn" onclick="pickPrediction(5)">5</button>
+            <button class="predict-btn" onclick="pickPrediction(6)">6</button>
+          </div>
+        </div>
+        <button class="action-btn cyan" id="rollBtn" onclick="doPlayerRoll()">Roll Your Dice!</button>
+        <div class="battle-action-bar" id="battleActionBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REWARD -->
+  <div class="screen reward-screen" id="rewardScreen">
+    <div class="reward-title rw-anim" id="rewardTitle">Item Dropped!</div>
+    <div class="reward-item-box rw-anim" id="rewardItemBox">
+      <div class="reward-item-icon" id="rewardItemIcon"></div>
+      <div class="reward-item-info">
+        <div class="reward-item-name" id="rewardItemName"></div>
+        <div class="reward-item-desc" id="rewardItemDesc"></div>
+      </div>
+    </div>
+    <div class="reward-ghost-label rw-anim" id="rewardGhostLabel">Pick your new teammate</div>
+    <div class="reward-cards rw-anim" id="rewardCards"></div>
+    <div class="reward-selected-info" id="rewardSelectedInfo">
+      <div class="rsi-name" id="rsiName"></div>
+      <div class="rsi-stats">
+        <span class="rsi-ability" id="rsiAbility"></span>
+        <span class="si-stats-divider"></span>
+        <span class="rsi-hp" id="rsiHp"></span>
+      </div>
+      <div class="rsi-desc" id="rsiDesc"></div>
+    </div>
+    <div class="reward-overflow" id="rewardOverflow" style="display:none;"></div>
+    <button class="action-btn cyan rw-anim" id="rewardContinueBtn" onclick="collectRewards()" style="font-size:1.1rem;padding:10px 32px;">Continue</button>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="screen gameover-screen" id="gameoverScreen">
+    <div class="gameover-title">Not Bad! Try Again!</div>
+    <div class="graveyard" id="graveyard"></div>
+    <div class="gameover-stats" id="gameoverStats"></div>
+    <button class="action-btn red ready" onclick="coopMode ? startCoopMode() : retryRun()" style="font-size:1.2rem;">Try Again</button>
+  </div>
+
+  <!-- VICTORY -->
+  <div class="screen win-screen" id="winScreen">
+    <div class="win-title">Champions!</div>
+    <div class="trophy-row" id="trophyRow"></div>
+    <div class="win-stats" id="winStats"></div>
+    <button class="action-btn cyan ready" id="winHofBtn" onclick="showHallOfFame()" style="font-size:1.1rem;padding:10px 32px;">Hall of Fame</button>
+    <a class="action-btn gold ready" id="winKsBtn" href="https://www.BattleOfOrigins.com" target="_blank" style="text-decoration:none;font-size:1.1rem;padding:12px 32px;">Back us on Kickstarter</a>
+    <button class="small-btn" onclick="coopMode ? startCoopMode() : (vsMode ? startVsMode() : retryRun())">Play Again</button>
+    <button class="small-btn" onclick="vsMode=false;coopMode=false;stopSnow();showScreen('titleScreen');initTitle();">Back to Menu</button>
+    <div class="cta-footer"><a href="https://www.BattleOfOrigins.com" target="_blank">BattleOfOrigins.com</a> · Coming September 2026</div>
+  </div>
+
+  <!-- VS PICK -->
+  <div class="screen vs-pick-screen" id="vsPickScreen">
+    <div class="vs-pick-title" id="vsPickTitle">Player 1 — Pick Your Spiritkin</div>
+    <div class="vs-ghost-grid" id="vsGhostGrid"></div>
+    <div class="selected-info" id="vsSelectedInfo">
+      <div class="si-name" id="vsSiName"></div>
+      <div class="si-stats">
+        <span class="si-ability-name" id="vsSiAbility"></span>
+        <span class="si-stats-divider"></span>
+        <span class="si-hp" id="vsSiHp"></span>
+      </div>
+      <div class="si-desc" id="vsSiDesc"></div>
+      <div class="si-hp-pips" id="vsSiPips"></div>
+    </div>
+    <button class="action-btn cyan" id="vsPickBtn" onclick="confirmVsPick()">Lock In</button>
+  </div>
+
+  <!-- HALL OF FAME -->
+  <div class="screen hof-screen" id="hofScreen">
+    <div class="hof-title">Hall of Fame</div>
+    <div class="hof-subtitle">Every ghost that won a battle in the tournament</div>
+    <div class="hof-grid" id="hofGrid"></div>
+    <button class="small-btn" onclick="showScreen('titleScreen'); initTitle();">Back to Menu</button>
+  </div>
+</div>
+
+<!-- Overlays -->
+<div class="ready-go-overlay" id="readyGoOverlay"><div class="ready-go-text" id="readyGoText"></div></div>
+<div class="crash-overlay" id="crashOverlay">
+  <div class="crash-card ec" id="crashEnemy"></div>
+  <div class="crash-card pc" id="crashPlayer"></div>
+  <div class="victory-text" id="victoryText">VICTORY!</div>
+</div>
+<div class="impact-flash" id="impactFlash"></div>
+<div class="snow-container" id="snowContainer"></div>
+<div class="triples-banner" id="triplesBanner">TRIPLES!</div>
+<div class="triples-flash" id="triplesFlash"></div>
+<div id="abilitySplash" class="ability-splash">
+  <div class="ability-splash-inner">
+    <div class="ability-splash-name" id="splashName"></div>
+    <div class="ability-splash-desc" id="splashDesc"></div>
+    <div class="counter-die-area" id="counterDieArea">
+      <div class="counter-die-label">Tap to roll!</div>
+      <button class="counter-die-btn" id="counterDieBtn" onclick="rollCounterDie()">?</button>
+    </div>
+  </div>
+</div>
+
+<audio id="bgMusic" src="../boo/BGG.mp3" loop preload="auto"></audio>
+<audio id="triplesSfx" src="../boo/triples.mp3" preload="auto"></audio>
+<audio id="sfxDiceRoll" src="../boo/DiceRoll.mp3" preload="auto"></audio>
+<audio id="sfx1Damage" src="../boo/1Damage.mp3" preload="auto"></audio>
+<audio id="sfx2Damage" src="../boo/2Damage.mp3" preload="auto"></audio>
+<audio id="sfx3Damage" src="../boo/3Damage.mp3" preload="auto"></audio>
+<audio id="sfxSpecial" src="../boo/Special.mp3" preload="auto"></audio>
+<div class="slash-overlay" id="slashOverlay">
+  <div class="slash-flash"></div>
+  <div class="slash-line"></div>
+  <div class="slash-line"></div>
+  <div class="slash-line"></div>
+</div>
+<div class="vs-turn-banner" id="vsTurnBanner"></div>
+<div class="farewell-overlay" id="farewellOverlay">
+  <div class="farewell-card" id="farewellCard"></div>
+  <div class="farewell-name" id="farewellName"></div>
+  <div class="farewell-text" id="farewellText"></div>
+</div>
+<div class="watermark">CORKSCREW GAMES</div>
+
+<script src="config.js"></script>
+<script src="connectors.js"></script>
+<script src="knowledge.js"></script>
+<script src="state.js"></script>
+<script src="intelligence.js"></script>
+<script src="reports.js"></script>
+<script src="execution.js"></script>
+<script src="presence.js"></script>
+<script src="orchestrator.js"></script>
+</body>
+</html>

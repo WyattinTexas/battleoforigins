@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Play — BOO Battle Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Crimson+Pro:ital,wght@0,300;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* -- Fake game behind the overlay -- */
+body {
+  background: #0a0a16;
+  font-family: 'Crimson Pro', Georgia, serif;
+  color: #e8e0d4;
+  overflow: hidden;
+}
+.game-bg {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(20,15,40,0.9) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 60%, rgba(15,25,45,0.8) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0a16 0%, #0d1020 50%, #0a0a16 100%);
+  filter: blur(2px);
+  opacity: 0.6;
+}
+
+/* ============================
+   OVERLAY
+   ============================ */
+.htp-overlay {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, rgba(8,8,22,0.92) 0%, rgba(4,4,12,0.97) 100%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overlayIn 0.5s ease-out;
+}
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* -- Scroll container -- */
+.htp-scroll {
+  position: relative;
+  width: min(720px, 92vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212,160,64,0.3) transparent;
+  animation: scrollIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.htp-scroll::-webkit-scrollbar { width: 5px; }
+.htp-scroll::-webkit-scrollbar-track { background: transparent; }
+.htp-scroll::-webkit-scrollbar-thumb { background: rgba(212,160,64,0.25); border-radius: 10px; }
+@keyframes scrollIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* -- Inner parchment -- */
+.htp-inner {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(18,16,28,0.98) 0%, rgba(14,12,24,0.96) 100%);
+  border: 1px solid rgba(212,160,64,0.2);
+  border-radius: 16px;
+  padding: 48px 40px 40px;
+  box-shadow:
+    0 0 80px rgba(212,160,64,0.06),
+    0 0 1px rgba(212,160,64,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+}
+/* Corner flourishes */
+.htp-inner::before, .htp-inner::after {
+  content: '';
+  position: absolute;
+  width: 60px; height: 60px;
+  border: 1.5px solid rgba(212,160,64,0.15);
+  pointer-events: none;
+}
+.htp-inner::before { top: 12px; left: 12px; border-right: none; border-bottom: none; border-radius: 6px 0 0 0; }
+.htp-inner::after { bottom: 12px; right: 12px; border-left: none; border-top: none; border-radius: 0 0 6px 0; }
+
+/* -- Close button -- */
+.htp-close {
+  position: absolute;
+  top: 14px; right: 18px;
+  background: none;
+  border: 1px solid rgba(212,160,64,0.2);
+  color: #a09080;
+  font-size: 20px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+}
+.htp-close:hover {
+  color: #ffd700;
+  border-color: rgba(212,160,64,0.5);
+  background: rgba(212,160,64,0.08);
+}
+
+/* ============================
+   TYPOGRAPHY
+   ============================ */
+.htp-title {
+  font-family: 'Creepster', cursive;
+  font-size: clamp(28px, 5vw, 42px);
+  color: transparent;
+  background: linear-gradient(135deg, #d4a040 0%, #ffd700 40%, #e8c060 60%, #d4a040 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  text-align: center;
+  letter-spacing: 4px;
+  margin-bottom: 6px;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 8px rgba(212,160,64,0.3));
+}
+.htp-subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #7a7068;
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: 1.5px;
+  margin-bottom: 32px;
+}
+
+/* -- Section headers -- */
+.htp-section {
+  margin-bottom: 28px;
+}
+.htp-section:last-child { margin-bottom: 0; }
+
+.htp-section-head {
+  font-family: 'Creepster', cursive;
+  font-size: 20px;
+  color: #d4a040;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.htp-section-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(212,160,64,0.3) 0%, transparent 100%);
+}
+.htp-section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border: 1.5px solid rgba(212,160,64,0.3);
+  border-radius: 50%;
+  font-size: 13px;
+  color: #ffd700;
+  flex-shrink: 0;
+}
+
+/* -- Dividers -- */
+.htp-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,160,64,0.12), transparent);
+  margin: 24px 0;
+}
+
+/* ============================
+   BASICS SECTION
+   ============================ */
+.basics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media (max-width: 500px) { .basics-grid { grid-template-columns: 1fr; } }
+
+.basic-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+.basic-card:hover { border-color: rgba(212,160,64,0.15); }
+.basic-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+  line-height: 1.2;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.5));
+}
+.basic-text {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #c8c0b4;
+}
+.basic-text strong {
+  color: #e8e0d4;
+  font-weight: 700;
+}
+
+/* ============================
+   DICE SECTION
+   ============================ */
+.dice-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dice-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+.dice-label {
+  font-family: 'Creepster', cursive;
+  font-size: 14px;
+  letter-spacing: 1px;
+  width: 72px;
+  flex-shrink: 0;
+}
+.dice-label.singles { color: #9ca3af; }
+.dice-label.doubles { color: #60a5fa; }
+.dice-label.triples { color: #fbbf24; }
+
+.dice-group {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.die {
+  width: 34px; height: 34px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  font-family: 'Crimson Pro', serif;
+  border: 1.5px solid;
+}
+.die-dim {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+  color: #5a5550;
+}
+.die-hit {
+  background: rgba(233,69,96,0.12);
+  border-color: rgba(233,69,96,0.4);
+  color: #e94560;
+  box-shadow: 0 0 8px rgba(233,69,96,0.15);
+}
+.die-pair {
+  background: rgba(96,165,250,0.1);
+  border-color: rgba(96,165,250,0.35);
+  color: #60a5fa;
+  box-shadow: 0 0 8px rgba(96,165,250,0.12);
+}
+.die-triple {
+  background: rgba(251,191,36,0.1);
+  border-color: rgba(251,191,36,0.4);
+  color: #fbbf24;
+  box-shadow: 0 0 10px rgba(251,191,36,0.15);
+}
+.dice-arrow {
+  color: #5a5550;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.dice-result {
+  font-size: 14px;
+  color: #c8c0b4;
+  line-height: 1.4;
+}
+.dice-result strong {
+  color: #e8e0d4;
+}
+.dice-result .dmg {
+  color: #e94560;
+  font-weight: 700;
+}
+.dice-note {
+  font-size: 13px;
+  color: #7a7068;
+  font-style: italic;
+  margin-top: 8px;
+  padding-left: 4px;
+  line-height: 1.5;
+}
+
+/* ============================
+   RESOURCES SECTION
+   ============================ */
+.res-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+@media (max-width: 500px) { .res-list { grid-template-columns: 1fr; } }
+
+.res-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,255,255,0.03);
+  transition: border-color 0.2s;
+}
+.res-item:hover { border-color: rgba(212,160,64,0.12); }
+.res-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+}
+.res-info {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #a09888;
+}
+.res-name {
+  font-weight: 700;
+  color: #d8d0c4;
+  font-size: 14px;
+}
+.res-timing {
+  display: inline-block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-left: 5px;
+  font-family: system-ui, sans-serif;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+.timing-pre {
+  background: rgba(34,197,94,0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34,197,94,0.2);
+}
+.timing-post {
+  background: rgba(168,85,247,0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168,85,247,0.2);
+}
+
+/* ============================
+   ABILITIES SECTION
+   ============================ */
+.abilities-note {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: #a09888;
+  padding: 14px 18px;
+  background: rgba(212,160,64,0.03);
+  border: 1px solid rgba(212,160,64,0.08);
+  border-radius: 10px;
+  border-left: 3px solid rgba(212,160,64,0.25);
+}
+.abilities-note strong { color: #d4a040; font-weight: 700; }
+
+/* -- Hierarchy callout -- */
+.hierarchy-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.h-chip {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-family: system-ui, sans-serif;
+  border: 1px solid;
+}
+.h-singles { background: rgba(156,163,175,0.08); border-color: rgba(156,163,175,0.2); color: #9ca3af; }
+.h-doubles { background: rgba(96,165,250,0.08); border-color: rgba(96,165,250,0.2); color: #60a5fa; }
+.h-triples { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); color: #fbbf24; }
+.h-quads { background: rgba(244,114,182,0.08); border-color: rgba(244,114,182,0.2); color: #f472b6; }
+.h-penta { background: rgba(232,69,96,0.08); border-color: rgba(232,69,96,0.2); color: #e94560; }
+.h-arrow { color: #4a4540; font-size: 11px; }
+
+/* ============================
+   MOBILE
+   ============================ */
+@media (max-width: 600px) {
+  .htp-inner { padding: 40px 20px 28px; }
+  .htp-title { letter-spacing: 2px; }
+  .dice-row { flex-wrap: wrap; padding: 10px 12px; }
+  .dice-label { width: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="game-bg"></div>
+
+<div class="htp-overlay" id="htpOverlay">
+  <div class="htp-scroll">
+    <div class="htp-inner">
+
+      <button class="htp-close" onclick="document.getElementById('htpOverlay').style.display='none'" aria-label="Close">&times;</button>
+
+      <div class="htp-title">How to Play</div>
+      <div class="htp-subtitle">A Spirit's Guide to Battle</div>
+
+      <!-- ==================== THE BASICS ==================== -->
+      <div class="htp-section">
+        <div class="htp-section-head">
+          <span class="htp-section-num">1</span>
+          The Basics
+        </div>
+        <div class="basics-grid">
+          <div class="basic-card">
+            <div class="basic-icon"><img src="art/htp/wim.png" alt="Spiritkin" style="width:40px;height:40px;border-radius:8px;object-fit:cover;"></div>
+            <div class="basic-text"><strong>Pick 3 Spiritkin</strong> for your team. Your lead ghost fights first.</div>
+          </div>
+          <div class="basic-card">
+            <div class="basic-icon">&#x1F3B2;</div>
+            <div class="basic-text"><strong>Both players roll dice</strong> each round. Highest roll wins and deals damage.</div>
+          </div>
+          <div class="basic-card">
+            <div class="basic-icon"><img src="art/htp/wim.png" alt="KO" style="width:40px;height:40px;border-radius:8px;object-fit:cover;filter:grayscale(100%) brightness(0.5);"></div>
+            <div class="basic-text"><strong>KO a ghost?</strong> The sideline sends in the next fighter at full HP.</div>
+          </div>
+          <div class="basic-card">
+            <div class="basic-icon">&#x1F3C6;</div>
+            <div class="basic-text"><strong>KO all 3 enemy ghosts</strong> to win the battle!</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="htp-divider"></div>
+
+      <!-- ==================== DICE RESULTS ==================== -->
+      <div class="htp-section">
+        <div class="htp-section-head">
+          <span class="htp-section-num">2</span>
+          Dice Results
+        </div>
+        <div class="dice-examples">
+
+          <div class="dice-row">
+            <div class="dice-label singles">Singles</div>
+            <div class="dice-group">
+              <div class="die die-dim">2</div>
+              <div class="die die-dim">4</div>
+              <div class="die die-hit">6</div>
+            </div>
+            <span class="dice-arrow">&rarr;</span>
+            <div class="dice-result">Deals <span class="dmg">1 damage</span>. Highest die breaks ties.</div>
+          </div>
+
+          <div class="dice-row">
+            <div class="dice-label doubles">Doubles</div>
+            <div class="dice-group">
+              <div class="die die-pair">3</div>
+              <div class="die die-pair">3</div>
+              <div class="die die-dim">5</div>
+            </div>
+            <span class="dice-arrow">&rarr;</span>
+            <div class="dice-result">Deals <span class="dmg">2 damage</span>. <strong>Beats any singles!</strong></div>
+          </div>
+
+          <div class="dice-row">
+            <div class="dice-label triples">Triples</div>
+            <div class="dice-group">
+              <div class="die die-triple">4</div>
+              <div class="die die-triple">4</div>
+              <div class="die die-triple">4</div>
+            </div>
+            <span class="dice-arrow">&rarr;</span>
+            <div class="dice-result">Deals <span class="dmg">3 damage!</span> <strong>Beats any doubles!</strong></div>
+          </div>
+
+        </div>
+
+        <div class="dice-note">
+          Tie = no damage dealt. Higher tier always wins, even with a lower number.
+        </div>
+
+        <div class="hierarchy-bar">
+          <span class="h-chip h-singles">Singles</span>
+          <span class="h-arrow">&lt;</span>
+          <span class="h-chip h-doubles">Doubles</span>
+          <span class="h-arrow">&lt;</span>
+          <span class="h-chip h-triples">Triples</span>
+          <span class="h-arrow">&lt;</span>
+          <span class="h-chip h-quads">Quads</span>
+          <span class="h-arrow">&lt;</span>
+          <span class="h-chip h-penta">Penta</span>
+        </div>
+      </div>
+
+      <div class="htp-divider"></div>
+
+      <!-- ==================== RESOURCES ==================== -->
+      <div class="htp-section">
+        <div class="htp-section-head">
+          <span class="htp-section-num">3</span>
+          Power-Ups
+        </div>
+        <div class="res-list">
+
+          <div class="res-item">
+            <div class="res-icon">&#x2744;&#xFE0F;</div>
+            <div class="res-info">
+              <span class="res-name">Ice Shards</span>
+              <span class="res-timing timing-pre">Pre-Roll</span><br>
+              +1 damage per shard committed
+            </div>
+          </div>
+
+          <div class="res-item">
+            <div class="res-icon">&#x1F525;</div>
+            <div class="res-info">
+              <span class="res-name">Sacred Fire</span>
+              <span class="res-timing timing-pre">Pre-Roll</span><br>
+              +3 damage per fire committed
+            </div>
+          </div>
+
+          <div class="res-item">
+            <div class="res-icon">&#x26A1;</div>
+            <div class="res-info">
+              <span class="res-name">Surge</span>
+              <span class="res-timing timing-pre">Pre-Roll</span><br>
+              +1 extra die this roll
+            </div>
+          </div>
+
+          <div class="res-item">
+            <div class="res-icon">&#x1F340;</div>
+            <div class="res-info">
+              <span class="res-name">Lucky Stone</span>
+              <span class="res-timing timing-post">Post-Roll</span><br>
+              Click any die to reroll it
+            </div>
+          </div>
+
+          <div class="res-item">
+            <div class="res-icon">&#x1F48E;</div>
+            <div class="res-info">
+              <span class="res-name">Moonstone</span>
+              <span class="res-timing timing-post">Post-Roll</span><br>
+              Pick any die, set it to any value. <em>Max 1.</em>
+            </div>
+          </div>
+
+          <div class="res-item">
+            <div class="res-icon">&#x1F331;</div>
+            <div class="res-info">
+              <span class="res-name">Healing Seed</span>
+              <span class="res-timing timing-pre">Pre-Roll</span><br>
+              Heal 1 HP before rolling
+            </div>
+          </div>
+
+          <div class="res-item">
+            <div class="res-icon">&#x2728;</div>
+            <div class="res-info">
+              <span class="res-name">Magic Firefly</span>
+              <span class="res-timing timing-pre">Pre-Roll</span><br>
+              Convert to any resource. <em>Max 1.</em>
+            </div>
+          </div>
+
+          <div class="res-item">
+            <div class="res-icon">&#x1F525;</div>
+            <div class="res-info">
+              <span class="res-name">Burn</span>
+              <span class="res-timing timing-pre">Pre-Roll</span><br>
+              Place on enemy sideline &mdash; damage on entry
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="htp-divider"></div>
+
+      <!-- ==================== ABILITIES ==================== -->
+      <div class="htp-section">
+        <div class="htp-section-head">
+          <span class="htp-section-num">4</span>
+          Abilities
+        </div>
+        <div class="abilities-note">
+          Every Spiritkin has a <strong>unique ability</strong> that triggers automatically during battle &mdash; on entry, on a win, from the sideline, or other conditions. Read the ability text on each card to plan your strategy. Some ghosts work best as leads, others shine from the bench.
+        </div>
+      </div>
+
+      <div class="htp-divider"></div>
+
+      <!-- ==================== ITEMS ==================== -->
+      <div class="htp-section">
+        <div class="htp-section-head">
+          <span class="htp-section-num">5</span>
+          Items
+        </div>
+        <div class="abilities-note">
+          Some Spiritkin create <strong>items</strong> &mdash; persistent power-ups that stay active for your whole team, even if the creator is KO'd. Items can boost damage, add burn, grant extra dice, and more.
+        </div>
+
+        <div class="dice-examples" style="margin-top:12px;">
+          <div class="dice-row" style="gap:16px;">
+            <img src="art/htp/finn.png" alt="Finn" style="width:50px;height:50px;border-radius:8px;object-fit:cover;border:1.5px solid rgba(251,146,60,0.4);flex-shrink:0;">
+            <div class="dice-result">
+              For example, <strong style="color:#fb923c;">Finn</strong> crafts the <strong style="color:#fb923c;">Flame Blade</strong> &mdash; giving your team <span class="dmg">+1 die</span> and <span class="dmg">+3 Burn</span> on wins for the rest of the battle.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
