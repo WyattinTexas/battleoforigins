@@ -10,7 +10,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v794'; // MUST match TESTROOM_VERSION — bump both together
+  const LOCAL_V = 'v795'; // MUST match TESTROOM_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -95,6 +95,7 @@
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
+  contain: strict;
 }
 .mote {
   position: absolute;
@@ -1677,7 +1678,8 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
   .arena-center { min-width:auto; width:100%; }
   .ghost-grid { grid-template-columns:1fr; }
   .team-battle-row { flex-wrap:nowrap; justify-content:center; }
-  .die { width:42px; height:42px; font-size:20px; }
+  .die { width:44px; height:44px; font-size:20px; }
+  .fighter-slot { margin-left:10px; margin-right:10px; }
   .narrator-inner { font-size:12px; padding:8px 12px; min-height:30px; }
   .log-wrap { max-height:120px !important; }
   /* ability-splash-name / desc removed (v407) — element is now display:none */
@@ -1685,6 +1687,10 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
   .vs-fighter-name { font-size:1.6rem; max-width:140px; }
   .vs-inner { gap:20px; }
   .triples-banner { font-size:3rem; letter-spacing:3px; }
+  /* Modal scroll handling for mobile */
+  .moonstone-picker, .swap-overlay, .pressure-overlay, .selene-overlay, .steal-overlay {
+    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  }
 }
 /* Laptop: sideline cards overlap center when viewport < 1300px */
 @media (min-width:1121px) and (max-width:1300px) {
@@ -1702,23 +1708,25 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
 /* Mobile portrait: compact everything for ~375px */
 @media (max-width:440px) {
   .app { padding:10px; }
-  .arena-board { padding:8px; gap:6px; }
-  .fighter-slot { width:150px; }
+  .arena-board { padding:8px; gap:6px; scroll-snap-type:y proximity; max-height:100dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .team-column, .arena-center { scroll-snap-align:start; }
+  .fighter-slot { width:150px; margin-left:6px; margin-right:6px; }
   .sideline-slot { width:80px; }
   .sideline-slot .card-img, .sideline-slot .card-img-placeholder { aspect-ratio:1; }
   .sideline-slot .ability-banner { font-size:8px; padding:2px 4px; }
   .sideline-slot .card-name-banner { font-size:10px; padding:4px 5px; }
-  .die { width:36px; height:36px; font-size:18px; border-radius:8px; }
+  .die { width:44px; height:44px; font-size:20px; border-radius:8px; }
+  .die.rolling { will-change:transform; }
   .dice-row { gap:3px; }
   .res-tile { width:38px; height:44px; border-radius:8px; }
   .res-tile .res-main { font-size:16px; }
   .res-tile .res-main img { width:22px; height:22px; }
   .res-tile .res-count { font-size:11px; }
   .res-tile .res-label { font-size:7px; }
-  .team-roll { padding:10px 16px; font-size:13px; }
+  .team-roll { padding:10px 16px; font-size:13px; max-width:100%; width:100%; }
   .ability-btn { padding:5px 10px; font-size:11px; }
   .narrator-inner { font-size:11px; padding:6px 10px; }
-  .log-wrap { max-height:100px !important; }
+  .log-wrap { max-height:120px !important; }
   .log-entry { font-size:11px; }
   .hp-text { font-size:0.55rem; }
   .resources { gap:4px; }
@@ -1736,6 +1744,15 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
   header h1 { font-size:20px; }
   header .sub { font-size:11px; }
   /* ability-splash-name / desc removed (v407) — element is now display:none */
+}
+/* Landscape: restore horizontal layout */
+@media (max-height:500px) and (orientation:landscape) {
+  .arena-board { flex-direction:row !important; max-height:100dvh; overflow-y:auto; align-items:flex-start; }
+  .team-column { width:auto; flex:1; }
+  .arena-center { min-width:160px; }
+  .fighter-slot { width:120px; margin:4px; }
+  .sideline-slot { width:70px; }
+  .die { width:40px; height:40px; font-size:18px; }
 }
 /* Lite Mode — kill infinite animations for low-end devices */
 body.lite-mode *, body.lite-mode *::before, body.lite-mode *::after {
@@ -2688,7 +2705,22 @@ body.lite-mode .die.rolling { animation: none !important; }
 // ============================================================
 // FIREBASE — persistent shared standings
 // ============================================================
-const TESTROOM_VERSION = 'v794';
+const TESTROOM_VERSION = 'v795';
+
+/* Mobile: lock body scroll when any modal overlay is active */
+(function() {
+  const overlayIds = ['msPicker','swapOverlay','pressureOverlay','seleneOverlay','stealOverlay'];
+  const obs = new MutationObserver(() => {
+    const anyOpen = overlayIds.some(id => { const el = document.getElementById(id); return el && el.classList.contains('active'); });
+    document.body.style.overflow = anyOpen ? 'hidden' : '';
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    overlayIds.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el, { attributes: true, attributeFilter: ['class'] }); });
+  });
+  /* Auto-detect low-end devices → enable lite mode */
+  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) document.body.classList.add('lite-mode');
+})();
+
 let MP_MODE = false; // set true when loaded via multiplayer page URL params
 let LIVE_PVP = false; // true when in real-time PvP mode
 let PVP_SIDE = null;  // 'red' or 'blue' — which side this client controls
@@ -3055,7 +3087,7 @@ const GHOSTS = [
   {id:34, name:"Grawr", rarity:"uncommon", maxHp:7, art:"art/originals/Grawr.png", ability:"Menace", abilityDesc:"When Grawr enters the battle, deal 1 damage to the opponent.", category:"Damage Multiplier", set:"Set 1", designNote:"Original card. Entry damage."},
   {id:35, name:"Larry", rarity:"uncommon", maxHp:6, art:"art/originals/Larry.png", ability:"Flying Kick", abilityDesc:"Triples deal 3X damage.", category:"Damage Multiplier", set:"Set 1", designNote:"Original card. Triples monster."},
   {id:36, name:"Bill & Bob", rarity:"uncommon", maxHp:6, art:"art/originals/Bill&Bob.png", ability:"Bait n Switch", abilityDesc:"While below 4 health, deal 2X damage on winning rolls.", category:"Damage Multiplier", set:"Set 1", designNote:"Original card. Low HP berserker."},
-  {id:37, name:"Dealer", rarity:"uncommon", maxHp:5, art:"art/originals/Dealer.png", ability:"House Rules", abilityDesc:"Roll a straight (consecutive sequence, no repeats): deal +3 damage and negate all incoming damage.", category:"Defense/Negation", set:"Set 1", designNote:"Original card. Reworked — straight = offense + defense."},
+  {id:37, name:"Dealer", rarity:"uncommon", maxHp:5, art:"art/originals/Dealer.png", ability:"House Rules", abilityDesc:"Roll a straight: +3 damage and negate all incoming damage.", category:"Defense/Negation", set:"Set 1", designNote:"Original card. Reworked — straight = offense + defense."},
   {id:38, name:"Alucard", rarity:"uncommon", maxHp:4, art:"art/originals/Alucard.png", ability:"Colony Call", abilityDesc:"Doubles deal +2 damage for each ghost on your sideline. Once Per Game.", category:"Damage Multiplier", set:"Set 1", designNote:"Original card. Sideline-scaling nuke."},
   {id:39, name:"Castle Guards", rarity:"uncommon", maxHp:7, art:"art/originals/CastleGuards.png", ability:"Flamethrower", abilityDesc:"Any 3's you roll multiplies Castle Guard's damage by 2 each.", category:"Damage Multiplier", set:"Set 1", designNote:"Original card. 3s matter."},
   {id:40, name:"Team Zippy", rarity:"uncommon", maxHp:7, art:"art/originals/TeamZippy.png", ability:"Teamwork", abilityDesc:"Any single damage you inflict deals +2 damage.", category:"Damage Multiplier", set:"Set 1", designNote:"Original card. Singles booster."},
