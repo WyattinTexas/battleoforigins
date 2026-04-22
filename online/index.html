@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v0.64'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v0.65'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -452,7 +452,7 @@ body {
   text-align: center;
   text-shadow: 0 0 20px rgba(240, 197, 96, 0.3);
 }
-.champion-close {
+.champion-minimize {
   position: absolute;
   top: 8px;
   right: 10px;
@@ -467,7 +467,33 @@ body {
   opacity: 0.6;
   transition: opacity 0.2s;
 }
-.champion-close:hover { opacity: 1; }
+.champion-minimize:hover { opacity: 1; }
+/* Collapsed champion tab */
+.champion-tab {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--gold-deep);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  padding: 10px 10px 10px 12px;
+  cursor: pointer;
+  z-index: 50;
+  text-align: center;
+  box-shadow: -2px 0 16px rgba(212, 160, 64, 0.2);
+  transition: transform 0.2s;
+  writing-mode: vertical-lr;
+  font-family: 'Creepster', cursive;
+  font-size: 0.85rem;
+  color: var(--gold-bright);
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+.champion-tab:hover { transform: translateY(-50%) translateX(-4px); }
+.champion-tab .tab-crown { writing-mode: horizontal-tb; font-size: 1.2rem; margin-bottom: 4px; }
 .champion-crown {
   text-align: center;
   font-size: 2rem;
@@ -2588,8 +2614,9 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
   </div>
 
   <!-- Champion of the Day (right sidebar) -->
+  <div class="champion-tab" id="champion-tab" onclick="expandChampion()"><span class="tab-crown">👑</span>Champion</div>
   <div class="champion-sidebar" id="champion-sidebar" style="display:none;">
-    <button class="champion-close" onclick="document.getElementById('champion-sidebar').style.display='none'" title="Dismiss">&times;</button>
+    <button class="champion-minimize" onclick="minimizeChampion()" title="Minimize">&#9660;</button>
     <div class="champion-crown">👑</div>
     <h3>Champion of the Day</h3>
     <div id="champion-content"></div>
@@ -2834,7 +2861,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="cards.js"></script>
 
 <script>
-const BBN_VERSION = 'v0.64';
+const BBN_VERSION = 'v0.65';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -2850,6 +2877,16 @@ function toggleSidebar() {
 function closeSidebar() {
   document.getElementById('sidebar-leaderboard').classList.remove('sidebar-open');
   document.getElementById('sidebar-backdrop').classList.remove('active');
+}
+
+/* ===== Champion sidebar minimize/expand ===== */
+function minimizeChampion() {
+  document.getElementById('champion-sidebar').style.display = 'none';
+  document.getElementById('champion-tab').style.display = 'block';
+}
+function expandChampion() {
+  document.getElementById('champion-tab').style.display = 'none';
+  document.getElementById('champion-sidebar').style.display = 'block';
 }
 
 /* ===== Mobile: collapse inactive PvP side ===== */
