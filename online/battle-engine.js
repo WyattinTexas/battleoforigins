@@ -161,13 +161,13 @@ function pickMatchMvp(winnerTeamName) {
   return best;
 }
 
-let standingsVisibleSets = new Set(['Volcanic Activity','Rolling Hills','Set 1','Dark Castle','Frost Valley']); // all on by default
+let standingsVisibleSets = new Set(['Volcanic Isles','Rolling Hills','Set 1','Dark Castle','Frost Valley']); // all on by default
 
 const RARITY_ORDER = {common:0, uncommon:1, rare:2, 'ghost-rare':3, legendary:4};
-const SET_ORDER = ['Set 1','Dark Castle','Frost Valley','Volcanic Activity','Rolling Hills'];
+const SET_ORDER = ['Set 1','Dark Castle','Frost Valley','Volcanic Isles','Rolling Hills'];
 function getSetClass(s) {
   if (s === 'Rolling Hills') return 'set-rolling';
-  if (s === 'Volcanic Activity') return 'set-volcanic';
+  if (s === 'Volcanic Isles') return 'set-volcanic';
   if (s === 'Set 1') return 'set-set1';
   if (s === 'Dark Castle') return 'set-darkcastle';
   if (s === 'Frost Valley') return 'set-frostvalley';
@@ -175,7 +175,7 @@ function getSetClass(s) {
 }
 function getSetColor(s) {
   if (s === 'Rolling Hills') return 'var(--uncommon)';
-  if (s === 'Volcanic Activity') return 'var(--magma)';
+  if (s === 'Volcanic Isles') return 'var(--magma)';
   if (s === 'Set 1') return '#c084fc';
   if (s === 'Dark Castle') return '#f87171';
   if (s === 'Frost Valley') return '#67e8f9';
@@ -263,7 +263,7 @@ const CURATED_TEAMS = [
   [103, 86, 53],
   // #34 Redd Entrance — Redd entry +2 dice, Hugo enemy loses die on hit, Floop enemy loses die on doubles
   [98, 52, 20],
-  // #35 Volcanic Activity Core — Rook immune to fire + Surge bonus, Sable odd rolls Sacred Fire, The Ember Force 1 pre-roll damage
+  // #35 Volcanic Isles Core — Rook immune to fire + Surge bonus, Sable odd rolls Sacred Fire, The Ember Force 1 pre-roll damage
   [416, 413, 304],
   // #36 HP Swap Gambit — Eloise spends Ice Shard to swap HP, Chad entry 2 Ice Shards, Sad Sal loses → Ice Shard
   [85, 56, 29],
@@ -423,6 +423,7 @@ function startBattle() {
     fangUndercoverArmed: { red: false, blue: false },
     fangUndercoverSwapPending: null,
     winstonSchemePending: null,
+    winstonDiceBonus: { red: 0, blue: 0 },
     galeForcePicker: null,
     scallywagsFrenzyBonus: { red: 0, blue: 0 },
     floopMuck: { red: 0, blue: 0 },
@@ -857,6 +858,15 @@ function hasSideline(team, id) {
 }
 function getSidelineGhost(team, id) {
   return team.ghosts.find((g,i) => i !== team.activeIdx && !g.ko && g.id === id);
+}
+function hasAlive(team, id) {
+  return team.ghosts.some(g => !g.ko && g.id === id);
+}
+function isStraight(dice) {
+  if (!dice || dice.length < 2) return false;
+  const sorted = [...new Set(dice)].sort((a, b) => a - b);
+  if (sorted.length !== dice.length) return false;
+  return sorted.every((v, i) => i === 0 || v === sorted[i - 1] + 1);
 }
 
 // Pop a sideline card to foreground when its ability triggers
@@ -3176,10 +3186,13 @@ function doWinstonSchemeChoice(idx) {
   const winTeamColor = winTeamName === 'red' ? 'red-text' : 'blue-text';
   const loseTeamColor = loseTeamName === 'red' ? 'red-text' : 'blue-text';
 
+  // Winston always gains +2 dice next roll on win (whether swap or skip)
+  B.winstonDiceBonus[winTeamName] = (B.winstonDiceBonus[winTeamName] || 0) + 2;
+
   if (idx === -1) {
-    // Skip — keep current opponent ghost
-    narrate(`<b class="${winTeamColor}">Winston</b> — Scheme skipped.`);
-    log(`Winston — Scheme declined.`);
+    // Skip — keep current opponent ghost, still get dice
+    narrate(`<b class="${winTeamColor}">Winston</b> — Scheme skipped. +2 dice next roll!`);
+    log(`Winston — Scheme declined. <span class="log-ms">+2 dice next roll!</span>`);
     continuation();
     return;
   }
@@ -3194,7 +3207,7 @@ function doWinstonSchemeChoice(idx) {
 
   narrate(`<b class="${winTeamColor}">Winston</b> — Scheme! <b class="${loseTeamColor}">${oldName}</b> forced to sideline — <b class="${loseTeamColor}">${newGhost.name}</b> enters!`);
   showAbilityCallout('SCHEME!', 'var(--common)', `${oldName} forced out — ${newGhost.name} enters!`, winTeamName);
-  log(`<span class="log-ability">Winston</span> — Scheme! Forced ${oldName} to sideline, ${newGhost.name} enters.`);
+  log(`<span class="log-ability">Winston</span> — Scheme! Forced ${oldName} to sideline, ${newGhost.name} enters. <span class="log-ms">+2 dice next roll!</span>`);
 
   // Fire entry effects for the newly-active enemy ghost, then continue
   setTimeout(() => {
@@ -4342,12 +4355,12 @@ function doPreRollSetup() {
         abilityQueue.forEach(item => preRollCallouts.push([item.name, item.color, item.desc, item.team]));
         abilityQueue = _swarmSavedKQ;
         // Princess Shade (436) — Bounty: +1 additional damage on pre-roll chip (blocked by Cornelius)
-        if (!ef.ko && hasSideline(B[tNamePre], 436) && !hasSideline(B[enemyName], 45)) {
+        if (!ef.ko && hasAlive(B[tNamePre], 436) && !hasSideline(B[enemyName], 45)) {
           const psPreHp = ef.hp;
           ef.hp = Math.max(0, ef.hp - 1);
           if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
           preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNamePre]);
-          log(`<span class="log-ability">Princess Shade</span> (sideline) — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+          log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(enemyName);
           popSidelineCard(B[tNamePre], 436);
@@ -4356,7 +4369,7 @@ function doPreRollSetup() {
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +1 Sacred Fire!`, enemyName]);
             log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
-        } else if (!ef.ko && hasSideline(B[tNamePre], 436) && hasSideline(B[enemyName], 45)) {
+        } else if (!ef.ko && hasAlive(B[tNamePre], 436) && hasSideline(B[enemyName], 45)) {
           const cornGhostPS = getSidelineGhost(B[enemyName], 45);
           preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS ? cornGhostPS.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyName]);
           log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
@@ -4421,12 +4434,12 @@ function doPreRollSetup() {
         abilityQueue.forEach(item => preRollCallouts.push([item.name, item.color, item.desc, item.team]));
         abilityQueue = _meltSavedKQ;
         // Princess Shade (436) — Bounty: +1 additional damage on pre-roll chip (blocked by Cornelius)
-        if (!ef.ko && hasSideline(B[tNameShade], 436) && !hasSideline(enemy, 45)) {
+        if (!ef.ko && hasAlive(B[tNameShade], 436) && !hasSideline(enemy, 45)) {
           const psPreHp2 = ef.hp;
           ef.hp = Math.max(0, ef.hp - 1);
           if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
           preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNameShade]);
-          log(`<span class="log-ability">Princess Shade</span> (sideline) — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+          log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(enemyName);
           popSidelineCard(B[tNameShade], 436);
@@ -4436,7 +4449,7 @@ function doPreRollSetup() {
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +1 Sacred Fire!`, enemyName]);
             log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
-        } else if (!ef.ko && hasSideline(B[tNameShade], 436) && hasSideline(enemy, 45)) {
+        } else if (!ef.ko && hasAlive(B[tNameShade], 436) && hasSideline(enemy, 45)) {
           const cornGhostPS2 = getSidelineGhost(enemy, 45);
           preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS2 ? cornGhostPS2.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyName]);
           log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
@@ -4506,12 +4519,12 @@ function doPreRollSetup() {
           abilityQueue.forEach(item => preRollCallouts.push([item.name, item.color, item.desc, item.team]));
           abilityQueue = _hauntSavedKQ;
           // Princess Shade (436) — Bounty: +1 additional damage on pre-roll chip (blocked by Cornelius)
-          if (!ef.ko && hasSideline(B[tNameHaunt], 436) && !hasSideline(enemy, 45)) {
+          if (!ef.ko && hasAlive(B[tNameHaunt], 436) && !hasSideline(enemy, 45)) {
             const psPreHp3 = ef.hp;
             ef.hp = Math.max(0, ef.hp - 1);
             if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
             preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNameHaunt]);
-            log(`<span class="log-ability">Princess Shade</span> (sideline) — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+            log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
             playDamageSfx(1);
             hitDamage(enemyName);
             popSidelineCard(B[tNameHaunt], 436);
@@ -4520,7 +4533,7 @@ function doPreRollSetup() {
               preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +1 Sacred Fire!`, enemyName]);
               log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
             }
-          } else if (!ef.ko && hasSideline(B[tNameHaunt], 436) && hasSideline(enemy, 45)) {
+          } else if (!ef.ko && hasAlive(B[tNameHaunt], 436) && hasSideline(enemy, 45)) {
             const cornGhostPS3 = getSidelineGhost(enemy, 45);
             const enemyNameHaunt = enemy === B.red ? 'red' : 'blue';
             preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS3 ? cornGhostPS3.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyNameHaunt]);
@@ -4588,12 +4601,12 @@ function doPreRollSetup() {
           log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
         }
         // Princess Shade (436) — Bounty: +1 additional damage on pre-roll chip (blocked by Cornelius)
-        if (!f.ko && hasSideline(B[tNameLucyActor], 436) && !hasSideline(B[tNameLucyTarget], 45)) {
+        if (!f.ko && hasAlive(B[tNameLucyActor], 436) && !hasSideline(B[tNameLucyTarget], 45)) {
           const psPreHpL = f.hp;
           f.hp = Math.max(0, f.hp - 1);
           if (f.hp <= 0) { f.ko = true; f.killedBy = 436; }
           preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${f.name}!`, tNameLucyActor]);
-          log(`<span class="log-ability">Princess Shade</span> (sideline) — Bounty! <span class="log-dmg">+1 additional damage to ${f.name}!</span> ${f.ko?'<span class="log-ko">KO!</span>':f.hp+' HP left'}`);
+          log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${f.name}!</span> ${f.ko?'<span class="log-ko">KO!</span>':f.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(tNameLucyTarget);
           popSidelineCard(B[tNameLucyActor], 436);
@@ -4603,7 +4616,7 @@ function doPreRollSetup() {
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +1 Sacred Fire!`, tNameLucyTarget]);
             log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
-        } else if (!f.ko && hasSideline(B[tNameLucyActor], 436) && hasSideline(B[tNameLucyTarget], 45)) {
+        } else if (!f.ko && hasAlive(B[tNameLucyActor], 436) && hasSideline(B[tNameLucyTarget], 45)) {
           const cornGhostPSL = getSidelineGhost(B[tNameLucyTarget], 45);
           preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPSL ? cornGhostPSL.name : 'Cornelius'} blocks Princess Shade's Bounty!`, tNameLucyTarget]);
           log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
@@ -4676,12 +4689,12 @@ function doPreRollSetup() {
           abilityQueue.forEach(item => preRollCallouts.push([item.name, item.color, item.desc, item.team]));
           abilityQueue = _splinterSavedKQ;
           // Princess Shade (436) — Bounty: +1 additional damage on pre-roll chip (blocked by Cornelius)
-          if (!ef.ko && hasSideline(B[tNameSplinter], 436) && !hasSideline(enemy, 45)) {
+          if (!ef.ko && hasAlive(B[tNameSplinter], 436) && !hasSideline(enemy, 45)) {
             const psPreHp4 = ef.hp;
             ef.hp = Math.max(0, ef.hp - 1);
             if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
             preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNameSplinter]);
-            log(`<span class="log-ability">Princess Shade</span> (sideline) — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+            log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
             playDamageSfx(1);
             hitDamage(enemyName);
             popSidelineCard(B[tNameSplinter], 436);
@@ -4690,7 +4703,7 @@ function doPreRollSetup() {
               preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +1 Sacred Fire!`, enemyName]);
               log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
             }
-          } else if (!ef.ko && hasSideline(B[tNameSplinter], 436) && hasSideline(enemy, 45)) {
+          } else if (!ef.ko && hasAlive(B[tNameSplinter], 436) && hasSideline(enemy, 45)) {
             const cornGhostPS4 = getSidelineGhost(enemy, 45);
             preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS4 ? cornGhostPS4.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyName]);
             log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
@@ -5121,6 +5134,24 @@ function doPreRollSetup() {
     B.letsDanceBonus.blue = 0;
   }
 
+  // Winston (15) — Scheme: +2 dice from last round's win
+  if (B.winstonDiceBonus && B.winstonDiceBonus.red > 0) {
+    if (active(B.red).id === 15 && !active(B.red).ko) {
+      redCount += B.winstonDiceBonus.red;
+      preRollCallouts.push(['SCHEME!', 'var(--common)', `Winston — +${B.winstonDiceBonus.red} bonus dice!`, 'red']);
+      log(`<span class="log-ability">Winston</span> — Scheme! +${B.winstonDiceBonus.red} bonus dice from last win!`);
+    }
+    B.winstonDiceBonus.red = 0;
+  }
+  if (B.winstonDiceBonus && B.winstonDiceBonus.blue > 0) {
+    if (active(B.blue).id === 15 && !active(B.blue).ko) {
+      blueCount += B.winstonDiceBonus.blue;
+      preRollCallouts.push(['SCHEME!', 'var(--common)', `Winston — +${B.winstonDiceBonus.blue} bonus dice!`, 'blue']);
+      log(`<span class="log-ability">Winston</span> — Scheme! +${B.winstonDiceBonus.blue} bonus dice from last win!`);
+    }
+    B.winstonDiceBonus.blue = 0;
+  }
+
   // Lucas (433) — Kindling: +1 die next roll after Miracle resurrection (consumed after use)
   if (B.lucasKindlingBonus && B.lucasKindlingBonus.red > 0) {
     redCount += B.lucasKindlingBonus.red;
@@ -5304,7 +5335,27 @@ function doPreRollSetup() {
     }
   });
 
-  // Antoinette (82) — Grace: roll as many dice as your opponent (mirrors opponent's count upward, min base 3)
+  // Yawn Eater (464) — Feast: +1 die for each sideline ability on the enemy sideline
+  [B.red, B.blue].forEach(team => {
+    const f = active(team);
+    const tName = team === B.red ? 'red' : 'blue';
+    if (f.id === 464 && !f.ko) {
+      const enemyTeam = opp(team);
+      const sidelineCount = enemyTeam.ghosts.filter((g, i) => {
+        if (i === enemyTeam.activeIdx || g.ko) return false;
+        const gd = ghostData(g.id);
+        return gd && gd.abilityDesc && (gd.abilityDesc.includes('Sideline') || gd.abilityDesc.includes('sideline'));
+      }).length;
+      if (sidelineCount > 0) {
+        if (tName === 'red') redCount += sidelineCount;
+        else blueCount += sidelineCount;
+        preRollCallouts.push(['FEAST!', 'var(--uncommon)', `${f.name} — ${sidelineCount} enemy sideline effect${sidelineCount > 1 ? 's' : ''}! +${sidelineCount} dice!`, tName]);
+        log(`<span class="log-ability">${f.name}</span> — Feast! ${sidelineCount} enemy sideline effect${sidelineCount > 1 ? 's' : ''} → +${sidelineCount} dice!`);
+      }
+    }
+  });
+
+  // Antoinette (82) — Grace: roll as many dice as your opponent rolls. +1 damage on doubles.
   // Applied last so all other modifiers (Surge, Piper, Redd, etc.) are already baked into counts
   [B.red, B.blue].forEach(team => {
     const f = active(team);
@@ -7727,6 +7778,12 @@ function _resolveRoundImpl() {
 
   let dmg = wR.damage;
 
+  // Antoinette (82) — Grace: +1 damage on doubles
+  if (wF.id === 82 && !wF.ko && wR.type === 'doubles') {
+    dmg += 1;
+    log(`<span class="log-ability">${wF.name}</span> — Grace! Doubles → +1 damage!`);
+  }
+
   // v386: collectKC defined BEFORE any ability block that might call it (was TDZ-declared
   // at line ~8163 but referenced by Skylar Winter Barrage at 8131 and Tyler Heating Up
   // at 8144 — would throw ReferenceError if either fighter was active with ice/fire
@@ -7832,10 +7889,10 @@ function _resolveRoundImpl() {
   }
 
   // Mike (445) — Torrent: Win: +1 damage
-  if (wF.id === 445 && !wF.ko) {
-    dmg += 1;
+  if (wF.id === 445 && !wF.ko && wR.type === 'doubles' && wR.value % 2 === 0) {
+    dmg += 2;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Torrent! <span class="log-dmg">+1 damage!</span>`);
+    log(`<span class="log-ability">${wF.name}</span> — Torrent! Even doubles → <span class="log-dmg">+2 damage!</span>`);
   }
 
   // Twyla (417) — Lucky Dance: MOVED to dice count section (v674 rework: Lucky Stones give dice + Healing Seeds, not damage + HP)
@@ -8401,6 +8458,26 @@ function _resolveRoundImpl() {
     log(`<span class="log-ability">${wF.name}</span> — Acrobatic Dive! Even doubles → +3 damage! (${chipBaseDmg} + 3 = ${dmg})`);
   }
 
+  // Dealer (37) — House Rules WIN: straight → +3 damage.
+  let dealerWinTriggered = false;
+  if (wF.id === 37 && !wF.ko && dmg > 0 && winDice && isStraight(winDice)) {
+    const dealerWinBase = dmg;
+    dmg += 3;
+    dealerWinTriggered = true;
+    collectKC(winTeamName, wF.name);
+    log(`<span class="log-ability">${wF.name}</span> — House Rules! Straight [${[...winDice].sort((a,b)=>a-b).join(', ')}] → +3 damage! (${dealerWinBase} + 3 = ${dmg})`);
+  }
+
+  // Wanderer (4) — Curiosity: roll a straight (consecutive, no repeats) → +2 damage.
+  let wandererTriggered = false;
+  if (wF.id === 4 && !wF.ko && dmg > 0 && winDice && isStraight(winDice)) {
+    const wandererBaseDmg = dmg;
+    dmg += 2;
+    wandererTriggered = true;
+    collectKC(winTeamName, wF.name);
+    log(`<span class="log-ability">${wF.name}</span> — Curiosity! Straight [${[...winDice].sort((a,b)=>a-b).join(', ')}] → +2 damage! (${wandererBaseDmg} + 2 = ${dmg})`);
+  }
+
   // Ancient Librarian (3) — Knowledge: for each 2 rolled by BOTH players combined, add +1 damage (only if winning ghost deals damage).
   // Set 1 common — both teams' dice count, so high-die-count opponents ironically fuel the bonus. Pure damage engine.
   let librarianTriggered = false;
@@ -8518,18 +8595,13 @@ function _resolveRoundImpl() {
     log(`<span class="log-ability">${lF.name}</span> — Stone Form! Singles roll negated — dealing 3 back to ${wF.name}!`);
   }
 
-  // Dealer (37) — House Rules: Dealer's losing dice in strict consecutive ascending order → negate all incoming damage.
-  // e.g. [1,2,3], [2,3,4], [3,4,5], [4,5,6] — any length run that is perfectly sequential.
+  // Dealer (37) — House Rules LOSE: straight (consecutive, no repeats) → negate all incoming damage.
   let dealerHouseRules = false;
-  if (lF.id === 37 && !lF.ko && dmg > 0 && loseDice && loseDice.length >= 2 && !cameronUnnegatable) {
-    const _sortedDealerDice = [...loseDice].sort((a, b) => a - b);
-    const _isSequential = _sortedDealerDice.every((v, i) => i === 0 || v === _sortedDealerDice[i - 1] + 1);
-    if (_isSequential) {
-      dmg = 0;
-      dealerHouseRules = true;
-      collectKC(loseTeamName, lF.name);
-      log(`<span class="log-ability">${lF.name}</span> — House Rules! Dice [${_sortedDealerDice.join(', ')}] in order — ${wF.name}'s attack negated!`);
-    }
+  if (lF.id === 37 && !lF.ko && dmg > 0 && loseDice && loseDice.length >= 2 && !cameronUnnegatable && isStraight(loseDice)) {
+    dmg = 0;
+    dealerHouseRules = true;
+    collectKC(loseTeamName, lF.name);
+    log(`<span class="log-ability">${lF.name}</span> — House Rules! Straight [${[...loseDice].sort((a,b)=>a-b).join(', ')}] — ${wF.name}'s attack negated!`);
   }
 
   // Sky (72) — Elusive: if incoming damage is greater than 2, negate it entirely.
@@ -9304,6 +9376,10 @@ function _resolveRoundImpl() {
     queueAbility('KNOWLEDGE!', 'var(--common)', `Ancient Librarian — ${librarianTwos} 2${librarianTwos > 1 ? 's' : ''} rolled by both teams! ${librarianBaseDmg} + ${librarianTwos} = ${dmg} damage!`, null, winTeamName);
   }
   // Ancient Librarian knight reactions already collected via collectKC at game-state section (~line 9604) — do NOT double-fire here
+  if (wandererTriggered) {
+    const _wandererSorted = [...winDice].sort((a, b) => a - b);
+    queueAbility('CURIOSITY!', 'var(--common)', `${wF.name} — Straight [${_wandererSorted.join('-')}]! +2 damage!`, null, winTeamName);
+  }
   if (sparkyTriggered) {
     queueAbility('TINDER!', 'var(--rare)', `${wF.name} — ${sparkyOneCount} rolled 1${sparkyOneCount > 1 ? 's' : ''} × 3 = +${sparkyOneCount * 3} damage! (${sparkyBaseDmg} + ${sparkyOneCount * 3} = ${dmg})`, null, winTeamName);
   }
@@ -9459,12 +9535,16 @@ function _resolveRoundImpl() {
   }
   // Patrick knight reactions already collected via collectKC at game-state section (line ~9683) — do NOT double-fire here
 
-  // Dealer (37) — House Rules: dice in consecutive order → damage negated callout
+  // Dealer (37) — House Rules: straight on loss → damage negated callout
   if (dealerHouseRules) {
     const _dealerSorted = [...loseDice].sort((a, b) => a - b);
-    queueAbility('HOUSE RULES!', 'var(--uncommon)', `${lF.name} — [${_dealerSorted.join('-')}] In order! ${wF.name}'s attack is nullified!`, null, loseTeamName);
+    queueAbility('HOUSE RULES!', 'var(--uncommon)', `${lF.name} — Straight [${_dealerSorted.join('-')}]! ${wF.name}'s attack is nullified!`, null, loseTeamName);
   }
-  // Dealer knight reactions already collected via collectKC at game-state section (line ~9696) — do NOT double-fire here
+  // Dealer (37) — House Rules: straight on win → +3 damage callout
+  if (dealerWinTriggered) {
+    const _dealerWinSorted = [...winDice].sort((a, b) => a - b);
+    queueAbility('HOUSE RULES!', 'var(--uncommon)', `${wF.name} — Straight [${_dealerWinSorted.join('-')}]! +3 damage!`, null, winTeamName);
+  }
 
   // Sky (72) — Elusive: incoming big damage (>2) negated callout
   if (skyElusive) {
@@ -10173,8 +10253,8 @@ function _resolveRoundImpl() {
         ? winTeam.ghosts.filter((g, i) => i !== winTeam.activeIdx && !g.ko)
         : [];
 
-      // Winston (15) — Scheme: doubles win → offer to force-swap opponent's active ghost
-      const winstonSchemeSideline = (wF.id === 15 && !wF.ko && wR.type === 'doubles')
+      // Winston (15) — Scheme: any win → offer to force-swap opponent's active ghost + gain 2 dice next roll
+      const winstonSchemeSideline = (wF.id === 15 && !wF.ko)
         ? loseTeam.ghosts.filter((g, i) => i !== loseTeam.activeIdx && !g.ko)
         : [];
 

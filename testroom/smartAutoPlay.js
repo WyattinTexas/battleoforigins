@@ -46,6 +46,7 @@ function smartPlayNext() {
     pendingMoonstone:null, pendingSteal:null,
     committed: { red: { ice:0, fire:0, surge:0, auntSusan:0, auntSusanHeal:0, harrison:0, zainBlade:0 }, blue: { ice:0, fire:0, surge:0, auntSusan:0, auntSusanHeal:0, harrison:0, zainBlade:0 } },
     retributionDice: { red: 0, blue: 0 },
+    cameronBonusDice: { red: 0, blue: 0 },
     pressureUsed: { red: false, blue: false },
     blackoutNum: {},
     harrisonExtraDie: { red: 0, blue: 0 },
@@ -241,6 +242,9 @@ function smartPickSwap(team) {
   let best = alive[0], bestScore = -999;
   for (const c of alive) {
     let score = c.g.hp; // base: HP
+    // Lou (32) must stay on sideline to buff Grawr (34) — penalize bringing Lou in while Grawr is alive
+    const grawrAlive = t.ghosts.some(g => g.id === 34 && !g.ko);
+    if (c.g.id === 32 && grawrAlive) score -= 50;
     // Bonus for entry damage dealers
     if (c.g.id === 306) score += 5; // Nerina: 3 entry damage
     if (c.g.id === 312) score += 3; // Timpleton: +3 damage on win when enemy HP > mine
@@ -351,7 +355,7 @@ function smartSimRounds(gameNum) {
         ef.hp = Math.max(0, ef.hp - 1);
         if (ef.hp <= 0) { ef.ko = true; ef.killedBy = f.id; }
         if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
-        if (!ef.ko && hasSideline(team, 436)) {
+        if (!ef.ko && hasAlive(team, 436)) {
           ef.hp = Math.max(0, ef.hp - 1);
           if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
           if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
@@ -378,7 +382,7 @@ function smartSimRounds(gameNum) {
         ef.hp = Math.max(0, ef.hp - 1);
         if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 205; }
         if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
-        if (!ef.ko && hasSideline(team, 436)) {
+        if (!ef.ko && hasAlive(team, 436)) {
           ef.hp = Math.max(0, ef.hp - 1);
           if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
           if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
@@ -408,10 +412,11 @@ function smartSimRounds(gameNum) {
     ef.hp = Math.max(0, ef.hp - 1);
     if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 111; }
     if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
-    if (!ef.ko && hasSideline(team, 436)) {
+    if (!ef.ko && hasAlive(team, 436)) {
       ef.hp = Math.max(0, ef.hp - 1);
       if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
       if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
+    }
   });
 
   // Splinter (101) — Toxic Fumes: once activated (first win), deal 1 chip damage to enemy before every roll.
@@ -433,7 +438,7 @@ function smartSimRounds(gameNum) {
     ef.hp = Math.max(0, ef.hp - 1);
     if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 101; }
     if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
-    if (!ef.ko && hasSideline(team, 436)) {
+    if (!ef.ko && hasAlive(team, 436)) {
       ef.hp = Math.max(0, ef.hp - 1);
       if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
       if (ef.id === 24 && !ef.ko) { B[enemyKey].resources.fire++; }
@@ -467,7 +472,7 @@ function smartSimRounds(gameNum) {
     if (tf.hp <= 0) { tf.ko = true; tf.killedBy = pendingDmg >= 2 ? 336 : 108; }
     if (tf.id === 24 && !tf.ko) { B[teamKey].resources.fire++; }
     // Princess Shade (436) — Royal Decree: attacker (enemy) has Princess Shade on sideline
-    if (!tf.ko && hasSideline(enemy, 436)) {
+    if (!tf.ko && hasAlive(enemy, 436)) {
       tf.hp = Math.max(0, tf.hp - 1);
       if (tf.hp <= 0) { tf.ko = true; tf.killedBy = 436; }
       if (tf.id === 24 && !tf.ko) { B[teamKey].resources.fire++; }
@@ -722,6 +727,12 @@ function smartSimRounds(gameNum) {
     if (f.id === 414 && !f.ko && B[teamKey].resources.healingSeed >= 1) {
       B[teamKey].resources.healingSeed--;
       B.chowExtraDie[teamKey] = 2;
+      // Cameron (25) — opponent used a special (Healing Seed)
+      const oppK = teamKey === 'red' ? 'blue' : 'red';
+      if (B[oppK].ghosts.some(g => g.id === 25 && !g.ko)) {
+        if (!B.cameronBonusDice) B.cameronBonusDice = {red:0,blue:0};
+        B.cameronBonusDice[oppK]++;
+      }
     }
   });
 
@@ -731,7 +742,7 @@ function smartSimRounds(gameNum) {
     if (f.id === 442 && !f.ko && B[teamKey].resources.healingSeed >= 1) {
       const seeds = B[teamKey].resources.healingSeed;
       B[teamKey].resources.healingSeed = 0;
-      B[teamKey].resources.fire = (B[teamKey].resources.fire || 0) + seeds;
+      B[teamKey].resources.fire = (B[teamKey].resources.fire || 0) + (seeds * 2);
       // Boopies (419) sideline mirror
       if (hasSideline(B[teamKey], 419)) B[teamKey].resources.luckyStone = (B[teamKey].resources.luckyStone || 0) + seeds;
     }
@@ -747,6 +758,12 @@ function smartSimRounds(gameNum) {
       if (!f.youngCapDieBonus) f.youngCapDieBonus = 0;
       f.youngCapDieBonus++;
       B[teamKey].resources.ice++;
+      // Cameron (25) — opponent used a special (Healing Seed via Young Cap)
+      const oppK = teamKey === 'red' ? 'blue' : 'red';
+      if (B[oppK].ghosts.some(g => g.id === 25 && !g.ko)) {
+        if (!B.cameronBonusDice) B.cameronBonusDice = {red:0,blue:0};
+        B.cameronBonusDice[oppK]++;
+      }
       B[teamKey].resources.surge++;
       // Boopies (419) sideline mirror
       if (hasSideline(B[teamKey], 419)) B[teamKey].resources.luckyStone++;
@@ -808,19 +825,11 @@ function smartSimRounds(gameNum) {
       r.healingSeed -= seeds;
     }
 
-    // Aunt Susan (309): spend seeds for damage or heal
+    // Aunt Susan (309): spend seeds for damage (heal removed)
     if (f.id === 309 && !f.ko && r.healingSeed > 0) {
-      if (f.hp <= f.maxHp * 0.4) {
-        // Low HP: invest in healing
-        const seeds = Math.min(r.healingSeed, 2);
-        B.committed[team].auntSusanHeal = seeds;
-        r.healingSeed -= seeds;
-      } else {
-        // Healthy: invest in damage
-        const seeds = Math.min(r.healingSeed, 2);
-        B.committed[team].auntSusan = seeds;
-        r.healingSeed -= seeds;
-      }
+      const seeds = Math.min(r.healingSeed, 2);
+      B.committed[team].auntSusan = seeds;
+      r.healingSeed -= seeds;
     }
 
     // Burn resource: auto-place all burn on highest-HP enemy sideline ghost
@@ -857,6 +866,20 @@ function smartSimRounds(gameNum) {
     if (f.id === 403 && !f.ko) {
       B.blackoutNum[team] = smartBlackoutPick();
     }
+
+    // Cameron (25) — Unstoppable Force: count how many specials this team committed/spent
+    // Each committed special triggers +1 die for Cameron on the opponent's team.
+    const camSpecialsUsed = (B.committed[team].surge || 0) + (B.committed[team].ice || 0) +
+                            (B.committed[team].fire || 0) + (B.committed[team].auntSusan || 0) +
+                            (B.committed[team].harrison || 0);
+    if (camSpecialsUsed > 0) {
+      const oppKey = team === 'red' ? 'blue' : 'red';
+      const oppTeam = B[oppKey];
+      if (oppTeam.ghosts.some(g => g.id === 25 && !g.ko)) {
+        if (!B.cameronBonusDice) B.cameronBonusDice = { red: 0, blue: 0 };
+        B.cameronBonusDice[oppKey] += camSpecialsUsed;
+      }
+    }
   });
 
   // Handle Happy Crystal KOs
@@ -876,8 +899,8 @@ function smartSimRounds(gameNum) {
   ['red','blue'].forEach(teamKey => {
     const team = B[teamKey];
     const finnAlive = team.ghosts.some(g => g.id === 204 && !g.ko);
-    if (finnAlive && (!B.flameBlade || !B.flameBlade[teamKey]) && (team.resources.healingSeed || 0) >= 2 && (team.resources.fire || 0) >= 1) {
-      team.resources.healingSeed -= 2;
+    if (finnAlive && (!B.flameBlade || !B.flameBlade[teamKey]) && (team.resources.healingSeed || 0) >= 1 && (team.resources.fire || 0) >= 1) {
+      team.resources.healingSeed -= 1;
       team.resources.fire -= 1;
       if (!B.flameBlade) B.flameBlade = { red: false, blue: false };
       B.flameBlade[teamKey] = true;
@@ -888,6 +911,12 @@ function smartSimRounds(gameNum) {
     if (B.flameBlade && B.flameBlade[teamKey]) {
       if (!B.flameBladeSwing) B.flameBladeSwing = { red: false, blue: false };
       B.flameBladeSwing[teamKey] = true;
+    }
+  });
+  // Sophia (457) — Mask: AI always keeps mask active when owned
+  ['red','blue'].forEach(teamKey => {
+    if (B.sophiaMask && B.sophiaMask[teamKey]) {
+      B.sophiaMaskActive[teamKey] = true;
     }
   });
 
@@ -1067,6 +1096,17 @@ function smartSimRounds(gameNum) {
     }
   });
 
+  // Zork (463) — Stoke: AI auto-spends all Burn for +1 die each (always beneficial)
+  ['red','blue'].forEach(teamKey => {
+    const t = B[teamKey]; const f = active(t);
+    if (f.id === 463 && !f.ko && t.resources.burn > 0) {
+      const burnSpent = t.resources.burn;
+      t.resources.burn = 0;
+      if (teamKey === 'red') redCount += burnSpent; else blueCount += burnSpent;
+      if (B.zorkDecided) B.zorkDecided[teamKey] = true;
+    }
+  });
+
   // Flame Blade item: when swinging, +1 die
   if (B.flameBladeSwing && B.flameBladeSwing.red) redCount += 1;
   if (B.flameBladeSwing && B.flameBladeSwing.blue) blueCount += 1;
@@ -1168,6 +1208,13 @@ function smartSimRounds(gameNum) {
     const hasWillowSideline = hasSideline(B[tName], 435);
     if ((hasWillowActive || hasWillowSideline) && B.willowLostLast[tName]) {
       if (tName === 'red') redCount++; else blueCount++;
+      // Knight Terror (401) / Knight Light (402) react to Joy of Painting
+      const oppK = tName === 'red' ? 'blue' : 'red';
+      const knight = active(B[oppK]);
+      if (knight && !knight.ko) {
+        if (knight.id === 401) { _wf.hp = Math.max(0, _wf.hp - 2); if (_wf.hp <= 0) { _wf.ko = true; _wf.killedBy = 401; } }
+        else if (knight.id === 402) { B.retributionDice[oppK] = (B.retributionDice[oppK] || 0) + 1; }
+      }
     }
   });
   // Haywire (78) — WILD CHORDS!: permanent +1 die bonus added every round once triggered (never consumed/cleared).
@@ -1175,8 +1222,8 @@ function smartSimRounds(gameNum) {
   if ((B.haywireBonus.red || 0) > 0) redCount += B.haywireBonus.red;
   if ((B.haywireBonus.blue || 0) > 0) blueCount += B.haywireBonus.blue;
 
-  // Marcus (57) — GLACIAL POUNDING!: +4 bonus dice next roll after taking 3+ damage (matches index.html lines 7267–7276)
-  // B.marcusGlacialBonus[tName] is set when Marcus (loser) takes 3+ damage and survives.
+  // Marcus (57) — GLACIAL POUNDING!: +4 bonus dice next roll after taking 3+ damage
+  // Bonus goes to the PLAYER — whoever is active gets the dice, even if Marcus died from the hit.
   ['red','blue'].forEach(tName => {
     if ((B.marcusGlacialBonus[tName] || 0) > 0) {
       if (tName === 'red') redCount += B.marcusGlacialBonus[tName];
@@ -1212,6 +1259,20 @@ function smartSimRounds(gameNum) {
     }
   });
 
+  // Cameron (25) — Unstoppable Force: bonus dice from opponent special usage
+  if (B.cameronBonusDice) {
+    ['red','blue'].forEach(tName => {
+      if (B.cameronBonusDice[tName] > 0) {
+        const camTeam = B[tName];
+        if (camTeam.ghosts.some(g => g.id === 25 && !g.ko)) {
+          if (tName === 'red') redCount += B.cameronBonusDice[tName];
+          else blueCount += B.cameronBonusDice[tName];
+        }
+        B.cameronBonusDice[tName] = 0;
+      }
+    });
+  }
+
   // Boris (343) — FORTIFY!: when Surge is committed, Boris gains +2 HP (overclocks — no cap per Rule #9)
   // Fires for the whole team's committed Surge (Boris can be active or sideline — matches index.html line 7094+)
   ['red','blue'].forEach(team => {
@@ -1241,7 +1302,24 @@ function smartSimRounds(gameNum) {
     }
   });
 
-  // Antoinette (82) — GRACE!: if Antoinette is active, she matches the opponent's dice count (upward mirror only).
+  // Yawn Eater (464) — Feast: +1 die per enemy sideline ability
+  ['red','blue'].forEach(tName => {
+    const f = active(B[tName]);
+    if (f.id === 464 && !f.ko) {
+      const enemyTeam = B[tName === 'red' ? 'blue' : 'red'];
+      const sidelineCount = enemyTeam.ghosts.filter((g, i) => {
+        if (i === enemyTeam.activeIdx || g.ko) return false;
+        const gd = ghostData(g.id);
+        return gd && gd.abilityDesc && (gd.abilityDesc.includes('Sideline') || gd.abilityDesc.includes('sideline'));
+      }).length;
+      if (sidelineCount > 0) {
+        if (tName === 'red') redCount += sidelineCount;
+        else blueCount += sidelineCount;
+      }
+    }
+  });
+
+  // Antoinette (82) — GRACE!: matches opponent's dice count (upward mirror only). +1 damage on doubles.
   // Applied after all other bonuses so surge/retribution/frenzy/etc. are already baked in.
   // Fredrick (27) cap still applies after Grace — matches index.html lines 7184–7199 ordering.
   ['red','blue'].forEach(tName => {
@@ -1252,6 +1330,18 @@ function smartSimRounds(gameNum) {
       if (oppCount > myCount) {
         if (tName === 'red') redCount  = oppCount;
         else                 blueCount = oppCount;
+      }
+    }
+  });
+
+  // Sophia (457) — Mask of Night: roll the same number of dice as the enemy ghost
+  ['red','blue'].forEach(tName => {
+    if (B.sophiaMask && B.sophiaMask[tName] === 'night' && B.sophiaMaskActive && B.sophiaMaskActive[tName]) {
+      const myCount = tName === 'red' ? redCount : blueCount;
+      const oppCount = tName === 'red' ? blueCount : redCount;
+      if (myCount !== oppCount) {
+        if (tName === 'red') redCount = oppCount;
+        else blueCount = oppCount;
       }
     }
   });
@@ -1270,16 +1360,24 @@ function smartSimRounds(gameNum) {
 
   // ===== ROLL DICE =====
   let redDice, blueDice;
+  // Laura (79) — Catchy Tune: inject locked die, roll one fewer
+  const ctLockedRed = (B.catchyTuneUnlocked.red && B.catchyTuneLockedDie.red !== null && redCount > 0) ? B.catchyTuneLockedDie.red : null;
+  const ctLockedBlue = (B.catchyTuneUnlocked.blue && B.catchyTuneLockedDie.blue !== null && blueCount > 0) ? B.catchyTuneLockedDie.blue : null;
+  const redRollCount = ctLockedRed !== null ? Math.max(0, redCount - 1) : redCount;
+  const blueRollCount = ctLockedBlue !== null ? Math.max(0, blueCount - 1) : blueCount;
+
   // Bouril override
   if (active(B.red).id === 201 && active(B.red).hankFirstRoll) {
     redDice = [1,2,3]; active(B.red).hankFirstRoll = false;
   } else {
-    redDice = weightedRoll('red', redCount).sort((a,b)=>a-b);
+    redDice = weightedRoll('red', redRollCount).sort((a,b)=>a-b);
+    if (ctLockedRed !== null) { redDice.push(ctLockedRed); redDice.sort((a,b)=>a-b); }
   }
   if (active(B.blue).id === 201 && active(B.blue).hankFirstRoll) {
     blueDice = [1,2,3]; active(B.blue).hankFirstRoll = false;
   } else {
-    blueDice = weightedRoll('blue', blueCount).sort((a,b)=>a-b);
+    blueDice = weightedRoll('blue', blueRollCount).sort((a,b)=>a-b);
+    if (ctLockedBlue !== null) { blueDice.push(ctLockedBlue); blueDice.sort((a,b)=>a-b); }
   }
 
   // Dark Wing (76) — Precision: if rolled singles (no matching dice), reroll all dice once.
@@ -1362,6 +1460,29 @@ function smartSimRounds(gameNum) {
     }
   });
 
+  // Maisie (458) — Lucky: all 1s count as 5s (mutate dice FIRST)
+  ['red','blue'].forEach(teamKey => {
+    const t = B[teamKey]; const f = active(t);
+    if (f.id === 458 && !f.ko) {
+      const dice = teamKey === 'red' ? redDice : blueDice;
+      for (let i = 0; i < dice.length; i++) { if (dice[i] === 1) dice[i] = 5; }
+      dice.sort((a, b) => a - b);
+    }
+  });
+
+  // Sophia (457) — Mask of Day: gain 1 Burn for each 1 or 2 you roll (post-roll, both teams)
+  ['red','blue'].forEach(teamKey => {
+    if (B.sophiaMask && B.sophiaMask[teamKey] === 'day' && B.sophiaMaskActive && B.sophiaMaskActive[teamKey]) {
+      const dice = teamKey === 'red' ? redDice : blueDice;
+      const lowRolls = dice.filter(d => d === 1 || d === 2).length;
+      if (lowRolls > 0) {
+        const t = B[teamKey];
+        if (!t.resources.burn) t.resources.burn = 0;
+        t.resources.burn += lowRolls;
+      }
+    }
+  });
+
   // Natalia (327) — even doubles = +2 moonstones (+ Sandwiches DEPENDABLE! mirror — index.html line 7427)
   ['red','blue'].forEach(teamKey => {
     const t = B[teamKey]; const f = active(t);
@@ -1396,6 +1517,18 @@ function smartSimRounds(gameNum) {
       const blueRoll = classify(blueDice);
       const eitherDoubles = ['doubles','triples','quads','penta'].includes(redRoll.type) || ['doubles','triples','quads','penta'].includes(blueRoll.type);
       if (eitherDoubles) { t.resources.surge++; }
+    }
+  });
+
+  // Ronan (461) — Mixup: if you roll doubles+ → gain +1 Ice Shard & +1 Burn (win or lose)
+  ['red','blue'].forEach(teamKey => {
+    const t = B[teamKey]; const f = active(t);
+    const ronanDice = teamKey === 'red' ? redDice : blueDice;
+    if (f.id === 461 && !f.ko && ['doubles','triples','quads','penta'].includes(classify(ronanDice).type)) {
+      if (!t.resources.ice) t.resources.ice = 0;
+      t.resources.ice += 1;
+      if (!t.resources.burn) t.resources.burn = 0;
+      t.resources.burn += 1;
     }
   });
 
@@ -1526,18 +1659,18 @@ function smartSimRounds(gameNum) {
         if (hasSideline(B[oppKey], 33)) B[oppKey].resources.surge += 4; // DEPENDABLE! mirror
       }
     });
-    // Jimmy (352) Sideline & In Play: tie → +5 Lucky Stones + 1 Magic Firefly
-    // Sandwiches (33) DEPENDABLE! mirror: opponent also gains +5 Lucky Stones + 1 Magic Firefly if Sandwiches on their sideline
+    // Jimmy (352) Sideline & In Play: tie → +3 Lucky Stones + 1 Magic Firefly
+    // Sandwiches (33) DEPENDABLE! mirror: opponent also gains +3 Lucky Stones + 1 Magic Firefly if Sandwiches on their sideline
     ['red','blue'].forEach(teamKey => {
       const f = active(B[teamKey]);
       const hasJimmyActive = f.id === 352 && !f.ko;
       const hasJimmySideline = hasSideline(B[teamKey], 352);
       if (hasJimmyActive || hasJimmySideline) {
-        B[teamKey].resources.luckyStone += 5;
+        B[teamKey].resources.luckyStone += 3;
         B[teamKey].resources.firefly = (B[teamKey].resources.firefly || 0) + 1;
         const oppKey = teamKey === 'red' ? 'blue' : 'red';
         if (hasSideline(B[oppKey], 33)) {
-          B[oppKey].resources.luckyStone += 5;
+          B[oppKey].resources.luckyStone += 3;
           B[oppKey].resources.firefly = (B[oppKey].resources.firefly || 0) + 1;
         }
       }
@@ -1759,7 +1892,7 @@ function smartSimRounds(gameNum) {
     // Bigsby (424) — Omen: Win: +1 damage
     if (wF.id === 424 && !wF.ko) { dmg += 1; }
     // Mike (445) — Torrent: Win: +1 damage
-    if (wF.id === 445 && !wF.ko) { dmg += 1; }
+    if (wF.id === 445 && !wF.ko && wR.type === 'doubles' && wR.value % 2 === 0) { dmg += 2; }
     // Twyla (417) — Lucky Dance: v674 rework — moved to dice count section (Lucky Stones give dice + Healing Seeds, not damage + HP)
     // Pudge (311) — doubles: +2 damage, 1 self-damage
     if (wF.id === 311 && wR.type === 'doubles') {
@@ -1773,6 +1906,10 @@ function smartSimRounds(gameNum) {
     if (B.flameBlade && B.flameBlade[winTeamName] && B.flameBladeSwing && B.flameBladeSwing[winTeamName]) {
       if (!wTeam.resources.burn) wTeam.resources.burn = 0;
       wTeam.resources.burn += 3;
+    }
+    // Sophia (457) — Mask of Night: +1 damage on win when active
+    if (B.sophiaMask && B.sophiaMask[winTeamName] === 'night' && B.sophiaMaskActive && B.sophiaMaskActive[winTeamName]) {
+      dmg += 1;
     }
     // Red Hunter (345) — enemy has resources (pool + committed ice/fire/surge): +3 damage
     // Matches index.html lines 9372–9385: checks both eRes AND B.committed[loseTeamName].
@@ -1791,6 +1928,11 @@ function smartSimRounds(gameNum) {
     if (wF.id === 96 && !wF.ko && wR.type === 'singles') { dmg += 1; }
     // Team Zippy (40) — Teamwork: singles win → +2 bonus damage. Matches index.html lines 9289–9299.
     if (wF.id === 40 && !wF.ko && wR.type === 'singles') { dmg += 2; }
+    // Ridley (462) — Nimble: singles +1 damage, doubles+ +2 damage.
+    if (wF.id === 462 && !wF.ko) {
+      if (wR.type === 'singles') { dmg += 1; }
+      else if (['doubles','triples','quads','penta'].includes(wR.type)) { dmg += 2; }
+    }
     // Greg (49) — Chase: if Greg has more HP than the opposing ghost, winning rolls deal 2X damage.
     // Matches index.html lines 9305–9311: `if (wF.id===49 && !wF.ko && wF.hp>lF.hp) { dmg*=2; collectKC(...); }`
     if (wF.id === 49 && !wF.ko && wF.hp > lF.hp) { dmg *= 2; }
@@ -1871,12 +2013,21 @@ function smartSimRounds(gameNum) {
     // Zach (87) — Craftsman: while on sideline, Guard Thomas (41) active doubles win → +3 damage.
     // Cornelius (45) on enemy sideline blocks it. Matches index.html lines 9566–9578.
     if (hasSideline(wTeam, 87) && wF.id === 41 && !wF.ko && wR.type === 'doubles' && !hasSideline(lTeam, 45)) { dmg += 3; }
-    // Laura (79) — Catchy Tune: while on sideline, winning dice in strict consecutive ascending order → +3 damage.
-    // Any length ≥2 run qualifies (1-2-3, 2-3-4, 3-4-5, 4-5-6, etc.). Cornelius (45) on enemy sideline blocks it.
-    // Matches index.html lines 9515–9531: hasSideline(winTeam,79) + sorted-ascending every-check + corneliusBlocksRally + dmg+=3.
-    if (hasSideline(wTeam, 79) && !wF.ko && winDice && winDice.length >= 2 && !hasSideline(lTeam, 45)) {
-      const _lSorted = [...winDice].sort((a, b) => a - b);
-      if (_lSorted.every((v, i) => i === 0 || v === _lSorted[i - 1] + 1)) { dmg += 3; }
+    // Laura (79) — Catchy Tune: Sideline & In Play: straight unlocks permanent die-lock.
+    // AI auto-locks highest die. Check both winner and loser for straight activation.
+    if (!B.catchyTuneUnlocked[winner] && hasAlive(wTeam, 79) && winDice && isStraight(winDice) && !hasSideline(lTeam, 45)) {
+      B.catchyTuneUnlocked[winner] = true;
+    }
+    const loser = winner === 'red' ? 'blue' : 'red';
+    if (!B.catchyTuneUnlocked[loser] && hasAlive(lTeam, 79) && loseDice && isStraight(loseDice) && !hasSideline(wTeam, 45)) {
+      B.catchyTuneUnlocked[loser] = true;
+    }
+    // AI locks highest die for next roll
+    if (B.catchyTuneUnlocked[winner] && winDice && winDice.length > 0) {
+      B.catchyTuneLockedDie[winner] = Math.max(...winDice);
+    }
+    if (B.catchyTuneUnlocked[loser] && loseDice && loseDice.length > 0) {
+      B.catchyTuneLockedDie[loser] = Math.max(...loseDice);
     }
     // Bilbo (80) — Little Buddy: while on sideline, +2 damage to active ghost's singles wins.
     // Cornelius (45) on losing team sideline blocks it. Matches index.html lines 9484–9496.
@@ -1933,28 +2084,33 @@ function smartSimRounds(gameNum) {
         wiseAlSqualled = true;
       }
     }
-    // Cameron (25) — Force of Nature: if Cameron wins but the loser's defensive ability negates damage → instantly destroy the loser.
-    // We capture dmg BEFORE any negation so we can detect "started > 0, ended at 0 after defense".
-    // Matches index.html lines 9887–9896: cameronForceOfNature fires when skyBlocked|stoneFormFired|kodakoNegated|
-    // dealerBlocked|cityCybooBarrier|bogeyReflected|fangUndercoverFired|sylviaEvaded. Guardian Fairy absorption
-    // is NOT a negation (damage landed on GF) so we only fire when dmg is zeroed by a true negation.
-    // King Jay (106) REFLECTION! is also NOT a Cameron trigger (not in index.html's flag list) — guarded below.
-    const preCamDmg = dmg;
+    // Sophia (457) — Masquerade: Win: gain Mask of Day or Mask of Night instead of dealing damage (once per game)
+    // AI strategy: pick Mask of Night if enemy has high dice potential, otherwise Mask of Day for burn farming
+    let sophiaMasqueraded = false;
+    if (wF.id === 457 && !wF.ko && dmg > 0 && B.sophiaMask && !B.sophiaMask[winTeamName]) {
+      // Check enemy dice potential — if opponent likely has 5+ dice, Night is better
+      const enemyF = active(lTeam);
+      const enemyHasBoosts = (lTeam.resources.surge || 0) > 0 || (B.foremanDieBonus && B.foremanDieBonus[lTeamName] > 0);
+      const pickNight = enemyHasBoosts || Math.random() < 0.6; // lean toward Night but not always
+      B.sophiaMask[winTeamName] = pickNight ? 'night' : 'day';
+      B.sophiaMaskActive[winTeamName] = true;
+      dmg = 0;
+      sophiaMasqueraded = true;
+    }
+    // Cameron (25) — Unstoppable Force: Cameron's damage cannot be negated.
+    // When Cameron wins, all negation abilities are bypassed — damage goes through.
+    const cameronUnnegatable = (wF.id === 25 && !wF.ko);
     let kingJayReflected = false;
     let kingJayReflectDmg = 0;
 
     // Sylvia (313) — dodge check: roll 1 die, 6 = negate all damage (~16.7%)
     // abilityDesc: "When you lose a roll: roll 1 die. If you roll a 6, negate all damage."
     // doSylviaRoll() in index.html uses Math.floor(Math.random()*6)+1 — exactly 1 die.
-    if (lF.id === 313 && !lF.ko) {
+    if (lF.id === 313 && !lF.ko && !cameronUnnegatable) {
       if ((Math.floor(Math.random()*6)+1) >= 5) dmg = 0; // 5 or 6 dodge
     }
     // Patrick (10) — Stone Form: losing to a singles roll → negate ALL incoming damage and deal 3 counter-damage to the winner.
-    // In index.html lines 9680–9684: `if (lF.id===10 && !lF.ko && wR.type==='singles' && dmg>0) { dmg=0; collectKC(...); }`
-    // Counter-damage applied at lines 9846–9849: `stoneFormHpAfter = Math.max(0, wF.hp - 3); wF.ko = stoneFormHpAfter<=0`.
-    // Singles is the most common roll type (~50%+ of all outcomes) — without this, Patrick is a 3 HP ghost
-    // that dies to the first singles win. With it, Patrick punishes singles-heavy opponents every time.
-    if (lF.id === 10 && !lF.ko && wR.type === 'singles' && dmg > 0) {
+    if (lF.id === 10 && !lF.ko && wR.type === 'singles' && dmg > 0 && !cameronUnnegatable) {
       dmg = 0;
       wF.hp = Math.max(0, wF.hp - 3);
       if (wF.hp <= 0) { wF.ko = true; wF.killedBy = lF.id; }
@@ -1962,31 +2118,41 @@ function smartSimRounds(gameNum) {
     // Kodako (1) — Swift LOSE case: rolling 1-2-3 (all three values present in loseDice) while losing → negate all incoming damage, deal 4 counter-damage back to winner.
     // Matches index.html lines 9666–9673: `if (lF.id===1 && !lF.ko && loseDice && [1,2,3].every(v=>loseDice.includes(v)) && dmg>0) { dmg=0; ... deal 4 back to wF }`
     // loseDice is winner==='red' ? blueDice : redDice — computed inline since `loseDice` const isn't defined until the on-lose resource gains block below.
-    if (lF.id === 1 && !lF.ko && dmg > 0 && [1,2,3].every(v => (winner === 'red' ? blueDice : redDice).includes(v))) {
+    if (lF.id === 1 && !lF.ko && dmg > 0 && !cameronUnnegatable && [1,2,3].every(v => (winner === 'red' ? blueDice : redDice).includes(v))) {
       dmg = 0;
       wF.hp = Math.max(0, wF.hp - 4);
       if (wF.hp <= 0) { wF.ko = true; wF.killedBy = lF.id; }
     }
     // Sky (72) — Elusive: if incoming damage > 2, negate entirely (pure big-hit shield; 1-2 dmg passes through).
     // Matches index.html lines 9705–9711: `if (lF.id===72 && !lF.ko && dmg>2) { dmg=0; collectKC(...); }`
-    if (lF.id === 72 && !lF.ko && dmg > 2) { dmg = 0; }
+    if (lF.id === 72 && !lF.ko && dmg > 2 && !cameronUnnegatable) { dmg = 0; }
     // Dealer (37) — House Rules: loser's dice in strict consecutive ascending order → negate all incoming damage.
     // e.g. [1,2,3], [2,3,4], [3,4,5], [4,5-6] — any length run that is perfectly sequential (≥2 dice).
     // Matches index.html lines 9690–9699: sort loseDice, check every(v,i) i===0||v===prev+1, then dmg=0.
-    if (lF.id === 37 && !lF.ko && dmg > 0) {
-      const _dD = (winner === 'red' ? blueDice : redDice).slice().sort((a, b) => a - b);
-      if (_dD.length >= 2 && _dD.every((v, i) => i === 0 || v === _dD[i - 1] + 1)) { dmg = 0; }
+    if (lF.id === 37 && !lF.ko && dmg > 0 && !cameronUnnegatable) {
+      const _dD = (winner === 'red' ? blueDice : redDice).slice();
+      if (isStraight(_dD)) { dmg = 0; }
+    }
+    // Dealer (37) — House Rules WIN: straight → +3 damage.
+    if (wF.id === 37 && !wF.ko && dmg > 0) {
+      const _dW = (winner === 'red' ? redDice : blueDice).slice();
+      if (isStraight(_dW)) { dmg += 3; }
+    }
+    // Wanderer (4) — Curiosity: straight → +2 damage.
+    if (wF.id === 4 && !wF.ko && dmg > 0) {
+      const _wD = (winner === 'red' ? redDice : blueDice).slice();
+      if (isStraight(_wD)) { dmg += 2; }
     }
     // City Cyboo (77) — Barrier: takes no damage from enemy doubles.
     // 1 HP defender immune to the most common win type. Matches index.html lines 9713–9723.
-    if (lF.id === 77 && !lF.ko && wR.type === 'doubles' && dmg > 0) { dmg = 0; }
+    if (lF.id === 77 && !lF.ko && wR.type === 'doubles' && dmg > 0 && !cameronUnnegatable) { dmg = 0; }
     // Guard Thomas (41) — Stoic: immune to singles when below 6 HP (his max). Matches index.html lines 9642–9649.
-    if (lF.id === 41 && !lF.ko && lF.hp < 6 && wR.type === 'singles' && dmg > 0) { dmg = 0; }
+    if (lF.id === 41 && !lF.ko && lF.hp < 6 && wR.type === 'singles' && dmg > 0 && !cameronUnnegatable) { dmg = 0; }
     // Bogey (53) — Bogus: reactive reflect — AI always reflects when offered. If Bogey is the loser,
     // dmg > 0, and once-per-game bogeyUsed is false → reflect the full dmg back to the winner (dmg = 0).
     // Matches index.html lines 9675–9697: bogeyReflectResuming two-pass; sim skips the modal, always chooses 'yes'.
     // Counter-damage applied immediately (wF.hp deferred to onShow in real game, but sim applies synchronously).
-    if (lF.id === 53 && !lF.ko && !B.bogeyUsed[lTeamName] && dmg > 0) {
+    if (lF.id === 53 && !lF.ko && !B.bogeyUsed[lTeamName] && dmg > 0 && !cameronUnnegatable) {
       const bogeyReflDmg = dmg;
       dmg = 0;
       B.bogeyUsed[lTeamName] = true;
@@ -1996,7 +2162,7 @@ function smartSimRounds(gameNum) {
     // Fang Undercover (7) — Skilled Coward: armed + incoming damage > 0 → negate all damage, swap Fang to sideline.
     // Fires after Bogey (same order as index.html lines 9812–9822).
     // In the real game the swap is a post-drain modal (fangUndercoverSwapPending); sim swaps synchronously.
-    if (lF.id === 7 && !lF.ko && B.fangUndercoverArmed[lTeamName] && dmg > 0) {
+    if (lF.id === 7 && !lF.ko && B.fangUndercoverArmed[lTeamName] && dmg > 0 && !cameronUnnegatable) {
       dmg = 0;
       B.fangUndercoverArmed[lTeamName] = false;
       // Fang retreats — pick best available sideline ghost as replacement
@@ -2012,11 +2178,7 @@ function smartSimRounds(gameNum) {
     B.fangUndercoverArmed[winTeamName] = false;
 
     // King Jay (106) — REFLECTION!: lose the roll & loser's dice total = 7 → reflect ALL damage back to the winner (dmg → 0).
-    // Fires after all other negation checks — matches index.html line 9799 ordering (after fang, before Cameron).
-    // King Jay REFLECTION is NOT a Cameron Force of Nature trigger — index.html's Cameron flag list excludes it;
-    // see `&& !kingJayReflected` guard on the Cameron check below.
-    // Matches index.html lines 9799–9805 (detection) and 9875–9879 (winner HP drop + KO).
-    if (lF.id === 106 && !lF.ko && dmg > 0) {
+    if (lF.id === 106 && !lF.ko && dmg > 0 && !cameronUnnegatable) {
       const _kjDice = winner === 'red' ? blueDice : redDice;
       if (_kjDice && _kjDice.length > 0 && _kjDice.reduce((a, b) => a + b, 0) === 7) {
         kingJayReflectDmg = dmg;
@@ -2027,17 +2189,8 @@ function smartSimRounds(gameNum) {
       }
     }
 
-    // Cameron (25) — Force of Nature: Cameron wins, damage was non-zero before negation checks but is now 0 → instant KO.
-    // Guards: wF must be Cameron (25), alive, not yet KO'd; lF must be alive (not already KO'd by counter-damage above).
-    // preCamDmg > 0 means Cameron's roll actually would have dealt damage; dmg === 0 means a defensive ability zeroed it.
-    // This does NOT fire when Bogey reflected (Bogey already applied its own KO logic) — but Bogey's reflect sets dmg=0
-    // and the refect damage fires synchronously above, so if wF survived we still correctly instant-KO lF here.
-    // Matches index.html lines 9887–9896 + 10541–10543.
-    if (wF.id === 25 && !wF.ko && !lF.ko && preCamDmg > 0 && dmg === 0 && !kingJayReflected) {
-      lF.hp = 0;
-      lF.ko = true;
-      lF.killedBy = wF.id;
-    }
+    // Cameron (25) — Unstoppable Force: negation is already blocked above via cameronUnnegatable flag.
+    // No instant KO needed — damage just goes through normally.
 
     // Guardian Fairy (99) — Wish: reactive — AI auto-activates GF when damage would KO the active ghost
     // and fairy has more HP than the damage
@@ -2084,6 +2237,18 @@ function smartSimRounds(gameNum) {
       if (_nmTarget) { _nmTarget.hp = 0; _nmTarget.ko = true; _nmTarget.killedBy = 103; }
     }
 
+    // Slicer (460) — Parting Gift: Sideline & In Play — win with quads+ → destroy any enemy sideline ghost.
+    // Auto-picks highest-HP target. No HP restriction unlike Night Master.
+    const slicerActive = wF.id === 460 && !wF.ko;
+    const slicerSideline = hasSideline(wTeam, 460);
+    if ((slicerActive || slicerSideline) && (wR.type === 'quads' || wR.type === 'penta' || wR.type.endsWith('-of-a-kind'))) {
+      const slicerCandidates = lTeam.ghosts.filter((g, i) => i !== lTeam.activeIdx && !g.ko);
+      if (slicerCandidates.length > 0) {
+        const best = slicerCandidates.reduce((a, b) => b.hp > a.hp ? b : a);
+        best.hp = 0; best.ko = true; best.killedBy = 460;
+      }
+    }
+
     // Prince Balatron (113) — Party Time: lose & survive → roll 1 counter die for damage against the winner.
     // Fires after main damage is applied so we can check whether Balatron actually survived (!lF.ko).
     // Winner must also still be alive (!wF.ko) — matches index.html line 9921 guard: `!lF.ko && !wF.ko`.
@@ -2128,7 +2293,7 @@ function smartSimRounds(gameNum) {
       }
     }
     if (wF.id === 336 && !wF.ko) { wTeam.resources.fire++;            if (sandwichLose) lTeam.resources.fire++;  }           // Humar Sacred Flame
-    if (wF.id === 309 && !wF.ko) { wTeam.resources.healingSeed++;     if (sandwichLose) lTeam.resources.healingSeed++; }     // Aunt Susan: +1 seed on win
+    if (wF.id === 309 && !wF.ko) { wTeam.resources.healingSeed += 2;  if (sandwichLose) lTeam.resources.healingSeed += 2; }   // Aunt Susan: +2 seeds on win
     if (wF.id === 81  && !wF.ko) { wTeam.resources.ice += 2;          if (sandwichLose) lTeam.resources.ice += 2; }          // Spockles: VALLEY MAGIC! +2 Ice on win — matches index.html line 10538
     // Splinter (101) — Toxic Fumes: first win activates poison (chip damage fires pre-roll every subsequent round).
     // Matches index.html lines 9656–9661: `if (wF.id===101 && !wF.ko && !B.splinterActivated[winTeamName]) { B.splinterActivated[winTeamName]=true; }`
@@ -2261,9 +2426,9 @@ function smartSimRounds(gameNum) {
     // Hugo (52) — WRECKAGE!: when Hugo takes real damage, the attacker loses 1 die next roll.
     // Set on winTeamName so the attacker's dice are reduced at the top of the NEXT round. Matches index.html line 10017.
     if (lF.id === 52 && dmg > 0) { B.hugoWreckage[winTeamName] = (B.hugoWreckage[winTeamName] || 0) + 1; }
-    // Marcus (57) — GLACIAL POUNDING!: if Marcus takes 3+ real damage and survives, he gains +4 bonus dice next roll.
-    // Set on loseTeamName so Marcus's team rolls extra dice next round. Matches index.html line 10027.
-    if (lF.id === 57 && !lF.ko && dmg >= 3) { B.marcusGlacialBonus[loseTeamName] = (B.marcusGlacialBonus[loseTeamName] || 0) + 4; }
+    // Marcus (57) — GLACIAL POUNDING!: if Marcus takes 3+ real damage, the PLAYER gains +4 bonus dice next roll.
+    // Fires even if Marcus dies — bonus carries to whoever comes in next.
+    if (lF.id === 57 && dmg >= 3) { B.marcusGlacialBonus[loseTeamName] = (B.marcusGlacialBonus[loseTeamName] || 0) + 4; }
     // Floop (20) — MUCK!: win or lose (including KO), if opponent rolled doubles → they lose 1 die next round.
     // wF = winner (if Floop won, loser rolled lR); lF = loser (if Floop lost/died, winner rolled wR).
     // Uses wF/lF captured pre-damage — same as index.html lines 10844–10858. No !f.ko gate (Wyatt spec).
@@ -2460,7 +2625,7 @@ function smartSimRounds(gameNum) {
     // (lowest HP) sideline ghost. Matches index.html lines 11041–11084: winstonSchemeSideline built from
     // loseTeam sideline, doWinstonSchemeChoice sets loseTeam.activeIdx. AI always swaps when sideline
     // exists — bringing in the opponent's weakest ghost is optimal play for Winston.
-    if (wF.id === 15 && !wF.ko && wR.type === 'doubles') {
+    if (wF.id === 15 && !wF.ko) {
       const winstonTargets = lTeam.ghosts
         .map((g, i) => ({ g, i }))
         .filter(x => x.i !== lTeam.activeIdx && !x.g.ko);
@@ -2611,6 +2776,7 @@ function smartSimRounds(gameNum) {
       if (ef.id === 428 && !ef.ko) rxns++;  // Jasper FLAME DIVE! win-path
       if (ef.id === 430 && !ef.ko) rxns++;  // Gordok RIVER TERROR! win-path
       if (ef.id === 431 && !ef.ko) rxns++;  // Pal Al SQUALL! win-path
+      if (ef.id === 457 && !ef.ko && !(B.sophiaMask && B.sophiaMask[enemyKey])) rxns++;  // Sophia MASQUERADE! win-path (only if mask not yet claimed)
       if (ef.id === 432 && !ef.ko && active(B[teamKey]).ko) rxns++;  // Valkin GRAND SPOILS! on KO
       if (hasSideline(enemyTeam, 415) && !ef.ko && active(B[teamKey]).ko) rxns++;  // Nyx & Bessie MOO! CAW!
       if (ef.id === 427 && !ef.ko && active(B[teamKey]).ko) rxns++;  // Garrick WATCHFIRE! KO fire
@@ -2621,7 +2787,7 @@ function smartSimRounds(gameNum) {
       if (ef.id === 313 && !ef.ko) rxns++;               // Sylvia PORPOISE! — alive-only; matches index.html lines 9480, 10513: !lF.ko guard on both dodge trigger sites
       if (ef.id === 23 && ef.ko) rxns++;                 // Powder FINAL GIFT! — fires only on KO (matches index.html line 10127 collectKC)
       if (ef.id === 52) rxns++;                          // Hugo WRECKAGE! — fires whenever Hugo loses (dmg > 0 approximated; nearly always true — matches index.html line 10019 collectKC)
-      if (ef.id === 57 && !ef.ko) rxns++;                // Marcus GLACIAL POUNDING! — fires when Marcus survives a loss (dmg ≥ 3 approximated; matches index.html line 10029 collectKC)
+      if (ef.id === 57) rxns++;                           // Marcus GLACIAL POUNDING! — fires even if Marcus dies (bonus goes to player, not Marcus)
       if (ef.id === 10 && !ef.ko && (teamKey === 'red' ? rR : bR).type === 'singles') rxns++; // Patrick STONE FORM! — fires when Patrick loses to singles (matches index.html line 9683 collectKC); teamKey is the WINNER's team, so their roll type is checked
       // Kodako (1) SWIFT! lose case: fires when Kodako loses and rolled 1-2-3 (matches index.html line 9671 collectKC call)
       if (ef.id === 1 && !ef.ko && [1,2,3].every(v => _eD.includes(v))) rxns++;
@@ -2638,7 +2804,7 @@ function smartSimRounds(gameNum) {
     // KO-path named abilities (fire on ANY KO of the enemy's active ghost — not restricted to loserWasEnemy)
     if (hasSideline(enemyTeam, 310) && ef.ko) rxns++;   // Granny BEDTIME STORY! fires whenever enemy's active ghost is KO'd (lF.ko or wF.ko self-KO — matches index.html collectKC calls at lines 10122, 10136)
     // Tie-path named abilities (only on ties)
-    if (!winner && ((ef.id === 352 && !ef.ko) || hasSideline(enemyTeam, 352))) rxns++;  // Jimmy CHIRP! Sideline & In Play: tie → +5 Lucky Stones + 1 Magic Firefly
+    if (!winner && ((ef.id === 352 && !ef.ko) || hasSideline(enemyTeam, 352))) rxns++;  // Jimmy CHIRP! Sideline & In Play: tie → +3 Lucky Stones + 1 Magic Firefly
     if (!winner && hasSideline(enemyTeam, 303)) rxns++;  // Tweak and Twonk ROARING CROWD! sideline: tie → +4 Surge (no active-ghost ko guard in index.html line 8765 — sideline ability, no ef.ko needed)
     if (!winner && hasSideline(enemyTeam, 22) && !ef.ko) rxns++;  // Ancient One FRIEND TO ALL! sideline tie healer; !ef.ko matches index.html line 8939: `|| f.ko) return` guard on active ghost
     if (!winner && ef.id === 48 && !ef.ko) rxns++;        // Opa REST! tie-path: active tie → +1 HP; !ef.ko matches index.html line 8916: !f.ko guard (win-path guard was fixed in v646 — this is the separate tie-path entry)
@@ -2664,9 +2830,9 @@ function smartSimRounds(gameNum) {
     if (ef.id === 54 && winnerWasEnemy && _eD.length >= 4) { const _dc = {}; _eD.forEach(d => _dc[d] = (_dc[d]||0)+1); if (Object.values(_dc).filter(c => c >= 2).length >= 2) rxns++; }
     // Dealer (37) HOUSE RULES! — fires when Dealer loses and his dice are in strict consecutive ascending order.
     // Uses _eD (enemy = loser's dice) for the sequential check. Matches index.html line 9696 collectKC call.
-    if (loserWasEnemy && ef.id === 37 && !ef.ko && _eD.length >= 2) {
-      const _sD = _eD.slice().sort((a, b) => a - b);
-      if (_sD.every((v, i) => i === 0 || v === _sD[i - 1] + 1)) rxns++;
+    if (ef.id === 37 && !ef.ko && _eD.length >= 2) {
+      if (loserWasEnemy && isStraight(_eD)) rxns++; // Dealer lose: negate
+      if (winnerWasEnemy && isStraight(_eD)) rxns++; // Dealer win: +3 damage
     }
     // City Cyboo (77) BARRIER! — fires when winner (knight's team, _kD) rolled doubles and City Cyboo lost.
     // Matches index.html line 9721 collectKC(loseTeamName, lF.name).
