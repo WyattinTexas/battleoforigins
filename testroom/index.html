@@ -14158,6 +14158,16 @@ function _resolveRoundImpl() {
     log(`<span class="log-ability">${wF.name}</span> — Acrobatic Dive! Even doubles → +3 damage! (${chipBaseDmg} + 3 = ${dmg})`);
   }
 
+  // Yawn Eater (464) — Feast: odd doubles deal +1 damage
+  let yawnEaterOddTriggered = false;
+  if (wF.id === 464 && !wF.ko && wR.type === 'doubles' && wR.value % 2 === 1 && dmg > 0) {
+    const yeBaseDmg = dmg;
+    dmg += 1;
+    yawnEaterOddTriggered = true;
+    collectKC(winTeamName, wF.name);
+    log(`<span class="log-ability">${wF.name}</span> — Feast! Odd doubles → +1 damage! (${yeBaseDmg} + 1 = ${dmg})`);
+  }
+
   // Dealer (37) — House Rules WIN: straight → +3 damage.
   let dealerWinTriggered = false;
   if (wF.id === 37 && !wF.ko && dmg > 0 && winDice && isStraight(winDice)) {
@@ -15172,6 +15182,9 @@ function _resolveRoundImpl() {
     queueAbility('ACROBATIC DIVE!', 'var(--common)', `${wF.name} — Even doubles! +3 damage! (${chipBaseDmg} + 3 = ${dmg})`, null, winTeamName);
   }
   // Chip knight reactions already collected via collectKC at game-state section (~line 9589) — do NOT double-fire here
+  if (yawnEaterOddTriggered) {
+    queueAbility('FEAST!', 'var(--uncommon)', `${wF.name} — Odd doubles! +1 damage!`, null, winTeamName);
+  }
   if (librarianTriggered) {
     queueAbility('KNOWLEDGE!', 'var(--common)', `Ancient Librarian — ${librarianTwos} 2${librarianTwos > 1 ? 's' : ''} rolled by both teams! ${librarianBaseDmg} + ${librarianTwos} = ${dmg} damage!`, null, winTeamName);
   }

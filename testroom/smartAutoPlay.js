@@ -1972,6 +1972,8 @@ function smartSimRounds(gameNum) {
     // Chip (16) — Acrobatic Dive: even doubles win → +3 damage (paired value is 2, 4, or 6, and dmg > 0).
     // Matches index.html lines 9585–9591: `wR.type==='doubles' && dmg>0 && wR.value%2===0`.
     if (wF.id === 16 && !wF.ko && wR.type === 'doubles' && dmg > 0 && wR.value % 2 === 0) { dmg += 3; }
+    // Yawn Eater (464) — Feast: odd doubles +1 damage
+    if (wF.id === 464 && !wF.ko && wR.type === 'doubles' && dmg > 0 && wR.value % 2 === 1) { dmg += 1; }
     // Ancient Librarian (3) — Knowledge: +1 damage for each 2 rolled by BOTH teams combined (only when AL wins and dmg > 0).
     // Matches index.html lines 9598–9606: count all 2s in [...winDice, ...loseDice], add to dmg.
     if (wF.id === 3 && !wF.ko && dmg > 0 && winDice) {
