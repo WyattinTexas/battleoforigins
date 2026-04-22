@@ -8568,7 +8568,7 @@ function doTeamRoll(team, btn) {
   let diceCount = B.preRoll[team].count;
   const override = B.preRoll[team].override;
   // Laura (79) — Catchy Tune: if unlocked, one die is locked from last roll
-  const lockedDie = (B.catchyTuneUnlocked[team] && B.catchyTuneLockedDie[team] !== null && diceCount > 0) ? B.catchyTuneLockedDie[team] : null;
+  const lockedDie = (B.catchyTuneUnlocked && B.catchyTuneUnlocked[team] && B.catchyTuneLockedDie && B.catchyTuneLockedDie[team] !== null && diceCount > 0) ? B.catchyTuneLockedDie[team] : null;
   const rollCount = lockedDie !== null ? Math.max(0, diceCount - 1) : diceCount;
   const dice = override ? [1,2,3] : weightedRoll(team, rollCount);
   if (lockedDie !== null && !override) dice.push(lockedDie);
@@ -9108,6 +9108,11 @@ function startNextRound() {
   if (!B) return;
 
   // Laura (79) — Catchy Tune: if unlocked, show die picker before next round
+  if (!B.catchyTuneUnlocked) B.catchyTuneUnlocked = { red: false, blue: false };
+  if (!B.catchyTuneLockedDie) B.catchyTuneLockedDie = { red: null, blue: null };
+  if (!B.lastRollDiceCount) B.lastRollDiceCount = { red: 3, blue: 3 };
+  if (!B.tysonDisabled) B.tysonDisabled = { red: [], blue: [] };
+  if (!B.winstonDiceBonus) B.winstonDiceBonus = { red: 0, blue: 0 };
   const ctRed = B.catchyTuneUnlocked.red && B.redDice && B.redDice.length > 0;
   const ctBlue = B.catchyTuneUnlocked.blue && B.blueDice && B.blueDice.length > 0;
   if (ctRed || ctBlue) {
