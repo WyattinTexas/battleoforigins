@@ -10,7 +10,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v795'; // MUST match TESTROOM_VERSION — bump both together
+  const LOCAL_V = 'v796'; // MUST match TESTROOM_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -1677,9 +1677,12 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
   .team-column { width:100%; }
   .arena-center { min-width:auto; width:100%; }
   .ghost-grid { grid-template-columns:1fr; }
-  .team-battle-row { flex-wrap:nowrap; justify-content:center; }
+  /* Stack fighter + sidelines vertically on mobile */
+  .team-battle-row { flex-direction:column; align-items:center; gap:8px; }
+  .sideline-stack { flex-direction:row; gap:8px; }
+  .fighter-slot { width:200px; margin-left:0; margin-right:0; }
+  .sideline-slot { width:90px; }
   .die { width:44px; height:44px; font-size:20px; }
-  .fighter-slot { margin-left:10px; margin-right:10px; }
   .narrator-inner { font-size:12px; padding:8px 12px; min-height:30px; }
   .log-wrap { max-height:120px !important; }
   /* ability-splash-name / desc removed (v407) — element is now display:none */
@@ -1707,11 +1710,10 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
 }
 /* Mobile portrait: compact everything for ~375px */
 @media (max-width:440px) {
-  .app { padding:10px; }
-  .arena-board { padding:8px; gap:6px; scroll-snap-type:y proximity; max-height:100dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .team-column, .arena-center { scroll-snap-align:start; }
-  .fighter-slot { width:150px; margin-left:6px; margin-right:6px; }
-  .sideline-slot { width:80px; }
+  .app { padding:6px; }
+  .arena-board { padding:6px; gap:4px; }
+  .fighter-slot { width:55vw; max-width:200px; margin:0; }
+  .sideline-slot { width:22vw; max-width:90px; }
   .sideline-slot .card-img, .sideline-slot .card-img-placeholder { aspect-ratio:1; }
   .sideline-slot .ability-banner { font-size:8px; padding:2px 4px; }
   .sideline-slot .card-name-banner { font-size:10px; padding:4px 5px; }
@@ -1745,14 +1747,28 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
   header .sub { font-size:11px; }
   /* ability-splash-name / desc removed (v407) — element is now display:none */
 }
-/* Landscape: restore horizontal layout */
+/* Landscape mobile: side-by-side teams, compact cards, scrollable */
 @media (max-height:500px) and (orientation:landscape) {
-  .arena-board { flex-direction:row !important; max-height:100dvh; overflow-y:auto; align-items:flex-start; }
-  .team-column { width:auto; flex:1; }
-  .arena-center { min-width:160px; }
-  .fighter-slot { width:120px; margin:4px; }
-  .sideline-slot { width:70px; }
-  .die { width:40px; height:40px; font-size:18px; }
+  .arena-board { flex-direction:row !important; max-height:100dvh; overflow-y:auto; align-items:stretch; padding:6px; gap:6px; }
+  .team-column { width:auto; flex:1; min-width:0; gap:4px; }
+  /* Revert to horizontal row in landscape — enough width for fighter + sidelines */
+  .team-battle-row { flex-direction:row; gap:4px; }
+  .sideline-stack { flex-direction:column; gap:4px; }
+  .arena-center { min-width:80px; max-width:120px; gap:4px; }
+  .fighter-slot { width:100px; margin:0; }
+  .sideline-slot { width:56px; }
+  .die { width:36px; height:36px; font-size:16px; }
+  .dice-row { gap:2px; }
+  .team-roll { padding:6px 10px; font-size:11px; }
+  .ability-btn { padding:3px 6px; font-size:10px; }
+  .hp-bar-wrap { max-width:160px; }
+  .res-tile { width:30px; height:36px; }
+  .res-tile .res-main { font-size:13px; }
+  .res-tile .res-main img { width:16px; height:16px; }
+  .res-tile .res-count { font-size:9px; }
+  .res-tile .res-label { font-size:6px; }
+  .narrator-inner { font-size:10px; padding:4px 8px; min-height:20px; }
+  .turn-indicator { font-size:12px !important; }
 }
 /* Lite Mode — kill infinite animations for low-end devices */
 body.lite-mode *, body.lite-mode *::before, body.lite-mode *::after {
@@ -1783,7 +1799,7 @@ body.lite-mode .die.rolling { animation: none !important; }
 </div>
 <div class="app">
   <header>
-    <h1>VOLCANIC ACTIVITY & ROLLING HILLS TESTROOM</h1>
+    <h1>VOLCANIC ISLES & ROLLING HILLS TESTROOM</h1>
     <div class="sub">BOO! Battle of Origins — Spiritkin Testing Lab</div>
   </header>
 
@@ -2705,7 +2721,7 @@ body.lite-mode .die.rolling { animation: none !important; }
 // ============================================================
 // FIREBASE — persistent shared standings
 // ============================================================
-const TESTROOM_VERSION = 'v795';
+const TESTROOM_VERSION = 'v796';
 
 /* Mobile: lock body scroll when any modal overlay is active */
 (function() {
@@ -3014,7 +3030,7 @@ const GHOSTS = [
   {id:452, name:"Ripagoo", rarity:"uncommon", maxHp:5, art:"art/originals/Ripagoo.png", ability:"Chemical Y", abilityDesc:"Sideline: if a card in play transforms, gain 2 Burn.", category:"Resource Generation", set:"Volcanic Isles", tags:["Final 50"], designNote:"Sideline observer that feeds off transformation energy. Rewards evolution-heavy decks with Burn resources. Pairs with Carpenter chain, Bigsby→Doom, any future transform cards."},
   // === SKYLAR SEED — PLAGUE/DECAY MECHANIC (2026-04-11) — GALLERY ONLY, NO BATTLE LOGIC ===
   // First ghost to target the opposing sideline. Working name, working numbers — pending 20-ghost name review.
-  // === VOLCANIC ACTIVITY — Designed Cards ===
+  // === VOLCANIC ISLES — Designed Cards ===
   {id:317, name:"Scorch", art:"art/scorch.webp", rarity:"common", maxHp:3, ability:"Singe", abilityDesc:"Win: opponent's active ghost loses 1 max HP permanently.", category:"Debuff", set:"Volcanic Isles", designNote:"Permanent max HP reduction. Shrinks opponent over time."},
   {id:319, name:"Pumice", art:"art/pumice.webp", rarity:"common", maxHp:4, ability:"Float", abilityDesc:"Sideline: if your ghost would take 3+ damage, reduce to 2.", category:"Defense/Negation", set:"Volcanic Isles", designNote:"Damage cap from sideline."},
   {id:321, name:"Forge Fire", rarity:"uncommon", maxHp:5, art:"art/forge_fire.webp", ability:"Temper", abilityDesc:"Spend 1 Surge: your next win deals double damage.", category:"Damage Multiplier", set:"Volcanic Isles", designNote:"Surge as offensive fuel."},
