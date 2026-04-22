@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>BOO Battle Network</title>
+<script>
+// Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
+(function(){
+  const LOCAL_V = 'v0.58'; // MUST match BBN_VERSION — bump both together
+  fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
+    if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
+  }).catch(() => {});
+})();
+</script>
 <meta property="og:title" content="BOO! Spirit Battles — Arena">
 <meta property="og:description" content="Collect spirits, build your team, and battle in the arena. Open packs, earn badges, and climb the leaderboard.">
 <meta property="og:image" content="https://drbango.com/testroom/art/timber.jpg">
@@ -162,6 +171,10 @@ body {
   margin: 0 auto;
   padding: 20px;
   margin-left: 370px;
+  margin-right: 310px;
+}
+@media (max-width: 1200px) {
+  .content { margin-right: 0 !important; }
 }
 
 /* Sidebar Leaderboard */
@@ -236,6 +249,14 @@ body {
   font-size: 12px;
   flex-shrink: 0;
   margin-right: 2px;
+}
+.sidebar-lb-champ {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--gold-bright);
+  vertical-align: middle;
+  font-weight: 700;
 }
 .sidebar-lb-badges {
   display: inline-flex;
@@ -401,6 +422,163 @@ body {
   width: 46px;
   height: 46px;
 }
+/* ===== CHAMPION OF THE DAY (right sidebar) ===== */
+.champion-sidebar {
+  position: fixed;
+  right: 16px;
+  top: 80px;
+  width: 280px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13px;
+  z-index: 50;
+  overflow: hidden;
+}
+.champion-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(240, 197, 96, 0.08), transparent 60%);
+  pointer-events: none;
+}
+.champion-sidebar h3 {
+  font-family: 'Creepster', cursive;
+  font-size: 1rem;
+  color: var(--gold-bright);
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(240, 197, 96, 0.3);
+}
+.champion-crown {
+  text-align: center;
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 0 8px rgba(240, 197, 96, 0.5));
+}
+.champion-name {
+  text-align: center;
+  font-family: 'Creepster', cursive;
+  font-size: 1.2rem;
+  color: var(--gold-bright);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.champion-subtitle {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.champion-avatar {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--gold);
+  margin: 0 auto 8px;
+  box-shadow: 0 0 20px rgba(212, 160, 64, 0.3);
+}
+.champion-team-cards {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.champion-card {
+  width: 70px;
+  text-align: center;
+}
+.champion-card img {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  object-fit: cover;
+  background: var(--surface3);
+}
+.champion-card .name {
+  font-size: 0.6rem;
+  color: var(--text2);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.champion-defenses {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+.champion-defenses strong {
+  color: var(--gold);
+}
+.champion-dethrone-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  font-family: 'Creepster', cursive;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), #c0392b);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.champion-dethrone-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+}
+.champion-dethrone-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.champion-you-badge {
+  text-align: center;
+  padding: 10px;
+  font-family: 'Creepster', cursive;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  color: var(--gold-bright);
+  background: rgba(212, 160, 64, 0.1);
+  border: 1px solid var(--gold-deep);
+  border-radius: 8px;
+}
+.champion-history {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.champion-history h4 {
+  font-family: 'Creepster', cursive;
+  font-size: 0.8rem;
+  color: var(--text-warm);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.champion-history-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.champion-history-entry .champ-icon { font-size: 0.8rem; }
+.champion-history-entry .champ-name { color: var(--text2); font-weight: 600; }
+@media (max-width: 1200px) {
+  .champion-sidebar { display: none; }
+}
+
 /* Sidebar Pack */
 .sidebar-pack {
   margin-top: 12px;
@@ -2301,6 +2479,13 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
     </div>
   </div>
 
+  <!-- Champion of the Day (right sidebar) -->
+  <div class="champion-sidebar" id="champion-sidebar" style="display:none;">
+    <div class="champion-crown">👑</div>
+    <h3>Champion of the Day</h3>
+    <div id="champion-content"></div>
+  </div>
+
   <div class="content">
     <!-- Offline Banner -->
     <div class="offline-banner" id="offline-banner">Unable to connect. Check your internet connection.</div>
@@ -2540,7 +2725,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="cards.js"></script>
 
 <script>
-const BBN_VERSION = 'v0.47';
+const BBN_VERSION = 'v0.58';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -2709,6 +2894,13 @@ async function loadUserProfile() {
   });
 
   updateUI();
+
+  // Load and listen for Champion of the Day
+  await loadChampion();
+  initChampionListener();
+
+  // Check if player was yesterday's champion (grants Champion's Pack)
+  await checkChampionReward();
 
   // Process any pending battle result (from testroom redirect)
   await processBattleResult();
@@ -3216,6 +3408,7 @@ function toggleLeaderboard() {
 
 // Cache for player badges (loaded once per session)
 let _lbBadgeCache = {};
+let _lbChampCache = {};
 
 async function renderLeaderboard(data) {
   const container = document.getElementById('sidebar-lb-rows');
@@ -3232,17 +3425,27 @@ async function renderLeaderboard(data) {
   const top15 = entries.slice(0, 15);
   const currentInTop15 = currentUser && top15.some(e => e.uid === currentUser.uid);
 
-  // Load badges for players we haven't cached yet
-  const uncached = top15.filter(e => !_lbBadgeCache[e.uid]);
-  if (uncached.length > 0) {
-    const promises = uncached.map(async e => {
+  // Load badges and champion counts for players we haven't cached yet
+  const uncachedBadges = top15.filter(e => !_lbBadgeCache[e.uid]);
+  const uncachedChamp = top15.filter(e => _lbChampCache[e.uid] === undefined);
+  const fetchPromises = [];
+  if (uncachedBadges.length > 0) {
+    fetchPromises.push(...uncachedBadges.map(async e => {
       try {
         const snap = await db.ref(`mp/users/${e.uid}/dailyBadges`).once('value');
         _lbBadgeCache[e.uid] = snap.val() || [];
       } catch (_) { _lbBadgeCache[e.uid] = []; }
-    });
-    await Promise.all(promises);
+    }));
   }
+  if (uncachedChamp.length > 0) {
+    fetchPromises.push(...uncachedChamp.map(async e => {
+      try {
+        const snap = await db.ref(`mp/users/${e.uid}/championCount`).once('value');
+        _lbChampCache[e.uid] = snap.val() || 0;
+      } catch (_) { _lbChampCache[e.uid] = 0; }
+    }));
+  }
+  if (fetchPromises.length > 0) await Promise.all(fetchPromises);
 
   container.innerHTML = top15.map((entry, i) => {
     const isCurrent = currentUser && entry.uid === currentUser.uid;
@@ -3253,6 +3456,10 @@ async function renderLeaderboard(data) {
 
     // Build badge shape icons for this player
     const playerBadges = _lbBadgeCache[entry.uid] || [];
+    const champCount = _lbChampCache[entry.uid] || 0;
+    const champHtml = champCount > 0
+      ? `<span class="sidebar-lb-champ" title="${champCount}x Daily Champion">👑${champCount}</span>`
+      : '';
     const badgeHtml = playerBadges.length > 0
       ? `<span class="sidebar-lb-badges">${playerBadges.map(b => {
           const match = (typeof DAILY_MATCHES !== 'undefined' ? DAILY_MATCHES : []).find(m => m.badge === b);
@@ -3271,7 +3478,7 @@ async function renderLeaderboard(data) {
            ${!isCurrent ? `onclick="selectTarget('${entry.uid}')"` : ''}>
         <span class="sidebar-lb-rank">${i + 1}</span>
         ${portraitHtml}
-        <span class="sidebar-lb-name">${entry.displayName || 'Unknown'}${badgeHtml}</span>
+        <span class="sidebar-lb-name">${entry.displayName || 'Unknown'}${champHtml}${badgeHtml}</span>
         <span class="sidebar-lb-elo">${entry.elo || 1000}</span>
         ${challengeBtn}
       </div>
@@ -3318,13 +3525,20 @@ async function selectTarget(uid) {
       uid,
       name: userData.displayName || 'Unknown',
       elo: userData.stats?.elo || 1000,
-      team: validTeam.slice(0, 3)
+      team: validTeam.slice(0, 3),
+      championCount: userData.championCount || 0,
+      badgeCount: (userData.dailyBadges || []).length
     };
 
     // Show target preview
     const preview = document.getElementById('target-preview');
     document.getElementById('target-name').textContent = `VS ${selectedTarget.name}`;
-    document.getElementById('target-elo').textContent = `${selectedTarget.elo} Elo`;
+    const champCount = selectedTarget.championCount;
+    const badgeCount = selectedTarget.badgeCount;
+    let statParts = [`${selectedTarget.elo} Elo`];
+    if (champCount > 0) statParts.push(`👑 ${champCount}x Champion`);
+    if (badgeCount > 0) statParts.push(`🛡️ ${badgeCount} Badge${badgeCount !== 1 ? 's' : ''}`);
+    document.getElementById('target-elo').innerHTML = '  ' + statParts.join('  ·  ');
 
     // Show opponent's team (art + name only — no abilities)
     document.getElementById('target-team').innerHTML = selectedTarget.team.map(id => {
@@ -3612,6 +3826,9 @@ async function processBattleResult() {
   const opponentElo = opponentData ? opponentData.elo : 1200;
   const opponentName = opponentData ? opponentData.name : 'AI';
 
+  // Check if this was a champion challenge (2x Elo for wins)
+  const wasChampionFight = !!sessionStorage.getItem('mp_champion_challenge');
+
   let newElo = currentElo;
   let eloChange = 0;
   let titleText = '';
@@ -3619,12 +3836,16 @@ async function processBattleResult() {
 
   if (result === 'win') {
     const expected = 1 / (1 + Math.pow(10, (opponentElo - currentElo) / 400));
-    newElo = Math.round(currentElo + K * (1 - expected));
-    eloChange = newElo - currentElo;
-    titleText = 'Victory!';
-    bodyText = opponentData
-      ? `You defeated ${opponentName}'s team!`
-      : 'Your spirits conquered the arena.';
+    const baseGain = Math.round(K * (1 - expected));
+    const finalGain = wasChampionFight ? baseGain * 2 : baseGain;
+    newElo = currentElo + finalGain;
+    eloChange = finalGain;
+    titleText = wasChampionFight ? 'Champion Dethroned!' : 'Victory!';
+    bodyText = wasChampionFight
+      ? `You dethroned ${opponentName}! Double Elo!`
+      : opponentData
+        ? `You defeated ${opponentName}'s team!`
+        : 'Your spirits conquered the arena.';
 
     await ref.child('stats/wins').transaction(v => (v || 0) + 1);
     await ref.child('stats/elo').set(newElo);
@@ -3727,13 +3948,16 @@ async function processBattleResult() {
   // Check badges
   checkBadges();
 
+  // Process champion challenge result
+  await processChampionResult(result);
+
   // Show result modal
   document.getElementById('result-title').textContent = titleText;
   document.getElementById('result-body').textContent = bodyText;
   const eloEl = document.getElementById('result-elo-change');
   if (eloChange > 0) {
-    eloEl.textContent = `+${eloChange} Elo`;
-    eloEl.style.color = 'var(--uncommon)';
+    eloEl.textContent = wasChampionFight ? `+${eloChange} Elo (2x Champion Bonus!)` : `+${eloChange} Elo`;
+    eloEl.style.color = wasChampionFight ? 'var(--gold-bright)' : 'var(--uncommon)';
   } else if (eloChange < 0) {
     eloEl.textContent = `${eloChange} Elo`;
     eloEl.style.color = 'var(--accent)';
@@ -4891,8 +5115,8 @@ const DAILY_MATCHES = [
   { name: "Burn Brigade", team: [108, 437, 446], badge: "fire_walker", shape: "diamond", color: "#ef4444", difficulty: "MEDIUM" },
   { name: "Blade Masters", team: [206, 204, 431], badge: "blade_forger", shape: "shield", color: "#a1a1aa", difficulty: "MEDIUM" },
   { name: "Ice Factory", team: [313, 92, 104], badge: "ice_breaker", shape: "star", color: "#14b8a6", difficulty: "HARD" },
-  { name: "Dice Destroyers", team: [418, 78, 435], badge: "dice_lord", shape: "pentagon", color: "#f97316", difficulty: "HARD" },
   { name: "The Three Shades", team: [111, 436, 205], badge: "shade_master", shape: "triangle", color: "#22c55e", difficulty: "EXTREME" },
+  { name: "Night Swim", team: [457, 34, 32], badge: "night_swimmer", shape: "pentagon", color: "#4a4a8a", difficulty: "HARD" },
   { name: "Dark Pressure", team: [456, 105, 436], badge: "toll_collector", shape: "pentagon", color: "#7c2d8e", difficulty: "HARD" },
   { name: "Valkin's Court", team: [432, 424, 435], badge: "castle_conqueror", shape: "octagon", color: "#e11d48", difficulty: "EXTREME" },
 ];
@@ -5131,6 +5355,384 @@ async function stealCard(cardId, loserUid) {
 }
 
 // ============================================================
+// CHAMPION OF THE DAY
+// ============================================================
+let currentChampion = null;
+
+function getChampionRef() {
+  return db.ref('mp/champion');
+}
+
+// Listen for champion changes in realtime
+function initChampionListener() {
+  getChampionRef().on('value', snap => {
+    currentChampion = snap.val();
+    renderChampion();
+  });
+}
+
+async function loadChampion() {
+  const snap = await getChampionRef().once('value');
+  currentChampion = snap.val();
+
+  const dateKey = getDailyDateKey();
+
+  // Reset to rival if no champion exists or it's a new day
+  if (!currentChampion || currentChampion.date !== dateKey) {
+    await resetChampionToRival();
+  }
+
+  renderChampion();
+}
+
+async function resetChampionToRival() {
+  const dateKey = getDailyDateKey();
+  const daily = getDailyTeam();
+  const championData = {
+    date: dateKey,
+    type: 'rival',
+    uid: null,
+    displayName: daily.name,
+    avatar: null,
+    team: daily.team,
+    defenses: 0,
+    crownedAt: firebase.database.ServerValue.TIMESTAMP,
+    history: null
+  };
+  await getChampionRef().set(championData);
+  currentChampion = championData;
+}
+
+async function claimChampion(winnerUid, winnerName, winnerAvatar, winnerTeam) {
+  const dateKey = getDailyDateKey();
+  const ref = getChampionRef();
+
+  // Build history entry for the dethroned champion
+  const historyEntry = {
+    name: currentChampion ? currentChampion.displayName : 'Unknown',
+    type: currentChampion ? currentChampion.type : 'rival',
+    timestamp: Date.now()
+  };
+
+  // Get existing history
+  const snap = await ref.child('history').once('value');
+  const history = snap.val() || [];
+  history.push(historyEntry);
+  // Keep last 5 entries
+  while (history.length > 5) history.shift();
+
+  const championData = {
+    date: dateKey,
+    type: 'player',
+    uid: winnerUid,
+    displayName: winnerName,
+    avatar: winnerAvatar || null,
+    team: winnerTeam,
+    defenses: 0,
+    crownedAt: firebase.database.ServerValue.TIMESTAMP,
+    history: history
+  };
+  await ref.set(championData);
+  currentChampion = championData;
+
+  // Mark this player as today's champion for end-of-day reward
+  // (whoever holds the crown when the day resets gets the Champion's Pack)
+  const userRef = db.ref(`mp/users/${winnerUid}`);
+  await userRef.child('lastChampionDate').set(dateKey);
+}
+
+async function incrementChampionDefenses() {
+  await getChampionRef().child('defenses').transaction(v => (v || 0) + 1);
+}
+
+function renderChampion() {
+  const sidebar = document.getElementById('champion-sidebar');
+  const content = document.getElementById('champion-content');
+  if (!sidebar || !content) return;
+
+  const dateKey = getDailyDateKey();
+  if (!currentChampion || currentChampion.date !== dateKey) {
+    sidebar.style.display = 'none';
+    return;
+  }
+
+  sidebar.style.display = 'block';
+
+  const isRival = currentChampion.type === 'rival';
+  const isMe = !isRival && currentUser && currentChampion.uid === currentUser.uid;
+
+  // Fetch champion count for display (async, non-blocking)
+  if (!isRival && currentChampion.uid && !currentChampion._champCount) {
+    db.ref(`mp/users/${currentChampion.uid}/championCount`).once('value').then(snap => {
+      const count = snap.val() || 0;
+      if (count > 0) {
+        const el = document.getElementById('champion-all-time');
+        if (el) el.textContent = `${count}x Daily Champion`;
+      }
+    });
+  }
+
+  // Avatar
+  let avatarHTML = '';
+  if (isRival) {
+    // Use first ghost art as avatar for rival
+    const firstGhost = getGhost(currentChampion.team[0]);
+    if (firstGhost) {
+      avatarHTML = `<img class="champion-avatar" src="${firstGhost.art}" alt="${currentChampion.displayName}" onerror="this.style.display='none'">`;
+    }
+  } else if (currentChampion.avatar) {
+    avatarHTML = `<img class="champion-avatar" src="${currentChampion.avatar}" alt="${currentChampion.displayName}" onerror="this.style.display='none'">`;
+  }
+
+  // Team cards
+  const teamHTML = (currentChampion.team || []).map(id => {
+    const g = getGhost(id);
+    if (!g) return '';
+    return `<div class="champion-card"><img src="${g.art}" alt="${g.name}" onerror="this.style.background='var(--surface3)'"><div class="name">${g.name}</div></div>`;
+  }).join('');
+
+  // Defenses
+  const defenses = currentChampion.defenses || 0;
+  const defensesHTML = defenses > 0
+    ? `<div class="champion-defenses">Defended <strong>${defenses}</strong> time${defenses !== 1 ? 's' : ''} today</div>`
+    : `<div class="champion-defenses">No challengers defeated yet</div>`;
+
+  // Action button
+  let actionHTML = '';
+  if (isMe) {
+    actionHTML = `<div class="champion-you-badge">You Hold the Crown</div>`;
+  } else {
+    const filledTeam = team.filter(id => id !== null);
+    const canChallenge = filledTeam.length === 3 && getGamesRemaining() > 0;
+    actionHTML = `<button class="champion-dethrone-btn" onclick="challengeChampion()" ${canChallenge ? '' : 'disabled'}>⚔️ DETHRONE</button>`;
+  }
+
+  // History
+  let historyHTML = '';
+  const history = currentChampion.history;
+  if (history && history.length > 0) {
+    const entries = history.slice().reverse().map(h => {
+      const icon = h.type === 'rival' ? '🤖' : '👤';
+      return `<div class="champion-history-entry"><span class="champ-icon">${icon}</span><span class="champ-name">${h.name}</span><span>dethroned</span></div>`;
+    }).join('');
+    historyHTML = `<div class="champion-history"><h4>Dethroned Today</h4>${entries}</div>`;
+  }
+
+  content.innerHTML = `
+    ${avatarHTML}
+    <div class="champion-name">${currentChampion.displayName}</div>
+    <div class="champion-subtitle">${isRival ? 'AI Rival — defeat to claim the crown!' : isMe ? 'You are the champion!' : 'Player champion — can you dethrone them?'}</div>
+    ${!isRival ? '<div id="champion-all-time" style="text-align:center;font-size:0.7rem;color:var(--gold);margin-bottom:6px;"></div>' : ''}
+    <div class="champion-team-cards">${teamHTML}</div>
+    ${defensesHTML}
+    ${actionHTML}
+    ${historyHTML}
+  `;
+}
+
+async function challengeChampion() {
+  const filledTeam = team.filter(id => id !== null);
+  if (filledTeam.length < 3) {
+    showToast('Pick your 3-card team first!');
+    return;
+  }
+  if (getGamesRemaining() <= 0) {
+    showToast('No games remaining!');
+    return;
+  }
+  if (!currentChampion) return;
+
+  // Save team
+  await db.ref(`mp/users/${currentUser.uid}/currentTeam`).set(filledTeam);
+
+  const isRival = currentChampion.type === 'rival';
+
+  if (isRival) {
+    // Fight the rival AI team — same as daily battle but tracked as champion challenge
+    sessionStorage.setItem('mp_champion_challenge', 'true');
+    window.location.href = '../testroom/?red=' + filledTeam.join(',')
+      + '&blue=' + currentChampion.team.join(',')
+      + '&mode=champion';
+  } else {
+    // Fight a player champion — async PvP style
+    // Fetch their actual elo for proper calculation
+    let champElo = 1200;
+    try {
+      const lbSnap = await db.ref(`mp/leaderboard/${currentChampion.uid}/elo`).once('value');
+      if (lbSnap.val()) champElo = lbSnap.val();
+    } catch (_) {}
+    sessionStorage.setItem('mp_opponent', JSON.stringify({
+      uid: currentChampion.uid,
+      name: currentChampion.displayName,
+      elo: champElo,
+      team: currentChampion.team
+    }));
+    sessionStorage.setItem('mp_champion_challenge', 'true');
+    window.location.href = '../testroom/?red=' + filledTeam.join(',')
+      + '&blue=' + currentChampion.team.join(',')
+      + '&mode=mp'
+      + '&oppName=' + encodeURIComponent(currentChampion.displayName);
+  }
+}
+
+// Called after any battle result — checks if this was a champion challenge
+async function processChampionResult(result) {
+  const wasChampionChallenge = sessionStorage.getItem('mp_champion_challenge');
+  sessionStorage.removeItem('mp_champion_challenge');
+  if (!wasChampionChallenge) return;
+  if (!currentUser || !userProfile) return;
+
+  // Reload champion to get latest state
+  const snap = await getChampionRef().once('value');
+  currentChampion = snap.val();
+
+  const dateKey = getDailyDateKey();
+  if (!currentChampion || currentChampion.date !== dateKey) return;
+
+  if (result === 'win') {
+    // Save type before claimChampion overwrites currentChampion
+    const wasRival = currentChampion && currentChampion.type === 'rival';
+
+    // Player beat the champion — they become the new champion!
+    const filledTeam = userProfile.currentTeam || team.filter(id => id !== null);
+    await claimChampion(
+      currentUser.uid,
+      userProfile.displayName || 'Champion',
+      currentUser.photoURL || null,
+      filledTeam
+    );
+    showToast('👑 You are the new Champion of the Day!');
+
+    // If the champion WAS the rival, also grant daily badge + mark daily as won
+    // (so you don't have to beat the rival twice — once as champion, once as daily)
+    if (wasRival) {
+      const daily = getDailyTeam();
+      const ref = db.ref(`mp/users/${currentUser.uid}`);
+      await ref.update({ dailyChallengeWon: true, dailyChallengeDate: dateKey });
+      if (daily.badge) {
+        const dailyBadges = userProfile.dailyBadges || [];
+        if (!dailyBadges.includes(daily.badge)) {
+          dailyBadges.push(daily.badge);
+          await ref.child('dailyBadges').set(dailyBadges);
+          userProfile.dailyBadges = dailyBadges;
+          showToast(`Badge earned: ${daily.name}`);
+          if (currentUser) delete _lbBadgeCache[currentUser.uid];
+        }
+      }
+      // Grant bonus cards (same as daily win)
+      const bonusCards = generateDailyPack();
+      const rivalTeam = daily.team || [];
+      if (rivalTeam.length > 0) {
+        const rivalId = rivalTeam[Math.floor(Math.random() * rivalTeam.length)];
+        const rivalGhost = getGhost(rivalId);
+        if (rivalGhost) bonusCards[0] = rivalGhost;
+      }
+      const newIds = bonusCards.map(g => g.id);
+      const updatedCollection = [...(userProfile.collection || []), ...newIds];
+      await ref.child('collection').set(updatedCollection);
+      userProfile.dailyChallengeWon = true;
+      userProfile.dailyChallengeDate = dateKey;
+      userProfile.collection = updatedCollection;
+      showRewardCards(bonusCards, 'Champion & Rival Defeated!', () => {
+        renderDailyChallenge();
+        renderCollection();
+        db.ref('mp/leaderboard').once('value', snap => renderLeaderboard(snap.val()));
+      });
+    }
+  } else {
+    // Champion defended
+    if (currentChampion.type === 'player') {
+      await incrementChampionDefenses();
+    }
+  }
+
+  renderChampion();
+}
+
+// Also handle champion claims from daily rival wins
+async function checkDailyChampionClaim() {
+  if (!currentChampion || !currentUser || !userProfile) return;
+  const dateKey = getDailyDateKey();
+  if (!currentChampion || currentChampion.date !== dateKey) return;
+
+  // If the champion is still the rival and the player just beat the daily rival, claim it
+  if (currentChampion.type === 'rival') {
+    const filledTeam = userProfile.currentTeam || team.filter(id => id !== null);
+    await claimChampion(
+      currentUser.uid,
+      userProfile.displayName || 'Champion',
+      currentUser.photoURL || null,
+      filledTeam
+    );
+    showToast('👑 You are the new Champion of the Day!');
+    renderChampion();
+  }
+}
+
+// ============================================================
+// CHAMPION'S PACK REWARD (end-of-day champion gets rare+ pack next login)
+// ============================================================
+function generateChampionPack() {
+  // 3 cards, all rare or better
+  const rares = getGhostsByRarity('rare');
+  const ghostRares = getGhostsByRarity('ghost-rare');
+  const legendaries = getGhostsByRarity('legendary');
+
+  function pickChampionCard() {
+    // 55% rare, 30% ghost-rare, 15% legendary
+    const r = Math.random();
+    if (r < 0.15 && legendaries.length > 0) {
+      return legendaries[Math.floor(Math.random() * legendaries.length)];
+    } else if (r < 0.45 && ghostRares.length > 0) {
+      return ghostRares[Math.floor(Math.random() * ghostRares.length)];
+    } else {
+      return rares[Math.floor(Math.random() * rares.length)];
+    }
+  }
+
+  return [pickChampionCard(), pickChampionCard(), pickChampionCard()];
+}
+
+async function checkChampionReward() {
+  if (!currentUser || !userProfile) return;
+
+  const lastChampDate = userProfile.lastChampionDate || 0;
+  const lastRewardDate = userProfile.lastChampionRewardDate || 0;
+  const today = getDailyDateKey();
+
+  // They were champion on a previous day, and haven't collected the reward yet
+  if (lastChampDate > 0 && lastChampDate < today && lastChampDate !== lastRewardDate) {
+    const ref = db.ref(`mp/users/${currentUser.uid}`);
+
+    // Increment their all-time champion count
+    await ref.child('championCount').transaction(v => (v || 0) + 1);
+
+    // Generate and grant the Champion's Pack
+    const packCards = generateChampionPack();
+    const newIds = packCards.map(g => g.id);
+    const updatedCollection = [...(userProfile.collection || []), ...newIds];
+    await ref.update({
+      collection: updatedCollection,
+      lastChampionRewardDate: lastChampDate
+    });
+    userProfile.collection = updatedCollection;
+    userProfile.championCount = (userProfile.championCount || 0) + 1;
+    userProfile.lastChampionRewardDate = lastChampDate;
+
+    // Sort by rarity for cinematic reveal
+    const raritySort = { common: 0, uncommon: 1, rare: 2, 'ghost-rare': 3, legendary: 4 };
+    packCards.sort((a, b) => (raritySort[a.rarity] || 0) - (raritySort[b.rarity] || 0));
+
+    showRewardCardsStaggered(packCards, "Champion's Pack", () => {
+      renderCollection();
+      renderChampion();
+    });
+
+    showToast("👑 Champion's Pack! You held the crown yesterday!");
+  }
+}
+
+// ============================================================
 // DAILY MATCH RESULT HANDLING
 // ============================================================
 async function processDailyResult() {
@@ -5177,6 +5779,9 @@ async function processDailyResult() {
     userProfile.dailyChallengeWon = true;
     userProfile.dailyChallengeDate = dateKey;
     userProfile.collection = updatedCollection;
+
+    // Claim champion if rival is still champion
+    await checkDailyChampionClaim();
 
     // Show the reward cards with celebration
     showRewardCards(bonusCards, 'Rival Defeated!', () => {
@@ -5287,7 +5892,7 @@ async function checkDailyCompletionPack() {
 const CUSTOM_PACKS = [
   {
     match: (name) => name.toLowerCase().includes('ej') && name.toLowerCase().includes('brieva'),
-    ids: [456, 424, 336, 111], // Ryder + Bigsby + Humar (legendary) + Shade (legendary)
+    ids: [456, 457, 424, 336, 111], // Ryder + Sophia + Bigsby + Humar (legendary) + Shade (legendary)
     label: 'EJ\'s Pack'
   },
   {
@@ -5297,8 +5902,13 @@ const CUSTOM_PACKS = [
   },
   {
     match: (name) => name.toLowerCase().includes('skylar'),
-    ids: [456, 450, 452, 210], // Ryder + Welder (rare), Ripagoo (uncommon) + Timber (legendary)
+    ids: [456, 457, 450, 452, 210], // Ryder + Sophia + Welder (rare), Ripagoo (uncommon) + Timber (legendary)
     label: 'Skylar\'s Pack'
+  },
+  {
+    match: (name) => name.toLowerCase().includes('wyatt'),
+    ids: [458, 457, 459], // Maisie (ghost-rare) + Sophia (rare) + Eli (common)
+    label: 'Wyatt\'s Pack'
   }
 ];
 
@@ -5333,7 +5943,7 @@ function getCustomPackForUser(displayName) {
 
 async function checkSpecialPack() {
   if (!currentUser || !userProfile) return;
-  if (userProfile.receivedSpecialPackV3) return;
+  if (userProfile.receivedSpecialPackV4) return;
   // Only for existing players who already have some cards
   if (!userProfile.collection || userProfile.collection.length === 0) return;
 
@@ -5365,11 +5975,11 @@ async function checkSpecialPack() {
 
   await db.ref(`mp/users/${currentUser.uid}`).update({
     collection: updatedCollection,
-    receivedSpecialPackV3: true
+    receivedSpecialPackV4: true
   });
 
   userProfile.collection = updatedCollection;
-  userProfile.receivedSpecialPackV3 = true;
+  userProfile.receivedSpecialPackV4 = true;
 
   // Show the cards with cinematic staggered reveal
   showRewardCardsStaggered(packCards, packTitle, () => {

@@ -374,6 +374,7 @@ function startBattle() {
   B = {
     red: makeTeam(S.redPicks), blue: makeTeam(S.bluePicks),
     round:1, log:[], phase:'ready',
+    battleStarted: false,
     pendingMoonstone:null, pendingSteal:null,
     // === DUEL PHASE ===
     // Lower-HP loser goes first in the pre-roll commit phase. Toggle off to revert to simultaneous.
@@ -407,6 +408,8 @@ function startBattle() {
     haywireBonus: { red: 0, blue: 0 },
     haywireDamageBonus: { red: 0, blue: 0 },
     chowDecided: { red: false, blue: false },
+    zorkDecided: { red: false, blue: false },
+    zorkExtraDie: { red: 0, blue: 0 },
     cultivateDecided: { red: false, blue: false },
     willowLostLast: { red: false, blue: false },
     haywireUsed: { red: false, blue: false },
@@ -485,6 +488,7 @@ function startBattle() {
         const secondEntryDelay = secondEntryCount > 0 ? secondEntryCount * 1500 : 300;
         setTimeout(() => {
           // All entry effects done — check for KOs, then enable rolling
+          B.battleStarted = true;
           if (handleKOs()) return;
           // Duel Phase v1: check for priority before unlocking rolls
           startNextRound();
@@ -499,6 +503,7 @@ function startBattle() {
     const secondTeam2 = (_priority2 === 'blue') ? B.red  : B.blue;
     triggerEntry(firstTeam2);
     triggerEntry(secondTeam2);
+    B.battleStarted = true;
     renderBattle();
     if (handleKOs()) return;
     narrate(`<b class="gold">Round 1</b> — <b class="red-text">${active(B.red).name}</b>&nbsp;vs&nbsp;<b class="blue-text">${active(B.blue).name}</b> — <b class="gold">Fight!</b>`);
@@ -690,7 +695,8 @@ function triggerEntry(team, skipEntryEffects) {
   }
 
   // Dallas (60) — Quick Draw: on entry from sideline, prime die theft for first 2 rolls
-  if (f.id === 60) {
+  // Only fires when coming OFF the sideline — not when Dallas starts as the active ghost
+  if (f.id === 60 && B.battleStarted) {
     f.dallasQuickDraw = 2;
     entryCallouts.push(['QUICK DRAW!', 'var(--uncommon)', `${f.name} — stealing 1 opponent die for the next 2 rolls!`, entryTeamName]);
     log(`<span class="log-ability">${f.name}</span> — Quick Draw! Steals 1 opponent die for the first 2 rolls.`);
@@ -1075,13 +1081,13 @@ function useFinnFlameBlade(team) {
   const finnOnTeam = t.ghosts.some(g => g.id === 204 && !g.ko);
   if (!finnOnTeam) return;
   if (B.flameBlade && B.flameBlade[team]) return; // already forged
-  if ((t.resources.healingSeed || 0) < 2 || (t.resources.fire || 0) < 1) return;
-  t.resources.healingSeed -= 2;
+  if ((t.resources.healingSeed || 0) < 1 || (t.resources.fire || 0) < 1) return;
+  t.resources.healingSeed -= 1;
   t.resources.fire -= 1;
   if (!B.flameBlade) B.flameBlade = { red: false, blue: false };
   B.flameBlade[team] = true;
   creditGhost(team, 204, 'ms', 1); // Finn earns MVP credit for forging
-  log(`<span class="log-ability">Finn</span> — Forge! 2 Healing Seeds + 1 Sacred Fire → <span class="log-ms">Flame Blade!</span> (permanent item)`);
+  log(`<span class="log-ability">Finn</span> — Forge! 1 Healing Seed + 1 Sacred Fire → <span class="log-ms">Flame Blade!</span> (permanent item)`);
   showAbilityCallout('FLAME BLADE!', 'var(--rare)', 'Finn forges the Flame Blade!', team);
   playSfx('sfxSpecial', 0.5);
   renderBattle();
@@ -1823,6 +1829,25 @@ function doChowChoice(choice) {
     B.chowDecided[team] = true;
     setTimeout(() => { btn.disabled = false; btn.classList.remove('locked'); doTeamRoll(team, btn); }, 200);
   }
+}
+
+// ============================================================
+// ZORK (463) — Stoke: discard all Burn for +1 die per Burn (button)
+// ============================================================
+function useZorkStoke(team) {
+  const f = active(B[team]);
+  if (!f || f.id !== 463 || f.ko) return;
+  if (B.zorkDecided[team]) return;
+  if (!B[team].resources.burn || B[team].resources.burn <= 0) return;
+  const burnSpent = B[team].resources.burn;
+  B[team].resources.burn = 0;
+  B.zorkDecided[team] = true;
+  if (!B.zorkExtraDie) B.zorkExtraDie = { red: 0, blue: 0 };
+  B.zorkExtraDie[team] = (B.zorkExtraDie[team] || 0) + burnSpent;
+  showAbilityCallout('SMOLDER!', 'var(--common)',
+    `${f.name} — ${burnSpent} Burn → +${burnSpent} dice!`, team);
+  log(`<span class="log-ability">${f.name}</span> — Smolder! Discarded ${burnSpent} Burn for +${burnSpent} dice!`);
+  renderBattle();
 }
 
 // ============================================================
@@ -3392,6 +3417,8 @@ function rollReady(team) {
       }
     }
 
+    // Zork (463) — Stoke: now handled by pre-roll ability button (useZorkStoke)
+
     // Castle Gardener (442) — Cultivate: discard 1 Healing Seed for 1 Sacred Fire (interactive button)
     {
       const cultG = active(B[team]);
@@ -3852,6 +3879,8 @@ function openDuelPhasePrimers(team) {
     document.getElementById('chowOverlay').classList.add('active');
     return true;
   }
+
+  // — ZORK (463) — Stoke: now handled by pre-roll ability button (useZorkStoke)
 
   // — CASTLE GARDENER (442) — Cultivate: discard 1 Healing Seed for 1 Sacred Fire (Duel Phase)
   if (f.id === 442 && !f.ko && B.cultivateDecided && !B.cultivateDecided[team] &&
@@ -4762,6 +4791,10 @@ function doPreRollSetup() {
   if (!B.chowExtraDie) B.chowExtraDie = { red: 0, blue: 0 };
   B.chowDecided = { red: false, blue: false };
 
+  // Zork (463) — Stoke: reset decided flag, zorkExtraDie persists until consumed
+  if (!B.zorkExtraDie) B.zorkExtraDie = { red: 0, blue: 0 };
+  B.zorkDecided = { red: false, blue: false };
+
   // Castle Gardener (442) — Cultivate: reset per round
   B.cultivateDecided = { red: false, blue: false };
 
@@ -5039,6 +5072,10 @@ function doPreRollSetup() {
     log(`<span class="log-ability">Gordok</span> — River Terror! +${B.gordokDieBonus.blue} bonus die this roll.`);
     B.gordokDieBonus.blue = 0;
   }
+
+  // Zork (463) — Stoke: consume committed dice from doZorkChoice
+  if (B.zorkExtraDie && B.zorkExtraDie.red > 0) { redCount += B.zorkExtraDie.red; B.zorkExtraDie.red = 0; }
+  if (B.zorkExtraDie && B.zorkExtraDie.blue > 0) { blueCount += B.zorkExtraDie.blue; B.zorkExtraDie.blue = 0; }
 
   // Flame Blade item: when swinging, +1 die
   if (B.flameBladeSwing && B.flameBladeSwing.red) {
@@ -5360,16 +5397,17 @@ function doPreRollSetup() {
   });
 
   // Marcus (57) — Glacial Pounding: consume bonus dice from last round's big hit (applied last so it can't be stolen by Outlaw)
+  // Bonus goes to the PLAYER — whoever is active gets the dice, even if Marcus died from the hit
   [B.red, B.blue].forEach(team => {
     const tName = team === B.red ? 'red' : 'blue';
     if (B.marcusGlacialBonus && B.marcusGlacialBonus[tName] > 0) {
-      const marF = active(team);
-      if (marF && marF.id === 57 && !marF.ko) {
+      const curF = active(team);
+      if (curF && !curF.ko) {
         const bonus = B.marcusGlacialBonus[tName];
         if (tName === 'red') redCount += bonus;
         else blueCount += bonus;
-        preRollCallouts.push(['GLACIAL POUNDING!', 'var(--uncommon)', `${marF.name} — Took a big hit! +${bonus} bonus dice this roll!`, tName]);
-        log(`<span class="log-ability">${marF.name}</span> — Glacial Pounding! +${bonus} bonus dice from last round's big hit!`);
+        preRollCallouts.push(['GLACIAL POUNDING!', 'var(--uncommon)', `Marcus's revenge! ${curF.name} gets +${bonus} bonus dice!`, tName]);
+        log(`<span class="log-ability">Marcus</span> — Glacial Pounding! ${curF.name} gets +${bonus} bonus dice from last round's big hit!`);
       }
       B.marcusGlacialBonus[tName] = 0;
     }
@@ -5587,6 +5625,26 @@ function doPostRollAndResolve(redDice, blueDice) {
         }, tNameChamp);
         checkKnightEffects(tNameChamp, f.name);
       }
+    }
+  });
+
+  // Ronan (461) — Mixup: if you roll doubles+ → gain +1 Ice Shard & +1 Burn (win or lose)
+  [B.red, B.blue].forEach(team => {
+    const f = active(team);
+    const tNameRonan = team === B.red ? 'red' : 'blue';
+    const ronanDice = team === B.red ? redDice : blueDice;
+    if (f.id === 461 && !f.ko && ['doubles','triples','quads','penta'].includes(classify(ronanDice).type)) {
+      const _rTeam = team;
+      const _rName = f.name;
+      queueAbility('MIXUP!', 'var(--common)', `${f.name} — Doubles! +1 Ice Shard & +1 Burn!`, () => {
+        if (!_rTeam.resources.ice) _rTeam.resources.ice = 0;
+        _rTeam.resources.ice += 1;
+        if (!_rTeam.resources.burn) _rTeam.resources.burn = 0;
+        _rTeam.resources.burn += 1;
+        log(`<span class="log-ability">${_rName}</span> — Mixup! Doubles → gained <span class="log-ms">1 Ice Shard</span> & <span class="log-dmg">1 Burn</span>!`);
+        renderBattle();
+      }, tNameRonan);
+      checkKnightEffects(tNameRonan, f.name);
     }
   });
 
@@ -7227,7 +7285,8 @@ function _resolveRoundImpl() {
   if (winner !== null && !sylviaResuming && !B.sylviaPendingResult) {
     const loserTeamName = winner === 'red' ? 'blue' : 'red';
     const loserF = active(B[loserTeamName]);
-    if (loserF && loserF.id === 313 && !loserF.ko) {
+    const _cameronWinner = active(B[winner]);
+    if (loserF && loserF.id === 313 && !loserF.ko && !(_cameronWinner && _cameronWinner.id === 25 && !_cameronWinner.ko)) {
       showSylviaModal(loserTeamName, () => {
         B.sylviaResuming = true;
         resolveRound();
@@ -8010,6 +8069,22 @@ function _resolveRoundImpl() {
     log(`<span class="log-ability">${wF.name}</span> — Teamwork! Singles win → +2 damage!`);
   }
 
+  // Ridley (462) — Nimble: singles +1 damage, doubles +2 damage.
+  let ridleyTriggered = false;
+  let ridleyBaseDmg = 0;
+  let ridleyBonus = 0;
+  if (wF.id === 462 && !wF.ko) {
+    if (wR.type === 'singles') { ridleyBonus = 1; }
+    else if (['doubles','triples','quads','penta'].includes(wR.type)) { ridleyBonus = 2; }
+    if (ridleyBonus > 0) {
+      ridleyBaseDmg = dmg;
+      dmg += ridleyBonus;
+      ridleyTriggered = true;
+      collectKC(winTeamName, wF.name);
+      log(`<span class="log-ability">${wF.name}</span> — Nimble! ${wR.type === 'singles' ? 'Singles' : 'Doubles'} → +${ridleyBonus} damage!`);
+    }
+  }
+
   // Greg (49) — Chase: if Greg has more HP than the opposing ghost, rolls deal 2X damage.
   // Faithfully ported from GHOSTS abilityDesc: "If Greg has more health than the opposing ghost, Greg's rolls do x2 damage."
   let gregTriggered = false;
@@ -8113,7 +8188,7 @@ function _resolveRoundImpl() {
   // (where abilityQueueMode=true) to prevent them firing synchronously and being stomped.
   let sylviaDodged = false;
   let sylviaDodgeRolls = []; // store for callout (array form for back-compat with callout)
-  if (lF.id === 313 && !lF.ko) {
+  if (lF.id === 313 && !lF.ko && !cameronUnnegatable) {
     let rolledValue;
     if (B.sylviaPendingResult && typeof B.sylviaPendingResult.value === 'number') {
       rolledValue = B.sylviaPendingResult.value;
@@ -8375,10 +8450,13 @@ function _resolveRoundImpl() {
     log(`<span class="log-ability">${wF.name}</span> — Swift! 1-2-3 combo → exactly 4 damage!`);
   }
 
+  // Cameron (25) — Unstoppable Force: Cameron's damage cannot be negated.
+  const cameronUnnegatable = (wF.id === 25 && !wF.ko);
+
   // Guard Thomas (41) — Stoic: while Guard Thomas has less than 6 HP, singles rolls deal 0 damage to him.
   // Defensive immunity — no stat change needed, just zero out dmg and flag it.
   let guardThomasStoic = false;
-  if (lF.id === 41 && !lF.ko && lF.hp < 6 && wR.type === 'singles' && dmg > 0) {
+  if (lF.id === 41 && !lF.ko && lF.hp < 6 && wR.type === 'singles' && dmg > 0 && !cameronUnnegatable) {
     guardThomasStoic = true;
     dmg = 0;
     log(`<span class="log-ability">${lF.name}</span> — Stoic! Below 6 HP — immune to singles! ${wF.name}'s singles roll blocked!`);
@@ -8393,7 +8471,7 @@ function _resolveRoundImpl() {
   let bogeyHpAfter = 0;
   const bogeyReflectResuming = !!B.bogeyReflectResuming;
   B.bogeyReflectResuming = false;
-  if (lF.id === 53 && !lF.ko && B.bogeyUsed && !B.bogeyUsed[loseTeamName] && dmg > 0) {
+  if (lF.id === 53 && !lF.ko && B.bogeyUsed && !B.bogeyUsed[loseTeamName] && dmg > 0 && !cameronUnnegatable) {
     if (!bogeyReflectResuming && !B.bogeyReflectChoice) {
       // First pass — pause resolveRound, open modal with live damage preview
       B.bogeyReflectPending = { loseTeamName, dmg };
@@ -8421,7 +8499,7 @@ function _resolveRoundImpl() {
 
   // Kodako (1) — Swift LOSE case: rolling 1-2-3 while losing → negate all incoming damage, deal 4 back to winner
   let kodakoSwiftLose = false;
-  if (lF.id === 1 && !lF.ko && loseDice && [1,2,3].every(v => loseDice.includes(v)) && dmg > 0) {
+  if (lF.id === 1 && !lF.ko && loseDice && [1,2,3].every(v => loseDice.includes(v)) && dmg > 0 && !cameronUnnegatable) {
     dmg = 0; // Kodako takes nothing — Swift counters the hit
     kodakoSwiftLose = true;
     collectKC(loseTeamName, lF.name);
@@ -8433,7 +8511,7 @@ function _resolveRoundImpl() {
   let patrickStoneForm = false;
   const patrickStoneDmg = 3;
   let stoneFormHpAfter = 0;
-  if (lF.id === 10 && !lF.ko && wR.type === 'singles' && dmg > 0) {
+  if (lF.id === 10 && !lF.ko && wR.type === 'singles' && dmg > 0 && !cameronUnnegatable) {
     dmg = 0; // Patrick takes nothing — Stone Form counters singles
     patrickStoneForm = true;
     collectKC(loseTeamName, lF.name);
@@ -8443,7 +8521,7 @@ function _resolveRoundImpl() {
   // Dealer (37) — House Rules: Dealer's losing dice in strict consecutive ascending order → negate all incoming damage.
   // e.g. [1,2,3], [2,3,4], [3,4,5], [4,5,6] — any length run that is perfectly sequential.
   let dealerHouseRules = false;
-  if (lF.id === 37 && !lF.ko && dmg > 0 && loseDice && loseDice.length >= 2) {
+  if (lF.id === 37 && !lF.ko && dmg > 0 && loseDice && loseDice.length >= 2 && !cameronUnnegatable) {
     const _sortedDealerDice = [...loseDice].sort((a, b) => a - b);
     const _isSequential = _sortedDealerDice.every((v, i) => i === 0 || v === _sortedDealerDice[i - 1] + 1);
     if (_isSequential) {
@@ -8458,7 +8536,7 @@ function _resolveRoundImpl() {
   // A pure big-damage shield — lets through 1-2 damage, blocks 3+.
   let skyElusive = false;
   let skyElusiveBlockedDmg = 0;
-  if (lF.id === 72 && !lF.ko && dmg > 2) {
+  if (lF.id === 72 && !lF.ko && dmg > 2 && !cameronUnnegatable) {
     skyElusiveBlockedDmg = dmg;
     dmg = 0;
     skyElusive = true;
@@ -8470,7 +8548,7 @@ function _resolveRoundImpl() {
   // A 1 HP doubles-immune defender — the win roll type must be 'doubles' for Barrier to trigger.
   let cityCybooBarrier = false;
   let cityCybooBlockedDmg = 0;
-  if (lF.id === 77 && !lF.ko && wR.type === 'doubles' && dmg > 0) {
+  if (lF.id === 77 && !lF.ko && wR.type === 'doubles' && dmg > 0 && !cameronUnnegatable) {
     cityCybooBlockedDmg = dmg;
     dmg = 0;
     cityCybooBarrier = true;
@@ -8479,7 +8557,7 @@ function _resolveRoundImpl() {
   }
 
   // Puff (5) — Cute: enemy doubles and triples deal -1 damage (minimum 0).
-  // Partial reduction, NOT full negation — Cameron Force of Nature does NOT trigger from Cute alone.
+  // Partial reduction, NOT full negation — Cute is not blocked by Cameron's Unstoppable Force (it reduces, not negates).
   let puffCute = false;
   let puffCuteOriginalDmg = 0;
   if (lF.id === 5 && !lF.ko && (wR.type === 'doubles' || wR.type === 'triples') && dmg > 0) {
@@ -8495,7 +8573,7 @@ function _resolveRoundImpl() {
   let kingJayReflected = false;
   let kingJayReflectDmg = 0;
   let kingJayHpAfter = 0;
-  if (lF.id === 106 && !lF.ko && dmg > 0 && loseDice && loseDice.reduce((a, b) => a + b, 0) === 7) {
+  if (lF.id === 106 && !lF.ko && dmg > 0 && loseDice && loseDice.reduce((a, b) => a + b, 0) === 7 && !cameronUnnegatable) {
     kingJayReflectDmg = dmg;
     dmg = 0; // loser takes nothing — all damage goes back
     kingJayReflected = true;
@@ -8532,7 +8610,7 @@ function _resolveRoundImpl() {
   // Fires after Guardian Fairy (GF takes priority if both are in play; Fang Undercover fires only if GF didn't absorb)
   let fangUndercoverActivated = false;
   if (!kingJayReflected && !guardianFairyAbsorbed &&
-      lF.id === 7 && !lF.ko && B.fangUndercoverArmed && B.fangUndercoverArmed[loseTeamName] && dmg > 0) {
+      lF.id === 7 && !lF.ko && B.fangUndercoverArmed && B.fangUndercoverArmed[loseTeamName] && dmg > 0 && !cameronUnnegatable) {
     B.fangUndercoverArmed[loseTeamName] = false; // consume the arm
     fangUndercoverActivated = true;
     B.fangUndercoverSwapPending = loseTeamName; // signal drain callback to show ghost-picker
@@ -8666,7 +8744,7 @@ function _resolveRoundImpl() {
 
   // King Jay reflected damage — applies to the winner
   // wF.hp deferred to onShow so HP bar updates when REFLECTION! callout fires, not silently during beat 4.
-  // wF.ko is set synchronously here so Cameron (25) Force of Nature check immediately below sees the correct KO state.
+  // wF.ko is set synchronously here so Cameron (25) Unstoppable Force check immediately below sees the correct KO state.
   if (kingJayReflected && kingJayReflectDmg > 0) {
     kingJayHpAfter = Math.max(0, wF.hp - kingJayReflectDmg);
     if (kingJayHpAfter <= 0) { wF.ko = true; wF.killedBy = lF.id; }
@@ -8675,7 +8753,7 @@ function _resolveRoundImpl() {
 
   // Bogey reflected damage — applies to the winner (lF takes 0; wF eats the full hit)
   // wF.hp deferred to onShow so HP bar updates when BOGUS! callout fires, not silently during beat 4.
-  // wF.ko is set synchronously so Cameron (25) Force of Nature check immediately below sees the correct KO state.
+  // wF.ko is set synchronously so Cameron (25) Unstoppable Force check immediately below sees the correct KO state.
   if (bogeyReflected && bogeyReflectDmg > 0) {
     bogeyHpAfter = Math.max(0, wF.hp - bogeyReflectDmg);
     if (bogeyHpAfter <= 0) { wF.ko = true; wF.killedBy = lF.id; }
@@ -8684,7 +8762,7 @@ function _resolveRoundImpl() {
 
   // Kodako (1) — Swift lose counter: 4 damage dealt back to the winner
   // wF.hp deferred to onShow so HP bar updates when SWIFT! callout fires, not silently during beat 4.
-  // wF.ko is set synchronously here so Cameron (25) Force of Nature check immediately below sees the correct KO state.
+  // wF.ko is set synchronously here so Cameron (25) Unstoppable Force check immediately below sees the correct KO state.
   let swiftLoseHpAfter = 0;
   if (kodakoSwiftLose) {
     swiftLoseHpAfter = Math.max(0, wF.hp - 4);
@@ -8694,25 +8772,19 @@ function _resolveRoundImpl() {
 
   // Patrick (10) — Stone Form counter: 3 damage dealt back to the winner for throwing a singles roll
   // wF.hp deferred to onShow so HP bar updates when STONE FORM! callout fires, not silently during beat 4.
-  // wF.ko is set synchronously here so Cameron (25) Force of Nature check at line ~8814 sees the correct KO state.
+  // wF.ko is set synchronously here so Cameron (25) Unstoppable Force check at line ~8814 sees the correct KO state.
   if (patrickStoneForm) {
     stoneFormHpAfter = Math.max(0, wF.hp - patrickStoneDmg);
     if (stoneFormHpAfter <= 0) { wF.ko = true; wF.killedBy = lF.id; }
     log(`<span class="log-dmg">${lF.name} — Stone Form counter! ${patrickStoneDmg} damage to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':stoneFormHpAfter+' HP left'}`);
   }
 
-  // Cameron (25) — Force of Nature: Cameron wins a roll but the loser's defensive ability negates the damage → destroy the loser.
-  // Fires after all counter-damage (Patrick, Kodako, King Jay, Bogey) so wF.ko is accurate.
-  // Guardian Fairy absorption is NOT a negation — Cameron's damage DID land (on GF), so it does NOT trigger Force of Nature.
-  let cameronForceOfNature = false;
-  if (wF.id === 25 && !wF.ko && !lF.ko && !guardianFairyAbsorbed &&
-      (guardThomasStoic || patrickStoneForm || kodakoSwiftLose || bogeyReflected || kingJayReflected || dealerHouseRules || skyElusive || cityCybooBarrier || fangUndercoverActivated)) {
-    lF.hp = 0;
-    lF.ko = true;
-    lF.killedBy = 25;
-    cameronForceOfNature = true;
+  // Cameron (25) — Unstoppable Force: damage cannot be negated (cameronUnnegatable flag set above)
+  let cameronUnstoppableLogged = false;
+  if (cameronUnnegatable && !wF.ko && dmg > 0) {
+    cameronUnstoppableLogged = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Force of Nature! Damage negated — ${lF.name} instantly destroyed!`);
+    log(`<span class="log-ability">${wF.name}</span> — Unstoppable Force! Damage cannot be negated!`);
   }
 
   // Pudge self-damage (game state — HP mutation deferred to BELLY FLOP! onShow)
@@ -8798,6 +8870,28 @@ function _resolveRoundImpl() {
     }
   }
 
+  // Slicer (460) — Parting Gift: Sideline & In Play — win with quads+ → destroy any enemy sideline ghost
+  // Auto-picks highest-HP target (most impactful). No HP restriction unlike Night Master.
+  let slicerTarget = null;
+  const slicerActive = wF.id === 460 && !wF.ko;
+  const slicerSideline = hasSideline(winTeam, 460);
+  if ((slicerActive || slicerSideline) && (wR.type === 'quads' || wR.type === 'penta' || wR.type.endsWith('-of-a-kind'))) {
+    const loseActiveIdx = loseTeam.activeIdx;
+    const slicerCandidates = loseTeam.ghosts.filter((g, i) => i !== loseActiveIdx && !g.ko);
+    if (slicerCandidates.length > 0) {
+      // Pick highest HP target (most valuable to destroy)
+      const best = slicerCandidates.reduce((a, b) => b.hp > a.hp ? b : a);
+      slicerTarget = { ghost: best, priorHp: best.hp };
+      best.hp = 0;
+      best.ko = true;
+      best.killedBy = 460;
+      const slicerGhost = slicerActive ? wF : getSidelineGhost(winTeam, 460);
+      const slicerLabel = slicerSideline && !slicerActive ? `${slicerGhost.name} (sideline)` : slicerGhost.name;
+      collectKC(winTeamName, slicerLabel);
+      log(`<span class="log-ability">${slicerLabel}</span> — Parting Gift! ${best.name} (${slicerTarget.priorHp} HP) destroyed from the enemy sideline!`);
+    }
+  }
+
   // Flora (75) — Restore: rolling doubles (win OR lose) heals +2 HP. Fires after damage is applied.
   // Win case: Flora won with doubles — heal her after lF took damage.
   // Lose case: Flora lost but rolled doubles and survived — heal even in defeat.
@@ -8866,10 +8960,11 @@ function _resolveRoundImpl() {
     log(`<span class="log-ability">${lF.name}</span> — Wreckage! Took ${dmg} damage → ${wF.name} loses 1 die next roll!`);
   }
 
-  // Marcus (57) — Glacial Pounding: if Marcus (loser) took 3+ real damage and survived, he gains +4 bonus dice next roll
+  // Marcus (57) — Glacial Pounding: if Marcus (loser) took 3+ real damage, the PLAYER gains +4 bonus dice next roll
+  // Fires even if Marcus dies from the hit — the bonus carries to whoever comes in next
   // Must fire AFTER all defensive mods (Stoic, Bogus, King Jay, GF) so dmg reflects what actually landed on lF
   let marcusGlacialTriggered = false;
-  if (lF.id === 57 && !lF.ko && dmg >= 3) {
+  if (lF.id === 57 && dmg >= 3) {
     B.marcusGlacialBonus[loseTeamName] = (B.marcusGlacialBonus[loseTeamName] || 0) + 4;
     marcusGlacialTriggered = true;
     collectKC(loseTeamName, lF.name);
@@ -9114,6 +9209,9 @@ function _resolveRoundImpl() {
   if (teamZippyTriggered) {
     queueAbility('TEAMWORK!', 'var(--uncommon)', `${wF.name} — Singles win! ${teamZippyBaseDmg} + 2 = ${dmg} damage!`, null, winTeamName);
   }
+  if (ridleyTriggered) {
+    queueAbility('NIMBLE!', 'var(--uncommon)', `${wF.name} — ${wR.type === 'singles' ? 'Singles' : 'Doubles'}! ${ridleyBaseDmg} + ${ridleyBonus} = ${ridleyBaseDmg + ridleyBonus} damage!`, null, winTeamName);
+  }
   if (gregTriggered) {
     queueAbility('CHASE!', 'var(--uncommon)', `${wF.name} — More HP than ${lF.name}! (${wF.hp} vs ${lF.hp}) ${gregBaseDmg} × 2 = ${dmg} damage!`, null, winTeamName);
   }
@@ -9287,6 +9385,13 @@ function _resolveRoundImpl() {
     queueAbility('BULLSEYE!', 'var(--ghost-rare)', `${wF.name} — Doubles! ${bullseyeTarget.ghost.name} (${bullseyeTarget.priorHp} HP) sniped from the enemy sideline!`, () => { renderBattle(); }, winTeamName);
   }
 
+  // Slicer (460) — Parting Gift: sideline snipe callout — onShow updates sideline display
+  if (slicerTarget) {
+    const slicerGhostQ = (wF.id === 460 && !wF.ko) ? wF : getSidelineGhost(winTeam, 460);
+    const slicerLabelQ = (slicerSideline && !slicerActive) ? `${slicerGhostQ ? slicerGhostQ.name : 'Slicer'} (sideline)` : (slicerGhostQ ? slicerGhostQ.name : 'Slicer');
+    queueAbility('PARTING GIFT!', 'var(--uncommon)', `${slicerLabelQ} — Quads! ${slicerTarget.ghost.name} (${slicerTarget.priorHp} HP) destroyed from the enemy sideline!`, () => { renderBattle(); }, winTeamName);
+  }
+
   // Bubble Boys (44) — Pop: callout fires after Bullseye, onShow re-renders so KO greys out BB
   if (bubbleBoysPopped) {
     queueAbility('POP!', 'var(--uncommon)', `${bubbleBoysName} — ${bubbleBoysEnemyName} rolled triples! Bubble Boys burst!`, () => { renderBattle(); }, loseTeamName);
@@ -9392,9 +9497,8 @@ function _resolveRoundImpl() {
   }
   // Fang Undercover knight reactions already collected via collectKC at game-state section (line ~9784) — do NOT double-fire here
 
-  // Cameron (25) — Force of Nature: damage negated → loser instantly destroyed (queued after defense callouts)
-  if (cameronForceOfNature) {
-    queueAbility('FORCE OF NATURE!', 'var(--common)', `${wF.name} — Damage negated... ${lF.name} is instantly DESTROYED!`, () => { renderBattle(); }, loseTeamName);
+  if (cameronUnstoppableLogged) {
+    queueAbility('UNSTOPPABLE!', 'var(--common)', `${wF.name} — Damage cannot be negated! ${dmg} damage goes through!`, null, winTeamName);
   }
   // Cameron knight reactions already collected via collectKC at game-state section (line ~9862) — do NOT double-fire here
 
@@ -9412,9 +9516,9 @@ function _resolveRoundImpl() {
   }
   // Hugo knight reactions already collected via collectKC at game-state section (line ~10019) — do NOT double-fire here
 
-  // Marcus (57) — Glacial Pounding: taking 3+ damage charges up +4 bonus dice for next roll
+  // Marcus (57) — Glacial Pounding: taking 3+ damage charges up +4 bonus dice for the PLAYER's next roll
   if (marcusGlacialTriggered) {
-    queueAbility('GLACIAL POUNDING!', 'var(--uncommon)', `${lF.name} — Took ${dmg} damage! Charging up... +4 bonus dice next roll!`, null, loseTeamName);
+    queueAbility('GLACIAL POUNDING!', 'var(--uncommon)', `${lF.name} — Took ${dmg} damage! +4 bonus dice next roll${lF.ko ? ' for the next fighter!' : '!'}`, null, loseTeamName);
   }
   // Marcus knight reactions already collected via collectKC at game-state section (line ~10029) — do NOT double-fire here
 
@@ -9536,7 +9640,7 @@ function _resolveRoundImpl() {
   if (humarTriggered) { queueAbility('METEOR!', 'var(--legendary)', `${wF.name} — Win! 2 delayed damage + 1 Burn gained!`, () => { renderBattle(); }, winTeamName); }
   // Humar knight reactions already collected via collectKC at game-state section (line ~10078) — do NOT double-fire here
   // Humar Sandwiches mirror removed — Meteor deals delayed damage + burn, not mirrorable resources
-  if (wF.id === 309 && !wF.ko) { queueAbility('HARVEST DANCE!', 'var(--rare)', `${wF.name} — Win → +1 Healing Seed!`, () => { winTeam.resources.healingSeed++; renderBattle(); }, winTeamName); }
+  if (wF.id === 309 && !wF.ko) { queueAbility('HARVEST DANCE!', 'var(--rare)', `${wF.name} — Win → +2 Healing Seeds!`, () => { winTeam.resources.healingSeed += 2; renderBattle(); }, winTeamName); }
   // Aunt Susan knight reactions already collected via collectKC at game-state section (line ~10079) — do NOT double-fire here
   if (wF.id === 309 && !wF.ko && sandwichForLose) queueAbility('DEPENDABLE!', 'var(--common)', `Sandwiches — mirrors Harvest Dance! +1 Healing Seed! (${loseTeam.resources.healingSeed + 1} total)`, () => { loseTeam.resources.healingSeed++; renderBattle(); }, loseTeamName);
   // Splinter (101) — Toxic Fumes: first win triggers activation callout
@@ -11029,13 +11133,18 @@ function renderBattle() {
       if (B[team].ghosts.some(g => g.id === 204 && !g.ko)) {
         if (!B.flameBlade || !B.flameBlade[team]) {
           const r = B[team].resources;
-          const canForge = (r.healingSeed || 0) >= 2 && (r.fire || 0) >= 1;
+          const canForge = (r.healingSeed || 0) >= 1 && (r.fire || 0) >= 1;
           if (canForge) {
-            html += `<button class="ability-btn pressure" onclick="useFinnFlameBlade('${team}')" title="Finn — forge the Flame Blade (2 Healing Seeds + 1 Sacred Fire)" style="border-color:#fb923c;color:#fb923c;">🔥 Forge Flame Blade (2🌱 + 1🔥)</button>`;
+            html += `<button class="ability-btn pressure" onclick="useFinnFlameBlade('${team}')" title="Finn — forge the Flame Blade (2 Healing Seeds + 1 Sacred Fire)" style="border-color:#fb923c;color:#fb923c;">🔥 Forge Flame Blade (1🌱 + 1🔥)</button>`;
           } else {
-            html += `<button class="ability-btn" disabled title="Need 2 Healing Seeds + 1 Sacred Fire" style="opacity:0.4;border-color:#fb923c;color:#fb923c;">🔥 Forge Flame Blade (2🌱 + 1🔥)</button>`;
+            html += `<button class="ability-btn" disabled title="Need 2 Healing Seeds + 1 Sacred Fire" style="opacity:0.4;border-color:#fb923c;color:#fb923c;">🔥 Forge Flame Blade (1🌱 + 1🔥)</button>`;
           }
         }
+      }
+      // Zork (463) — Stoke: pre-roll button to discard Burn for dice
+      if (f.id === 463 && !f.ko && B.zorkDecided && !B.zorkDecided[team] &&
+          B[team].resources && B[team].resources.burn >= 1) {
+        html += `<button class="ability-btn pressure" onclick="useZorkStoke('${team}')" style="border-color:#f59e0b;color:#f59e0b;font-weight:bold;">🔥 SMOLDER! (${B[team].resources.burn} Burn → +${B[team].resources.burn} dice)</button>`;
       }
       // Flame Blade toggle (if forged — shown for any active ghost on the team)
       if (B.flameBlade && B.flameBlade[team]) {
@@ -11163,7 +11272,7 @@ function clearAllOverlays() {
     'raditzHuntOverlay','dougCautionOverlay','tobogganOverlay','fangOutsideOverlay',
     'fangUndercoverArmOverlay','fangUndercoverSwapOverlay','winstonSchemeOverlay',
     'galeForcePickerOverlay','wiseAlOverlay','gordokOverlay','cultivateOverlay',
-    'chowOverlay','hexOverlay','nickKnackOverlay','jasperOverlay','balatronOverlay',
+    'chowOverlay','zorkOverlay','hexOverlay','nickKnackOverlay','jasperOverlay','balatronOverlay',
     'tommyOverlay','sylviaOverlay','burnOverlay','fireflyOverlay','abilitySplash','vsSplash'
   ];
   overlayIds.forEach(id => {
