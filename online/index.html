@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v0.63'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v0.64'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -452,6 +452,22 @@ body {
   text-align: center;
   text-shadow: 0 0 20px rgba(240, 197, 96, 0.3);
 }
+.champion-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 2;
+  line-height: 1;
+  padding: 4px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.champion-close:hover { opacity: 1; }
 .champion-crown {
   text-align: center;
   font-size: 2rem;
@@ -2573,6 +2589,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 
   <!-- Champion of the Day (right sidebar) -->
   <div class="champion-sidebar" id="champion-sidebar" style="display:none;">
+    <button class="champion-close" onclick="document.getElementById('champion-sidebar').style.display='none'" title="Dismiss">&times;</button>
     <div class="champion-crown">👑</div>
     <h3>Champion of the Day</h3>
     <div id="champion-content"></div>
@@ -2817,7 +2834,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="cards.js"></script>
 
 <script>
-const BBN_VERSION = 'v0.63';
+const BBN_VERSION = 'v0.64';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
