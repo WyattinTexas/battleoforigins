@@ -21,6 +21,91 @@ let autoPlayTotal = 0;
 // Battle state (from testroom)
 let S = { tab:'battle', redPicks:[], bluePicks:[], battle:null };
 
+// =================================================================
+// BOSS MODE — Raid system hooks
+// When window.BOSS_MODE is true, the blue team is a raid boss.
+// - Blue roll button is hidden; boss auto-rolls via bossAutoRoll()
+// - All damage dealt to blue team also drains the shared boss HP pool
+// - Instant-kill abilities deal flat damage instead vs bosses
+// - After each roll resolution, a spectator snapshot is written
+// =================================================================
+
+/**
+ * Track damage dealt to the boss team for HP pool drain.
+ * Called after any HP reduction on a blue-team ghost in boss mode.
+ * @param {number} damage — amount of HP lost
+ * @param {object} ghost — the ghost that took damage
+ */
+function bossDamageTracker(damage, ghost) {
+  if (!window.BOSS_MODE || !window.BOSS_RAID_DATA) return;
+  if (damage <= 0) return;
+
+  // Glacier Ice Wall check: boss cannot take damage while Ice Wall lives
+  const raidState = window.BOSS_RAID_DATA;
+  if (raidState.bossConfig?.personality === 'glacier' && !ghost?.isMinion) {
+    if (typeof isIceWallActive === 'function' && isIceWallActive(raidState.bossTeam)) {
+      return; // Damage blocked by Ice Wall
+    }
+  }
+
+  // Swarm Queen sacrifice check
+  if (raidState.bossConfig?.personality === 'swarm' && typeof bossCheckSacrifice === 'function') {
+    const sacrificeResult = bossCheckSacrifice('swarm', raidState.bossTeam, damage);
+    if (sacrificeResult) {
+      if (typeof showAbilityCallout === 'function') {
+        showAbilityCallout('SACRIFICE!', 'var(--ghost-rare)', `${sacrificeResult.sacrificed.name} is sacrificed to negate ${damage} damage!`, 'blue');
+      }
+      return; // Damage negated
+    }
+  }
+
+  // Permafrost (Glacier): cap base damage. Resource damage tracked separately by caller
+  // This is handled at the resolve level, not here — bossDamageTracker receives final damage
+
+  // Drain the shared HP pool
+  raidState.totalDamageDealt += damage;
+  if (typeof drainBossHpPool === 'function') {
+    drainBossHpPool(damage);
+  }
+}
+
+/**
+ * Check if an instant-kill ability should be converted to flat damage vs a boss.
+ * Returns the flat damage amount if in boss mode, or 0 if not (let normal logic proceed).
+ */
+function bossInstantKillCheck(targetGhost) {
+  if (!window.BOSS_MODE) return 0;
+  if (targetGhost?.isBoss) return 5; // RAID_CONFIG.INSTANT_KILL_FLAT_DAMAGE
+  return 0; // Minions can be instant-killed normally
+}
+
+/**
+ * Write spectator snapshot after each roll resolution in boss mode.
+ */
+function bossWriteSnapshot(redDice, blueDice, winner, damage) {
+  if (!window.BOSS_MODE || !window.BOSS_RAID_DATA || !B) return;
+  if (typeof writeBattleSnapshot !== 'function') return;
+
+  const raidState = window.BOSS_RAID_DATA;
+  const user = firebase.auth().currentUser;
+
+  writeBattleSnapshot({
+    playerName: user?.displayName || 'Raider',
+    playerGhost: active(B.red),
+    bossGhost: active(B.blue),
+    playerSideline: B.red.ghosts.filter((g, i) => i !== B.red.activeIdx),
+    bossSideline: B.blue.ghosts.filter((g, i) => i !== B.blue.activeIdx),
+    lastRoll: {
+      player: redDice,
+      boss: blueDice,
+      winner: winner,
+      damage: damage
+    },
+    round: B.round,
+    isWave: window.IS_WAVE_FIGHT || false
+  });
+}
+
 
 function initMatchStats() {
   B.matchStats = {
@@ -345,13 +430,14 @@ function pickRandomBoth() {
 // ============================================================
 // BATTLE ENGINE
 // ============================================================
-function ghostData(id) { return GHOSTS.find(g=>g.id===id); }
+function ghostData(id) { return getGhost(id); }
 
 function makeTeam(ids) {
   return {
     ghosts: ids.map(id => {
       const g = ghostData(id);
-      return { id, name:g.name, hp:g.maxHp, maxHp:g.maxHp, ko:false, ability:g.ability, abilityDesc:g.abilityDesc, rarity:g.rarity,
+      if (!g) { console.warn('[makeTeam] Unknown ghost ID:', id); return { id, name:'???', hp:5, maxHp:5, ko:false, ability:'', abilityDesc:'', rarity:'common', art:'', hankFirstRoll:false, maximoFirstRoll:false, usedMagicTouch:false }; }
+      return { id, name:g.name, hp:g.maxHp, maxHp:g.maxHp, ko:false, ability:g.ability||'', abilityDesc:g.abilityDesc||'', rarity:g.rarity||'common', art:g.art||'',
         hankFirstRoll:false, maximoFirstRoll:false, usedMagicTouch:false };
     }),
     activeIdx: 0,
@@ -3289,6 +3375,15 @@ function rollReady(team) {
   const btn = document.getElementById(team === 'red' ? 'rollRedBtn' : 'rollBlueBtn');
   if (btn.classList.contains('locked')) return;
 
+  // Boss Mode: when red (player) clicks roll, auto-trigger blue (boss) roll after a delay
+  if (window.BOSS_MODE && team === 'red') {
+    setTimeout(() => {
+      if (B && !B.preRoll?.blue?.dice) {
+        rollReady('blue');
+      }
+    }, 400);
+  }
+
   // Remove pulse and reset AFK timer on click
   document.querySelectorAll('#rollRedBtn, #rollBlueBtn').forEach(b => b.classList.remove('pulse'));
   resetAfkTimer();
@@ -4250,7 +4345,12 @@ function resetRollButtons() {
   const r = document.getElementById('rollRedBtn');
   const b = document.getElementById('rollBlueBtn');
   if (r) { r.classList.remove('locked', 'pulse'); r.disabled = false; r.textContent = 'Red Roll'; }
-  if (b) { b.classList.remove('locked', 'pulse'); b.disabled = false; b.textContent = 'Blue Roll'; }
+  // Boss Mode: hide blue roll button — boss auto-rolls when red clicks
+  if (window.BOSS_MODE) {
+    if (b) { b.style.display = 'none'; }
+  } else {
+    if (b) { b.classList.remove('locked', 'pulse'); b.disabled = false; b.textContent = 'Blue Roll'; b.style.display = ''; }
+  }
   // Clear dice display between rounds — no leftover numbers from last roll
   ['red', 'blue'].forEach(t => {
     const el = document.getElementById(t + '-dice');
@@ -10461,6 +10561,15 @@ function openKoSwap() {
     return;
   }
 
+  // Boss Mode: auto-pick for blue (boss) team — pick highest HP minion
+  if (window.BOSS_MODE && team === 'blue') {
+    const best = alive.reduce((a, b) => (b.maxHp > a.maxHp ? b : a), alive[0]);
+    const teamLabel = team.charAt(0).toUpperCase() + team.slice(1);
+    narrate(`<b class="ko-text">${fallen.name} is down!</b>&nbsp;<b class="${team}-text">${teamLabel}:</b>&nbsp;<b>${best.name}</b> enters the fray!`);
+    setTimeout(() => doKoSwap(team, t.ghosts.indexOf(best)), 800);
+    return;
+  }
+
   const teamLabel = team.charAt(0).toUpperCase() + team.slice(1);
   narrate(`<b class="ko-text">${fallen.name} is down!</b>&nbsp;<b class="${team}-text">${teamLabel}</b> — who answers the call?`);
   // Delay renderBattle() so the narrator text appears (drainNarrate fires at t+150ms)
@@ -10527,11 +10636,24 @@ function showGameOver(winner) {
   clearLsCountdown();
   disableRollButtons();
 
-  // Record standings
+  // Boss Mode: end-of-fight hook — report damage dealt and advance to next fighter
+  if (window.BOSS_MODE && typeof endMyRaidFight === 'function') {
+    const raidState = window.BOSS_RAID_DATA;
+    if (raidState) {
+      // Count player ghosts lost
+      raidState.ghostsLost = B.red.ghosts.filter(g => g.ko).length;
+    }
+    // Delay to let game-over screen show briefly, then hand off to raid system
+    setTimeout(() => {
+      endMyRaidFight({ winner, rounds: B.round - 1 });
+    }, 3000);
+  }
+
+  // Record standings (skip for raid boss fights — raids have their own reward system)
   let matchMvp = null;
   let redMvpId = null;
   let blueMvpId = null;
-  if (winner === 'red' || winner === 'blue') {
+  if (!window.BOSS_MODE && (winner === 'red' || winner === 'blue')) {
     const winTeam = B[winner];
     const loseTeamName = winner === 'red' ? 'blue' : 'red';
     const loseTeamObj = B[loseTeamName];
