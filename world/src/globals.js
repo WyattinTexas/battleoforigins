@@ -458,6 +458,17 @@ function ensurePlayerDefaults() {
   if (!G.party) G.party = [];
   // Wave 7: talent trees
   if (!G.talents) G.talents = {};
+  // All base class apprentices start unlocked (player can unlearn to reclaim points)
+  if (!G.talents.fortune_teller) G.talents.fortune_teller = {};
+  if (!G.talents.fortune_teller._app) G.talents.fortune_teller._app = 1;
+  if (!G.talents.artisan) G.talents.artisan = {};
+  if (!G.talents.artisan._app) G.talents.artisan._app = 1;
+  if (!G.talents.trainer) G.talents.trainer = {};
+  if (!G.talents.trainer._app) G.talents.trainer._app = 1;
+  if (!G.talents.scientist) G.talents.scientist = {};
+  if (!G.talents.scientist._app) G.talents.scientist._app = 1;
+  if (!G.talents.cultivator) G.talents.cultivator = {};
+  if (!G.talents.cultivator._app) G.talents.cultivator._app = 1;
   if (G.darkRiderUnlocked === undefined) G.darkRiderUnlocked = false;
   if (G.elderUnlocked === undefined) G.elderUnlocked = false;
   if (G.activeAmendment === undefined) G.activeAmendment = null; // Elder Council amendment id
