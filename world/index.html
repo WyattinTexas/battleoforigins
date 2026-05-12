@@ -13,6 +13,19 @@
 <body>
 <div id="game-container"></div>
 
+<!-- Firebase SDK (Realtime Database) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyDzYoQqXoOu4uj2wzTwSn6d_gAlo6e8WSI",
+    databaseURL: "https://testroom-75200-default-rtdb.firebaseio.com",
+    projectId: "testroom-75200",
+  });
+  var db = firebase.database();
+  db._stub = false; // Real Firebase — MultiplayerPresence will detect this
+</script>
+
 <!-- Phaser Engine (CDN — no install needed) -->
 <script src="https://cdn.jsdelivr.net/npm/phaser@4.1.0/dist/phaser.min.js"></script>
 

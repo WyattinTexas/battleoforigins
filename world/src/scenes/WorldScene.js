@@ -2613,6 +2613,9 @@ class WorldScene extends Phaser.Scene {
     });
 
     console.log('[WorldScene] Multiplayer presence initialized');
+
+    // Listen for incoming buffs and party requests
+    this.checkIncomingBuffs();
   }
 
   updateOtherPlayer(pid, data) {
@@ -2649,23 +2652,26 @@ class WorldScene extends Phaser.Scene {
       // Use the other player's sprite key if available, otherwise default
       const textureKey = (data.spriteKey && this.textures.exists(data.spriteKey)) ? data.spriteKey : 'player';
       const sprite = this.add.sprite(px, py, textureKey, 0)
-        .setScale(2).setAlpha(0.4).setDepth(8).setTint(0x8888ff);
+        .setScale(2).setAlpha(0.5).setDepth(8).setTint(0x8888ff)
+        .setInteractive({ useHandCursor: true });
 
       // Name label
       const displayName = data.name || 'Unknown';
-      const label = this.add.text(px, py - 36, displayName, {
-        fontSize: '9px', fontFamily: 'monospace', color: '#8888ff',
-        backgroundColor: '#00000066', padding: { x: 2, y: 1 },
-      }).setOrigin(0.5).setDepth(11).setAlpha(0.6);
+      const lvl = (data.level && data.level > 1) ? ` (Lv${data.level})` : '';
+      const label = this.add.text(px, py - 36, displayName + lvl, {
+        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88aaff',
+        backgroundColor: '#00000088', padding: { x: 3, y: 1 },
+      }).setOrigin(0.5).setDepth(11).setAlpha(0.7);
 
-      // Level badge
-      if (data.level && data.level > 1) {
-        label.setText(`${displayName} (Lv${data.level})`);
-      }
+      // Click to interact — party up & buff
+      sprite.on('pointerdown', () => {
+        this.showPlayerInteraction(pid, data);
+      });
+      sprite.on('pointerover', () => { sprite.setAlpha(0.8); sprite.setTint(0xaaccff); });
+      sprite.on('pointerout', () => { sprite.setAlpha(0.5); sprite.setTint(0x8888ff); });
 
       this._otherPlayerSprites[pid] = {
-        sprite: sprite,
-        label: label,
+        sprite, label, data, pid,
         lastSeen: Date.now(),
       };
     }
@@ -2677,5 +2683,124 @@ class WorldScene extends Phaser.Scene {
     if (entry.sprite && entry.sprite.active) entry.sprite.destroy();
     if (entry.label && entry.label.active) entry.label.destroy();
     delete this._otherPlayerSprites[pid];
+  }
+
+  // ═══════ PLAYER INTERACTION — Party Up & Buff ═══════
+
+  showPlayerInteraction(pid, data) {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+    const name = data.name || 'Unknown';
+    const lvl = data.level || 1;
+
+    this.panels.open(`${name} — Level ${lvl}`, (container, w, h) => {
+      let y = 10;
+
+      // Player info
+      container.add(this.add.text(w / 2, y, `${name} is exploring ${data.region || 'the world'}`, {
+        fontSize: '12px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aabbcc',
+      }).setOrigin(0.5).setScrollFactor(0));
+      y += 30;
+
+      // Party Up button
+      const partyBg = this.add.rectangle(w / 2, y + 16, w - 40, 36, 0x224488, 0.8)
+        .setStrokeStyle(1, 0x4488cc).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+      container.add(partyBg);
+      container.add(this.add.text(w / 2, y + 16, 'Party Up', {
+        fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#88ccff',
+      }).setOrigin(0.5).setScrollFactor(0));
+      partyBg.on('pointerdown', () => {
+        this.sendPartyRequest(pid, name);
+        this.panels.close();
+      });
+      y += 50;
+
+      // Buff buttons
+      const buffs = [
+        { label: 'Battle Blessing (+1 dmg, 3 fights)', key: 'battleBlessing', color: 0x882222, icon: '\u2694\uFE0F' },
+        { label: 'Spirit Shield (-1 dmg taken, 3 fights)', key: 'spiritShield', color: 0x228844, icon: '\uD83D\uDEE1\uFE0F' },
+        { label: 'Lucky Aura (+20% recruit, 3 fights)', key: 'luckyAura', color: 0x886622, icon: '\u2728' },
+      ];
+
+      container.add(this.add.text(14, y, 'Send a Buff:', {
+        fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
+      }).setScrollFactor(0));
+      y += 22;
+
+      buffs.forEach(buff => {
+        const bg = this.add.rectangle(w / 2, y + 14, w - 40, 30, buff.color, 0.6)
+          .setStrokeStyle(1, 0x555566).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+        container.add(bg);
+        container.add(this.add.text(w / 2, y + 14, `${buff.icon} ${buff.label}`, {
+          fontSize: '11px', fontFamily: 'monospace', color: '#ffffff',
+        }).setOrigin(0.5).setScrollFactor(0));
+        bg.on('pointerdown', () => {
+          this.sendBuff(pid, name, buff.key);
+          this.panels.close();
+        });
+        y += 36;
+      });
+    }, { width: 360, height: 240 });
+  }
+
+  sendPartyRequest(pid, name) {
+    if (db._stub) { this.showNotification('Multiplayer offline'); return; }
+    db.ref('party_requests/' + pid + '/' + G.playerId).set({
+      from: G.name, fromId: G.playerId, level: G.level, timestamp: Date.now(),
+    });
+    this.showNotification(`Party request sent to ${name}!`);
+    if (typeof GameAudio !== 'undefined') GameAudio.collect();
+  }
+
+  sendBuff(pid, name, buffKey) {
+    if (db._stub) { this.showNotification('Multiplayer offline'); return; }
+    db.ref('buffs/' + pid + '/' + Date.now()).set({
+      from: G.name, fromId: G.playerId, buff: buffKey, timestamp: Date.now(),
+    });
+    this.showNotification(`${buffKey === 'battleBlessing' ? 'Battle Blessing' : buffKey === 'spiritShield' ? 'Spirit Shield' : 'Lucky Aura'} sent to ${name}!`);
+    if (typeof GameAudio !== 'undefined') GameAudio.heal();
+  }
+
+  // Check for incoming buffs/party requests
+  checkIncomingBuffs() {
+    if (db._stub || !G.playerId) return;
+    if (this._buffListenerSet) return;
+    this._buffListenerSet = true;
+
+    // Listen for buffs sent to us
+    db.ref('buffs/' + G.playerId).on('child_added', (snap) => {
+      const data = snap.val();
+      if (!data) return;
+      const buffNames = {
+        battleBlessing: 'Battle Blessing (+1 dmg)',
+        spiritShield: 'Spirit Shield (-1 dmg taken)',
+        luckyAura: 'Lucky Aura (+20% recruit)',
+      };
+      this.showNotification(`${data.from} sent you ${buffNames[data.buff] || data.buff}!`);
+      if (typeof GameAudio !== 'undefined') GameAudio.levelUp();
+
+      // Apply buff to G
+      if (!G.activeBuffs) G.activeBuffs = [];
+      G.activeBuffs.push({ type: data.buff, from: data.from, fights: 3 });
+      saveGame();
+
+      // Remove the consumed buff from Firebase
+      snap.ref.remove();
+    });
+
+    // Listen for party requests
+    db.ref('party_requests/' + G.playerId).on('child_added', (snap) => {
+      const data = snap.val();
+      if (!data) return;
+      this.showNotification(`${data.from} (Lv${data.level}) wants to party up!`);
+      if (typeof GameAudio !== 'undefined') GameAudio.collect();
+
+      // Auto-accept for now — add to party list
+      if (!G.party) G.party = [];
+      if (!G.party.find(p => p.id === data.fromId)) {
+        G.party.push({ id: data.fromId, name: data.from, level: data.level });
+        saveGame();
+      }
+      snap.ref.remove();
+    });
   }
 }

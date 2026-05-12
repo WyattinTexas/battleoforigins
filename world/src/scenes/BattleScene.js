@@ -277,13 +277,18 @@ class BattleScene extends Phaser.Scene {
     // Read committed from B (synced by resource bar)
     const committed = B && B.committed ? B.committed : this._committed;
 
+    // Multiplayer buffs
+    const hasBlessing = (G.activeBuffs || []).some(b => b.type === 'battleBlessing' && b.fights > 0);
+    const hasShield = (G.activeBuffs || []).some(b => b.type === 'spiritShield' && b.fights > 0);
+
     if (winner === 'a') {
       let dmg = pRes.damage;
       // Equipment + resource damage bonus
       const wpn = G.equipped?.weapon;
       if (wpn) dmg += (wpn.bonusDamage || wpn.bonus || 0);
       dmg += (committed.iceShards || 0);
-      dmg += (committed.sacredFire || 0) * 3;  // Sacred Fire = +3 dmg each
+      dmg += (committed.sacredFire || 0) * 3;
+      if (hasBlessing) dmg += 1; // Party buff: +1 dmg
 
       this.eg.hp = Math.max(0, this.eg.hp - dmg);
       log += ` \u2014 ${dmg} dmg to ${this.eg.name}!`;
@@ -296,6 +301,7 @@ class BattleScene extends Phaser.Scene {
       // Equipment defense
       const arm = G.equipped?.head;
       if (arm) dmg = Math.max(1, dmg - (arm.damageReduction || arm.defense || 0));
+      if (hasShield) dmg = Math.max(1, dmg - 1); // Party buff: -1 dmg taken
 
       this.pg.hp = Math.max(0, this.pg.hp - dmg);
       log += ` \u2014 ${dmg} dmg to ${this.pg.name}!`;
@@ -543,6 +549,11 @@ class BattleScene extends Phaser.Scene {
     const isWild = !this.battleData.trainerName;
     G.inBattle = false;
     B = null;
+    // Decrement multiplayer buff fight counters
+    if (G.activeBuffs) {
+      G.activeBuffs.forEach(b => { if (b.fights > 0) b.fights--; });
+      G.activeBuffs = G.activeBuffs.filter(b => b.fights > 0);
+    }
     saveGame();
 
     // ── Banner ──

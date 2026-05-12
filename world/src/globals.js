@@ -453,6 +453,9 @@ function ensurePlayerDefaults() {
   if (!G.playerId) G.playerId = Date.now().toString(36) + Math.random().toString(36).slice(2);
   if (G.tutorialStep === undefined) G.tutorialStep = 0;
   if (G.tutorialComplete === undefined) G.tutorialComplete = false;
+  // Multiplayer buffs & party
+  if (!G.activeBuffs) G.activeBuffs = [];
+  if (!G.party) G.party = [];
   // Wave 7: talent trees
   if (!G.talents) G.talents = {};
   if (G.darkRiderUnlocked === undefined) G.darkRiderUnlocked = false;
@@ -570,30 +573,31 @@ function showTeamLineup() {
   console.log('[Stub] showTeamLineup — Phaser scene handles this');
 }
 
-// ── Firebase / DB stubs (offline-first, real Firebase later) ──
-var firebase = {
-  database: {
-    ServerValue: { TIMESTAMP: Date.now() },
-  },
-};
-
-var db = {
-  _stub: true, // Wave 6: flag so MultiplayerPresence can detect offline mode
-  ref: function(path) {
-    return {
-      set: function(val) { return Promise.resolve(); },
-      push: function(val) { return Promise.resolve(); },
-      once: function(eventType) { return Promise.resolve({ val: () => null }); },
-      on: function(eventType, cb) { cb({ val: () => null }); },
-      off: function() {},
-      remove: function() { return Promise.resolve(); },
-      transaction: function(updateFn) {
-        const result = updateFn(null);
-        return Promise.resolve({ committed: !!result, snapshot: { val: () => result } });
-      },
-    };
-  },
-};
+// ── Firebase / DB stubs (only if real Firebase SDK not loaded) ──
+if (typeof firebase === 'undefined' || !firebase.database) {
+  var firebase = { database: { ServerValue: { TIMESTAMP: Date.now() } } };
+  var db = {
+    _stub: true,
+    ref: function(path) {
+      return {
+        set: function(val) { return Promise.resolve(); },
+        push: function(val) { return Promise.resolve(); },
+        once: function(eventType) { return Promise.resolve({ val: () => null }); },
+        on: function(eventType, cb) { },
+        off: function() {},
+        remove: function() { return Promise.resolve(); },
+        onDisconnect: function() { return { remove: function() { return Promise.resolve(); } }; },
+        transaction: function(updateFn) {
+          const result = updateFn(null);
+          return Promise.resolve({ committed: !!result, snapshot: { val: () => result } });
+        },
+      };
+    },
+  };
+} else {
+  // Real Firebase loaded — db already set by index.html
+  if (typeof db === 'undefined') var db = firebase.database();
+}
 
 // ── Multiplayer stubs (offline-first) ──
 var otherPlayers = {};
