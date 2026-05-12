@@ -1134,7 +1134,7 @@ function _allBranchTalentsMaxed(treeId) {
 //  Cap: 135 = master 2 trees (98) + ~85% of a 3rd
 // ══════════════════════════════════════════════════════════
 
-const TALENT_POINT_CAP = 135;
+const TALENT_POINT_CAP = 160;
 
 function getTalentPointsTotal() {
   const basePoints = 10; // 10 base points (5 apprentices pre-spent = 10, so starts at 0 free + level/XP gains)

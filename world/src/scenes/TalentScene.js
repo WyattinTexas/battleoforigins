@@ -35,10 +35,17 @@ class TalentScene extends Phaser.Scene {
     closeBtn.on('pointerover', () => closeBtn.setFillStyle(0x663333));
     closeBtn.on('pointerout', () => closeBtn.setFillStyle(0x442222));
 
-    // Points display
-    this._pointsText = this.add.text(W - 60, 12, '', {
-      fontSize: '13px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ffaa',
-    }).setOrigin(1, 0).setDepth(2);
+    // SWG-style Skill Points bar (top center)
+    const barW = 300;
+    const barX = this._sideW + (W - this._sideW) / 2;
+    this._spBarBg = this.add.rectangle(barX, 20, barW, 16, 0x111122, 0.9)
+      .setStrokeStyle(1, 0x333355).setDepth(2);
+    this._spBarFill = this.add.rectangle(barX - barW/2, 20, 0, 14, 0x44aa44, 0.7)
+      .setOrigin(0, 0.5).setDepth(2);
+    this._pointsText = this.add.text(barX, 20, '', {
+      fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ffaa',
+    }).setOrigin(0.5).setDepth(3);
+    this._spBarMaxW = barW - 2;
 
     // ESC to close
     this.input.keyboard.on('keydown-ESC', () => this._close());
@@ -52,7 +59,7 @@ class TalentScene extends Phaser.Scene {
     const respecY = H - 50;
     const respecBg = this.add.rectangle(this._sideW / 2, respecY, this._sideW - 12, 32, 0x442222, 0.9)
       .setStrokeStyle(1, 0x663333).setDepth(2).setInteractive({ useHandCursor: true });
-    this.add.text(this._sideW / 2, respecY, 'RESPEC TREE', {
+    this.add.text(this._sideW / 2, respecY, 'SURRENDER ALL', {
       fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ff8888',
     }).setOrigin(0.5).setDepth(3);
     respecBg.on('pointerdown', () => this._respecCurrent());
@@ -291,8 +298,8 @@ class TalentScene extends Phaser.Scene {
       fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: appMaxed ? '#ccccdd' : (appCanAlloc ? '#ccccdd' : '#555566'),
     }).setOrigin(0.5).setDepth(3);
     this._dyn.push(appName);
-    const appRankTxt = this.add.text(mainCX, apprenticeY + 10, appMaxed ? 'UNLOCKED' : '0 / 1', {
-      fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: appMaxed ? '#88ff88' : '#555566',
+    const appRankTxt = this.add.text(mainCX, apprenticeY + 10, appMaxed ? '✓ LEARNED' : (appCanAlloc ? 'Purchase (' + APPRENTICE_COST + ' pts)' : 'LOCKED'), {
+      fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: appMaxed ? '#88ff88' : (appCanAlloc ? '#44bbff' : '#555566'),
     }).setOrigin(0.5).setDepth(3);
     this._dyn.push(appRankTxt);
     if (!appMaxed && appCanAlloc) {
@@ -321,8 +328,8 @@ class TalentScene extends Phaser.Scene {
       fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: masMaxed ? '#ffdd44' : (masCanAlloc ? '#ccccdd' : '#555566'),
     }).setOrigin(0.5).setDepth(3);
     this._dyn.push(masName);
-    const masRankTxt = this.add.text(mainCX, masterY + 10, masMaxed ? 'MASTERED' : '0 / 1', {
-      fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: masMaxed ? '#ffdd44' : '#555566',
+    const masRankTxt = this.add.text(mainCX, masterY + 10, masMaxed ? '✓ MASTERED' : (masCanAlloc ? 'Purchase (' + MASTER_COST + ' pts)' : 'LOCKED'), {
+      fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: masMaxed ? '#ffdd44' : (masCanAlloc ? '#44bbff' : '#555566'),
     }).setOrigin(0.5).setDepth(3);
     this._dyn.push(masRankTxt);
     if (!masMaxed && masCanAlloc) {
@@ -392,18 +399,15 @@ class TalentScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(3);
       this._dyn.push(name);
 
-      const rankColor = isMaxed ? '#88ff88' : (rank > 0 ? '#aaddaa' : '#555566');
-      const rankText = this.add.text(pos.cx, pos.cy + 8, rank + ' / ' + talent.maxRank, {
-        fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: rankColor,
+      // Status label: LEARNED / Purchase (Xpt) / LOCKED
+      let statusLabel, statusColor;
+      if (isMaxed) { statusLabel = '✓ LEARNED'; statusColor = '#88ff88'; }
+      else if (canAlloc) { statusLabel = 'Purchase (' + talent.cost + ' pts)'; statusColor = '#44bbff'; }
+      else { statusLabel = 'LOCKED'; statusColor = '#555566'; }
+      const rankText = this.add.text(pos.cx, pos.cy + 10, statusLabel, {
+        fontSize: '7px', fontFamily: 'monospace', fontStyle: 'bold', color: statusColor,
       }).setOrigin(0.5).setDepth(3);
       this._dyn.push(rankText);
-
-      if (!isMaxed && canAlloc) {
-        const costText = this.add.text(pos.cx + nodeW/2 - 4, pos.cy - nodeH/2 + 3, talent.cost + 'pt', {
-          fontSize: '7px', fontFamily: 'monospace', color: '#888899',
-        }).setOrigin(1, 0).setDepth(3);
-        this._dyn.push(costText);
-      }
 
       this._addNodeInteraction(bg, treeId, talent.id, talent, isMaxed, canAlloc, strokeColor, visible);
     }
@@ -441,22 +445,46 @@ class TalentScene extends Phaser.Scene {
   _showTooltip(treeId, talentId, talentInfo) {
     const rank = getTalentRank(treeId, talentId);
     const maxRank = talentInfo.maxRank || 1;
-    const cost = talentInfo.cost || 1;
+    const cost = talentInfo.cost || (talentId === '_app' ? APPRENTICE_COST : (talentId === '_mas' ? MASTER_COST : 1));
+    const isLearned = rank >= maxRank;
+    const canAlloc = canAllocateTalent(treeId, talentId);
+    const canDealloc = canDeallocateTalent(treeId, talentId);
+
     this._tooltipName.setText(talentInfo.name);
     this._tooltipDesc.setText(talentInfo.desc || '');
-    const maxed = rank >= maxRank;
-    const costLabel = cost > 1 ? cost + ' pts' : '1 pt';
-    this._tooltipRank.setText(maxed ? (talentId === '_mas' ? 'MASTERED' : 'MAXED') : 'Rank ' + rank + '/' + maxRank + '  (' + costLabel + ')');
-    this._tooltipRank.setColor(maxed ? '#88ff88' : '#aaddaa');
-    if (talentId === '_app') {
-      this._tooltipHint.setText('Required to start this tree');
-    } else if (talentId === '_mas') {
-      this._tooltipHint.setText('Requires all branch talents maxed. Unlocks sub-trees.');
-    } else if (talentInfo.prereq) {
-      const pt = _findTalent(treeId, talentInfo.prereq);
-      this._tooltipHint.setText('Requires: ' + (pt ? pt.name : talentInfo.prereq) + '  |  Click = allocate  |  Shift+Click = remove');
+
+    if (isLearned) {
+      this._tooltipRank.setText('✓ LEARNED');
+      this._tooltipRank.setColor('#88ff88');
+      this._tooltipHint.setText(canDealloc ? 'Shift+Click to surrender — recover ' + cost + ' skill points' : 'Cannot surrender (dependents learned)');
+      this._tooltipHint.setColor(canDealloc ? '#ff8888' : '#555566');
+    } else if (canAlloc) {
+      this._tooltipRank.setText('Click to purchase — costs ' + cost + ' skill points');
+      this._tooltipRank.setColor('#44bbff');
+      this._tooltipHint.setText('Skill Points Available: ' + getTalentPointsRemaining());
+      this._tooltipHint.setColor('#88ffaa');
     } else {
-      this._tooltipHint.setText('Click to allocate  |  Shift+Click to remove');
+      this._tooltipRank.setText('LOCKED — ' + cost + ' skill points to learn');
+      this._tooltipRank.setColor('#666666');
+      if (talentId === '_mas') {
+        this._tooltipHint.setText('Requires all branch talents learned');
+      } else if (talentId === '_app') {
+        const tree = CLASS_TREES[treeId];
+        if (tree && tree.requiresTree) {
+          const pName = CLASS_TREES[tree.requiresTree] ? CLASS_TREES[tree.requiresTree].name : '';
+          this._tooltipHint.setText('Requires Master ' + pName);
+        } else if (tree && tree.hidden) {
+          this._tooltipHint.setText('Secret — unlock condition hidden');
+        } else {
+          this._tooltipHint.setText('Not enough skill points');
+        }
+      } else if (talentInfo.prereq) {
+        const pt = _findTalent(treeId, talentInfo.prereq);
+        this._tooltipHint.setText('Requires: ' + (pt ? pt.name : talentInfo.prereq));
+      } else {
+        this._tooltipHint.setText('Learn Apprentice first');
+      }
+      this._tooltipHint.setColor('#555566');
     }
   }
 
@@ -472,8 +500,15 @@ class TalentScene extends Phaser.Scene {
   _updatePoints() {
     const remaining = getTalentPointsRemaining();
     const total = getTalentPointsTotal();
-    this._pointsText.setText(remaining + ' / ' + total + ' pts');
+    const spent = getTalentPointsSpent();
+    this._pointsText.setText('Skill Points Available: ' + remaining + ' / ' + total);
     this._pointsText.setColor(remaining > 0 ? '#88ffaa' : '#ff8888');
+    // Update green bar
+    if (this._spBarFill && this._spBarMaxW) {
+      const pct = total > 0 ? remaining / total : 0;
+      this._spBarFill.setSize(Math.max(1, pct * this._spBarMaxW), 14);
+      this._spBarFill.setFillStyle(remaining > 20 ? 0x44aa44 : (remaining > 5 ? 0xaaaa44 : 0xaa4444));
+    }
   }
 
   // ── Respec ───────────────────────────────────────────
