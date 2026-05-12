@@ -1,0 +1,719 @@
+// ═══════════════════════════════════════════════════
+// GLOBALS SHIM — Functions that core modules depend on
+// These were originally in index.html of the 2D version.
+// Provides stubs and real implementations for the Phaser port.
+// ═══════════════════════════════════════════════════
+
+// ── Safe DOM stubs (core modules reference 274 DOM elements that don't exist in Phaser) ──
+const _realGetById = document.getElementById.bind(document);
+document.getElementById = function(id) {
+  const el = _realGetById(id);
+  if (el) return el;
+  // Return a safe stub element so .style, .textContent, .innerHTML don't crash
+  return {
+    style: new Proxy({}, { set: () => true, get: () => '' }),
+    textContent: '', innerHTML: '', innerText: '',
+    classList: { add: ()=>{}, remove: ()=>{}, toggle: ()=>{}, contains: ()=>false },
+    setAttribute: ()=>{}, getAttribute: ()=>null, removeAttribute: ()=>{},
+    addEventListener: ()=>{}, removeEventListener: ()=>{},
+    appendChild: ()=>{}, removeChild: ()=>{}, remove: ()=>{},
+    querySelectorAll: ()=>[], querySelector: ()=>null,
+    children: [], childNodes: [], parentElement: null,
+    getBoundingClientRect: ()=>({top:0,left:0,width:0,height:0,right:0,bottom:0}),
+    offsetWidth: 0, offsetHeight: 0,
+    dataset: {},
+    checked: false, value: '',
+    _stub: true
+  };
+};
+
+// Also stub querySelectorAll for bulk DOM queries
+const _realQSA = document.querySelectorAll.bind(document);
+document.querySelectorAll = function(sel) {
+  try { return _realQSA(sel); } catch(e) { return []; }
+};
+
+// ── Constants from index.html ──
+const TILE = 32;
+const WORLD_W = 110;
+const WORLD_H = 85; // Match 2D version exactly
+const HUB = { x: 15, y: 20 };
+const HUB_MEADOW = { x: 28, y: 52 };
+const HUB_VOLCANIC = { x: 68, y: 28 };
+const HUB_DARK = { x: 92, y: 15 };
+
+// worldMap declared + populated by world-gen.js (generateWorld function)
+
+// Canvas stub (some modules reference a canvas context for rendering)
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+
+// NOTE: spiritWisps, roamingEnemies, etc. are declared in their own
+// core modules (gathering.js, world-events.js). Do NOT redeclare here.
+
+// ── Day seed for daily resets ──
+// NOTE: getDaySeed() is also declared in quests.js (same logic). The quests.js
+// version will silently overwrite this one since both are function declarations.
+function getDaySeed() { return Math.floor(Date.now() / 86400000); }
+
+// ── Time of day cycle (10-minute loop) ──
+function getTimeOfDay() {
+  const cyclePos = (Date.now() / 1000 / 60) % 10;
+  let phase, progress, nightFactor;
+  if (cyclePos < 2) { phase = 'dawn'; progress = cyclePos / 2; nightFactor = 1 - progress; }
+  else if (cyclePos < 5) { phase = 'day'; progress = (cyclePos - 2) / 3; nightFactor = 0; }
+  else if (cyclePos < 7) { phase = 'dusk'; progress = (cyclePos - 5) / 2; nightFactor = progress; }
+  else { phase = 'night'; progress = (cyclePos - 7) / 3; nightFactor = 1; }
+  return { phase, progress, nightFactor };
+}
+
+// ── Skill system ──
+// NOTE: hasSkill() is also declared in professions.js with better logic.
+// The professions.js version will overwrite this one (function declarations hoist).
+function hasSkill(skillId) {
+  return G.unlockedSkills && G.unlockedSkills.includes(skillId);
+}
+
+// ── Zone detection ──
+// getCurrentZone returns the ENCOUNTER_ZONES index (or -1 if not in any zone).
+// Used by gathering.js, crafting.js, world-events.js, battle.js.
+function getCurrentZone(px, py) {
+  const tileX = Math.floor(px);
+  const tileY = Math.floor(py);
+  for (let i = 0; i < ENCOUNTER_ZONES.length; i++) {
+    const z = ENCOUNTER_ZONES[i];
+    if (tileX >= z.x && tileX < z.x + z.w && tileY >= z.y && tileY < z.y + z.h) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// getCurrentRegion returns the region name string (frost_valley, rolling_hills, etc.).
+// Used by WorldScene.js for region display and music.
+function getCurrentRegion(px, py) {
+  const x = Math.floor(px);
+  const y = Math.floor(py);
+  if (x > 88 && y < 42) return 'dark_castle';
+  if (x > 60 && y < 43) return 'volcanic_isles';
+  if (y >= 45) return 'rolling_hills';
+  return 'frost_valley';
+}
+
+// ── Notification system (Phaser scene handles display) ──
+let _notifyCallback = null;
+function notify(text) {
+  console.log('[NOTIFY]', text);
+  if (_notifyCallback) _notifyCallback(text);
+}
+function notifyDiscovery(text) { notify(text); }
+function notifyAmbient(text) { notify(text); }
+
+// ── SFX stubs (replace with Phaser audio later) ──
+const SFX = {
+  click: () => {},
+  encounterStart: () => {},
+  hit: () => {},
+  miss: () => {},
+  ko: () => {},
+  heal: () => {},
+  craftSuccess: () => {},
+  craftFail: () => {},
+  levelUp: () => {},
+  notify: () => {},
+  collect: () => {},
+  equip: () => {},
+  sell: () => {},
+  buy: () => {},
+  gatherStart: () => {},
+  gatherComplete: () => {},
+  diceRoll: () => {},
+  commBlip: () => {},
+  victory: () => {},
+  defeat: () => {},
+};
+
+// ── Procedural SFX via Web Audio API (no audio files needed) ──
+const GameAudio = (() => {
+  let ctx = null;
+
+  function getCtx() {
+    if (!ctx) {
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { console.warn('[GameAudio] Web Audio not available'); }
+    }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function play(fn) {
+    const ac = getCtx();
+    if (!ac) return;
+    try { fn(ac); } catch (e) { /* swallow */ }
+  }
+
+  return {
+    // Short harsh buzz — enemy takes damage
+    hit() {
+      play(ac => {
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'square';
+        o.frequency.setValueAtTime(200, ac.currentTime);
+        o.frequency.linearRampToValueAtTime(80, ac.currentTime + 0.08);
+        g.gain.setValueAtTime(0.25, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
+        o.connect(g).connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + 0.12);
+      });
+    },
+
+    // Lower descending tone — player takes damage
+    hurt() {
+      play(ac => {
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(300, ac.currentTime);
+        o.frequency.linearRampToValueAtTime(100, ac.currentTime + 0.2);
+        g.gain.setValueAtTime(0.2, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.25);
+        o.connect(g).connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + 0.25);
+      });
+    },
+
+    // Ascending chime — healing
+    heal() {
+      play(ac => {
+        const notes = [523, 659, 784]; // C5, E5, G5
+        notes.forEach((freq, i) => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(freq, ac.currentTime + i * 0.06);
+          g.gain.setValueAtTime(0, ac.currentTime + i * 0.06);
+          g.gain.linearRampToValueAtTime(0.15, ac.currentTime + i * 0.06 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i * 0.06 + 0.2);
+          o.connect(g).connect(ac.destination);
+          o.start(ac.currentTime + i * 0.06);
+          o.stop(ac.currentTime + i * 0.06 + 0.2);
+        });
+      });
+    },
+
+    // Ascending arpeggio — level up celebration
+    levelUp() {
+      play(ac => {
+        const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
+        notes.forEach((freq, i) => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(freq, ac.currentTime + i * 0.08);
+          g.gain.setValueAtTime(0, ac.currentTime + i * 0.08);
+          g.gain.linearRampToValueAtTime(0.18, ac.currentTime + i * 0.08 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i * 0.08 + 0.3);
+          o.connect(g).connect(ac.destination);
+          o.start(ac.currentTime + i * 0.08);
+          o.stop(ac.currentTime + i * 0.08 + 0.3);
+        });
+      });
+    },
+
+    // Quick bright pip — wisp/loot pickup
+    collect() {
+      play(ac => {
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(880, ac.currentTime);
+        o.frequency.linearRampToValueAtTime(1320, ac.currentTime + 0.08);
+        g.gain.setValueAtTime(0.15, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
+        o.connect(g).connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + 0.12);
+      });
+    },
+
+    // Soft click — menu open
+    menuOpen() {
+      play(ac => {
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(660, ac.currentTime);
+        g.gain.setValueAtTime(0.08, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.06);
+        o.connect(g).connect(ac.destination);
+        o.start(); o.stop(ac.currentTime + 0.06);
+      });
+    },
+
+    // Major chord swell — victory
+    victory() {
+      play(ac => {
+        const chord = [523, 659, 784]; // C5, E5, G5 major triad
+        chord.forEach(freq => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(freq, ac.currentTime);
+          g.gain.setValueAtTime(0, ac.currentTime);
+          g.gain.linearRampToValueAtTime(0.12, ac.currentTime + 0.1);
+          g.gain.setValueAtTime(0.12, ac.currentTime + 0.4);
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.8);
+          o.connect(g).connect(ac.destination);
+          o.start(); o.stop(ac.currentTime + 0.8);
+        });
+      });
+    },
+
+    // Minor chord descent — defeat
+    defeat() {
+      play(ac => {
+        const chord = [493, 587, 740]; // B4, D5, F#5 diminished feel
+        chord.forEach((freq, i) => {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(freq, ac.currentTime);
+          o.frequency.linearRampToValueAtTime(freq * 0.7, ac.currentTime + 0.6);
+          g.gain.setValueAtTime(0, ac.currentTime);
+          g.gain.linearRampToValueAtTime(0.1, ac.currentTime + 0.05);
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.7);
+          o.connect(g).connect(ac.destination);
+          o.start(); o.stop(ac.currentTime + 0.7);
+        });
+      });
+    },
+
+    // Quick rattle — dice tumble
+    dice() {
+      play(ac => {
+        for (let i = 0; i < 4; i++) {
+          const o = ac.createOscillator();
+          const g = ac.createGain();
+          o.type = 'square';
+          o.frequency.setValueAtTime(300 + Math.random() * 400, ac.currentTime + i * 0.035);
+          g.gain.setValueAtTime(0.06, ac.currentTime + i * 0.035);
+          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i * 0.035 + 0.03);
+          o.connect(g).connect(ac.destination);
+          o.start(ac.currentTime + i * 0.035);
+          o.stop(ac.currentTime + i * 0.035 + 0.03);
+        }
+      });
+    },
+  };
+})();
+
+// ── Music stubs ──
+const Music = {
+  current: null,
+  play: (track) => { Music.current = track; console.log('[Music] Playing:', track); },
+  stop: () => { Music.current = null; },
+  playJingle: (name) => { console.log('[Music] Jingle:', name); },
+};
+
+// ── Battle overlay stubs (Phaser BattleScene handles rendering) ──
+// These MUST be no-ops — the 2D battle.js + npcs.js call them but
+// in Phaser we use BattleScene instead. If these do anything, they
+// crash because the DOM elements don't exist.
+function showBattleOverlay() { console.log('[Stub] showBattleOverlay — Phaser handles this'); }
+function hideBattleOverlay() {}
+function renderBattle() { console.log('[Stub] renderBattle — Phaser handles this'); }
+function showWildAppearedSplash(name) { console.log(`[Splash] Wild ${name} appeared!`); }
+var battleFledThisSession = false;
+var uid = 'local_' + Math.random().toString(36).substr(2, 9);
+// ENCOUNTER_ZONES declared in world-gen.js
+
+// ── Accessory effects ──
+function applyAccessoryBattleEffects() {
+  if (!B || !G.equipped) return;
+  // Ember Stone: +1 Sacred Fire at battle start
+  if (G.equipped.accessory?.name?.includes('Ember')) {
+    B.resources.sacredFire = (B.resources.sacredFire || 0) + 1;
+    B.player.resources.sacredFire = (B.player.resources.sacredFire || 0) + 1;
+  }
+}
+
+// ── Title tracking ──
+function checkAndNotifyTitles() {
+  if (!G.rep || !G.titles) return;
+  if (G.rep.battlesWon >= 10 && !G.titles.includes('Veteran')) {
+    G.titles.push('Veteran');
+    notify('Title earned: Veteran!');
+  }
+  if (G.rep.battlesWon >= 50 && !G.titles.includes('Champion')) {
+    G.titles.push('Champion');
+    notify('Title earned: Champion!');
+  }
+  // Wave 4 titles
+  if ((G.essences?.length || 0) >= 10 && !G.titles.includes('Collector')) {
+    G.titles.push('Collector');
+    notify('Title earned: Collector! (10+ essences)');
+  }
+  if ((G.rep.craftsCompleted || 0) >= 3 && !G.titles.includes('Crafter')) {
+    G.titles.push('Crafter');
+    notify('Title earned: Crafter! (3+ crafts)');
+  }
+  if ((G.regionsVisited?.length || 0) >= 4 && !G.titles.includes('Explorer')) {
+    G.titles.push('Explorer');
+    notify('Title earned: Explorer! (all 4 regions)');
+  }
+  if ((G.team?.length || 0) >= 4 && !G.titles.includes('Team Builder')) {
+    G.titles.push('Team Builder');
+    notify('Title earned: Team Builder! (4+ team members)');
+  }
+  if ((G.loreCollected?.length || 0) >= 4 && !G.titles.includes('Lore Hunter')) {
+    G.titles.push('Lore Hunter');
+    notify('Title earned: Lore Hunter! (all lore tablets)');
+  }
+  if ((G.arenaWins || 0) >= 1 && !G.titles.includes('Arena Victor')) {
+    G.titles.push('Arena Victor');
+    notify('Title earned: Arena Victor!');
+  }
+}
+
+// ── Spirit Comms (dialogue display) ──
+function showComm(name, text, opts) {
+  console.log(`[Comms] ${name}: ${text}`);
+  if (_notifyCallback) _notifyCallback(`${name}: ${text}`);
+}
+
+// ── Save/Load (localStorage for now, Firebase later) ──
+function saveGame() {
+  try {
+    const saveData = { playerData: G, timestamp: Date.now(), version: '1.0.0-phaser' };
+    localStorage.setItem('boo_phaser_save', JSON.stringify(saveData));
+    console.log('[Save] Game saved');
+  } catch (e) {
+    console.warn('[Save] Failed:', e);
+  }
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem('boo_phaser_save');
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data.playerData) {
+      Object.assign(G, data.playerData);
+      console.log('[Load] Game loaded');
+      return true;
+    }
+  } catch (e) {
+    console.warn('[Load] Failed:', e);
+  }
+  return false;
+}
+
+// ── Extended G defaults (ensure all fields exist) ──
+function ensurePlayerDefaults() {
+  if (!G.team) G.team = [];
+  if (!G.rep) G.rep = { battlesWon: 0, craftsCompleted: 0, itemsSold: 0, essencesCollected: 0, raresFound: 0 };
+  if (!G.titles) G.titles = [];
+  if (!G.essences) G.essences = [];
+  if (!G.gear) G.gear = [];
+  if (!G.equipped) G.equipped = { weapon: null, head: null, accessory: null };
+  if (!G.mastery) G.mastery = { weapon: { xp: 0 }, armor: { xp: 0 }, accessory: { xp: 0 } };
+  if (!G.quests) G.quests = { active: [], completed: [] };
+  if (!G.loreCollected) G.loreCollected = [];
+  if (!G.hostileNPCsDefeated) G.hostileNPCsDefeated = {};
+  if (!G.unlockedSkills) G.unlockedSkills = [];
+  if (G.level === undefined) G.level = 1;
+  if (G.xp === undefined) G.xp = 0;
+  if (G.coins === undefined) G.coins = 100;
+  if (G.activeIdx === undefined) G.activeIdx = 0;
+  G.inBattle = false; // never restore mid-battle state from save
+  if (!G.materials) G.materials = {};
+  if (!G.professionXP) G.professionXP = { combat: 0, exploration: 0, crafting: 0, trade: 0, charisma: 0 };
+  if (!G.professionSkills) G.professionSkills = {};
+  if (G.skillPointsUsed === undefined) G.skillPointsUsed = 0;
+  if (!G.achievements) G.achievements = [];
+  if (!G.discipline) G.discipline = null; // Fighter, Scout, Artisan, Merchant — chosen at game start
+  // Resources (must exist for wisp collection + battle resource bar)
+  if (G.iceShards === undefined) G.iceShards = 0;
+  if (G.sacredFire === undefined) G.sacredFire = 0;
+  if (G.healingSeeds === undefined) G.healingSeeds = 0;
+  if (G.luckyStones === undefined) G.luckyStones = 0;
+  if (G.surge === undefined) G.surge = 0;
+  if (G.moonstone === undefined) G.moonstone = 0;
+  if (G.firefly === undefined) G.firefly = 0;
+  // Wave 3: combat mastery (derived from battlesWon)
+  if (!G.mastery.combat) G.mastery.combat = { xp: 0 };
+  // Wave 4: region visit tracking + arena wins
+  if (!G.regionsVisited) G.regionsVisited = [];
+  if (G.arenaWins === undefined) G.arenaWins = 0;
+  // Wave 5: world bosses defeated + daily challenge
+  if (G.worldBossesDefeated === undefined) G.worldBossesDefeated = 0;
+  if (!G.dailyChallenge) G.dailyChallenge = null;
+  // Wave 6: onboarding + multiplayer
+  if (!G.spriteKey) G.spriteKey = 'player';
+  if (!G.playerId) G.playerId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  if (G.tutorialStep === undefined) G.tutorialStep = 0;
+  if (G.tutorialComplete === undefined) G.tutorialComplete = false;
+  // Wave 7: talent trees
+  if (!G.talents) G.talents = {};
+  if (G.darkRiderUnlocked === undefined) G.darkRiderUnlocked = false;
+  if (G.elderUnlocked === undefined) G.elderUnlocked = false;
+  if (G.activeAmendment === undefined) G.activeAmendment = null; // Elder Council amendment id
+}
+
+// ── Profession mastery levels (based on profession XP thresholds) ──
+const PROFESSION_MASTERY_LEVELS = [
+  { name: 'Novice',       min: 0,    cls: 'novice' },
+  { name: 'Apprentice',   min: 100,  cls: 'apprentice' },
+  { name: 'Journeyman',   min: 350,  cls: 'journeyman' },
+  { name: 'Expert',       min: 800,  cls: 'expert' },
+  { name: 'Master',       min: 1600, cls: 'master' },
+  { name: 'Grand Master', min: 3000, cls: 'grandmaster' },
+];
+
+function getProfessionMasteryInfo(xp) {
+  let result = PROFESSION_MASTERY_LEVELS[0];
+  for (const lvl of PROFESSION_MASTERY_LEVELS) {
+    if (xp >= lvl.min) result = lvl;
+  }
+  return result;
+}
+
+// ── Discipline definitions (chosen at game start, bonuses referenced by other systems) ──
+const PLAYER_DISCIPLINES = {
+  fighter:  { name: 'Fighter',  icon: '\u2694\uFE0F', desc: '+10% combat XP gain', color: '#ff6644' },
+  scout:    { name: 'Scout',    icon: '\uD83E\uDDED', desc: '+10% exploration XP, +20% recruit chance', color: '#44bbff' },
+  artisan:  { name: 'Artisan',  icon: '\uD83D\uDD28', desc: '+10% crafting XP, +1 assembly roll bonus', color: '#ffaa22' },
+  merchant: { name: 'Merchant', icon: '\uD83D\uDCB0', desc: 'Start with +50 gold, +10% trade XP', color: '#44dd44' },
+};
+
+// ═══════════════════════════════════════════════════
+// PORTED FUNCTIONS FROM 2D index.html
+// ═══════════════════════════════════════════════════
+
+// ── Zone quality cycle (12-hour rotation) ──
+function getZoneCycleId() {
+  return Math.floor(Date.now() / (1000 * 60 * 60 * 12));
+}
+
+function seededHash(a, b) {
+  let h = ((a * 2654435761) ^ (b * 2246822519)) >>> 0;
+  h = ((h >> 16) ^ h) * 0x45d9f3b;
+  h = ((h >> 16) ^ h) * 0x45d9f3b;
+  h = (h >> 16) ^ h;
+  return (h >>> 0) / 0xFFFFFFFF; // 0-1
+}
+
+function getZoneQuality(zoneIndex, cycleId) {
+  const raw = seededHash(zoneIndex * 7919, cycleId * 104729);
+  return 0.5 + raw * 1.0; // Map to 0.5 - 1.5
+}
+
+function getZoneQualityLabel(multiplier) {
+  if (multiplier >= 1.2) return 'High Quality';
+  if (multiplier >= 0.8) return 'Average';
+  return 'Low';
+}
+
+function getZoneQualityClass(multiplier) {
+  if (multiplier >= 1.2) return 'high';
+  if (multiplier >= 0.8) return 'average';
+  return 'low';
+}
+
+// ── Mastery system ──
+const MASTERY_LEVELS = [
+  { name: 'Novice', min: 0, cls: 'novice' },
+  { name: 'Apprentice', min: 3, cls: 'apprentice' },
+  { name: 'Journeyman', min: 6, cls: 'journeyman' },
+  { name: 'Expert', min: 10, cls: 'expert' },
+  { name: 'Master', min: 15, cls: 'master' },
+];
+
+function getMasteryInfo(xp) {
+  let result = MASTERY_LEVELS[0];
+  for (const lvl of MASTERY_LEVELS) {
+    if (xp >= lvl.min) result = lvl;
+  }
+  return result;
+}
+
+function getMasteryLevel(xp) {
+  if (xp >= 15) return 5;
+  if (xp >= 10) return 4;
+  if (xp >= 6) return 3;
+  if (xp >= 3) return 2;
+  return 1;
+}
+
+// ── Onboarding stub (no-op in Phaser) ──
+function advanceOnboarding(step) {
+  // No-op — onboarding is handled by Phaser scenes
+}
+
+// ── Craft reveal stub (no-op — Phaser CraftScene handles this) ──
+function showCraftReveal(itemName, qualLabel, qualColor, crafterName) {
+  console.log(`[CraftReveal] ${itemName} — ${qualLabel}`);
+}
+
+// ── HUD update stub (Phaser WorldScene handles HUD rendering) ──
+function updateHUD() {
+  console.log('[Stub] updateHUD — Phaser scene handles this');
+}
+
+// ── Show inventory stub ──
+function showInventory() {
+  console.log('[Stub] showInventory — Phaser scene handles this');
+}
+
+// ── Show team lineup stub ──
+function showTeamLineup() {
+  console.log('[Stub] showTeamLineup — Phaser scene handles this');
+}
+
+// ── Firebase / DB stubs (offline-first, real Firebase later) ──
+var firebase = {
+  database: {
+    ServerValue: { TIMESTAMP: Date.now() },
+  },
+};
+
+var db = {
+  _stub: true, // Wave 6: flag so MultiplayerPresence can detect offline mode
+  ref: function(path) {
+    return {
+      set: function(val) { return Promise.resolve(); },
+      push: function(val) { return Promise.resolve(); },
+      once: function(eventType) { return Promise.resolve({ val: () => null }); },
+      on: function(eventType, cb) { cb({ val: () => null }); },
+      off: function() {},
+      remove: function() { return Promise.resolve(); },
+      transaction: function(updateFn) {
+        const result = updateFn(null);
+        return Promise.resolve({ committed: !!result, snapshot: { val: () => result } });
+      },
+    };
+  },
+};
+
+// ── Multiplayer stubs (offline-first) ──
+var otherPlayers = {};
+var marketListings = {};
+var housingData = {};
+var showHomeOnMinimap = false;
+
+// ── Wave 6: Multiplayer Presence (Firebase-ready, graceful offline) ──
+const MultiplayerPresence = {
+  _isStub: true,  // true until real Firebase is connected
+  _listeners: {},
+
+  init() {
+    // Check if db is a real Firebase reference (not our stub)
+    try {
+      const testRef = db.ref('_presence_test');
+      // Our stub returns a resolved Promise for .once() — real Firebase returns a thenable
+      // Check by seeing if the stub flag exists
+      if (testRef && testRef.set && typeof testRef.on === 'function') {
+        // Could be real or stub — try to detect stub by checking if .once returns immediately
+        this._isStub = (db._stub === true);
+      }
+    } catch(e) {
+      this._isStub = true;
+    }
+    console.log('[MultiplayerPresence] init, stub:', this._isStub);
+  },
+
+  // Write this player's presence data
+  updatePresence(playerData) {
+    if (this._isStub || !G.playerId) return;
+    try {
+      db.ref('presence/' + G.playerId).set({
+        name: playerData.name || G.name,
+        x: playerData.x || G.x,
+        y: playerData.y || G.y,
+        spriteKey: playerData.spriteKey || G.spriteKey,
+        level: G.level || 1,
+        region: getCurrentRegion(G.x, G.y),
+        lastSeen: firebase.database.ServerValue.TIMESTAMP,
+      });
+    } catch(e) {
+      console.warn('[MultiplayerPresence] updatePresence error:', e);
+    }
+  },
+
+  // Listen for other players' presence changes
+  startListening(onPlayerUpdate, onPlayerRemove) {
+    if (this._isStub) return;
+    try {
+      const ref = db.ref('presence');
+      ref.on('child_added', snap => {
+        const data = snap.val();
+        const pid = snap.key || '';
+        if (pid === G.playerId) return; // skip self
+        if (data && onPlayerUpdate) onPlayerUpdate(pid, data);
+      });
+      ref.on('child_changed', snap => {
+        const data = snap.val();
+        const pid = snap.key || '';
+        if (pid === G.playerId) return;
+        if (data && onPlayerUpdate) onPlayerUpdate(pid, data);
+      });
+      ref.on('child_removed', snap => {
+        const pid = snap.key || '';
+        if (onPlayerRemove) onPlayerRemove(pid);
+      });
+      this._listeners.presence = ref;
+    } catch(e) {
+      console.warn('[MultiplayerPresence] startListening error:', e);
+    }
+  },
+
+  // Clean up on disconnect
+  setupDisconnect() {
+    if (this._isStub || !G.playerId) return;
+    try {
+      db.ref('presence/' + G.playerId).onDisconnect?.()?.remove?.();
+    } catch(e) { /* optional, may not exist on stub */ }
+  },
+
+  // Stop listening
+  stopListening() {
+    if (this._listeners.presence) {
+      try { this._listeners.presence.off(); } catch(e) {}
+      this._listeners.presence = null;
+    }
+  },
+};
+
+// ── Chat stub ──
+function addChatMessage(sender, text) {
+  console.log(`[Chat] ${sender}: ${text}`);
+}
+
+// ── Housing data ──
+var HOUSE_PLOTS = [
+  { id: 'frost_1', name: 'Polaris Cottage', x: 12, y: 18, region: 'Frost Valley' },
+  { id: 'frost_2', name: 'Lakeside Cabin', x: 38, y: 18, region: 'Frost Valley' },
+  { id: 'hills_1', name: 'Meadowbrook House', x: 22, y: 55, region: 'Rolling Hills' },
+  { id: 'hills_2', name: 'Hilltop Villa', x: 38, y: 60, region: 'Rolling Hills' },
+  { id: 'volcanic_1', name: 'Beach Bungalow', x: 72, y: 35, region: 'Volcanic Isles' },
+  { id: 'volcanic_2', name: 'Island Retreat', x: 78, y: 10, region: 'Volcanic Isles' },
+];
+
+var TROPHY_DEFS = {
+  boss_slayer: { name: 'Boss Slayer', icon: '\u2694\uFE0F', desc: 'Defeated a world boss' },
+  mastercraft_weapon: { name: 'Master Weaponsmith', icon: '\u2692\uFE0F', desc: 'Mastered weapon crafting' },
+  mastercraft_armor: { name: 'Master Armorer', icon: '\uD83D\uDEE1\uFE0F', desc: 'Mastered armor crafting' },
+  master_combat: { name: 'War Hero', icon: '\uD83C\uDF96\uFE0F', desc: 'Combat XP milestone' },
+  master_exploration: { name: 'World Explorer', icon: '\uD83C\uDF0D', desc: 'Exploration XP milestone' },
+  collector_rare: { name: 'Rare Collector', icon: '\uD83D\uDC8E', desc: 'Found 10+ rare Spiritkin' },
+  arena_champion: { name: 'Arena Champion', icon: '\uD83C\uDFC6', desc: 'Won 20 arena battles' },
+  lore_frost: { name: 'Frost Scholar', icon: '\u2744\uFE0F', desc: 'All Frost Valley lore collected' },
+  lore_hills: { name: 'Meadow Scholar', icon: '\uD83C\uDF3F', desc: 'All Rolling Hills lore collected' },
+  lore_volcanic: { name: 'Volcanic Scholar', icon: '\uD83C\uDF0B', desc: 'All Volcanic lore collected' },
+};
+
+// ── Guild craft bonus stub ──
+function getGuildCraftBonus() { return 0; }
+
+// ── isInParty stub ──
+function isInParty() { return false; }

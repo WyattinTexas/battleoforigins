@@ -1,0 +1,2681 @@
+// ═══════════════════════════════════════════════════
+// WORLD SCENE — Full overworld with sprites, NPCs, enemies
+// ═══════════════════════════════════════════════════
+
+class WorldScene extends Phaser.Scene {
+  constructor() { super('WorldScene'); }
+
+  create() {
+    // Safety: clear stale battle state from previous session
+    G.inBattle = false;
+    B = null;
+
+    const T = 32;
+    const MW = WORLD_W, MH = WORLD_H; // 110x85 from world-gen.js
+
+    this.cameras.main.fadeIn(600);
+    this.cameras.main.setBackgroundColor('#d8e8f0');
+
+    // ── Render the world map as a single RenderTexture (not 9350 rectangles) ──
+    // Build the impassable lookup set once
+    this._impassableSet = new Set([1, 3, 7, 13, 15, 16, 21, 23, 25]);
+    this._tileSize = T;
+
+    // Convert hex color string to Phaser number
+    function hexToNum(hex) { return parseInt(hex.replace('#', ''), 16); }
+
+    // Draw entire map as a single Graphics object — replaces 9350 individual rectangles
+    const mapGfx = this.add.graphics();
+    for (let y = 0; y < MH; y++) {
+      for (let x = 0; x < MW; x++) {
+        const tileType = worldMap[y] ? worldMap[y][x] : 0;
+        const colorHex = TILE_COLORS[tileType] || '#d8e8f0';
+        const color = hexToNum(colorHex);
+        mapGfx.fillStyle(color, 1);
+        mapGfx.fillRect(x * T, y * T, T, T);
+      }
+    }
+
+    // No physics static group — collision is handled by tile lookup in update()
+
+    // ── Player ──
+    // Reset to hub if saved position is problematic (blocked OR far from any hub)
+    const spawnTX = Math.floor(G.x);
+    const spawnTY = Math.floor(G.y);
+    const nearAnyHub = [HUB, HUB_MEADOW, HUB_VOLCANIC, HUB_DARK].some(
+      h => Math.abs(spawnTX - h.x) < 20 && Math.abs(spawnTY - h.y) < 20
+    );
+    if (spawnTX < 0 || spawnTY < 0 || spawnTX >= MW || spawnTY >= MH ||
+        this._impassableSet.has(worldMap[spawnTY]?.[spawnTX]) || !nearAnyHub) {
+      console.log('[WorldScene] Resetting to Polaris Hub from', spawnTX, spawnTY);
+      G.x = HUB.x + 3;
+      G.y = HUB.y + 2;
+      saveGame();
+    }
+
+    // Snap to tile center to avoid sub-pixel spawn issues
+    const spawnPX = Math.floor(G.x) * T + T / 2;
+    const spawnPY = Math.floor(G.y) * T + T / 2;
+    console.log('[WorldScene] Spawning player at tile', Math.floor(G.x), Math.floor(G.y), '-> px', spawnPX, spawnPY);
+
+    // Wave 6: Use selected character sprite (G.spriteKey), fall back to 'player'
+    const playerTexture = (G.spriteKey && G.spriteKey !== 'player' && this.textures.exists(G.spriteKey)) ? G.spriteKey : 'player';
+    this._playerTexture = playerTexture;
+    this.player = this.physics.add.sprite(spawnPX, spawnPY, playerTexture, 0);
+    this.player.setScale(2);
+    this.player.setDepth(10);
+    this.player.setCollideWorldBounds(true);
+
+    // Fallback colored square behind the sprite — guarantees visibility even if texture fails
+    this._playerFallbackRect = this.add.rectangle(spawnPX, spawnPY, 24, 24, 0x44ff44, 0.6).setDepth(8);
+
+    // Bright player indicator — large pulsing glow so you can always find yourself
+    this._playerMarker = this.add.circle(spawnPX, spawnPY, 28, 0x44aaff, 0.55).setDepth(9);
+    this._playerMarkerRing = this.add.circle(spawnPX, spawnPY, 34, 0x44aaff, 0).setDepth(9).setStrokeStyle(3, 0x44aaff, 0.8);
+    this.tweens.add({ targets: this._playerMarkerRing, scaleX: 1.5, scaleY: 1.5, alpha: 0, duration: 1000, yoyo: false, repeat: -1 });
+    // No physics collider — tile collision handled manually in update()
+
+    // ── Camera ──
+    // CRITICAL: Snap camera to player position FIRST, then start smooth follow.
+    // Without this, the camera starts at (0,0) and the slow lerp takes many
+    // frames to reach the player — making the character invisible on load.
+    const cam = this.cameras.main;
+    cam.setBounds(0, 0, MW * T, MH * T);
+    cam.setZoom(1.5);
+    // Initial snap then instant follow — startFollow handles viewport math internally
+    cam.setScroll(spawnPX - cam.width / (2 * cam.zoom), spawnPY - cam.height / (2 * cam.zoom));
+    cam.startFollow(this.player, true, 1, 1);
+
+    // UI elements use setScrollFactor(0) on the main camera — no separate UI camera needed
+
+    // ── NPCs (positions from npcs.js NPCS + HOSTILE_NPCS data) ──
+    this.npcSprites = [];
+    // Friendly — Frost Valley hub
+    this.spawnNPC('Elder Frost', (HUB.x + 2) * T, (HUB.y - 1) * T, 'npc_elder', 0xdaa520);
+    this.spawnNPC('Smith Ember', HUB.x * T, (HUB.y + 5) * T, 'npc_knight', 0xe07020);
+    this.spawnNPC('Keeper Zara', (HUB.x + 7) * T, (HUB.y + 1) * T, 'npc_hunter', 0xc0a040);
+    // Friendly — Rolling Hills
+    this.spawnNPC('Farmer Bea', 24 * T, 58 * T, 'npc_elder', 0x6a8a4a);
+    this.spawnNPC('Herbalist Sage', 28 * T, 60 * T, 'npc_knight', 0x4a8a6a);
+    // Friendly — Volcanic Isles
+    this.spawnNPC('Captain Flint', 74 * T, 16 * T, 'npc_hunter', 0xcc6644);
+    this.spawnNPC('Lava Tender', 76 * T, 14 * T, 'npc_knight', 0xff8844);
+    // Friendly — Dark Castle
+    this.spawnNPC('Shadow Warden', 93 * T, 20 * T, 'npc_hunter', 0x8a6aaa);
+    this.spawnNPC('Cursed Scholar', 95 * T, 22 * T, 'npc_elder', 0x6a4a8a);
+
+    // Hostile NPCs (from HOSTILE_NPCS positions)
+    this.spawnNPC('Brawler Jax', 30 * T, 20 * T, 'enemy_sprite', 0xcc4444, true);
+    this.spawnNPC('Ice Queen Vera', 40 * T, 15 * T, 'npc_knight', 0x6688cc, true);
+    this.spawnNPC('Bandit Marcus', 28 * T, 48 * T, 'enemy_sprite', 0xa88844, true);
+    this.spawnNPC('Lava Raider Kira', 68 * T, 25 * T, 'npc_hunter', 0xee8844, true);
+    this.spawnNPC('Shadow Knight Vex', 92 * T, 18 * T, 'npc_elder', 0x8866aa, true);
+    this.spawnNPC('The Exile', 55 * T, 35 * T, 'npc_knight', 0x666666, true);
+
+    // ── Enemies ──
+    this.enemies = this.physics.add.group();
+    for (let i = 0; i < 8; i++) this.spawnEnemy();
+    this._spawnTimer = this.time.addEvent({ delay: 4000, callback: this.spawnEnemy, callbackScope: this, loop: true });
+    this.physics.add.overlap(this.player, this.enemies, this.onEnemyContact, null, this);
+
+    // ── Spirit Wisps (glowing collectible orbs) ──
+    this.wisps = this.physics.add.group();
+    for (let i = 0; i < 5; i++) this.spawnWisp();
+    this.time.addEvent({ delay: 6000, callback: this.spawnWisp, callbackScope: this, loop: true });
+    this.physics.add.overlap(this.player, this.wisps, this.onWispCollect, null, this);
+
+    // ── Controls ──
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.wasd = this.input.keyboard.addKeys('W,A,S,D');
+    this.eKey = this.input.keyboard.addKey('E');
+    this.cKey = this.input.keyboard.addKey('C');
+    this.tKey = this.input.keyboard.addKey('T');
+    this.iKey = this.input.keyboard.addKey('I');
+    this.pKey = this.input.keyboard.addKey('P');
+    this.yKey = this.input.keyboard.addKey('Y');
+    this.fKey = this.input.keyboard.addKey('F');
+
+    // ── HUD ──
+    this.buildHUD();
+
+    // ── Dialogue box ──
+    this.dialogueContainer = this.add.container(0, 0).setDepth(300).setScrollFactor(0);
+    this.dialogueBg = this.add.rectangle(640, 660, 1100, 80, 0x111128, 0.92)
+      .setStrokeStyle(2, 0x4444aa);
+    this.dialogueNameText = this.add.text(120, 630, '', {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffdd44',
+    });
+    this.dialogueBodyText = this.add.text(120, 650, '', {
+      fontSize: '13px', fontFamily: 'Georgia, serif', color: '#ccccee',
+      wordWrap: { width: 900 },
+    });
+    this.dialogueContainer.add([this.dialogueBg, this.dialogueNameText, this.dialogueBodyText]);
+    this.dialogueContainer.setVisible(false);
+
+    // ── World bounds ──
+    this.physics.world.setBounds(0, 0, MW * T, MH * T);
+
+    // ── Region labels on the map ──
+    const regionLabels = [
+      { text: 'FROST VALLEY', x: 25, y: 5, color: '#88bbff' },
+      { text: 'Polaris Hub', x: HUB.x + 3, y: HUB.y - 3, color: '#daa520' },
+      { text: 'ROLLING HILLS', x: 30, y: 47, color: '#88cc44' },
+      { text: 'Meadowbrook', x: 26, y: 56, color: '#6a8a4a' },
+      { text: 'VOLCANIC ISLES', x: 72, y: 7, color: '#ff8844' },
+      { text: 'DARK CASTLE', x: 98, y: 5, color: '#aa66cc' },
+    ];
+    for (const rl of regionLabels) {
+      this.add.text(rl.x * T, rl.y * T, rl.text, {
+        fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: rl.color,
+        backgroundColor: '#00000066', padding: { x: 4, y: 2 },
+      }).setDepth(5);
+    }
+
+    // ── Building labels in Polaris ──
+    const buildings = [
+      { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1 },
+      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1 },
+      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3 },
+      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3 },
+      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5 },
+    ];
+    for (const b of buildings) {
+      // Building marker (slightly brighter square on top of tile)
+      this.add.rectangle(b.x * T + T/2, b.y * T + T/2, T - 2, T - 2, 0x8a7a5a)
+        .setStrokeStyle(1, 0xaaa888).setDepth(3);
+      this.add.text(b.x * T + T/2, b.y * T - 6, b.name, {
+        fontSize: '7px', fontFamily: 'monospace', color: '#eecc88',
+        backgroundColor: '#00000066', padding: { x: 2, y: 1 },
+      }).setOrigin(0.5).setDepth(6);
+    }
+
+    // ── Wave 3: Building Interactions ──
+    this._interactBuildings = [
+      { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1, action: 'tradingPost' },
+      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1, action: 'arena' },
+      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3, action: 'workshop' },
+      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3, action: 'inn' },
+      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5, action: 'cantina' },
+    ];
+
+    // ── Wave 3: Signposts ──
+    this._signposts = [
+      { x: HUB.x + 3, y: HUB.y - 2, text: 'Welcome to Polaris Hub! North: Frost Valley zones. South: Rolling Hills.' },
+      { x: 28, y: 42, text: 'CAUTION: Mountain pass ahead. Rolling Hills region beyond.' },
+      { x: 58, y: 20, text: 'Volcanic Isles passage. Beware lava flows and strong Spiritkin.' },
+      { x: 90, y: 20, text: 'Dark Castle entrance. Only the brave pass this threshold.' },
+      { x: 26, y: 56, text: 'Meadowbrook — a peaceful settlement among the rolling green hills.' },
+      { x: 74, y: 13, text: 'Volcanic Settlement — built on sand and ash. Trade and rest here.' },
+    ];
+    for (const sp of this._signposts) {
+      this.add.text(sp.x * T + T/2, sp.y * T + T/2, '\u{1F4DC}', {
+        fontSize: '16px',
+      }).setOrigin(0.5).setDepth(6);
+    }
+
+    // ── Wave 3: Lore Tablets ──
+    this._loreTablets = [
+      { id: 'lore_polaris', x: 20, y: 16, text: 'The first settlers named this land after the Polaris star, a beacon visible even through spirit storms. Frost Valley was where Spiritkin and humans first learned to coexist.' },
+      { id: 'lore_lake', x: 40, y: 20, text: 'The Frozen Lake was once a sacred pool where Spiritkin emerged from the spirit world. When the Great Frost came, the lake sealed shut — trapping hundreds of spirits beneath the ice.' },
+      { id: 'lore_hills', x: 30, y: 55, text: 'Rolling Hills was farmland before the Spiritkin arrived. Farmer Bea says the flowers here bloom in colors that don\'t exist anywhere else — fed by spirit energy seeping up from below.' },
+      { id: 'lore_castle', x: 98, y: 12, text: 'The Dark Castle was built by the Valkin, ancient spirit wardens who believed darkness could be harnessed. When they vanished, the castle remained — and something still stirs inside.' },
+    ];
+    this._loreTabletSprites = [];
+    for (const lt of this._loreTablets) {
+      if (G.loreCollected.includes(lt.id)) continue; // already collected
+      const glow = this.add.rectangle(lt.x * T + T/2, lt.y * T + T/2, 14, 14, 0xffcc00, 0.85)
+        .setStrokeStyle(1, 0xffee44).setDepth(8);
+      const outerGlow = this.add.rectangle(lt.x * T + T/2, lt.y * T + T/2, 20, 20, 0xffcc00, 0.2)
+        .setDepth(7);
+      this.tweens.add({ targets: outerGlow, scaleX: 1.5, scaleY: 1.5, alpha: 0.05, duration: 1200, yoyo: true, repeat: -1 });
+      this._loreTabletSprites.push({ id: lt.id, x: lt.x, y: lt.y, text: lt.text, glow, outerGlow });
+    }
+
+    // ── Wave 3: Region transition tracking ──
+    this._lastRegion = getCurrentRegion(G.x, G.y);
+
+    // ── Encounter zone labels ──
+    for (const zone of ENCOUNTER_ZONES) {
+      this.add.text((zone.x + zone.w/2) * T, zone.y * T - 8, zone.name, {
+        fontSize: '8px', fontFamily: 'monospace', color: '#aa88dd',
+        backgroundColor: '#00000044', padding: { x: 2, y: 1 },
+      }).setOrigin(0.5).setDepth(5);
+    }
+
+    // ── Menu buttons bar (top-center) ──
+    const menuY = 8;
+    const btnW = 80, btnH = 28, btnGap = 6;
+    const buttons = [
+      { label: 'TEAM (T)', key: 'T', action: () => this.showTeamLineup(), color: 0x445588 },
+      { label: 'ITEMS (I)', key: 'I', action: () => this.showInventory(), color: 0x885544 },
+      { label: 'CRAFT (C)', key: 'C', action: () => { GameAudio.menuOpen(); this.scene.launch('CraftScene'); this.scene.pause(); }, color: 0x665533 },
+      { label: 'PROF (P)', key: 'P', action: () => this.showProfessionPanel(), color: 0x664488 },
+      { label: 'TALENT (Y)', key: 'Y', action: () => { GameAudio.menuOpen(); this.scene.launch('TalentScene'); this.scene.pause(); }, color: 0x884466 },
+      { label: 'HELP (H)', key: 'H', action: () => this.showHelpPanel(), color: 0x448844 },
+    ];
+    const startX = this.scale.width / 2 - (buttons.length * (btnW + btnGap)) / 2;
+    buttons.forEach((btn, i) => {
+      const x = startX + i * (btnW + btnGap) + btnW / 2;
+      const bg = this.add.rectangle(x, menuY + btnH/2, btnW, btnH, btn.color, 0.85)
+        .setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true })
+        .setStrokeStyle(1, 0x666666);
+      this.add.text(x, menuY + btnH/2, btn.label, {
+        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffffff',
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+      bg.on('pointerdown', btn.action);
+      bg.on('pointerover', () => bg.setAlpha(1));
+      bg.on('pointerout', () => bg.setAlpha(0.85));
+    });
+
+    // ── Controls hint ──
+    this.add.text(10, this.scale.height - 20, 'WASD: Move | E: Interact | I: Items | T: Team | H: Help', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#666666',
+    }).setScrollFactor(0).setDepth(200);
+
+    // ── Region text ──
+    this.regionText = this.add.text(640, 40, '', {
+      fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+      backgroundColor: '#00000066', padding: { x: 12, y: 4 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+
+    // Notify callback for globals
+    _notifyCallback = (text) => this.showNotification(text);
+    console.log('[WorldScene] create: HUD + UI done');
+
+    // Panel manager for inventory/team overlays
+    this.panels = new PanelManager(this);
+    console.log('[WorldScene] create: PanelManager done');
+
+    // Wave 4: Arena reward handler — when WorldScene resumes after battle,
+    // check if it was an arena battle and award bonus gold
+    this.events.on('resume', () => {
+      if (this._pendingArenaCheck) {
+        this._pendingArenaCheck = false;
+        // B is null after battle ends; check battlesWon delta to determine win
+        const winsNow = G.rep?.battlesWon || 0;
+        if (winsNow > (this._arenaWinsBefore || 0)) {
+          // Player won the arena battle
+          G.arenaWins = (G.arenaWins || 0) + 1;
+          G.coins += 50;
+          saveGame();
+          checkAndNotifyTitles();
+          this.showNotification('Arena Victory! +50 gold!');
+        }
+        this._arenaWinsBefore = null;
+      }
+    });
+
+    // ── Wave 5: World Boss resume handler ──
+    this.events.on('resume', () => {
+      if (this._pendingWorldBossCheck) {
+        this._pendingWorldBossCheck = false;
+        const winsNow = G.rep?.battlesWon || 0;
+        if (winsNow > (this._worldBossWinsBefore || 0)) {
+          G.coins += 100;
+          // Award rare essence as boss loot
+          const rareCards = ALL_CARDS.filter(c => c.rarity === 'rare' || c.rarity === 'ghost-rare' || c.rarity === 'legendary');
+          const lootCard = rareCards[Math.floor(Math.random() * rareCards.length)];
+          if (lootCard) {
+            G.essences.push({ name: lootCard.name, fromName: lootCard.name, rarity: lootCard.rarity, potency: 8, stability: 8, resonance: 8, region: 'World Boss', subtype: 'Boss Essence' });
+          }
+          saveGame();
+          this.showNotification('WORLD BOSS DEFEATED! +100 gold, +10 XP, rare essence!');
+        }
+        this._worldBossWinsBefore = null;
+      }
+    });
+
+    // ── Wave 5: Black Riders (night-only enemies) ──
+    this._blackRiders = [];
+    this._blackRiderTimer = null;
+    this._wasNight = false;
+
+    // ── Wave 5: World Boss ──
+    this._worldBossSprite = null;
+    this._worldBossLabel = null;
+    this._worldBossGlow = null;
+    this._worldBossRegion = null;
+    this._worldBossRespawnTime = 0;
+    this.spawnWorldBoss();
+
+    // ── Wave 5: Sparkle Trails ──
+    this.createSparkleTrails();
+
+    // ── Wave 5: Help Panel (H key) ──
+    this.hKey = this.input.keyboard.addKey('H');
+
+    // ── Wave 5: Daily Challenge ──
+    this.initDailyChallenge();
+
+    // Star Fox comm overlay
+    try {
+      this.comm = new CommOverlay(this);
+      console.log('[WorldScene] create: CommOverlay done');
+    } catch(e) {
+      console.error('[WorldScene] CommOverlay FAILED:', e);
+      this.comm = null;
+    }
+
+    // ── Wave 6: Onboarding Tutorial ──
+    this._isNewGame = (G.rep.battlesWon === 0 && !G.tutorialComplete);
+    this._tutorialArrow = null;
+    if (this._isNewGame && G.tutorialStep === 0) {
+      // Delay slightly so the scene fully renders before showing the first message
+      this.time.delayedCall(1500, () => this.startTutorial());
+    }
+
+    // ── Wave 6: Multiplayer Presence ──
+    this._otherPlayerSprites = {};
+    this.initMultiplayerPresence();
+
+    // ── Wave 6: Periodic save + multiplayer presence update (every 30s) ──
+    this._presenceTimer = this.time.addEvent({
+      delay: 30000,
+      callback: () => {
+        saveGame();
+        MultiplayerPresence.updatePresence({
+          name: G.name, x: G.x, y: G.y, spriteKey: G.spriteKey,
+        });
+      },
+      callbackScope: this,
+      loop: true,
+    });
+
+    // ── Music ──
+    try {
+      this._currentMusic = 'frost';
+      if (this.sound.get('music_hub')) {
+        this.sound.play('music_hub', { loop: true, volume: 0.3 });
+      }
+    } catch(e) { console.log('[Audio] Music skipped:', e.message); }
+    console.log('[WorldScene] create: COMPLETE');
+  }
+
+  // ── Tile collision helper (replaces 2270 static physics bodies) ──
+  isTileBlocked(px, py) {
+    const tx = Math.floor(px / this._tileSize);
+    const ty = Math.floor(py / this._tileSize);
+    if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) return true;
+    return this._impassableSet.has(worldMap[ty]?.[tx]);
+  }
+
+  update(time, delta) {
+    try {
+    if (G.inBattle) return;
+    if (!this._updateLogged) { this._updateLogged = true; console.log('[WorldScene] update() running, player:', this.player?.x, this.player?.y); }
+
+    const speed = 140;
+    let vx = 0, vy = 0;
+
+    if (this.cursors.left.isDown || this.wasd.A.isDown) { vx = -speed; this._lastDir = 'left'; }
+    else if (this.cursors.right.isDown || this.wasd.D.isDown) { vx = speed; this._lastDir = 'right'; }
+    if (this.cursors.up.isDown || this.wasd.W.isDown) { vy = -speed; this._lastDir = 'up'; }
+    else if (this.cursors.down.isDown || this.wasd.S.isDown) { vy = speed; this._lastDir = 'down'; }
+
+    if (vx !== 0 && vy !== 0) { vx *= 0.707; vy *= 0.707; }
+
+    // Tile-based collision: check destination before applying velocity
+    const T = this._tileSize;
+    const halfBody = 10; // approximate half-width of player collision body
+    const px = this.player.x;
+    const py = this.player.y;
+    const dt = (delta || 16) / 1000;
+    const nextX = px + vx * dt;
+    const nextY = py + vy * dt;
+
+    // Check X movement
+    if (vx !== 0) {
+      const probeX = vx > 0 ? nextX + halfBody : nextX - halfBody;
+      if (this.isTileBlocked(probeX, py - halfBody) || this.isTileBlocked(probeX, py + halfBody)) {
+        vx = 0;
+      }
+    }
+    // Check Y movement
+    if (vy !== 0) {
+      const probeY = vy > 0 ? nextY + halfBody : nextY - halfBody;
+      if (this.isTileBlocked(px - halfBody, probeY) || this.isTileBlocked(px + halfBody, probeY)) {
+        vy = 0;
+      }
+    }
+
+    this.player.setVelocity(vx, vy);
+
+    // Safety: if player is currently INSIDE a blocked tile, push them out
+    if (this.isTileBlocked(px, py)) {
+      const safeTX = Math.floor(px / T);
+      const safeTY = Math.floor(py / T);
+      let escaped = false;
+      for (let r = 1; r < 15 && !escaped; r++) {
+        for (let dy = -r; dy <= r && !escaped; dy++) {
+          for (let dx = -r; dx <= r && !escaped; dx++) {
+            if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+            const checkTX = safeTX + dx, checkTY = safeTY + dy;
+            if (checkTX >= 0 && checkTY >= 0 && checkTX < WORLD_W && checkTY < WORLD_H &&
+                !this._impassableSet.has(worldMap[checkTY]?.[checkTX])) {
+              this.player.setPosition(checkTX * T + T / 2, checkTY * T + T / 2);
+              this.player.setVelocity(0, 0);
+              escaped = true;
+            }
+          }
+        }
+      }
+      // If still stuck after 15-tile radius, warp to hub
+      if (!escaped) {
+        this.player.setPosition((HUB.x + 3) * T, (HUB.y + 2) * T);
+        this.player.setVelocity(0, 0);
+      }
+    }
+
+    // Track player marker + fallback rect
+    if (this._playerMarker) this._playerMarker.setPosition(this.player.x, this.player.y);
+    if (this._playerMarkerRing) this._playerMarkerRing.setPosition(this.player.x, this.player.y);
+    if (this._playerFallbackRect) this._playerFallbackRect.setPosition(this.player.x, this.player.y);
+
+    // Animate walk or show idle frame
+    // Wave 6: Use correct animation prefix for selected character sprite
+    const animPrefix = (this._playerTexture && this._playerTexture !== 'player') ? this._playerTexture + '_' : '';
+    if (vx !== 0 || vy !== 0) {
+      this.player.play(`${animPrefix}walk_${this._lastDir}`, true);
+    } else {
+      this.player.stop();
+      // Idle: show frame 0 of last direction (col index: down=0, up=1, left=2, right=3)
+      const idleFrame = { down: 0, up: 1, left: 2, right: 3 }[this._lastDir || 'down'];
+      this.player.setFrame(idleFrame);
+    }
+
+    G.x = this.player.x / 32;
+    G.y = this.player.y / 32;
+
+    // Day/night cycle
+    this.updateDayNight();
+
+    // Region detection
+    const region = getCurrentRegion(G.x, G.y);
+    const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
+    this.regionText.setText(regionNames[region] || '');
+
+    // Building + NPC interactions (buildings first — they're inside NPC range)
+    this._eConsumed = false;
+    this.checkBuildingProximity();
+    this.checkNPCProximity();
+
+    // Panel hotkeys
+    if (Phaser.Input.Keyboard.JustDown(this.cKey)) {
+      GameAudio.menuOpen();
+      this.scene.launch('CraftScene');
+      this.scene.pause();
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.tKey)) {
+      this.showTeamLineup();
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.iKey)) {
+      this.showInventory();
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
+      this.showProfessionPanel();
+    }
+    if (Phaser.Input.Keyboard.JustDown(this.yKey)) {
+      GameAudio.menuOpen();
+      this.scene.launch('TalentScene');
+      this.scene.pause();
+    }
+
+    // Wave 3: Signpost interactions (E key near signposts)
+    this.checkSignpostProximity();
+
+    // Wave 3: Lore tablet collection (walk over)
+    this.checkLoreTablets();
+
+    // Wave 3: Region transition banners + exploration XP
+    this.checkRegionTransition(region);
+
+    // Dynamic encounter rate — faster spawns inside encounter zones
+    const zoneIdx = getCurrentZone(G.x, G.y);
+    if (zoneIdx >= 0 && !this._inZone) {
+      this._inZone = true;
+      if (this._spawnTimer) this._spawnTimer.remove();
+      this._spawnTimer = this.time.addEvent({ delay: 2500, callback: this.spawnEnemy, callbackScope: this, loop: true });
+    } else if (zoneIdx < 0 && this._inZone) {
+      this._inZone = false;
+      if (this._spawnTimer) this._spawnTimer.remove();
+      this._spawnTimer = this.time.addEvent({ delay: 4000, callback: this.spawnEnemy, callbackScope: this, loop: true });
+    }
+
+    // Wave 5: Black Riders — night-only dangerous enemies
+    this.updateBlackRiders();
+
+    // Wave 5: World Boss proximity check
+    this.checkWorldBossProximity();
+
+    // Wave 5: Help panel hotkey
+    if (Phaser.Input.Keyboard.JustDown(this.hKey)) {
+      this.showHelpPanel();
+    }
+
+    // Wave 5: Daily challenge check
+    this.updateDailyChallenge();
+
+    // Wave 6: Tutorial progression checks
+    this.updateTutorial(vx, vy);
+
+    this.updateHUD();
+    } catch (e) { console.error('[WorldScene] update error:', e); }
+  }
+
+  // ═══════ NPCs ═══════
+
+  spawnNPC(name, x, y, spriteKey, tint, hostile = false) {
+    const npc = this.physics.add.staticSprite(x, y, spriteKey, 0).setScale(2);
+    if (tint) npc.setTint(tint);
+
+    const label = this.add.text(x, y - 40, name, {
+      fontSize: '10px', fontFamily: 'monospace', color: hostile ? '#ff8888' : '#88ff88',
+      backgroundColor: '#00000088', padding: { x: 3, y: 1 },
+    }).setOrigin(0.5).setDepth(11);
+
+    // Exclamation mark for hostile
+    let marker = null;
+    if (hostile) {
+      marker = this.add.text(x, y - 52, '!', {
+        fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ff4444',
+      }).setOrigin(0.5).setDepth(11);
+      this.tweens.add({ targets: marker, y: y - 58, duration: 800, yoyo: true, repeat: -1 });
+    }
+
+    this.npcSprites.push({ sprite: npc, name, label, marker, hostile, x, y });
+  }
+
+  checkNPCProximity() {
+    if (this._eConsumed) return; // building already handled E this frame
+    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
+
+    for (const npc of this.npcSprites) {
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
+
+      if (dist < 80) {
+        npc.label.setColor(npc.hostile ? '#ffaa44' : '#ffdd44');
+        // Show interaction hint
+        if (!npc._hint) {
+          npc._hint = this.add.text(npc.x, npc.y + 24, '[E]', {
+            fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffffff',
+            backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
+          }).setOrigin(0.5).setDepth(12);
+        }
+
+        // Fortune hint (show [F] when Fortune Teller apprentice + off cooldown)
+        if (typeof canGiveFortune === 'function' && canGiveFortune()) {
+          if (!npc._fortuneHint) {
+            npc._fortuneHint = this.add.text(npc.x, npc.y + 38, '', {
+              fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: '#44bbff',
+              backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
+            }).setOrigin(0.5).setDepth(12);
+          }
+          const ready = isFortuneReady();
+          npc._fortuneHint.setText(ready ? '[F] Fortune' : '[F] ' + getFortuneCooldownSec() + 's');
+          npc._fortuneHint.setColor(ready ? '#44bbff' : '#666688');
+
+          // F key: give fortune to this NPC
+          if (ready && Phaser.Input.Keyboard.JustDown(this.fKey)) {
+            const result = giveFortune(npc.name, false); // false = NPC, 1/10th XP
+            if (result) {
+              // Show fortune result as floating text
+              const color = result.type === 'good' ? '#88ff44' : '#ff6666';
+              const icon = result.type === 'good' ? '★' : '☆';
+              const floatText = this.add.text(npc.x, npc.y - 16, icon + ' ' + result.name + ' ' + icon, {
+                fontSize: '12px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: color,
+                backgroundColor: '#000000cc', padding: { x: 6, y: 3 },
+              }).setOrigin(0.5).setDepth(100);
+              this.tweens.add({
+                targets: floatText, y: npc.y - 60, alpha: 0, duration: 2000,
+                ease: 'Power2', onComplete: () => floatText.destroy(),
+              });
+              // Show description below
+              const descText = this.add.text(npc.x, npc.y, result.desc, {
+                fontSize: '9px', fontFamily: 'monospace', color: '#aaaacc',
+                backgroundColor: '#000000aa', padding: { x: 4, y: 2 },
+              }).setOrigin(0.5).setDepth(100);
+              this.tweens.add({
+                targets: descText, y: npc.y - 30, alpha: 0, duration: 2500, delay: 500,
+                ease: 'Power2', onComplete: () => descText.destroy(),
+              });
+              GameAudio.collect();
+              // Check for talent auto-unlocks
+              if (typeof checkFortuneUnlocks === 'function') checkFortuneUnlocks();
+            }
+          }
+        }
+
+        if (ePressed) {
+          this._eConsumed = true;
+          if (this.comm && this.comm.isActive) {
+            this.comm.dismiss();
+          } else if (npc.hostile) {
+            this.triggerTrainerBattle(npc);
+          } else if (this.comm) {
+            this.comm.show(npc.name, this.getNPCDialogue(npc.name), { color: '#88ff88' });
+          } else {
+            // Fallback if CommOverlay failed to initialize
+            this.showDialogue(npc.name, this.getNPCDialogue(npc.name));
+          }
+        }
+      } else {
+        npc.label.setColor(npc.hostile ? '#ff8888' : '#88ff88');
+        if (npc._hint) { npc._hint.destroy(); npc._hint = null; }
+        if (npc._fortuneHint) { npc._fortuneHint.destroy(); npc._fortuneHint = null; }
+      }
+    }
+  }
+
+  getNPCDialogue(name) {
+    // Use the rich NPC_DIALOGUE_MAP from npcs.js if available
+    if (typeof NPC_DIALOGUE_MAP !== 'undefined' && NPC_DIALOGUE_MAP[name] && NPC_DIALOGUE_MAP[name].getLine) {
+      return NPC_DIALOGUE_MAP[name].getLine();
+    }
+    // Fallback for any NPC not in the map
+    const lines = {
+      'Elder Frost': ['The spirits remember what men forget.', 'Frost Valley was the first land the Spiritkin claimed.'],
+      'Smith Ember': ['Iron sings when you heat it right.', 'Bring me ore and I will make you something worth carrying.'],
+      'Keeper Zara': ['Every Spiritkin has a story.', 'The battle is won before the dice are rolled.'],
+    };
+    const pool = lines[name] || ['...'];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  showDialogue(name, text) {
+    this.dialogueNameText.setText(name);
+    this.dialogueBodyText.setText(text);
+    this.dialogueContainer.setVisible(true);
+    if (this._dialogueTimer) this._dialogueTimer.remove();
+    this._dialogueTimer = this.time.delayedCall(4000, () => this.dialogueContainer.setVisible(false));
+  }
+
+  showNotification(text) {
+    const notif = this.add.text(640, 80, text, {
+      fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+      backgroundColor: '#000000aa', padding: { x: 12, y: 6 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(300);
+    this.tweens.add({ targets: notif, alpha: 0, y: 40, duration: 2000, delay: 1500, onComplete: () => notif.destroy() });
+  }
+
+  // ═══════ WAVE 3: BUILDING INTERACTIONS ═══════
+
+  checkBuildingProximity() {
+    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
+    if (!ePressed) return;
+    // Don't interact if a panel, comm overlay, or dialogue is active
+    if (this.panels.isOpen()) return;
+    if (this.comm && this.comm.isActive) return;
+
+    const px = this.player.x;
+    const py = this.player.y;
+    const T = this._tileSize;
+    const INTERACT_DIST = 60; // pixels
+
+    for (const bld of this._interactBuildings) {
+      const bx = bld.x * T + T / 2;
+      const by = bld.y * T + T / 2;
+      const dist = Phaser.Math.Distance.Between(px, py, bx, by);
+      if (dist > INTERACT_DIST) continue;
+
+      this._eConsumed = true;
+      if (bld.action === 'tradingPost') {
+        // Trading post is open-air — use panel directly
+        this.openTradingPost();
+      } else {
+        // Enter building interior
+        if (typeof GameAudio !== 'undefined') GameAudio.menuOpen();
+        this.cameras.main.fadeOut(300);
+        this.time.delayedCall(300, () => {
+          this.scene.launch('BuildingScene', {
+            building: bld.action,
+            returnX: this.player.x,
+            returnY: this.player.y,
+          });
+          this.scene.pause();
+        });
+      }
+      return;
+    }
+  }
+
+  showBuildingPanel(title, message) {
+    this.panels.open(title, (container, w, h) => {
+      const text = this.add.text(w / 2, h / 2 - 20, message, {
+        fontSize: '14px', fontFamily: 'Georgia, serif', color: '#aaaacc',
+        wordWrap: { width: w - 40 }, align: 'center',
+      }).setOrigin(0.5).setScrollFactor(0);
+      container.add(text);
+    }, { width: 360, height: 160 });
+  }
+
+  interactInn() {
+    const cost = 5;
+    if (G.coins < cost) {
+      this.showNotification('Not enough gold! Inn costs 5 gold.');
+      return;
+    }
+    // Check if any team member is hurt
+    const anyHurt = G.team.some(g => g.hp < g.maxHp || g.ko);
+    if (!anyHurt) {
+      this.showNotification('Your team is already at full health!');
+      return;
+    }
+    G.coins -= cost;
+    for (const ghost of G.team) {
+      ghost.hp = ghost.maxHp;
+      ghost.ko = false;
+    }
+    saveGame();
+    this.showNotification('Team fully healed at the Inn! (-5 gold)');
+  }
+
+  interactCantina() {
+    const tips = [
+      'Bartender says: "The elder knows which zones are running hot. Ask him."',
+      '"Heard a traveler found a lore tablet near the frozen lake. Golden, glowing thing."',
+      '"The Workshop crafts the best gear. Bring essences from encounter zones."',
+      '"Some say the Dark Castle holds ancient Spiritkin sealed away for centuries."',
+      '"If your team is hurt, the Inn can fix them up — just 5 gold."',
+      '"Encounter zones cycle quality every 12 hours. Patience pays off."',
+      '"The Rolling Hills are peaceful, but don\'t let that fool you — the Spiritkin there are crafty."',
+      '"Captain Flint at the Volcanic settlement used to be a pirate. Don\'t tell him I said that."',
+      '"Spirit Wisps carry resources. Collect them before they vanish!"',
+      '"They say a master crafter can forge legendary weapons. Get your mastery up."',
+    ];
+    const tip = tips[Math.floor(Math.random() * tips.length)];
+    if (this.comm) {
+      this.comm.show('The Frozen Mug', tip, { color: '#cc9944' });
+    } else {
+      this.showDialogue('The Frozen Mug', tip);
+    }
+  }
+
+  // ═══════ WAVE 3: SIGNPOST INTERACTIONS ═══════
+
+  checkSignpostProximity() {
+    if (this._eConsumed) return; // NPC or building already handled E this frame
+    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
+    if (!ePressed) return;
+    if (this.panels.isOpen()) return;
+    if (this.comm && this.comm.isActive) return;
+
+    const px = this.player.x;
+    const py = this.player.y;
+    const T = this._tileSize;
+    const INTERACT_DIST = 50;
+
+    for (const sp of this._signposts) {
+      const sx = sp.x * T + T / 2;
+      const sy = sp.y * T + T / 2;
+      const dist = Phaser.Math.Distance.Between(px, py, sx, sy);
+      if (dist > INTERACT_DIST) continue;
+
+      if (this.comm) {
+        this.comm.show('Signpost', sp.text, { color: '#ccbb88' });
+      } else {
+        this.showNotification(sp.text);
+      }
+      return;
+    }
+  }
+
+  // ═══════ WAVE 3: LORE TABLETS ═══════
+
+  checkLoreTablets() {
+    const px = this.player.x;
+    const py = this.player.y;
+    const T = this._tileSize;
+    const COLLECT_DIST = 30;
+
+    for (let i = this._loreTabletSprites.length - 1; i >= 0; i--) {
+      const lt = this._loreTabletSprites[i];
+      const lx = lt.x * T + T / 2;
+      const ly = lt.y * T + T / 2;
+      const dist = Phaser.Math.Distance.Between(px, py, lx, ly);
+      if (dist > COLLECT_DIST) continue;
+
+      // Collect this lore tablet
+      if (!G.loreCollected.includes(lt.id)) {
+        G.loreCollected.push(lt.id);
+        saveGame();
+      }
+
+      // Remove visuals
+      if (lt.glow) lt.glow.destroy();
+      if (lt.outerGlow) lt.outerGlow.destroy();
+      this._loreTabletSprites.splice(i, 1);
+
+      // Show lore text in a panel
+      this.panels.open('LORE DISCOVERED', (container, w, h) => {
+        const title = this.add.text(w / 2, 16, `Lore Tablet (${G.loreCollected.length}/4)`, {
+          fontSize: '13px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffcc44',
+        }).setOrigin(0.5).setScrollFactor(0);
+        const body = this.add.text(w / 2, h / 2, lt.text, {
+          fontSize: '13px', fontFamily: 'Georgia, serif', color: '#ccccee',
+          wordWrap: { width: w - 40 }, align: 'center', lineSpacing: 4,
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add([title, body]);
+      }, { width: 420, height: 220 });
+
+      this.showNotification('Lore tablet discovered!');
+      return; // one at a time
+    }
+  }
+
+  // ═══════ WAVE 3: REGION TRANSITION BANNERS ═══════
+
+  checkRegionTransition(currentRegion) {
+    if (currentRegion === this._lastRegion) return;
+    const isFirstSet = this._lastRegion === undefined;
+    this._lastRegion = currentRegion;
+
+    // Wave 4: track visited regions for Explorer title
+    if (!G.regionsVisited) G.regionsVisited = [];
+    if (!G.regionsVisited.includes(currentRegion)) {
+      G.regionsVisited.push(currentRegion);
+      saveGame();
+      checkAndNotifyTitles();
+    }
+
+    // Award exploration XP on region change (skip the initial set on scene load)
+    if (!isFirstSet && typeof addProfessionXP === 'function') {
+      addProfessionXP('exploration', 5);
+    }
+
+    const regionDisplay = {
+      frost_valley: { name: 'Frost Valley', color: '#88bbff' },
+      rolling_hills: { name: 'Rolling Hills', color: '#88cc44' },
+      volcanic_isles: { name: 'Volcanic Isles', color: '#ff8844' },
+      dark_castle: { name: 'Dark Castle', color: '#aa66cc' },
+    };
+    const info = regionDisplay[currentRegion];
+    if (!info) return;
+    if (!isFirstSet) GameAudio.levelUp();
+
+    // Large banner text — fade in, hold, fade out
+    const banner = this.add.text(640, 200, `Entering ${info.name}`, {
+      fontSize: '28px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: info.color,
+      backgroundColor: '#000000aa', padding: { x: 24, y: 12 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(400).setAlpha(0);
+
+    // Subtitle with region flavor
+    const flavors = {
+      frost_valley: 'Land of ice and ancient spirits',
+      rolling_hills: 'Where green hills meet the sky',
+      volcanic_isles: 'Fire and paradise intertwined',
+      dark_castle: 'Shadows hold secrets',
+    };
+    const subtitle = this.add.text(640, 240, flavors[currentRegion] || '', {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#999999',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(400).setAlpha(0);
+
+    // Fade in
+    this.tweens.add({
+      targets: [banner, subtitle], alpha: 1, duration: 600,
+      onComplete: () => {
+        // Hold then fade out
+        this.tweens.add({
+          targets: [banner, subtitle], alpha: 0, y: '-=20', duration: 1200, delay: 2000,
+          onComplete: () => { banner.destroy(); subtitle.destroy(); }
+        });
+      }
+    });
+  }
+
+  // ═══════ Enemies ═══════
+
+  spawnEnemy() {
+    if (!this.enemies || this.enemies.getLength() >= 12) return;
+    const px = this.player ? this.player.x : 800;
+    const py = this.player ? this.player.y : 800;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Phaser.Math.Between(250, 500);
+    const ex = px + Math.cos(angle) * dist;
+    const ey = py + Math.sin(angle) * dist;
+
+    const wildCard = ALL_CARDS[Math.floor(Math.random() * ALL_CARDS.length)];
+    const enemy = this.enemies.create(ex, ey, 'enemy_sprite', 0).setScale(1.8);
+    enemy.cardData = wildCard;
+    enemy.setDepth(9);
+    enemy.setTint(wildCard.rarity === 'rare' ? 0xaa55ff : wildCard.rarity === 'uncommon' ? 0x5599ff : 0xffffff);
+
+    enemy.label = this.add.text(ex, ey - 28, wildCard.name, {
+      fontSize: '9px', fontFamily: 'monospace', color: '#ffaaaa',
+      backgroundColor: '#00000088', padding: { x: 2, y: 1 },
+    }).setOrigin(0.5).setDepth(11);
+
+    this.tweens.add({
+      targets: enemy, x: ex + Phaser.Math.Between(-40, 40), y: ey + Phaser.Math.Between(-40, 40),
+      duration: Phaser.Math.Between(2000, 4000), yoyo: true, repeat: -1,
+      onUpdate: () => { if (enemy.label) enemy.label.setPosition(enemy.x, enemy.y - 28); }
+    });
+  }
+
+  onEnemyContact(player, enemy) {
+    if (G.inBattle || G.team.length === 0) return;
+    const cardData = enemy.cardData;
+    const isBlackRider = !!enemy._isBlackRider;
+
+    // Clean up Black Rider tracking if applicable
+    if (isBlackRider) {
+      const riderIdx = this._blackRiders.findIndex(r => r.sprite === enemy);
+      if (riderIdx >= 0) {
+        if (this._blackRiders[riderIdx].label) this._blackRiders[riderIdx].label.destroy();
+        this._blackRiders.splice(riderIdx, 1);
+      }
+    }
+
+    if (enemy.label) enemy.label.destroy();
+    enemy.destroy();
+
+    // Set up battle using real engine
+    G.inBattle = true;
+    const playerGhosts = buildPlayerBattleTeam();
+    // Scale enemy HP with player level (+15% per level above 1)
+    const scaledMaxHp = Math.round(cardData.maxHp * (1 + (G.level - 1) * 0.15));
+    const enemyGhosts = [{ id: cardData.id, name: cardData.name, hp: scaledMaxHp, maxHp: scaledMaxHp,
+      ko: false, ability: cardData.ability, abilityDesc: cardData.desc, rarity: cardData.rarity,
+      usedOncePerGame: false, entryFired: false }];
+
+    const _resources = { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 };
+    B = {
+      round: 1,
+      player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
+      enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
+      enemyCard: cardData, zoneIdx: getCurrentZone(G.x, G.y), phase: 'ready', log: [], playerDice: [], enemyDice: [],
+      nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
+      resources: { ..._resources },
+      entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
+      koSwapTeam: null, committed: {},
+    };
+
+    if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.time.delayedCall(300, () => {
+      this.scene.launch('BattleScene', {
+        enemyCard: cardData,
+        blackRider: isBlackRider,
+        trainerName: isBlackRider ? 'Black Rider' : undefined,
+      });
+      this.scene.pause();
+    });
+  }
+
+  triggerTrainerBattle(npc) {
+    if (G.inBattle || G.team.length === 0) return;
+    const trainerData = HOSTILE_NPCS.find(h => h.name === npc.name);
+    if (!trainerData) return;
+    if (isHostileNPCDefeatedToday(trainerData.id)) {
+      this.showDialogue(npc.name, trainerData.dialogue?.[0] || 'Come back tomorrow.');
+      return;
+    }
+
+    // Show challenge dialogue then battle
+    if (this.comm) this.comm.show(npc.name, trainerData.challenge, { color: '#ff6644' });
+    this.time.delayedCall(2500, () => {
+      // Set up battle state directly (DON'T call triggerHostileNPCBattle — it uses DOM)
+      G.inBattle = true;
+      const playerGhosts = buildPlayerBattleTeam();
+      const trainerTeamSize = { frost_valley: 1, rolling_hills: 2, volcanic_isles: 2, dark_castle: 3 }[getCurrentRegion(G.x, G.y)] || 3;
+      const trainerCardIds = trainerData.team.slice(0, trainerTeamSize);
+      const enemyGhosts = trainerCardIds.map(id => {
+        const card = getCard(id);
+        if (!card) return null;
+        return { id: card.id, name: card.name, hp: card.maxHp, maxHp: card.maxHp, ko: false,
+          ability: card.ability, abilityDesc: card.desc, rarity: card.rarity,
+          usedOncePerGame: false, entryFired: false };
+      }).filter(Boolean);
+
+      if (enemyGhosts.length === 0) { G.inBattle = false; return; }
+
+      const _tRes = { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 };
+      B = {
+        round: 1,
+        player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._tRes } },
+        enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
+        enemyCard: getCard(trainerData.team[0]), phase: 'ready', log: [],
+        playerDice: [], enemyDice: [], isHostileNPC: trainerData.id,
+        nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
+        resources: { ..._tRes },
+        entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
+        koSwapTeam: null, committed: {},
+      };
+
+      if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+
+      this.cameras.main.fadeOut(300);
+      this.time.delayedCall(300, () => {
+        this.scene.launch('BattleScene', { enemyCard: getCard(trainerData.team[0]), trainerName: npc.name });
+        this.scene.pause();
+      });
+    });
+  }
+
+  // ═══════ TEAM LINEUP ═══════
+
+  showTeamLineup() {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+    GameAudio.menuOpen();
+
+    const hasEssences = (G.essences?.length || 0) > 0;
+
+    this.panels.open('TEAM LINEUP — Click to set active', (container, w, h) => {
+      if (G.team.length === 0) {
+        const empty = this.add.text(w / 2, 40, 'No Spiritkin!', {
+          fontSize: '16px', fontFamily: 'Georgia, serif', color: '#ff6644',
+        }).setOrigin(0.5).setScrollFactor(0);
+        container.add(empty);
+        return;
+      }
+
+      // Essence count header
+      if (hasEssences) {
+        const essLabel = this.add.text(w - 14, 0, `Essences: ${G.essences.length}`, {
+          fontSize: '10px', fontFamily: 'monospace', color: '#aa88dd',
+        }).setOrigin(1, 0).setScrollFactor(0);
+        container.add(essLabel);
+      }
+
+      G.team.forEach((ghost, i) => {
+        const y = 12 + i * 56;
+        const isActive = i === G.activeIdx;
+        const isDamaged = !ghost.ko && ghost.hp > 0 && ghost.hp < ghost.maxHp;
+
+        // Clickable row
+        const rowBg = this.add.rectangle(w / 2, y + 20, w - 20, 48, isActive ? 0x224422 : 0x222244, 0.6)
+          .setStrokeStyle(1, isActive ? 0x44aa44 : 0x334466)
+          .setInteractive({ useHandCursor: true }).setScrollFactor(0);
+        rowBg.on('pointerover', () => rowBg.setFillStyle(isActive ? 0x336633 : 0x333366));
+        rowBg.on('pointerout', () => rowBg.setFillStyle(isActive ? 0x224422 : 0x222244, 0.6));
+        rowBg.on('pointerdown', () => {
+          if (!ghost.ko && ghost.hp > 0) {
+            G.activeIdx = i;
+            this.panels.close();
+            this.showNotification(`${ghost.name} is now active!`);
+            saveGame();
+          } else {
+            this.showNotification(`${ghost.name} is KO'd!`);
+          }
+        });
+
+        const indicator = isActive ? '\u25b6 ' : '  ';
+        const nameColor = isActive ? '#88ff88' : ghost.ko ? '#ff4444' : '#cccccc';
+        const nameText = this.add.text(14, y + 8, `${indicator}${ghost.name}`, {
+          fontSize: '14px', fontFamily: 'monospace', fontStyle: isActive ? 'bold' : 'normal', color: nameColor,
+        }).setScrollFactor(0);
+
+        // FEED button — only show if ghost is damaged and player has essences
+        const feedBtnX = w - 80;
+        if (isDamaged && hasEssences) {
+          const feedBtn = this.add.text(feedBtnX, y + 8, '[FEED]', {
+            fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#44cc88',
+            backgroundColor: '#113322', padding: { x: 4, y: 2 },
+          }).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+          feedBtn.on('pointerover', () => feedBtn.setColor('#88ffbb'));
+          feedBtn.on('pointerout', () => feedBtn.setColor('#44cc88'));
+          feedBtn.on('pointerdown', () => {
+            if ((G.essences?.length || 0) === 0) {
+              this.showNotification('No essences to feed!');
+              return;
+            }
+            // Consume 1 essence and heal 3 HP
+            const consumed = G.essences.pop();
+            const healAmt = Math.min(3, ghost.maxHp - ghost.hp);
+            ghost.hp += healAmt;
+            saveGame();
+            this.showNotification(`Fed ${consumed.fromName || consumed.name || 'essence'} to ${ghost.name}! +${healAmt} HP`);
+            // Refresh panel
+            this.panels.close();
+            this.showTeamLineup();
+          });
+          container.add(feedBtn);
+        }
+
+        const hpText = this.add.text(isDamaged && hasEssences ? feedBtnX - 6 : w - 14, y + 8, `HP ${ghost.hp}/${ghost.maxHp}`, {
+          fontSize: '12px', fontFamily: 'monospace', color: ghost.hp <= 0 ? '#ff4444' : isDamaged ? '#ffaa44' : '#aaaaaa',
+        }).setOrigin(1, 0).setScrollFactor(0);
+
+        const abilityText = this.add.text(14, y + 28, `  ${ghost.ability || ''}`, {
+          fontSize: '11px', fontFamily: 'monospace', fontStyle: 'italic', color: '#888888',
+        }).setScrollFactor(0);
+
+        container.add([rowBg, nameText, hpText, abilityText]);
+      });
+    }, { width: 360, height: Math.min(G.team.length * 56 + 50, 420) });
+  }
+
+  // ═══════ INVENTORY PANEL ═══════
+
+  showInventory() {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+    GameAudio.menuOpen();
+    this._invTab = this._invTab || 'essences';
+
+    this.panels.open('INVENTORY', (container, w, h) => {
+      this._buildInventoryContent(container, w, h);
+    }, { width: 480, height: 380 });
+  }
+
+  _buildInventoryContent(container, w, h) {
+    const tabs = ['essences', 'gear', 'materials'];
+    const tabW = w / tabs.length;
+
+    // Tab bar
+    tabs.forEach((tab, i) => {
+      const isActive = tab === this._invTab;
+      const tabBg = this.add.rectangle(tabW * i + tabW / 2, 14, tabW - 4, 24, isActive ? 0x445588 : 0x222233)
+        .setStrokeStyle(1, isActive ? 0x6688cc : 0x333344)
+        .setInteractive({ useHandCursor: true }).setScrollFactor(0);
+      const tabText = this.add.text(tabW * i + tabW / 2, 14, tab.toUpperCase(), {
+        fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: isActive ? '#ffffff' : '#888888',
+      }).setOrigin(0.5).setScrollFactor(0);
+      tabBg.on('pointerdown', () => {
+        this._invTab = tab;
+        this.panels.close();
+        this.showInventory();
+      });
+      container.add([tabBg, tabText]);
+    });
+
+    const cy = 36;
+
+    if (this._invTab === 'essences') {
+      const essences = G.essences || [];
+      if (essences.length === 0) {
+        container.add(this.add.text(w / 2, cy + 30, 'No essences yet.\nDefeat spirits to collect!', {
+          fontSize: '13px', fontFamily: 'Georgia, serif', color: '#666', align: 'center',
+        }).setOrigin(0.5, 0).setScrollFactor(0));
+      } else {
+        const shown = essences.slice(-8);
+        shown.forEach((ess, i) => {
+          const y = cy + 6 + i * 36;
+          const rColors = { common: '#aaa', uncommon: '#5599ff', rare: '#aa55ff', 'ghost-rare': '#ff55aa', legendary: '#ffaa22' };
+          container.add(this.add.text(14, y, ess.fromName || ess.name, {
+            fontSize: '13px', fontFamily: 'monospace', color: rColors[ess.rarity] || '#ccc',
+          }).setScrollFactor(0));
+          container.add(this.add.text(w - 14, y, `P:${ess.potency} S:${ess.stability} R:${ess.resonance}`, {
+            fontSize: '10px', fontFamily: 'monospace', color: '#888',
+          }).setOrigin(1, 0).setScrollFactor(0));
+          container.add(this.add.text(14, y + 16, `${ess.region || 'Unknown'} — ${ess.subtype || 'Essence'}`, {
+            fontSize: '10px', fontFamily: 'monospace', fontStyle: 'italic', color: '#555',
+          }).setScrollFactor(0));
+        });
+        if (essences.length > 8) {
+          container.add(this.add.text(w / 2, cy + 8 * 36 + 8, `...and ${essences.length - 8} more`, {
+            fontSize: '11px', fontFamily: 'monospace', color: '#555',
+          }).setOrigin(0.5, 0).setScrollFactor(0));
+        }
+      }
+
+    } else if (this._invTab === 'gear') {
+      const equipped = G.equipped || {};
+      let y = cy + 6;
+
+      // Equipped section
+      container.add(this.add.text(14, y, 'EQUIPPED:', {
+        fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
+      }).setScrollFactor(0));
+      y += 20;
+
+      for (const [slot, item] of Object.entries(equipped)) {
+        const slotLabel = slot.charAt(0).toUpperCase() + slot.slice(1);
+        const itemName = item ? item.name : '(empty)';
+        container.add(this.add.text(14, y, `${slotLabel}:`, {
+          fontSize: '12px', fontFamily: 'monospace', color: '#aaa',
+        }).setScrollFactor(0));
+        container.add(this.add.text(100, y, itemName, {
+          fontSize: '12px', fontFamily: 'monospace', color: item ? '#88ff88' : '#555',
+        }).setScrollFactor(0));
+
+        if (item) {
+          const unBtn = this.add.text(w - 14, y, '[UNEQUIP]', {
+            fontSize: '10px', fontFamily: 'monospace', color: '#cc6644',
+          }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+          unBtn.on('pointerdown', () => {
+            G.gear.push(item);
+            G.equipped[slot] = null;
+            saveGame();
+            this.panels.close();
+            this.showInventory();
+          });
+          container.add(unBtn);
+        }
+        y += 20;
+      }
+
+      // Gear inventory
+      y += 10;
+      container.add(this.add.text(14, y, 'INVENTORY:', {
+        fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
+      }).setScrollFactor(0));
+      y += 20;
+
+      const gear = G.gear || [];
+      if (gear.length === 0) {
+        container.add(this.add.text(14, y, 'No gear. Craft some at the Workshop!', {
+          fontSize: '12px', fontFamily: 'Georgia, serif', color: '#666',
+        }).setScrollFactor(0));
+      } else {
+        gear.slice(0, 6).forEach((item, i) => {
+          const iy = y + i * 28;
+          container.add(this.add.text(14, iy, item.name, {
+            fontSize: '12px', fontFamily: 'monospace', color: '#ccc',
+          }).setScrollFactor(0));
+          const slot = item.slot || 'accessory';
+          const eqBtn = this.add.text(w - 14, iy, `[EQUIP \u2192 ${slot}]`, {
+            fontSize: '10px', fontFamily: 'monospace', color: '#44aa44',
+          }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+          eqBtn.on('pointerdown', () => {
+            if (G.equipped[slot]) G.gear.push(G.equipped[slot]);
+            G.equipped[slot] = item;
+            G.gear.splice(G.gear.indexOf(item), 1);
+            saveGame();
+            this.panels.close();
+            this.showInventory();
+          });
+          container.add(eqBtn);
+        });
+      }
+
+    } else if (this._invTab === 'materials') {
+      let y = cy + 6;
+      const mats = {
+        'Ice Shards': G.iceShards || 0,
+        'Sacred Fire': G.sacredFire || 0,
+        'Surge': G.surge || 0,
+        'Moonstone': G.moonstone || 0,
+      };
+      if (G.materials) {
+        for (const [k, v] of Object.entries(G.materials)) {
+          if (v > 0) mats[k] = v;
+        }
+      }
+      for (const [name, count] of Object.entries(mats)) {
+        container.add(this.add.text(14, y, `${name}: ${count}`, {
+          fontSize: '13px', fontFamily: 'monospace', color: count > 0 ? '#88ccff' : '#555',
+        }).setScrollFactor(0));
+        y += 22;
+      }
+    }
+  }
+
+  // ═══════ PROFESSION PANEL ═══════
+
+  showProfessionPanel() {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+    GameAudio.menuOpen();
+
+    this.panels.open('PROFESSIONS', (container, w, h) => {
+      const categories = [
+        { key: 'combat',      label: 'Combat',      icon: '\u2694\uFE0F', color: '#ff6644' },
+        { key: 'exploration', label: 'Exploration',  icon: '\uD83E\uDDED', color: '#44bbff' },
+        { key: 'crafting',    label: 'Crafting',     icon: '\uD83D\uDD28', color: '#ffaa22' },
+        { key: 'trade',       label: 'Trade',        icon: '\uD83D\uDCB0', color: '#44dd44' },
+        { key: 'charisma',    label: 'Charisma',     icon: '\uD83C\uDF89', color: '#cc88ff' },
+      ];
+
+      // Discipline badge
+      let y = 6;
+      if (G.discipline && typeof PLAYER_DISCIPLINES !== 'undefined' && PLAYER_DISCIPLINES[G.discipline]) {
+        const disc = PLAYER_DISCIPLINES[G.discipline];
+        container.add(this.add.text(w / 2, y, disc.icon + ' ' + disc.name + ' Discipline', {
+          fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: disc.color,
+        }).setOrigin(0.5, 0).setScrollFactor(0));
+        y += 18;
+        container.add(this.add.text(w / 2, y, disc.desc, {
+          fontSize: '10px', fontFamily: 'monospace', fontStyle: 'italic', color: '#888899',
+        }).setOrigin(0.5, 0).setScrollFactor(0));
+        y += 20;
+      }
+
+      // Divider
+      container.add(this.add.rectangle(w / 2, y, w - 20, 1, 0x334466).setScrollFactor(0));
+      y += 8;
+
+      // Skill points summary
+      var totalMilestones = Object.values(G.professionXP || {}).reduce(function(sum, xp) { return sum + Math.floor(xp / 100); }, 0);
+      var available = Math.max(0, totalMilestones - (G.skillPointsUsed || 0));
+      var capVal = (typeof SKILL_POINT_CAP !== 'undefined') ? SKILL_POINT_CAP : 80;
+      container.add(this.add.text(w / 2, y, 'Skill Points: ' + available + ' available (' + (G.skillPointsUsed || 0) + ' / ' + capVal + ' used)', {
+        fontSize: '11px', fontFamily: 'monospace', color: available > 0 ? '#88ff88' : '#888888',
+      }).setOrigin(0.5, 0).setScrollFactor(0));
+      y += 22;
+
+      // Category rows
+      for (var ci = 0; ci < categories.length; ci++) {
+        var cat = categories[ci];
+        var xp = (G.professionXP && G.professionXP[cat.key]) || 0;
+        var mastery = (typeof getProfessionMasteryInfo === 'function') ? getProfessionMasteryInfo(xp) : { name: 'Novice', min: 0 };
+
+        // Row background
+        var rowBg = this.add.rectangle(w / 2, y + 24, w - 16, 52, 0x111122, 0.6)
+          .setStrokeStyle(1, 0x334466).setScrollFactor(0);
+        container.add(rowBg);
+
+        // Icon + label
+        container.add(this.add.text(14, y + 8, cat.icon + ' ' + cat.label, {
+          fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: cat.color,
+        }).setScrollFactor(0));
+
+        // XP value
+        container.add(this.add.text(w - 14, y + 8, xp + ' XP', {
+          fontSize: '12px', fontFamily: 'monospace', color: '#aaaacc',
+        }).setOrigin(1, 0).setScrollFactor(0));
+
+        // Mastery rank
+        var rankColors = { Novice: '#666', Apprentice: '#88aacc', Journeyman: '#aaccee', Expert: '#ffcc44', Master: '#ff8844', 'Grand Master': '#ff44ff' };
+        container.add(this.add.text(14, y + 28, 'Rank: ' + mastery.name, {
+          fontSize: '11px', fontFamily: 'monospace', color: rankColors[mastery.name] || '#888',
+        }).setScrollFactor(0));
+
+        // XP progress bar
+        var nextLevel = null;
+        if (typeof PROFESSION_MASTERY_LEVELS !== 'undefined') {
+          for (var li = 0; li < PROFESSION_MASTERY_LEVELS.length; li++) {
+            if (PROFESSION_MASTERY_LEVELS[li].min > xp) { nextLevel = PROFESSION_MASTERY_LEVELS[li]; break; }
+          }
+        }
+        var barW = 160, barH = 8;
+        var barX = w - 14 - barW;
+        var barY = y + 32;
+        container.add(this.add.rectangle(barX + barW / 2, barY + barH / 2, barW, barH, 0x222233).setScrollFactor(0));
+        if (nextLevel) {
+          var prevMin = mastery.min;
+          var progress = Math.min(1, (xp - prevMin) / (nextLevel.min - prevMin));
+          if (progress > 0) {
+            var fillColor = parseInt(cat.color.replace('#', ''), 16);
+            container.add(this.add.rectangle(barX + (barW * progress) / 2, barY + barH / 2, barW * progress, barH - 2, fillColor, 0.7).setOrigin(0.5, 0.5).setScrollFactor(0));
+          }
+        } else {
+          // Max rank
+          var fillColorMax = parseInt(cat.color.replace('#', ''), 16);
+          container.add(this.add.rectangle(barX + barW / 2, barY + barH / 2, barW, barH - 2, fillColorMax, 0.7).setScrollFactor(0));
+        }
+
+        y += 58;
+      }
+    }, { width: 420, height: 400 });
+  }
+
+  // ═══════ WAVE 4: TRADING POST ═══════
+
+  openTradingPost() {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+    this._marketTab = this._marketTab || 'buy';
+
+    this.panels.open('TRADING POST', (container, w, h) => {
+      this._buildMarketContent(container, w, h);
+    }, { width: 420, height: 380 });
+  }
+
+  _buildMarketContent(container, w, h) {
+    const tabs = ['buy', 'sell'];
+    const tabW = w / tabs.length;
+
+    // Gold display
+    const goldText = this.add.text(w / 2, 2, `Gold: ${G.coins}`, {
+      fontSize: '13px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
+    }).setOrigin(0.5, 0).setScrollFactor(0);
+    container.add(goldText);
+
+    // Tab bar
+    tabs.forEach((tab, i) => {
+      const isActive = tab === this._marketTab;
+      const tabBg = this.add.rectangle(tabW * i + tabW / 2, 26, tabW - 4, 24, isActive ? 0x445566 : 0x222233)
+        .setStrokeStyle(1, isActive ? 0x6699aa : 0x333344)
+        .setInteractive({ useHandCursor: true }).setScrollFactor(0);
+      const tabText = this.add.text(tabW * i + tabW / 2, 26, tab.toUpperCase(), {
+        fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: isActive ? '#ffffff' : '#888888',
+      }).setOrigin(0.5).setScrollFactor(0);
+      tabBg.on('pointerdown', () => {
+        this._marketTab = tab;
+        this.panels.close();
+        this.openTradingPost();
+      });
+      container.add([tabBg, tabText]);
+    });
+
+    const cy = 46;
+
+    if (this._marketTab === 'buy') {
+      const shopItems = [
+        { name: 'Healing Potion', desc: 'Heals entire team to full HP', price: 10, icon: '\u2764\uFE0F' },
+        { name: 'Essence Detector', desc: 'Shows essence quality for 5 battles', price: 25, icon: '\uD83D\uDD2E' },
+        { name: 'Lucky Charm', desc: '+10% recruit chance next battle', price: 15, icon: '\uD83C\uDF40' },
+        { name: 'Escape Rope', desc: 'Guaranteed flee from next battle', price: 5, icon: '\uD83E\uDEA2' },
+        { name: 'Spirit Snack', desc: '+2 HP to active ghost', price: 8, icon: '\uD83C\uDF6A' },
+      ];
+
+      shopItems.forEach((item, i) => {
+        const y = cy + i * 54;
+        const canAfford = G.coins >= item.price;
+
+        // Row background
+        const rowBg = this.add.rectangle(w / 2, y + 20, w - 16, 46, 0x111122, 0.6)
+          .setStrokeStyle(1, canAfford ? 0x336644 : 0x333344).setScrollFactor(0);
+        container.add(rowBg);
+
+        // Item name + icon
+        container.add(this.add.text(14, y + 6, `${item.icon} ${item.name}`, {
+          fontSize: '13px', fontFamily: 'monospace', fontStyle: 'bold', color: canAfford ? '#ccddcc' : '#666666',
+        }).setScrollFactor(0));
+
+        // Description
+        container.add(this.add.text(14, y + 24, item.desc, {
+          fontSize: '10px', fontFamily: 'monospace', fontStyle: 'italic', color: '#888888',
+        }).setScrollFactor(0));
+
+        // Price + Buy button
+        const priceColor = canAfford ? '#ffdd44' : '#ff4444';
+        container.add(this.add.text(w - 80, y + 6, `${item.price}g`, {
+          fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: priceColor,
+        }).setOrigin(1, 0).setScrollFactor(0));
+
+        if (canAfford) {
+          const buyBtn = this.add.text(w - 14, y + 14, '[BUY]', {
+            fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#44cc44',
+            backgroundColor: '#112211', padding: { x: 4, y: 2 },
+          }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+          buyBtn.on('pointerover', () => buyBtn.setColor('#88ff88'));
+          buyBtn.on('pointerout', () => buyBtn.setColor('#44cc44'));
+          buyBtn.on('pointerdown', () => {
+            this._buyShopItem(item);
+          });
+          container.add(buyBtn);
+        }
+      });
+
+    } else if (this._marketTab === 'sell') {
+      const gear = G.gear || [];
+      if (gear.length === 0) {
+        container.add(this.add.text(w / 2, cy + 30, 'No gear to sell.\nCraft items at the Workshop!', {
+          fontSize: '13px', fontFamily: 'Georgia, serif', color: '#666666', align: 'center',
+        }).setOrigin(0.5, 0).setScrollFactor(0));
+        return;
+      }
+
+      gear.slice(0, 6).forEach((item, i) => {
+        const y = cy + i * 42;
+        const sellPrice = Math.max(5, Math.floor((item.quality || 20) / 4));
+
+        const rowBg = this.add.rectangle(w / 2, y + 16, w - 16, 36, 0x111122, 0.6)
+          .setStrokeStyle(1, 0x334455).setScrollFactor(0);
+        container.add(rowBg);
+
+        container.add(this.add.text(14, y + 6, item.name, {
+          fontSize: '13px', fontFamily: 'monospace', color: '#cccccc',
+        }).setScrollFactor(0));
+
+        container.add(this.add.text(14, y + 22, `Q:${item.quality || '?'} | ${item.slot || 'gear'}`, {
+          fontSize: '10px', fontFamily: 'monospace', fontStyle: 'italic', color: '#666666',
+        }).setScrollFactor(0));
+
+        container.add(this.add.text(w - 80, y + 8, `${sellPrice}g`, {
+          fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
+        }).setOrigin(1, 0).setScrollFactor(0));
+
+        const sellBtn = this.add.text(w - 14, y + 10, '[SELL]', {
+          fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#cc8844',
+          backgroundColor: '#221111', padding: { x: 4, y: 2 },
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+        sellBtn.on('pointerover', () => sellBtn.setColor('#ffaa66'));
+        sellBtn.on('pointerout', () => sellBtn.setColor('#cc8844'));
+        sellBtn.on('pointerdown', () => {
+          G.coins += sellPrice;
+          G.gear.splice(G.gear.indexOf(item), 1);
+          if (!G.rep) G.rep = { battlesWon: 0, craftsCompleted: 0, itemsSold: 0, essencesCollected: 0, raresFound: 0 };
+          G.rep.itemsSold = (G.rep.itemsSold || 0) + 1;
+          if (typeof addProfessionXP === 'function') addProfessionXP('trade', 5);
+          saveGame();
+          this.showNotification(`Sold ${item.name} for ${sellPrice}g!`);
+          this.panels.close();
+          this.openTradingPost();
+        });
+        container.add(sellBtn);
+      });
+
+      if (gear.length > 6) {
+        container.add(this.add.text(w / 2, cy + 6 * 42 + 8, `...and ${gear.length - 6} more`, {
+          fontSize: '11px', fontFamily: 'monospace', color: '#555555',
+        }).setOrigin(0.5, 0).setScrollFactor(0));
+      }
+    }
+  }
+
+  _buyShopItem(item) {
+    if (G.coins < item.price) {
+      this.showNotification('Not enough gold!');
+      return;
+    }
+    G.coins -= item.price;
+
+    switch (item.name) {
+      case 'Healing Potion':
+        for (const ghost of G.team) {
+          ghost.hp = ghost.maxHp;
+          ghost.ko = false;
+        }
+        this.showNotification('Team fully healed!');
+        break;
+      case 'Essence Detector':
+        // Store a buff counter — BattleScene can check this
+        G._essenceDetectorBattles = (G._essenceDetectorBattles || 0) + 5;
+        this.showNotification('Essence Detector active for 5 battles!');
+        break;
+      case 'Lucky Charm':
+        G._luckyCharmActive = true;
+        this.showNotification('Lucky Charm active! +10% recruit chance next battle.');
+        break;
+      case 'Escape Rope':
+        G._escapeRopeCount = (G._escapeRopeCount || 0) + 1;
+        this.showNotification(`Escape Rope acquired! (${G._escapeRopeCount} total)`);
+        break;
+      case 'Spirit Snack':
+        const active = G.team[G.activeIdx];
+        if (active && !active.ko) {
+          const heal = Math.min(2, active.maxHp - active.hp);
+          active.hp += heal;
+          this.showNotification(`${active.name} ate a Spirit Snack! +${heal} HP`);
+        } else {
+          this.showNotification('No active ghost to feed!');
+          G.coins += item.price; // refund
+        }
+        break;
+    }
+
+    if (typeof addProfessionXP === 'function') addProfessionXP('trade', 3);
+    saveGame();
+    // Refresh panel
+    this.panels.close();
+    this.openTradingPost();
+  }
+
+  // ═══════ WAVE 4: ARENA CHALLENGE ═══════
+
+  openArena() {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+
+    this.panels.open('ARENA', (container, w, h) => {
+      // Header
+      const title = this.add.text(w / 2, 10, 'Battle Challenge', {
+        fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc44',
+      }).setOrigin(0.5, 0).setScrollFactor(0);
+      container.add(title);
+
+      // Stats
+      const wins = G.arenaWins || 0;
+      container.add(this.add.text(w / 2, 34, `Arena Wins: ${wins}`, {
+        fontSize: '12px', fontFamily: 'monospace', color: '#aaaacc',
+      }).setOrigin(0.5, 0).setScrollFactor(0));
+
+      // Arena challenge description
+      const descLines = [
+        'Face the Arena Champions:',
+        'a team of 3 rare Spiritkin!',
+        '',
+        'Reward: 50 gold + Arena Victor title',
+      ];
+      descLines.forEach((line, i) => {
+        container.add(this.add.text(w / 2, 60 + i * 18, line, {
+          fontSize: '12px', fontFamily: 'Georgia, serif',
+          color: i === 3 ? '#ffdd44' : '#aaaaaa',
+        }).setOrigin(0.5, 0).setScrollFactor(0));
+      });
+
+      // Team preview — show the 3 arena ghosts
+      const arenaTeamIds = [202, 78, 67]; // Dark Fang, Haywire, Snorton (all rare)
+      const previewY = 140;
+      container.add(this.add.text(w / 2, previewY, 'OPPONENTS:', {
+        fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#cc6644',
+      }).setOrigin(0.5, 0).setScrollFactor(0));
+
+      arenaTeamIds.forEach((id, i) => {
+        const card = typeof getCard === 'function' ? getCard(id) : null;
+        if (!card) return;
+        const y = previewY + 18 + i * 22;
+        container.add(this.add.text(w / 2, y, `${card.name} (${card.rarity}) HP:${card.maxHp} — ${card.ability}`, {
+          fontSize: '10px', fontFamily: 'monospace', color: '#aa55ff',
+        }).setOrigin(0.5, 0).setScrollFactor(0));
+      });
+
+      // Fight button
+      const canFight = G.team.length > 0 && G.team.some(g => !g.ko && g.hp > 0);
+      const fightY = previewY + 90;
+      const fightBg = this.add.rectangle(w / 2, fightY, 140, 36, canFight ? 0x443322 : 0x222222, 0.9)
+        .setStrokeStyle(2, canFight ? 0xcc6644 : 0x444444)
+        .setInteractive({ useHandCursor: canFight }).setScrollFactor(0);
+      const fightText = this.add.text(w / 2, fightY, canFight ? 'FIGHT!' : 'Team KO\'d', {
+        fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold',
+        color: canFight ? '#ff8844' : '#666666',
+      }).setOrigin(0.5).setScrollFactor(0);
+
+      if (canFight) {
+        fightBg.on('pointerover', () => fightBg.setFillStyle(0x664433));
+        fightBg.on('pointerout', () => fightBg.setFillStyle(0x443322, 0.9));
+        fightBg.on('pointerdown', () => {
+          this.panels.close();
+          this._startArenaBattle();
+        });
+      }
+
+      container.add([fightBg, fightText]);
+    }, { width: 380, height: 320 });
+  }
+
+  _startArenaBattle() {
+    if (G.inBattle || G.team.length === 0) return;
+    if (!G.team.some(g => !g.ko && g.hp > 0)) {
+      this.showNotification('Your team is KO\'d! Heal at the Inn first.');
+      return;
+    }
+
+    // Track wins before battle so we can detect victory on resume
+    this._pendingArenaCheck = true;
+    this._arenaWinsBefore = G.rep?.battlesWon || 0;
+
+    G.inBattle = true;
+    const playerGhosts = buildPlayerBattleTeam();
+
+    // Arena team: 3 rares
+    const arenaTeamIds = [202, 78, 67]; // Dark Fang, Haywire, Snorton
+    const enemyGhosts = arenaTeamIds.map(id => {
+      const card = typeof getCard === 'function' ? getCard(id) : null;
+      if (!card) return null;
+      // Scale HP slightly with player level
+      const scaledMaxHp = Math.round(card.maxHp * (1 + (G.level - 1) * 0.1));
+      return {
+        id: card.id, name: card.name, hp: scaledMaxHp, maxHp: scaledMaxHp,
+        ko: false, ability: card.ability, abilityDesc: card.desc, rarity: card.rarity,
+        usedOncePerGame: false, entryFired: false,
+      };
+    }).filter(Boolean);
+
+    if (enemyGhosts.length === 0) { G.inBattle = false; return; }
+
+    const _resources = {
+      iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0,
+      healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0,
+      surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0,
+    };
+    B = {
+      round: 1,
+      player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
+      enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
+      enemyCard: typeof getCard === 'function' ? getCard(arenaTeamIds[0]) : null,
+      phase: 'ready', log: [], playerDice: [], enemyDice: [],
+      isArena: true, // flag so BattleScene can award arena rewards on win
+      nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
+      resources: { ..._resources },
+      entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
+      koSwapTeam: null, committed: {},
+    };
+
+    if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.time.delayedCall(300, () => {
+      this.scene.launch('BattleScene', {
+        enemyCard: typeof getCard === 'function' ? getCard(arenaTeamIds[0]) : null,
+        trainerName: 'Arena Champion',
+      });
+      this.scene.pause();
+    });
+  }
+
+  // ═══════ SPIRIT WISPS ═══════
+
+  spawnWisp() {
+    if (!this.wisps || this.wisps.getLength() >= 8) return;
+    const px = this.player ? this.player.x : 500;
+    const py = this.player ? this.player.y : 500;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Phaser.Math.Between(100, 300);
+    const wx = px + Math.cos(angle) * dist;
+    const wy = py + Math.sin(angle) * dist;
+
+    const WISP_TYPES = [
+      { name: 'Frost Shard', color: 0x88ccff },
+      { name: 'Ember Dust', color: 0xff8844 },
+      { name: 'Spirit Thread', color: 0xaa66ff },
+      { name: 'Mask Fragment', color: 0xffffff },
+      { name: 'Healing Seed', color: 0x44aa44 },
+    ];
+    const type = WISP_TYPES[Math.floor(Math.random() * WISP_TYPES.length)];
+
+    const wisp = this.wisps.create(wx, wy, null);
+    wisp.setDisplaySize(12, 12).setVisible(false);
+    wisp.wispType = type;
+
+    // Glowing circle visual
+    const glow = this.add.circle(wx, wy, 6, type.color, 0.8).setDepth(8);
+    const outerGlow = this.add.circle(wx, wy, 10, type.color, 0.2).setDepth(7);
+    wisp.glowCircle = glow;
+    wisp.outerGlow = outerGlow;
+
+    // Pulse animation
+    this.tweens.add({ targets: outerGlow, scaleX: 1.5, scaleY: 1.5, alpha: 0.05, duration: 1200, yoyo: true, repeat: -1 });
+    // Float animation
+    this.tweens.add({ targets: [glow, outerGlow, wisp], y: wy + Phaser.Math.Between(-15, 15), duration: 2000, yoyo: true, repeat: -1 });
+
+    // Auto-despawn after 12 seconds
+    this.time.delayedCall(12000, () => {
+      if (wisp.active) {
+        glow.destroy();
+        outerGlow.destroy();
+        wisp.destroy();
+      }
+    });
+  }
+
+  onWispCollect(player, wisp) {
+    const type = wisp.wispType;
+    if (wisp.glowCircle) wisp.glowCircle.destroy();
+    if (wisp.outerGlow) wisp.outerGlow.destroy();
+    wisp.destroy();
+    GameAudio.collect();
+
+    // Grant battle resource
+    const resourceMap = { 'Frost Shard': 'iceShards', 'Ember Dust': 'sacredFire', 'Spirit Thread': 'surge', 'Mask Fragment': 'moonstone', 'Healing Seed': 'healingSeeds' };
+    const key = resourceMap[type.name];
+    if (key && G[key] !== undefined) G[key]++;
+
+    // Also store as crafting material (used by SCHEMATICS with requiresMaterial)
+    const materialMap = { 'Frost Shard': 'frost_shard', 'Ember Dust': 'ember_dust', 'Spirit Thread': 'spirit_thread', 'Mask Fragment': 'mask_fragment' };
+    const matKey = materialMap[type.name];
+    if (matKey) {
+      if (!G.materials) G.materials = {};
+      G.materials[matKey] = (G.materials[matKey] || 0) + 1;
+    }
+
+    // Wave 5: Daily challenge wisp progress
+    if (G.dailyChallenge && G.dailyChallenge.type === 'wisps' && !G.dailyChallenge.claimed) {
+      G.dailyChallenge.progress++;
+    }
+
+    this.showNotification(`Collected ${type.name}!`);
+    saveGame();
+  }
+
+  // ═══════ DAY/NIGHT CYCLE ═══════
+
+  updateDayNight() {
+    const tod = getTimeOfDay();
+    if (!this._nightOverlay) {
+      this._nightOverlay = this.add.rectangle(
+        this.scale.width / 2, this.scale.height / 2,
+        this.scale.width * 2, this.scale.height * 2,
+        0x000022
+      ).setScrollFactor(0).setDepth(150).setAlpha(0);
+    }
+    this._nightOverlay.setAlpha(tod.nightFactor * 0.5);
+  }
+
+  // ═══════ HUD ═══════
+
+  buildHUD() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    // Top-left: player info
+    this.hudPlayerText = this.add.text(10, 8, '', {
+      fontSize: '13px', fontFamily: 'monospace', color: '#ffffff',
+      backgroundColor: '#000000aa', padding: { x: 8, y: 4 },
+    }).setScrollFactor(0).setDepth(200);
+
+    // Top-left below: active ghost + HP
+    this.hudTeamText = this.add.text(10, 36, '', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#88ff88',
+      backgroundColor: '#000000aa', padding: { x: 8, y: 3 },
+    }).setScrollFactor(0).setDepth(200);
+
+    // Top-right: time of day
+    this.hudTimeText = this.add.text(W - 10, 8, '', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#aaaacc',
+      backgroundColor: '#000000aa', padding: { x: 6, y: 3 },
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
+
+    // ── Minimap (bottom-right) ──
+    const mmW = 160, mmH = 120;
+    this.minimapBg = this.add.rectangle(W - mmW/2 - 8, H - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
+      .setStrokeStyle(1, 0x444466).setScrollFactor(0).setDepth(200);
+
+    // Minimap graphics
+    this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(201);
+
+    // Player dot on minimap
+    this.minimapDot = this.add.circle(0, 0, 3, 0x44aaff)
+      .setScrollFactor(0).setDepth(202);
+
+    this.drawMinimap();
+  }
+
+  drawMinimap() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const mmW = 160, mmH = 120;
+    const mmX = W - mmW - 8;
+    const mmY = H - mmH - 8;
+    const scaleX = mmW / WORLD_W;
+    const scaleY = mmH / WORLD_H;
+
+    this.minimapGfx.clear();
+
+    // Draw tiles at minimap scale
+    for (let y = 0; y < WORLD_H; y += 2) {
+      for (let x = 0; x < WORLD_W; x += 2) {
+        const tile = worldMap[y]?.[x] || 0;
+        const colorHex = TILE_COLORS[tile] || '#888888';
+        const color = parseInt(colorHex.replace('#', ''), 16);
+        this.minimapGfx.fillStyle(color, 1);
+        this.minimapGfx.fillRect(mmX + x * scaleX, mmY + y * scaleY, scaleX * 2, scaleY * 2);
+      }
+    }
+
+    // Wave 5: Encounter zone colored fills
+    for (const zone of ENCOUNTER_ZONES) {
+      // Determine region color based on zone position
+      const zCenterX = zone.x + zone.w / 2;
+      const zCenterY = zone.y + zone.h / 2;
+      const zRegion = getCurrentRegion(zCenterX, zCenterY);
+      const regionFills = {
+        frost_valley: 0x4488ff,
+        rolling_hills: 0x44cc44,
+        volcanic_isles: 0xff8844,
+        dark_castle: 0x9944cc,
+      };
+      const fillColor = regionFills[zRegion] || 0x8866dd;
+      this.minimapGfx.fillStyle(fillColor, 0.2);
+      this.minimapGfx.fillRect(
+        mmX + zone.x * scaleX, mmY + zone.y * scaleY,
+        zone.w * scaleX, zone.h * scaleY
+      );
+      // Outline on top
+      this.minimapGfx.lineStyle(1, fillColor, 0.5);
+      this.minimapGfx.strokeRect(
+        mmX + zone.x * scaleX, mmY + zone.y * scaleY,
+        zone.w * scaleX, zone.h * scaleY
+      );
+    }
+  }
+
+  updateHUD() {
+    const wins = G.rep?.battlesWon || 0;
+    const sideline = wins >= 5 ? 'UNLOCKED' : `${wins}/5 wins`;
+
+    const xpNeeded = G.level * 3;
+    this.hudPlayerText.setText(`${G.name} | LV ${G.level} (${G.xp}/${xpNeeded} XP) | ${G.coins} Gold`);
+
+    const ghost = G.team[G.activeIdx];
+    if (ghost) {
+      this.hudTeamText.setText(`${ghost.name} HP ${ghost.hp}/${ghost.maxHp} | ${ghost.ability}`);
+      this.hudTeamText.setColor(ghost.hp <= ghost.maxHp * 0.33 ? '#ff6644' : '#88ff88');
+    } else {
+      this.hudTeamText.setText('No Spiritkin!');
+    }
+
+    // Quest tracker (uses wins from above)
+    let questText = '';
+    if (wins < 1) questText = 'Quest: Defeat your first wild Spiritkin!';
+    else if (wins < 5) questText = `Quest: Win ${5 - wins} more battles to unlock sideline`;
+    else if (wins < 10) questText = `Quest: Defeat ${10 - wins} more for Veteran title`;
+    else questText = `Battles won: ${wins}`;
+    if (!this.hudQuestText) {
+      this.hudQuestText = this.add.text(10, 58, '', {
+        fontSize: '11px', fontFamily: 'monospace', color: '#ffcc44',
+        backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
+      }).setScrollFactor(0).setDepth(200);
+    }
+    this.hudQuestText.setText(questText);
+
+    // Time of day
+    const tod = getTimeOfDay();
+    const icons = { dawn: '🌅', day: '☀️', dusk: '🌇', night: '🌙' };
+    this.hudTimeText.setText(`${icons[tod.phase] || ''} ${tod.phase}`);
+
+    // Wave 5: Daily challenge HUD
+    if (!this.hudDailyText) {
+      this.hudDailyText = this.add.text(10, 78, '', {
+        fontSize: '10px', fontFamily: 'monospace', color: '#88ccff',
+        backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
+      }).setScrollFactor(0).setDepth(200);
+    }
+    if (G.dailyChallenge && !G.dailyChallenge.claimed) {
+      const dc = G.dailyChallenge;
+      this.hudDailyText.setText(`Daily: ${dc.desc} (${dc.progress}/${dc.goal})`);
+      this.hudDailyText.setVisible(true);
+    } else if (G.dailyChallenge && G.dailyChallenge.claimed) {
+      this.hudDailyText.setText('Daily: COMPLETE!');
+      this.hudDailyText.setColor('#44cc44');
+      this.hudDailyText.setVisible(true);
+    } else {
+      this.hudDailyText.setVisible(false);
+    }
+
+    // Wave 3: Zone quality display
+    const zoneIdx = getCurrentZone(G.x, G.y);
+    if (!this.hudZoneText) {
+      this.hudZoneText = this.add.text(10, 96, '', {
+        fontSize: '11px', fontFamily: 'monospace', color: '#aa88dd',
+        backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
+      }).setScrollFactor(0).setDepth(200);
+    }
+    if (zoneIdx >= 0) {
+      const zone = ENCOUNTER_ZONES[zoneIdx];
+      const quality = getZoneQuality(zoneIdx, getZoneCycleId());
+      const qualLabel = getZoneQualityLabel(quality);
+      const qualColor = quality >= 1.2 ? '#44ff44' : quality >= 0.8 ? '#cccc44' : '#ff6644';
+      this.hudZoneText.setText(`Zone: ${zone.name} (${qualLabel})`);
+      this.hudZoneText.setColor(qualColor);
+      this.hudZoneText.setVisible(true);
+    } else {
+      this.hudZoneText.setVisible(false);
+    }
+
+    // Wave 3: Mastery display
+    if (!this.hudMasteryText) {
+      this.hudMasteryText = this.add.text(10, 116, '', {
+        fontSize: '11px', fontFamily: 'monospace', color: '#cc9944',
+        backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
+      }).setScrollFactor(0).setDepth(200);
+    }
+    // Sync combat mastery XP from battlesWon (read-only from BattleScene)
+    if (G.mastery && G.mastery.combat) {
+      G.mastery.combat.xp = wins;
+    }
+    const combatMastery = (typeof getMasteryInfo === 'function') ? getMasteryInfo(wins) : { name: 'Novice' };
+    this.hudMasteryText.setText(`Combat: ${combatMastery.name} (${wins} XP)`);
+
+    // Wave 4: Title count display
+    if (!this.hudTitleText) {
+      this.hudTitleText = this.add.text(10, 136, '', {
+        fontSize: '11px', fontFamily: 'monospace', color: '#ccaa44',
+        backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
+      }).setScrollFactor(0).setDepth(200);
+    }
+    const titleCount = G.titles?.length || 0;
+    if (titleCount > 0) {
+      this.hudTitleText.setText(`Titles: ${titleCount}`);
+      this.hudTitleText.setVisible(true);
+    } else {
+      this.hudTitleText.setVisible(false);
+    }
+
+    // Minimap player dot
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const mmW = 160, mmH = 120;
+    const mmX = W - mmW - 8;
+    const mmY = H - mmH - 8;
+    this.minimapDot.setPosition(mmX + G.x * (mmW / WORLD_W), mmY + G.y * (mmH / WORLD_H));
+  }
+
+  // ═══════ WAVE 5: BLACK RIDERS (night-only enemies) ═══════
+
+  updateBlackRiders() {
+    const tod = getTimeOfDay();
+    const isNight = tod.phase === 'night';
+
+    // Spawn riders during night
+    if (isNight && !this._wasNight) {
+      this._wasNight = true;
+      this._blackRiderTimer = this.time.addEvent({
+        delay: 8000,
+        callback: () => this.spawnBlackRiders(),
+        callbackScope: this,
+        loop: true,
+      });
+      // Spawn first batch immediately
+      this.spawnBlackRiders();
+    }
+
+    // Despawn all riders at dawn
+    if (!isNight && this._wasNight) {
+      this._wasNight = false;
+      if (this._blackRiderTimer) { this._blackRiderTimer.remove(); this._blackRiderTimer = null; }
+      this.despawnAllBlackRiders();
+    }
+
+    // Update rider labels to follow sprites
+    for (const rider of this._blackRiders) {
+      if (rider.sprite && rider.sprite.active && rider.label) {
+        rider.label.setPosition(rider.sprite.x, rider.sprite.y - 40);
+      }
+    }
+  }
+
+  spawnBlackRiders() {
+    if (!this.player) return;
+    const count = Phaser.Math.Between(2, 3);
+    for (let i = 0; i < count; i++) {
+      if (this._blackRiders.length >= 8) break; // cap at 8 on screen
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Phaser.Math.Between(200, 450);
+      const rx = this.player.x + Math.cos(angle) * dist;
+      const ry = this.player.y + Math.sin(angle) * dist;
+
+      const T = this._tileSize;
+      const tx = Math.floor(rx / T);
+      const ty = Math.floor(ry / T);
+      if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) continue;
+      if (this._impassableSet.has(worldMap[ty]?.[tx])) continue;
+
+      const sprite = this.enemies.create(rx, ry, 'enemy_sprite', 0).setScale(2.5);
+      sprite.setTint(0x220022);
+      sprite.setDepth(9);
+      sprite._isBlackRider = true;
+
+      // Pick a rare or legendary ghost for the battle
+      const rarePool = ALL_CARDS.filter(c => c.rarity === 'rare' || c.rarity === 'ghost-rare' || c.rarity === 'legendary');
+      const riderCard = rarePool[Math.floor(Math.random() * rarePool.length)];
+      sprite.cardData = riderCard;
+
+      const label = this.add.text(rx, ry - 40, 'Black Rider', {
+        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#aa44cc',
+        backgroundColor: '#00000088', padding: { x: 3, y: 1 },
+      }).setOrigin(0.5).setDepth(11);
+
+      // Aggressive movement toward player
+      this.tweens.add({
+        targets: sprite,
+        x: this.player.x + Phaser.Math.Between(-80, 80),
+        y: this.player.y + Phaser.Math.Between(-80, 80),
+        duration: Phaser.Math.Between(3000, 5000),
+        yoyo: true, repeat: -1,
+        onUpdate: () => { if (label && sprite.active) label.setPosition(sprite.x, sprite.y - 40); },
+      });
+
+      this._blackRiders.push({ sprite, label });
+    }
+  }
+
+  despawnAllBlackRiders() {
+    for (const rider of this._blackRiders) {
+      if (rider.label) rider.label.destroy();
+      if (rider.sprite && rider.sprite.active) rider.sprite.destroy();
+    }
+    this._blackRiders = [];
+  }
+
+  // ═══════ WAVE 5: WORLD BOSS ═══════
+
+  spawnWorldBoss() {
+    const T = this._tileSize;
+    const bossLocations = {
+      frost_valley:    { x: 25, y: 10 },
+      rolling_hills:   { x: 35, y: 60 },
+      volcanic_isles:  { x: 75, y: 30 },
+      dark_castle:     { x: 95, y: 10 },
+    };
+
+    // Pick the boss location in the player's current region, or default to frost
+    const region = getCurrentRegion(G.x, G.y);
+    const loc = bossLocations[region] || bossLocations.frost_valley;
+
+    // Verify tile is walkable — find nearby walkable tile if blocked
+    let bx = loc.x, by = loc.y;
+    if (this._impassableSet.has(worldMap[by]?.[bx])) {
+      for (let r = 1; r < 5; r++) {
+        let found = false;
+        for (let dy = -r; dy <= r && !found; dy++) {
+          for (let dx = -r; dx <= r && !found; dx++) {
+            const cx = bx + dx, cy = by + dy;
+            if (cx >= 0 && cy >= 0 && cx < WORLD_W && cy < WORLD_H && !this._impassableSet.has(worldMap[cy]?.[cx])) {
+              bx = cx; by = cy; found = true;
+            }
+          }
+        }
+        if (found) break;
+      }
+    }
+
+    const worldX = bx * T + T / 2;
+    const worldY = by * T + T / 2;
+
+    // Boss sprite (large, red-tinted)
+    this._worldBossSprite = this.add.rectangle(worldX, worldY, 48, 48, 0xcc2222, 0.9)
+      .setStrokeStyle(2, 0xff4444).setDepth(9);
+
+    // Pulsing glow
+    this._worldBossGlow = this.add.circle(worldX, worldY, 36, 0xff0000, 0.15).setDepth(8);
+    this.tweens.add({
+      targets: this._worldBossGlow,
+      scaleX: 1.6, scaleY: 1.6, alpha: 0.05,
+      duration: 1500, yoyo: true, repeat: -1,
+    });
+
+    // Label
+    this._worldBossLabel = this.add.text(worldX, worldY - 38, 'WORLD BOSS', {
+      fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ff4444',
+      backgroundColor: '#00000088', padding: { x: 4, y: 2 },
+    }).setOrigin(0.5).setDepth(11);
+
+    // Floating animation on label
+    this.tweens.add({
+      targets: this._worldBossLabel,
+      y: worldY - 44, duration: 1000, yoyo: true, repeat: -1,
+    });
+
+    this._worldBossRegion = region;
+    this._worldBossX = worldX;
+    this._worldBossY = worldY;
+    this._worldBossAlive = true;
+  }
+
+  checkWorldBossProximity() {
+    if (!this._worldBossAlive || !this._worldBossSprite || !this.player) return;
+
+    // Respawn check
+    if (!this._worldBossAlive && this._worldBossRespawnTime > 0 && Date.now() >= this._worldBossRespawnTime) {
+      this.spawnWorldBoss();
+      return;
+    }
+
+    const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this._worldBossX, this._worldBossY);
+
+    // Show interact hint when close
+    if (dist < 80) {
+      if (!this._worldBossHint) {
+        this._worldBossHint = this.add.text(this._worldBossX, this._worldBossY + 30, '[E] Challenge', {
+          fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ff8844',
+          backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
+        }).setOrigin(0.5).setDepth(12);
+      }
+
+      if (Phaser.Input.Keyboard.JustDown(this.eKey) && !this._eConsumed && !this.panels.isOpen()) {
+        this._eConsumed = true;
+        this.triggerWorldBossBattle();
+      }
+    } else {
+      if (this._worldBossHint) { this._worldBossHint.destroy(); this._worldBossHint = null; }
+    }
+  }
+
+  triggerWorldBossBattle() {
+    if (G.inBattle || G.team.length === 0) return;
+    if (!G.team.some(g => !g.ko && g.hp > 0)) {
+      this.showNotification('Your team is KO\'d! Heal first.');
+      return;
+    }
+
+    // Track wins before battle
+    this._pendingWorldBossCheck = true;
+    this._worldBossWinsBefore = G.rep?.battlesWon || 0;
+
+    // Remove boss visuals
+    if (this._worldBossSprite) { this._worldBossSprite.destroy(); this._worldBossSprite = null; }
+    if (this._worldBossLabel) { this._worldBossLabel.destroy(); this._worldBossLabel = null; }
+    if (this._worldBossGlow) { this._worldBossGlow.destroy(); this._worldBossGlow = null; }
+    if (this._worldBossHint) { this._worldBossHint.destroy(); this._worldBossHint = null; }
+    this._worldBossAlive = false;
+    this._worldBossRespawnTime = Date.now() + 5 * 60 * 1000; // 5 minute respawn
+
+    // Schedule respawn
+    this.time.delayedCall(5 * 60 * 1000, () => { this.spawnWorldBoss(); });
+
+    // Set up boss battle — 3 ghosts, each with 3x HP
+    G.inBattle = true;
+    const playerGhosts = buildPlayerBattleTeam();
+
+    // Pick 3 strong ghosts for the boss team
+    const bossPool = ALL_CARDS.filter(c => c.rarity === 'rare' || c.rarity === 'ghost-rare' || c.rarity === 'legendary');
+    const bossTeam = [];
+    const shuffled = [...bossPool].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < 3 && i < shuffled.length; i++) {
+      const card = shuffled[i];
+      const scaledMaxHp = card.maxHp * 3; // 3x HP for boss
+      bossTeam.push({
+        id: card.id, name: card.name, hp: scaledMaxHp, maxHp: scaledMaxHp,
+        ko: false, ability: card.ability, abilityDesc: card.desc, rarity: card.rarity,
+        usedOncePerGame: false, entryFired: false,
+      });
+    }
+
+    if (bossTeam.length === 0) { G.inBattle = false; return; }
+
+    const _resources = {
+      iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0,
+      healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0,
+      surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0,
+    };
+    B = {
+      round: 1,
+      player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
+      enemy: { ghosts: bossTeam, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
+      enemyCard: getCard(bossTeam[0].id),
+      phase: 'ready', log: [], playerDice: [], enemyDice: [],
+      nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
+      resources: { ..._resources },
+      entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
+      koSwapTeam: null, committed: {},
+    };
+
+    if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.time.delayedCall(300, () => {
+      this.scene.launch('BattleScene', {
+        enemyCard: getCard(bossTeam[0].id),
+        trainerName: 'WORLD BOSS',
+        worldBoss: true,
+      });
+      this.scene.pause();
+    });
+  }
+
+  // ═══════ WAVE 5: SPARKLE TRAILS ═══════
+
+  createSparkleTrails() {
+    const T = this._tileSize;
+
+    // Define trail paths from hubs toward encounter zones, per region
+    const trailPaths = [
+      // Frost Valley: Polaris Hub -> Crystal Glade
+      { region: 'frost_valley', points: [
+        {x:17,y:19},{x:18,y:18},{x:19,y:17},{x:20,y:16},{x:21,y:15},{x:22,y:14},{x:23,y:13},{x:24,y:13},{x:25,y:12},{x:26,y:12},{x:20,y:20},{x:19,y:22},{x:18,y:24},
+      ]},
+      // Rolling Hills: Meadowbrook -> Sunlit Meadow
+      { region: 'rolling_hills', points: [
+        {x:25,y:54},{x:23,y:53},{x:20,y:53},{x:18,y:53},{x:16,y:53},{x:14,y:53},{x:13,y:52},{x:30,y:56},{x:32,y:56},{x:33,y:55},{x:34,y:55},{x:35,y:55},
+      ]},
+      // Volcanic Isles: Settlement -> Magma Pools
+      { region: 'volcanic_isles', points: [
+        {x:73,y:15},{x:72,y:14},{x:71,y:13},{x:70,y:12},{x:69,y:11},{x:68,y:11},{x:75,y:18},{x:76,y:20},{x:77,y:22},{x:78,y:24},{x:78,y:26},
+      ]},
+      // Dark Castle: Warden -> Shadow Realm
+      { region: 'dark_castle', points: [
+        {x:93,y:18},{x:93,y:16},{x:93,y:14},{x:93,y:12},{x:93,y:10},{x:94,y:9},{x:95,y:16},{x:96,y:14},{x:97,y:12},{x:98,y:10},
+      ]},
+    ];
+
+    const regionColors = {
+      frost_valley: 0x88ccff,
+      rolling_hills: 0x66dd66,
+      volcanic_isles: 0xff9944,
+      dark_castle: 0xaa66dd,
+    };
+
+    for (const trail of trailPaths) {
+      const color = regionColors[trail.region] || 0xffffff;
+      for (const pt of trail.points) {
+        // Skip if tile is impassable
+        if (this._impassableSet.has(worldMap[pt.y]?.[pt.x])) continue;
+
+        const sx = pt.x * T + T / 2 + Phaser.Math.Between(-6, 6);
+        const sy = pt.y * T + T / 2 + Phaser.Math.Between(-6, 6);
+
+        const dot = this.add.circle(sx, sy, Phaser.Math.Between(2, 4), color, 0.5).setDepth(6);
+
+        // Gentle floating animation (y oscillation + alpha pulse)
+        this.tweens.add({
+          targets: dot,
+          y: sy + Phaser.Math.Between(-8, 8),
+          alpha: { from: 0.2, to: 0.6 },
+          duration: Phaser.Math.Between(1500, 3000),
+          yoyo: true,
+          repeat: -1,
+          delay: Phaser.Math.Between(0, 2000),
+        });
+      }
+    }
+  }
+
+  // ═══════ WAVE 5: HELP PANEL ═══════
+
+  showHelpPanel() {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+    GameAudio.menuOpen();
+
+    this.panels.open('HELP & TIPS', (container, w, h) => {
+      let y = 4;
+
+      // Controls section
+      const controlsTitle = this.add.text(w / 2, y, 'CONTROLS', {
+        fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc44',
+      }).setOrigin(0.5, 0).setScrollFactor(0);
+      container.add(controlsTitle);
+      y += 22;
+
+      const controls = [
+        'WASD / Arrows  -  Move',
+        'E              -  Interact / Talk',
+        'T              -  Team Lineup',
+        'I              -  Inventory',
+        'C              -  Crafting (Workshop)',
+        'P              -  Professions',
+        'H              -  This Help Screen',
+        'ESC            -  Close Panel',
+      ];
+      for (const line of controls) {
+        const ct = this.add.text(14, y, line, {
+          fontSize: '11px', fontFamily: 'monospace', color: '#aaaacc',
+        }).setScrollFactor(0);
+        container.add(ct);
+        y += 16;
+      }
+
+      // Divider
+      y += 6;
+      container.add(this.add.rectangle(w / 2, y, w - 20, 1, 0x334466).setScrollFactor(0));
+      y += 10;
+
+      // Tips section
+      const tipsTitle = this.add.text(w / 2, y, 'GAME TIPS', {
+        fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#44bbff',
+      }).setOrigin(0.5, 0).setScrollFactor(0);
+      container.add(tipsTitle);
+      y += 22;
+
+      const tips = [
+        'Collect spirit wisps for battle resources.',
+        'Craft gear at the Workshop using essences.',
+        'Heal your team at the Inn for 5 gold.',
+        'Visit the Cantina for random gameplay tips.',
+        'Encounter zones cycle quality every 12 hours.',
+        'Defeat trainers for bonus XP and gold.',
+        'Complete daily challenges for 25 gold bonus.',
+        'World Bosses drop rare essences on defeat.',
+        'Black Riders appear at night - extra XP!',
+        'Explore all 4 regions for the Explorer title.',
+      ];
+      for (const tip of tips) {
+        const dot = this.add.text(14, y, '\u2022 ' + tip, {
+          fontSize: '11px', fontFamily: 'Georgia, serif', color: '#888899',
+          wordWrap: { width: w - 32 },
+        }).setScrollFactor(0);
+        container.add(dot);
+        y += 18;
+      }
+    }, { width: 420, height: 460 });
+  }
+
+  // ═══════ WAVE 5: DAILY CHALLENGE ═══════
+
+  initDailyChallenge() {
+    const seed = getDaySeed();
+
+    // If no challenge exists or it's from a different day, generate a new one
+    if (!G.dailyChallenge || G.dailyChallenge.seed !== seed) {
+      const challenges = [
+        { type: 'battles', desc: 'Defeat 3 wild spirits', goal: 3 },
+        { type: 'wisps',   desc: 'Collect 5 wisps', goal: 5 },
+        { type: 'trainers', desc: 'Win 2 trainer battles', goal: 2 },
+      ];
+      // Use seed to deterministically pick the challenge
+      const idx = seed % challenges.length;
+      const chosen = challenges[idx];
+      G.dailyChallenge = {
+        seed: seed,
+        type: chosen.type,
+        desc: chosen.desc,
+        progress: 0,
+        goal: chosen.goal,
+        claimed: false,
+      };
+      saveGame();
+    }
+  }
+
+  updateDailyChallenge() {
+    if (!G.dailyChallenge || G.dailyChallenge.claimed) return;
+
+    // Check if day changed (reset challenge)
+    const currentSeed = getDaySeed();
+    if (G.dailyChallenge.seed !== currentSeed) {
+      this.initDailyChallenge();
+      return;
+    }
+
+    // Check completion
+    if (G.dailyChallenge.progress >= G.dailyChallenge.goal) {
+      G.dailyChallenge.claimed = true;
+      G.coins += 25;
+      saveGame();
+      this.showNotification('Daily Challenge Complete! +25 gold!');
+      GameAudio.victory();
+    }
+  }
+
+  // ═══════ WAVE 6: ONBOARDING TUTORIAL ═══════
+
+  startTutorial() {
+    if (G.tutorialComplete || G.tutorialStep > 0) return;
+    G.tutorialStep = 1;
+    this.showTutorialStep(1);
+  }
+
+  showTutorialStep(step) {
+    if (!this.comm) return;
+
+    // Clean up previous tutorial arrow
+    if (this._tutorialArrow) {
+      this._tutorialArrow.destroy();
+      this._tutorialArrow = null;
+    }
+
+    switch (step) {
+      case 1:
+        this.comm.show('Guide', 'Welcome to the Spirit World! Use WASD or arrow keys to move around.', { color: '#44ccff' });
+        break;
+
+      case 2: {
+        this.comm.show('Guide', 'See those glowing orbs? Walk into one to collect resources!', { color: '#44ccff' });
+        // Point an arrow toward the nearest wisp
+        const nearestWisp = this.findNearestWisp();
+        if (nearestWisp) {
+          this.showTutorialArrow(nearestWisp.x, nearestWisp.y);
+        }
+        break;
+      }
+
+      case 3: {
+        this.comm.show('Guide', 'Now find a wild spirit and touch it to start a battle!', { color: '#44ccff' });
+        // Point arrow toward nearest enemy
+        const nearestEnemy = this.findNearestEnemy();
+        if (nearestEnemy) {
+          this.showTutorialArrow(nearestEnemy.x, nearestEnemy.y);
+        }
+        break;
+      }
+
+      case 4:
+        this.comm.show('Guide', 'Great job! Press T to manage your team, I for inventory, C to craft. Good luck, adventurer!', { color: '#44ccff', duration: 6000 });
+        // Tutorial complete after this message auto-dismisses
+        this.time.delayedCall(6500, () => {
+          G.tutorialComplete = true;
+          G.tutorialStep = 4;
+          saveGame();
+        });
+        break;
+    }
+  }
+
+  updateTutorial(vx, vy) {
+    if (G.tutorialComplete || !this._isNewGame) return;
+
+    switch (G.tutorialStep) {
+      case 1:
+        // Wait for player to move
+        if (vx !== 0 || vy !== 0) {
+          if (!this._tutorialMoveCount) this._tutorialMoveCount = 0;
+          this._tutorialMoveCount++;
+          // Require a few frames of movement to confirm intentional input
+          if (this._tutorialMoveCount > 30) {
+            G.tutorialStep = 2;
+            this._tutorialMoveCount = 0;
+            this.time.delayedCall(500, () => this.showTutorialStep(2));
+          }
+        }
+        break;
+
+      case 2:
+        // Wait for a wisp collection (battlesWon still 0, check resource gain)
+        // Track if any resource changed since tutorial started
+        if (!this._tutorialResourceSnapshot) {
+          this._tutorialResourceSnapshot = (G.iceShards || 0) + (G.sacredFire || 0) + (G.healingSeeds || 0) + (G.luckyStones || 0) + (G.surge || 0) + (G.moonstone || 0) + (G.firefly || 0);
+        }
+        const currentResources = (G.iceShards || 0) + (G.sacredFire || 0) + (G.healingSeeds || 0) + (G.luckyStones || 0) + (G.surge || 0) + (G.moonstone || 0) + (G.firefly || 0);
+        if (currentResources > this._tutorialResourceSnapshot) {
+          G.tutorialStep = 3;
+          this._tutorialResourceSnapshot = null;
+          this.time.delayedCall(1000, () => this.showTutorialStep(3));
+        }
+        break;
+
+      case 3:
+        // Wait for player to win (or enter) a battle
+        if (G.rep.battlesWon > 0) {
+          G.tutorialStep = 4;
+          this.time.delayedCall(1500, () => this.showTutorialStep(4));
+        }
+        break;
+
+      // Step 4 auto-completes after the message plays
+    }
+  }
+
+  findNearestWisp() {
+    if (!this.wisps || !this.player) return null;
+    let nearest = null;
+    let minDist = Infinity;
+    const children = this.wisps.getChildren ? this.wisps.getChildren() : [];
+    for (const w of children) {
+      if (!w.active) continue;
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, w.x, w.y);
+      if (d < minDist) { minDist = d; nearest = w; }
+    }
+    return nearest;
+  }
+
+  findNearestEnemy() {
+    if (!this.enemies || !this.player) return null;
+    let nearest = null;
+    let minDist = Infinity;
+    const children = this.enemies.getChildren ? this.enemies.getChildren() : [];
+    for (const e of children) {
+      if (!e.active || e._isBlackRider) continue;
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
+      if (d < minDist) { minDist = d; nearest = e; }
+    }
+    return nearest;
+  }
+
+  showTutorialArrow(targetX, targetY) {
+    if (this._tutorialArrow) this._tutorialArrow.destroy();
+
+    // Create a pulsing arrow indicator pointing toward the target
+    const arrow = this.add.text(targetX, targetY - 40, '\u25BC', {
+      fontSize: '24px', color: '#44ccff',
+    }).setOrigin(0.5).setDepth(15);
+
+    this.tweens.add({
+      targets: arrow,
+      y: targetY - 30,
+      alpha: { from: 1, to: 0.3 },
+      duration: 600,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    this._tutorialArrow = arrow;
+
+    // Auto-remove after 10 seconds (target may move)
+    this.time.delayedCall(10000, () => {
+      if (arrow && arrow.active) arrow.destroy();
+      if (this._tutorialArrow === arrow) this._tutorialArrow = null;
+    });
+  }
+
+  // ═══════ WAVE 6: MULTIPLAYER PRESENCE ═══════
+
+  initMultiplayerPresence() {
+    // Initialize the presence system
+    MultiplayerPresence.init();
+
+    // Start listening for other players
+    MultiplayerPresence.startListening(
+      // onPlayerUpdate
+      (pid, data) => {
+        this.updateOtherPlayer(pid, data);
+      },
+      // onPlayerRemove
+      (pid) => {
+        this.removeOtherPlayer(pid);
+      }
+    );
+
+    // Set up disconnect cleanup
+    MultiplayerPresence.setupDisconnect();
+
+    // Write initial presence
+    MultiplayerPresence.updatePresence({
+      name: G.name, x: G.x, y: G.y, spriteKey: G.spriteKey,
+    });
+
+    console.log('[WorldScene] Multiplayer presence initialized');
+  }
+
+  updateOtherPlayer(pid, data) {
+    const T = this._tileSize;
+
+    if (this._otherPlayerSprites[pid]) {
+      // Update existing player sprite position
+      const entry = this._otherPlayerSprites[pid];
+      const targetX = (data.x || 0) * T;
+      const targetY = (data.y || 0) * T;
+
+      // Smooth movement
+      if (entry.sprite && entry.sprite.active) {
+        this.tweens.add({
+          targets: entry.sprite,
+          x: targetX, y: targetY,
+          duration: 800, ease: 'Linear',
+        });
+        // Update label position too
+        if (entry.label && entry.label.active) {
+          this.tweens.add({
+            targets: entry.label,
+            x: targetX, y: targetY - 36,
+            duration: 800, ease: 'Linear',
+          });
+        }
+      }
+      entry.lastSeen = Date.now();
+    } else {
+      // Create new player sprite (semi-transparent ghost appearance)
+      const px = (data.x || 0) * T;
+      const py = (data.y || 0) * T;
+
+      // Use the other player's sprite key if available, otherwise default
+      const textureKey = (data.spriteKey && this.textures.exists(data.spriteKey)) ? data.spriteKey : 'player';
+      const sprite = this.add.sprite(px, py, textureKey, 0)
+        .setScale(2).setAlpha(0.4).setDepth(8).setTint(0x8888ff);
+
+      // Name label
+      const displayName = data.name || 'Unknown';
+      const label = this.add.text(px, py - 36, displayName, {
+        fontSize: '9px', fontFamily: 'monospace', color: '#8888ff',
+        backgroundColor: '#00000066', padding: { x: 2, y: 1 },
+      }).setOrigin(0.5).setDepth(11).setAlpha(0.6);
+
+      // Level badge
+      if (data.level && data.level > 1) {
+        label.setText(`${displayName} (Lv${data.level})`);
+      }
+
+      this._otherPlayerSprites[pid] = {
+        sprite: sprite,
+        label: label,
+        lastSeen: Date.now(),
+      };
+    }
+  }
+
+  removeOtherPlayer(pid) {
+    const entry = this._otherPlayerSprites[pid];
+    if (!entry) return;
+    if (entry.sprite && entry.sprite.active) entry.sprite.destroy();
+    if (entry.label && entry.label.active) entry.label.destroy();
+    delete this._otherPlayerSprites[pid];
+  }
+}
