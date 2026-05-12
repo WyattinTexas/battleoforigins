@@ -210,40 +210,40 @@ const CLASS_TREES = {
 
   architect: {
     name: 'Architect',
-    desc: 'Build advanced structures: laboratories, arenas, town halls, inns. Requires Artisan mastery.',
+    desc: 'Build advanced structures and town enhancements. Requires Artisan mastery.',
     color: '#cc8833',
     requiresTree: 'artisan',
-    branches: ['Civic Buildings', 'Mounts', 'Landmarks'],
+    branches: ['Civic Buildings', 'Enhancements', 'Recipes'],
     talents: [
-      // Branch 0: Civic Buildings — the big structures players need
+      // Branch 0: Civic Buildings — the 3 key structures
       { id: 'arc_civ_1', branch: 0, tier: 0, name: 'Laboratory',
         desc: 'Build a laboratory (Scientists need this for mutations)', cost: 1, maxRank: 1, prereq: null },
       { id: 'arc_civ_2', branch: 0, tier: 1, name: 'Battle Arena',
         desc: 'Build a battle arena (players can PvP here)', cost: 2, maxRank: 1, prereq: 'arc_civ_1' },
-      { id: 'arc_civ_3', branch: 0, tier: 2, name: 'Town Hall',
-        desc: 'Build a town hall — your settlement gets a name on the map and attracts NPC vendors', cost: 3, maxRank: 1, prereq: 'arc_civ_2' },
-      { id: 'arc_civ_4', branch: 0, tier: 3, name: 'Inn',
-        desc: 'Build an inn — players who rest here get a bonus when they return', cost: 4, maxRank: 1, prereq: 'arc_civ_3' },
+      { id: 'arc_civ_3', branch: 0, tier: 2, name: 'Inn',
+        desc: 'Build an inn — players who rest here get a bonus when they return', cost: 3, maxRank: 1, prereq: 'arc_civ_2' },
+      { id: 'arc_civ_4', branch: 0, tier: 3, name: 'Grand Design',
+        desc: 'All civic buildings gain upgraded visuals and increased capacity', cost: 4, maxRank: 1, prereq: 'arc_civ_3' },
 
-      // Branch 1: Mounts — vehicles and transportation
-      { id: 'arc_mnt_1', branch: 1, tier: 0, name: 'Raft Builder',
-        desc: 'Craft a basic raft for water travel', cost: 1, maxRank: 1, prereq: null },
-      { id: 'arc_mnt_2', branch: 1, tier: 1, name: 'Stable & Saddle',
-        desc: 'Build a stable and craft basic spiritkin mounts', cost: 2, maxRank: 1, prereq: 'arc_mnt_1' },
-      { id: 'arc_mnt_3', branch: 1, tier: 2, name: 'Armored Mount',
-        desc: 'Upgrade mounts with armor (+1 HP absorb)', cost: 3, maxRank: 1, prereq: 'arc_mnt_2' },
-      { id: 'arc_mnt_4', branch: 1, tier: 3, name: 'Hover Skiff',
-        desc: 'Craft a sci-fi hover skiff (all-terrain mount)', cost: 4, maxRank: 1, prereq: 'arc_mnt_3' },
+      // Branch 1: Enhancements — town improvements, garden structures, Cultivator synergy
+      { id: 'arc_enh_1', branch: 1, tier: 0, name: 'Garden Trellis',
+        desc: 'Build decorative wooden structures above gardens — boosts garden yield', cost: 1, maxRank: 1, prereq: null },
+      { id: 'arc_enh_2', branch: 1, tier: 1, name: 'Irrigation System',
+        desc: 'Build irrigation for gardens — Cultivator gardens grow faster', cost: 2, maxRank: 1, prereq: 'arc_enh_1' },
+      { id: 'arc_enh_3', branch: 1, tier: 2, name: 'Greenhouse',
+        desc: 'Build a greenhouse — gardens inside produce year-round regardless of region', cost: 3, maxRank: 1, prereq: 'arc_enh_2' },
+      { id: 'arc_enh_4', branch: 1, tier: 3, name: 'Spirit Fountain',
+        desc: 'Build a spirit fountain — passively attracts spirits to your entire settlement', cost: 4, maxRank: 1, prereq: 'arc_enh_3' },
 
-      // Branch 2: Landmarks — world-visible structures
-      { id: 'arc_lmk_1', branch: 2, tier: 0, name: 'Beacon Tower',
-        desc: 'Build a beacon visible across the region', cost: 1, maxRank: 1, prereq: null },
-      { id: 'arc_lmk_2', branch: 2, tier: 1, name: 'Portal Arch',
-        desc: 'Build a portal connecting two of your structures', cost: 2, maxRank: 1, prereq: 'arc_lmk_1' },
-      { id: 'arc_lmk_3', branch: 2, tier: 2, name: 'Sky Bridge',
-        desc: 'Connect distant structures with a traversable bridge', cost: 3, maxRank: 1, prereq: 'arc_lmk_2' },
-      { id: 'arc_lmk_4', branch: 2, tier: 3, name: 'Monument',
-        desc: 'Build a monument — permanent world landmark with your name', cost: 4, maxRank: 1, prereq: 'arc_lmk_3' },
+      // Branch 2: Recipes — unlock advanced crafting blueprints
+      { id: 'arc_rec_1', branch: 2, tier: 0, name: 'Schematic Study',
+        desc: 'Unlock basic architect-exclusive schematics', cost: 1, maxRank: 1, prereq: null },
+      { id: 'arc_rec_2', branch: 2, tier: 1, name: 'Advanced Blueprints',
+        desc: 'Unlock advanced building blueprints (stronger materials, bigger structures)', cost: 2, maxRank: 1, prereq: 'arc_rec_1' },
+      { id: 'arc_rec_3', branch: 2, tier: 2, name: 'Rare Schematics',
+        desc: 'Unlock rare schematics found in the world (unique structures)', cost: 3, maxRank: 1, prereq: 'arc_rec_2' },
+      { id: 'arc_rec_4', branch: 2, tier: 3, name: 'Legendary Blueprints',
+        desc: 'Unlock legendary building schematics — one-of-a-kind structures', cost: 4, maxRank: 1, prereq: 'arc_rec_3' },
     ],
   },
 
@@ -1104,6 +1104,7 @@ const MASTER_DESCRIPTIONS = {
   trainer: 'UNLOCK 2ND SIDELINE PARTNER. Unlocks "Trainer" title.',
   scientist: 'Overload chance reduced by 10%. Much higher DNA extraction success. Unlocks "Scientist" title.',
   artisan: '+10% surveying yield, +10% crafting success. Unlocks "Artisan" title.',
+  architect: 'Build a Town Hall — settlement appears on the world map. Unlocks "Architect" title.',
   cultivator: 'Your gardens never expire. Unlocks "Cultivator" title.',
 };
 
