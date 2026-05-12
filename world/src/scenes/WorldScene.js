@@ -376,19 +376,34 @@ class WorldScene extends Phaser.Scene {
       loop: true,
     });
 
-    // ── Live multiplayer presence (every 1.5s for responsive movement) ──
+    // ── Live multiplayer presence (every 3s, only on movement — cost-efficient) ──
     this._lastPresenceX = G.x;
     this._lastPresenceY = G.y;
     this._presenceTimer = this.time.addEvent({
-      delay: 1500,
+      delay: 3000,
       callback: () => {
-        // Only send update if player moved
-        if (Math.abs(G.x - this._lastPresenceX) > 0.5 || Math.abs(G.y - this._lastPresenceY) > 0.5) {
+        // Only send if player moved >1 tile
+        if (Math.abs(G.x - this._lastPresenceX) > 1 || Math.abs(G.y - this._lastPresenceY) > 1) {
           this._lastPresenceX = G.x;
           this._lastPresenceY = G.y;
           MultiplayerPresence.updatePresence({
             name: G.name, x: G.x, y: G.y, spriteKey: G.spriteKey,
           });
+        }
+      },
+      callbackScope: this,
+      loop: true,
+    });
+
+    // ── Stale player cleanup (remove ghosts not seen in 60s) ──
+    this.time.addEvent({
+      delay: 15000,
+      callback: () => {
+        const now = Date.now();
+        for (const [pid, entry] of Object.entries(this._otherPlayerSprites)) {
+          if (now - entry.lastSeen > 60000) {
+            this.removeOtherPlayer(pid);
+          }
         }
       },
       callbackScope: this,

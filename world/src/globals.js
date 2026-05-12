@@ -612,85 +612,116 @@ const _sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2,
 const MultiplayerPresence = {
   _isStub: true,
   _listeners: {},
-  _sessionKey: '', // playerId + sessionId — unique per tab
+  _sessionKey: '',
+  _currentRegion: null,       // region we're currently listening to
+  _onPlayerUpdate: null,
+  _onPlayerRemove: null,
 
   init() {
     this._sessionKey = (G.playerId || 'anon') + '_' + _sessionId;
-    // Check if db is a real Firebase reference (not our stub)
     try {
-      const testRef = db.ref('_presence_test');
-      // Our stub returns a resolved Promise for .once() — real Firebase returns a thenable
-      // Check by seeing if the stub flag exists
-      if (testRef && testRef.set && typeof testRef.on === 'function') {
-        // Could be real or stub — try to detect stub by checking if .once returns immediately
-        this._isStub = (db._stub === true);
-      }
+      this._isStub = (db._stub === true);
     } catch(e) {
       this._isStub = true;
     }
-    console.log('[MultiplayerPresence] init, stub:', this._isStub);
+    console.log('[MultiplayerPresence] init, stub:', this._isStub, 'session:', this._sessionKey);
   },
 
-  // Write this player's presence data (uses _sessionKey — unique per tab)
+  // Write presence to region-based path: world/{region}/{sessionKey}
   updatePresence(playerData) {
     if (this._isStub || !this._sessionKey) return;
+    const region = getCurrentRegion(G.x, G.y) || 'frost_valley';
     try {
-      db.ref('presence/' + this._sessionKey).set({
+      // If region changed, remove from old path
+      if (this._currentRegion && this._currentRegion !== region) {
+        db.ref('world/' + this._currentRegion + '/' + this._sessionKey).remove();
+      }
+      db.ref('world/' + region + '/' + this._sessionKey).set({
         name: playerData.name || G.name,
         playerId: G.playerId,
         x: playerData.x || G.x,
         y: playerData.y || G.y,
         spriteKey: playerData.spriteKey || G.spriteKey,
         level: G.level || 1,
-        region: getCurrentRegion(G.x, G.y),
-        lastSeen: firebase.database.ServerValue.TIMESTAMP,
+        region: region,
+        ts: firebase.database.ServerValue.TIMESTAMP,
       });
+      // Switch listener if region changed
+      if (this._currentRegion !== region) {
+        this._switchRegionListener(region);
+      }
     } catch(e) {
       console.warn('[MultiplayerPresence] updatePresence error:', e);
     }
   },
 
-  // Listen for other players' presence changes
+  // Listen to a specific region only — O(R) not O(N)
   startListening(onPlayerUpdate, onPlayerRemove) {
+    this._onPlayerUpdate = onPlayerUpdate;
+    this._onPlayerRemove = onPlayerRemove;
     if (this._isStub) return;
+    const region = getCurrentRegion(G.x, G.y) || 'frost_valley';
+    this._switchRegionListener(region);
+  },
+
+  _switchRegionListener(newRegion) {
+    if (this._isStub) return;
+    const self = this;
+
+    // Unsubscribe from old region
+    if (this._listeners.region) {
+      try { this._listeners.region.off(); } catch(e) {}
+      // Remove all sprites from old region
+      if (this._onPlayerRemove && this._regionPlayers) {
+        this._regionPlayers.forEach(pid => this._onPlayerRemove(pid));
+      }
+    }
+    this._regionPlayers = new Set();
+    this._currentRegion = newRegion;
+
+    // Subscribe to new region
     try {
-      const ref = db.ref('presence');
-      const self = this;
+      const ref = db.ref('world/' + newRegion);
       ref.on('child_added', snap => {
         const data = snap.val();
         const pid = snap.key || '';
-        if (pid === self._sessionKey) return; // skip own session
-        if (data && onPlayerUpdate) onPlayerUpdate(pid, data);
+        if (pid === self._sessionKey) return;
+        self._regionPlayers.add(pid);
+        if (data && self._onPlayerUpdate) self._onPlayerUpdate(pid, data);
       });
       ref.on('child_changed', snap => {
         const data = snap.val();
         const pid = snap.key || '';
         if (pid === self._sessionKey) return;
-        if (data && onPlayerUpdate) onPlayerUpdate(pid, data);
+        if (data && self._onPlayerUpdate) self._onPlayerUpdate(pid, data);
       });
       ref.on('child_removed', snap => {
         const pid = snap.key || '';
-        if (onPlayerRemove) onPlayerRemove(pid);
+        self._regionPlayers.delete(pid);
+        if (self._onPlayerRemove) self._onPlayerRemove(pid);
       });
-      this._listeners.presence = ref;
+      this._listeners.region = ref;
+      console.log('[MultiplayerPresence] listening to region:', newRegion);
     } catch(e) {
-      console.warn('[MultiplayerPresence] startListening error:', e);
+      console.warn('[MultiplayerPresence] listener error:', e);
     }
   },
 
-  // Clean up on disconnect
   setupDisconnect() {
     if (this._isStub || !this._sessionKey) return;
     try {
-      db.ref('presence/' + this._sessionKey).onDisconnect().remove();
-    } catch(e) { console.warn('[MultiplayerPresence] onDisconnect error:', e); }
+      // Clean up from all regions on disconnect
+      const regions = ['frost_valley', 'rolling_hills', 'volcanic_isles', 'dark_castle'];
+      regions.forEach(r => {
+        db.ref('world/' + r + '/' + this._sessionKey).onDisconnect().remove();
+      });
+    } catch(e) {}
   },
 
-  // Stop listening
   stopListening() {
-    if (this._listeners.presence) {
-      try { this._listeners.presence.off(); } catch(e) {}
-      this._listeners.presence = null;
+    if (this._listeners.region) {
+      try { this._listeners.region.off(); } catch(e) {}
+      this._listeners.region = null;
     }
   },
 };
