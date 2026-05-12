@@ -277,7 +277,7 @@ class BattleScene extends Phaser.Scene {
     // Read committed from B (synced by resource bar)
     const committed = B && B.committed ? B.committed : this._committed;
 
-    // Multiplayer buffs
+    // Multiplayer party buffs
     const hasBlessing = (G.activeBuffs || []).some(b => b.type === 'battleBlessing' && b.fights > 0);
     const hasShield = (G.activeBuffs || []).some(b => b.type === 'spiritShield' && b.fights > 0);
 
@@ -287,8 +287,8 @@ class BattleScene extends Phaser.Scene {
       const wpn = G.equipped?.weapon;
       if (wpn) dmg += (wpn.bonusDamage || wpn.bonus || 0);
       dmg += (committed.iceShards || 0);
-      dmg += (committed.sacredFire || 0) * 3;
-      if (hasBlessing) dmg += 1; // Party buff: +1 dmg
+      dmg += (committed.sacredFire || 0) * 3;  // Sacred Fire = +3 dmg each
+      if (hasBlessing) dmg += 1; // Party buff
 
       this.eg.hp = Math.max(0, this.eg.hp - dmg);
       log += ` \u2014 ${dmg} dmg to ${this.eg.name}!`;
@@ -301,7 +301,7 @@ class BattleScene extends Phaser.Scene {
       // Equipment defense
       const arm = G.equipped?.head;
       if (arm) dmg = Math.max(1, dmg - (arm.damageReduction || arm.defense || 0));
-      if (hasShield) dmg = Math.max(1, dmg - 1); // Party buff: -1 dmg taken
+      if (hasShield) dmg = Math.max(1, dmg - 1); // Party buff
 
       this.pg.hp = Math.max(0, this.pg.hp - dmg);
       log += ` \u2014 ${dmg} dmg to ${this.pg.name}!`;

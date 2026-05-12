@@ -51,19 +51,19 @@ const ALL_CARDS = [
   {id:94,name:"Jenkins",rarity:"rare",maxHp:5,ability:"Barrage",desc:"Entry: roll 4 dice for damage.",set:"Set 1",art:"https://drbango.com/testroom/art/originals/Jenkins.png"},
   {id:111,name:"Shade",rarity:"legendary",maxHp:5,ability:"Haunt",desc:"Before each roll, opponent takes 1 damage.",set:"Set 1",art:"https://drbango.com/testroom/art/originals/shade.jpg"},
   // Rolling Hills
-  {id:302,name:"Maximo",rarity:"common",maxHp:4,ability:"Nap",desc:"Entry: roll only 1 die first roll. After each round: gain 1 Healing Seed and 1 Lucky Stone.",set:"Rolling Hills",art:"../testroom/art/toadstool.jpg"},
-  {id:305,name:"Selene",rarity:"legendary",maxHp:6,ability:"Heart of the Hills",desc:"Roll doubles: choose — gain 2 Healing Seeds OR 3 Lucky Stones.",set:"Rolling Hills",art:"../testroom/art/luna.jpg"},
-  {id:311,name:"Pudge",rarity:"common",maxHp:7,ability:"Belly Flop",desc:"Doubles: deal +2 damage. Take 1 self damage.",set:"Rolling Hills",art:"../testroom/art/pudge.webp"},
-  {id:308,name:"Kaplan",rarity:"uncommon",maxHp:5,ability:"Pollinate",desc:"When opponent rolls doubles: gain 1 Healing Seed.",set:"Rolling Hills",art:"../testroom/art/honeybun.jpg"},
-  {id:314,name:"Farmer Jeff",rarity:"ghost-rare",maxHp:5,ability:"Harvest",desc:"Gain 1 Healing Seed for each 6 you roll.",set:"Rolling Hills",art:"../testroom/art/farmer_jeff.jpg"},
-  {id:309,name:"Aunt Susan",rarity:"rare",maxHp:4,ability:"Harvest Dance",desc:"Discard 1 Healing Seed: deal +2 damage. Win: +2 Healing Seeds.",set:"Rolling Hills",art:"../testroom/art/rustler.jpg"},
+  {id:302,name:"Maximo",rarity:"common",maxHp:4,ability:"Nap",desc:"Entry: roll only 1 die first roll. After each round: gain 1 Healing Seed and 1 Lucky Stone.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/toadstool.jpg"},
+  {id:305,name:"Selene",rarity:"legendary",maxHp:6,ability:"Heart of the Hills",desc:"Roll doubles: choose — gain 2 Healing Seeds OR 3 Lucky Stones.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/luna.jpg"},
+  {id:311,name:"Pudge",rarity:"common",maxHp:7,ability:"Belly Flop",desc:"Doubles: deal +2 damage. Take 1 self damage.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/pudge.webp"},
+  {id:308,name:"Kaplan",rarity:"uncommon",maxHp:5,ability:"Pollinate",desc:"When opponent rolls doubles: gain 1 Healing Seed.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/honeybun.jpg"},
+  {id:314,name:"Farmer Jeff",rarity:"ghost-rare",maxHp:5,ability:"Harvest",desc:"Gain 1 Healing Seed for each 6 you roll.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/farmer_jeff.jpg"},
+  {id:309,name:"Aunt Susan",rarity:"rare",maxHp:4,ability:"Harvest Dance",desc:"Discard 1 Healing Seed: deal +2 damage. Win: +2 Healing Seeds.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/rustler.jpg"},
   // Volcanic Isles
-  {id:201,name:"Bouril",rarity:"common",maxHp:10,ability:"Slumber",desc:"Entry: your first roll is automatically 1-2-3.",set:"Volcanic Isles",art:"../testroom/art/old_hank.jpg"},
-  {id:304,name:"The Ember Force",rarity:"uncommon",maxHp:3,ability:"Swarm",desc:"Before rolling: deal 1 damage to the enemy active ghost.",set:"Volcanic Isles",art:"../testroom/art/the_flickers.jpg"},
-  {id:206,name:"Zain",rarity:"ghost-rare",maxHp:6,ability:"Ice Blade",desc:"Win: gain 1 Ice Shard. Forge the Ice Blade with Ice Shard + Moonstone.",set:"Volcanic Isles",art:"../testroom/art/echo.png"},
-  {id:209,name:"Dart",rarity:"common",maxHp:3,ability:"Plunder",desc:"Win: gain 2 Surge.",set:"Volcanic Isles",art:"../testroom/art/swipers.png"},
-  {id:306,name:"Nerina",rarity:"legendary",maxHp:9,ability:"Leviathan",desc:"Entry: deal 3 damage to the enemy active ghost.",set:"Volcanic Isles",art:"../testroom/art/the_deep.jpg"},
-  {id:336,name:"Humar",rarity:"legendary",maxHp:5,ability:"Meteor",desc:"Win: opponent takes 2 damage before their next roll.",set:"Volcanic Isles",art:"../testroom/art/humar.jpg"},
+  {id:201,name:"Bouril",rarity:"common",maxHp:10,ability:"Slumber",desc:"Entry: your first roll is automatically 1-2-3.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/old_hank.jpg"},
+  {id:304,name:"The Ember Force",rarity:"uncommon",maxHp:3,ability:"Swarm",desc:"Before rolling: deal 1 damage to the enemy active ghost.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/the_flickers.jpg"},
+  {id:206,name:"Zain",rarity:"ghost-rare",maxHp:6,ability:"Ice Blade",desc:"Win: gain 1 Ice Shard. Forge the Ice Blade with Ice Shard + Moonstone.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/echo.png"},
+  {id:209,name:"Dart",rarity:"common",maxHp:3,ability:"Plunder",desc:"Win: gain 2 Surge.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/swipers.png"},
+  {id:306,name:"Nerina",rarity:"legendary",maxHp:9,ability:"Leviathan",desc:"Entry: deal 3 damage to the enemy active ghost.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/the_deep.jpg"},
+  {id:336,name:"Humar",rarity:"legendary",maxHp:5,ability:"Meteor",desc:"Win: opponent takes 2 damage before their next roll.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/humar.jpg"},
   // ── Added v3.13.0 — more encounter variety ──
   // Commons (filler near towns)
   {id:2,name:"Nikon",rarity:"common",maxHp:6,ability:"Ambush",desc:"Win first roll: deal triple damage.",set:"Set 1",art:"https://drbango.com/testroom/art/originals/Nikon.png"},
@@ -86,14 +86,14 @@ const ALL_CARDS = [
   {id:418,name:"Pip",rarity:"ghost-rare",maxHp:7,ability:"Toasted",desc:"Upon rolling triples or better: permanently remove 1 die from your opponent. Once per game.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/originals/Pip.png"},
   // ── Added v4.4.0 — 30 new Spiritkin ──
   // Rolling Hills
-  {id:210,name:"Timber",rarity:"legendary",maxHp:7,ability:"Howl",desc:"Before rolling: opponent must discard 2 specials OR remove 1 die for this roll.",set:"Rolling Hills",art:"../testroom/art/timber.jpg"},
-  {id:312,name:"Timpleton",rarity:"uncommon",maxHp:4,ability:"Big Target",desc:"Win: deal +3 damage if enemy HP is higher than Timpleton's.",set:"Rolling Hills",art:"../testroom/art/lurk.jpg"},
-  {id:315,name:"Harrison",rarity:"rare",maxHp:7,ability:"Ascend",desc:"Discard Healing Seeds: roll 1 extra die per seed discarded.",set:"Rolling Hills",art:"../testroom/art/moonreach.jpg"},
+  {id:210,name:"Timber",rarity:"legendary",maxHp:7,ability:"Howl",desc:"Before rolling: opponent must discard 2 specials OR remove 1 die for this roll.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/timber.jpg"},
+  {id:312,name:"Timpleton",rarity:"uncommon",maxHp:4,ability:"Big Target",desc:"Win: deal +3 damage if enemy HP is higher than Timpleton's.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/lurk.jpg"},
+  {id:315,name:"Harrison",rarity:"rare",maxHp:7,ability:"Ascend",desc:"Discard Healing Seeds: roll 1 extra die per seed discarded.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/moonreach.jpg"},
   {id:417,name:"Twyla",rarity:"rare",maxHp:6,ability:"Lucky Dance",desc:"Each Lucky Stone adds +1 die and gains +1 Healing Seed.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/originals/Hesta.png"},
   {id:423,name:"Zippa",rarity:"uncommon",maxHp:5,ability:"Glimmer",desc:"Gain +1 damage for each Healing Seed you hold.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/originals/Beewick.png"},
   {id:428,name:"Jasper",rarity:"rare",maxHp:5,ability:"Flame Dive",desc:"Win: roll 1 bonus die. Deal its value as additional damage. Jasper takes 1 damage.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/originals/Pickwick.png"},
   {id:430,name:"Gordok",rarity:"uncommon",maxHp:8,ability:"River Terror",desc:"Win: steal 2 specials from opponent instead of dealing damage. +1 die next roll.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/originals/Millicent.png"},
-  {id:462,name:"Ridley",rarity:"uncommon",maxHp:3,ability:"Nimble",desc:"Singles deal +1 damage. Doubles deal +2 damage.",set:"Rolling Hills",art:"../testroom/art/ridley.png"},
+  {id:462,name:"Ridley",rarity:"uncommon",maxHp:3,ability:"Nimble",desc:"Singles deal +1 damage. Doubles deal +2 damage.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/ridley.png"},
   {id:445,name:"Michael",rarity:"uncommon",maxHp:5,ability:"Torrent",desc:"Even doubles: deal +2 damage.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/originals/WaterSpirit.png"},
   {id:446,name:"Mable Stadango",rarity:"rare",maxHp:5,ability:"Hex",desc:"When you place Burn on an enemy, remove 1 enemy die next roll. Win: gain 1 Burn.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/originals/ForestSpirit.png"},
   // Frost Valley
@@ -106,12 +106,12 @@ const ALL_CARDS = [
   {id:105,name:"Tyler",rarity:"ghost-rare",maxHp:6,ability:"Heating Up",desc:"Before rolling, spend 2 HP to gain +1 die. Sacred Fires deal x2.",set:"Frost Valley",art:"https://drbango.com/testroom/art/originals/tyler.jpg"},
   {id:107,name:"Piper",rarity:"ghost-rare",maxHp:6,ability:"Slick Coat",desc:"Negate enemy before-rolling effects. -1 enemy die next roll.",set:"Frost Valley",art:"https://drbango.com/testroom/art/originals/piper.jpg"},
   // Volcanic Isles
-  {id:207,name:"Hank",rarity:"common",maxHp:7,ability:"Tremor",desc:"Each 4 you roll: gain 1 Lucky Stone.",set:"Volcanic Isles",art:"../testroom/art/stomper.png"},
-  {id:313,name:"Sylvia",rarity:"rare",maxHp:4,ability:"Porpoise",desc:"Ice Shards cost nothing to commit. Lose a roll: roll 1 die, 5 or 6 negates all damage.",set:"Volcanic Isles",art:"../testroom/art/ripple.jpg"},
-  {id:345,name:"Red Hunter",rarity:"ghost-rare",maxHp:6,ability:"Rumble",desc:"Win: if opponent has any specials, deal +3 damage.",set:"Volcanic Isles",art:"../testroom/art/tremor.webp"},
+  {id:207,name:"Hank",rarity:"common",maxHp:7,ability:"Tremor",desc:"Each 4 you roll: gain 1 Lucky Stone.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/stomper.png"},
+  {id:313,name:"Sylvia",rarity:"rare",maxHp:4,ability:"Porpoise",desc:"Ice Shards cost nothing to commit. Lose a roll: roll 1 die, 5 or 6 negates all damage.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/ripple.jpg"},
+  {id:345,name:"Red Hunter",rarity:"ghost-rare",maxHp:6,ability:"Rumble",desc:"Win: if opponent has any specials, deal +3 damage.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/tremor.webp"},
   {id:416,name:"Rook",rarity:"uncommon",maxHp:6,ability:"Charcoal",desc:"Immune to Sacred Fire and Burn damage. Win: +1 damage per Surge committed.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/originals/Pyroclast.png"},
-  {id:461,name:"Ronan",rarity:"common",maxHp:5,ability:"Mixup",desc:"Roll doubles: gain +1 Ice Shard & +1 Burn.",set:"Volcanic Isles",art:"../testroom/art/ronan.png"},
-  {id:463,name:"Zork",rarity:"common",maxHp:4,ability:"Smolder",desc:"Before rolling: discard Burn to gain +1 die per Burn discarded.",set:"Volcanic Isles",art:"../testroom/art/zork.png"},
+  {id:461,name:"Ronan",rarity:"common",maxHp:5,ability:"Mixup",desc:"Roll doubles: gain +1 Ice Shard & +1 Burn.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/ronan.png"},
+  {id:463,name:"Zork",rarity:"common",maxHp:4,ability:"Smolder",desc:"Before rolling: discard Burn to gain +1 die per Burn discarded.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/zork.png"},
   // Dark Castle
   {id:410,name:"Mirror Matt",rarity:"common",maxHp:1,ability:"Seven Years",desc:"If opponent wins with doubles, damage is reflected to the attacker.",set:"Dark Castle",art:"https://drbango.com/testroom/art/originals/MirrorMatt.png"},
   {id:424,name:"Bigsby",rarity:"uncommon",maxHp:5,ability:"Omen",desc:"Win: deal +1 damage. Use a Moonstone to transform into Doom.",set:"Dark Castle",art:"https://drbango.com/testroom/art/originals/Digby.png"},
@@ -149,10 +149,10 @@ const ALL_CARDS = [
   {id:99,name:"Guardian Fairy",rarity:"ghost-rare",maxHp:3,ability:"Wish",desc:"Sideline: when your active ghost is about to take damage, Guardian Fairy can leap in and take the hit instead.",set:"Set 1",art:"https://drbango.com/testroom/art/originals/GuardianFairy.png"},
   {id:101,name:"Splinter",rarity:"ghost-rare",maxHp:4,ability:"Toxic Fumes",desc:"After winning a roll, deal 1 damage before every roll.",set:"Set 1",art:"https://drbango.com/testroom/art/originals/Splinter.png"},
   // Rolling Hills
-  {id:310,name:"Granny",rarity:"uncommon",maxHp:3,ability:"Bedtime Story",desc:"Sideline: when one of your ghosts is defeated — by singles: gain 3 Lucky Stones. By doubles: gain 1 Moonstone. By triples or better: gain 3 Sacred Fires.",set:"Rolling Hills",art:"../testroom/art/granny.jpg"},
+  {id:310,name:"Granny",rarity:"uncommon",maxHp:3,ability:"Bedtime Story",desc:"Sideline: when one of your ghosts is defeated — by singles: gain 3 Lucky Stones. By doubles: gain 1 Moonstone. By triples or better: gain 3 Sacred Fires.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/granny.jpg"},
   // Volcanic Isles
-  {id:401,name:"Knight Terror",rarity:"rare",maxHp:7,ability:"Heavy Air",desc:"While active: after any opponent ability triggers and resolves, the enemy active ghost loses 2 HP.",set:"Volcanic Isles",art:"../testroom/art/knight_terror.webp"},
-  {id:403,name:"Smudge",rarity:"rare",maxHp:5,ability:"Blackout",desc:"Before rolling: name a number. If your opponent rolls it, that die doesn't count.",set:"Volcanic Isles",art:"../testroom/art/smudge.webp"},
+  {id:401,name:"Knight Terror",rarity:"rare",maxHp:7,ability:"Heavy Air",desc:"While active: after any opponent ability triggers and resolves, the enemy active ghost loses 2 HP.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/knight_terror.webp"},
+  {id:403,name:"Smudge",rarity:"rare",maxHp:5,ability:"Blackout",desc:"Before rolling: name a number. If your opponent rolls it, that die doesn't count.",set:"Volcanic Isles",art:"https://drbango.com/testroom/art/smudge.webp"},
   // Rolling Hills uncommon
   {id:426,name:"Chester",rarity:"uncommon",maxHp:5,ability:"Well Read",desc:"Win: gain 1 Healing Seed. Win with doubles or better: also gain 2 Burn.",set:"Rolling Hills",art:"https://drbango.com/testroom/art/originals/Chester.png"},
   // Dark Castle rares/ghost-rares

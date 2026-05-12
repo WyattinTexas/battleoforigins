@@ -23,18 +23,18 @@
     projectId: "testroom-75200",
   });
   var db = firebase.database();
-  db._stub = false; // Real Firebase — MultiplayerPresence will detect this
+  db._stub = false;
 </script>
 
 <!-- Phaser Engine (CDN — no install needed) -->
 <script src="https://cdn.jsdelivr.net/npm/phaser@4.1.0/dist/phaser.min.js"></script>
 
 <!-- Global State & Stubs (must load before core modules) -->
-<script src="src/main.js?v=46"></script>
-<script src="src/globals.js?v=46"></script>
+<script src="src/main.js?v=52"></script>
+<script src="src/globals.js?v=52"></script>
 
 <!-- World generation (full map from 2D version) -->
-<script src="src/world-gen.js?v=46"></script>
+<script src="src/world-gen.js?v=52"></script>
 
 <!-- Block 2D-era setInterval/requestAnimationFrame during module load -->
 <script>
@@ -45,19 +45,19 @@
 </script>
 
 <!-- Core Game Logic (ported from 2D version — pure JS, no DOM) -->
-<script src="src/core/cards-data.js?v=46"></script>
-<script src="src/core/battle.js?v=46"></script>
-<script src="src/core/npcs.js?v=46"></script>
-<script src="src/core/crafting.js?v=46"></script>
-<script src="src/core/gathering.js?v=46"></script>
-<script src="src/core/quests.js?v=46"></script>
-<script src="src/core/professions.js?v=46"></script>
-<script src="src/core/talent-data.js?v=46"></script>
-<script src="src/core/fortune.js?v=46"></script>
-<script src="src/core/market.js?v=46"></script>
-<script src="src/core/world-events.js?v=46"></script>
-<script src="src/core/housing.js?v=46"></script>
-<script src="src/core/achievements.js?v=46"></script>
+<script src="src/core/cards-data.js?v=52"></script>
+<script src="src/core/battle.js?v=52"></script>
+<script src="src/core/npcs.js?v=52"></script>
+<script src="src/core/crafting.js?v=52"></script>
+<script src="src/core/gathering.js?v=52"></script>
+<script src="src/core/quests.js?v=52"></script>
+<script src="src/core/professions.js?v=52"></script>
+<script src="src/core/talent-data.js?v=52"></script>
+<script src="src/core/fortune.js?v=52"></script>
+<script src="src/core/market.js?v=52"></script>
+<script src="src/core/world-events.js?v=52"></script>
+<script src="src/core/housing.js?v=52"></script>
+<script src="src/core/achievements.js?v=52"></script>
 
 <!-- Restore after modules loaded — Phaser needs these -->
 <script>
@@ -66,16 +66,16 @@
 </script>
 
 <!-- Panel Manager (reusable overlay system) -->
-<script src="src/PanelManager.js?v=46"></script>
+<script src="src/PanelManager.js?v=52"></script>
 
 <!-- Phaser Scenes (rendering layer) -->
-<script src="src/scenes/CommScene.js?v=46"></script>
-<script src="src/scenes/BootScene.js?v=46"></script>
-<script src="src/scenes/WorldScene.js?v=46"></script>
-<script src="src/scenes/CraftScene.js?v=46"></script>
-<script src="src/scenes/TalentScene.js?v=46"></script>
-<script src="src/scenes/BuildingScene.js?v=46"></script>
-<script src="src/scenes/BattleScene.js?v=46"></script>
+<script src="src/scenes/CommScene.js?v=52"></script>
+<script src="src/scenes/BootScene.js?v=52"></script>
+<script src="src/scenes/WorldScene.js?v=52"></script>
+<script src="src/scenes/CraftScene.js?v=52"></script>
+<script src="src/scenes/TalentScene.js?v=52"></script>
+<script src="src/scenes/BuildingScene.js?v=52"></script>
+<script src="src/scenes/BattleScene.js?v=52"></script>
 
 <!-- Initialize -->
 <script>

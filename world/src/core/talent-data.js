@@ -8,144 +8,161 @@
 const CLASS_TREES = {
 
   // ═══════════════════════════════════════════════════════
-  //  FORTUNE TELLER (base) → Oracle, Mystic, Enchanter
+  //  FORTUNE TELLER (base) → Shaman, Scholar, Enchanter
   // ═══════════════════════════════════════════════════════
 
   fortune_teller: {
     name: 'Fortune Teller',
-    desc: 'Bestow fortunes upon other players and yourself. Mastery unlocks Oracle, Mystic & Enchanter.',
+    desc: 'Bestow fortunes upon other players. Mastery unlocks Shaman, Scholar & Enchanter.',
     color: '#44bbff',
-    branches: ['Duration', 'Power', 'Resonance'],
+    branches: ['Bright Fortune', 'Fate\'s Balance', 'Dark Fortune'],
     talents: [
-      // Branch 0: Duration
-      { id: 'ft_dur_1', branch: 0, tier: 0, name: 'Extended Fortune',
-        desc: '+5 min fortune duration per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'ft_dur_2', branch: 0, tier: 1, name: 'Enduring Aura',
-        desc: 'Fortunes persist through one KO', cost: 2, maxRank: 2, prereq: 'ft_dur_1' },
-      { id: 'ft_dur_3', branch: 0, tier: 2, name: 'Persistent Ward',
-        desc: 'Fortunes refresh 50% duration on battle win', cost: 3, maxRank: 1, prereq: 'ft_dur_2' },
-      { id: 'ft_dur_4', branch: 0, tier: 3, name: 'Eternal Fortune',
-        desc: 'Fortunes last 1 hour', cost: 4, maxRank: 1, prereq: 'ft_dur_3' },
-      // Branch 1: Power
-      { id: 'ft_pow_1', branch: 1, tier: 0, name: 'Potent Fortune',
-        desc: '+1 Lucky Stone on fortune per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'ft_pow_2', branch: 1, tier: 1, name: 'Battle Surge',
-        desc: 'Fortune grants +1 damage for all rolls after the first', cost: 2, maxRank: 2, prereq: 'ft_pow_1' },
-      { id: 'ft_pow_3', branch: 1, tier: 2, name: 'Sacrifice Roll',
-        desc: 'Fortune removes 1 die from first roll but +2 damage rest of battle', cost: 3, maxRank: 1, prereq: 'ft_pow_2' },
-      { id: 'ft_pow_4', branch: 1, tier: 3, name: 'Warcry',
-        desc: 'Fortune grants +1 to all dice rolls for the entire battle', cost: 4, maxRank: 1, prereq: 'ft_pow_3' },
-      // Branch 2: Resonance
-      { id: 'ft_res_1', branch: 2, tier: 0, name: 'Spirit Link',
-        desc: '+10% Fortune XP per unique player blessed per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'ft_res_2', branch: 2, tier: 1, name: 'Aura Cascade',
-        desc: 'Blessing a player also fortunes their active spiritkin', cost: 2, maxRank: 2, prereq: 'ft_res_1' },
-      { id: 'ft_res_3', branch: 2, tier: 2, name: 'Group Blessing',
-        desc: 'Fortune hits 2 nearby players at once', cost: 3, maxRank: 1, prereq: 'ft_res_2' },
-      { id: 'ft_res_4', branch: 2, tier: 3, name: 'Resonance Field',
-        desc: 'All players in your region get a minor fortune passively', cost: 4, maxRank: 1, prereq: 'ft_res_3' },
+      // Branch 0: Bright Fortune (amplify good fortunes)
+      { id: 'ft_brt_1', branch: 0, tier: 0, name: 'Potent Fortune',
+        desc: 'Good Fortune gives +2 Lucky Stones instead of 1', cost: 1, maxRank: 1, prereq: null },
+      { id: 'ft_brt_2', branch: 0, tier: 1, name: 'Blessed Touch',
+        desc: 'Good Fortune also heals target 3 HP', cost: 2, maxRank: 1, prereq: 'ft_brt_1' },
+      { id: 'ft_brt_3', branch: 0, tier: 2, name: 'Fortune\'s Favor',
+        desc: 'Good Fortune also gives +5% walk speed', cost: 3, maxRank: 1, prereq: 'ft_brt_2' },
+      { id: 'ft_brt_4', branch: 0, tier: 3, name: 'Radiant Blessing',
+        desc: 'Good Fortune gives +2 Lucky Stones AND +1 damage on first roll', cost: 4, maxRank: 1, prereq: 'ft_brt_3' },
+
+      // Branch 1: Fate's Balance (duration / timing)
+      { id: 'ft_bal_1', branch: 1, tier: 0, name: 'Extended Fortune',
+        desc: 'Fortune lasts 5 minutes instead of 1 battle', cost: 1, maxRank: 1, prereq: null },
+      { id: 'ft_bal_2', branch: 1, tier: 1, name: 'Enduring Aura',
+        desc: 'Fortune duration increased to 20 minutes', cost: 2, maxRank: 1, prereq: 'ft_bal_1' },
+      { id: 'ft_bal_3', branch: 1, tier: 2, name: 'Persistent Ward',
+        desc: 'Fortune duration increased to 1 hour (max duration)', cost: 3, maxRank: 1, prereq: 'ft_bal_2' },
+      { id: 'ft_bal_4', branch: 1, tier: 3, name: 'Timeless Fortune',
+        desc: 'Fortune persists through KO — does not expire on death', cost: 4, maxRank: 1, prereq: 'ft_bal_3' },
+
+      // Branch 2: Dark Fortune (amplify bad fortunes — path to Dark Rider)
+      { id: 'ft_drk_1', branch: 2, tier: 0, name: 'Cruel Fortune',
+        desc: 'Bad Fortune takes -2 dice instead of -1', cost: 1, maxRank: 1, prereq: null },
+      { id: 'ft_drk_2', branch: 2, tier: 1, name: 'Misfortune Mastery',
+        desc: 'Odds shift to 35/65 Good/Bad — more bad fortunes', cost: 2, maxRank: 1, prereq: 'ft_drk_1' },
+      { id: 'ft_drk_3', branch: 2, tier: 2, name: 'Hex',
+        desc: 'Dark Riders are 20% more attracted to targets with Bad Fortune', cost: 3, maxRank: 1, prereq: 'ft_drk_2' },
+      { id: 'ft_drk_4', branch: 2, tier: 3, name: 'Dark Profit',
+        desc: 'Gain 5 gold each time you give someone a Bad Fortune', cost: 4, maxRank: 1, prereq: 'ft_drk_3' },
     ],
   },
 
-  oracle: {
-    name: 'Oracle',
-    desc: 'See what others cannot. Predict events, find hidden treasures, reveal secrets.',
-    color: '#66ccff',
+  shaman: {
+    name: 'Shaman',
+    desc: 'Channel nature\'s power through Cultivator gardens and spirit pets. Meditate for buffs, fight with spirits, empower your party.',
+    color: '#66cc88',
     requiresTree: 'fortune_teller',
-    branches: ['Foresight', 'Divination', 'Prophecy'],
+    branches: ['Garden Rites', 'Battle Spirit', 'Self-Attunement'],
     talents: [
-      { id: 'orc_for_1', branch: 0, tier: 0, name: 'Premonition',
-        desc: 'See the next wild encounter\'s spiritkin before it spawns', cost: 1, maxRank: 3, prereq: null },
-      { id: 'orc_for_2', branch: 0, tier: 1, name: 'Battle Vision',
-        desc: 'Preview enemy dice rolls 1 turn ahead', cost: 2, maxRank: 2, prereq: 'orc_for_1' },
-      { id: 'orc_for_3', branch: 0, tier: 2, name: 'Fate Weaver',
-        desc: 'Reroll one die per battle', cost: 3, maxRank: 1, prereq: 'orc_for_2' },
-      { id: 'orc_for_4', branch: 0, tier: 3, name: 'Omniscience',
-        desc: 'See all hidden objects and spiritkin in your region', cost: 4, maxRank: 1, prereq: 'orc_for_3' },
-      { id: 'orc_div_1', branch: 1, tier: 0, name: 'Treasure Sense',
-        desc: 'Detect hidden loot within a larger radius per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'orc_div_2', branch: 1, tier: 1, name: 'Omen Reader',
-        desc: 'Collect omens from spiritkin — trade for rare items', cost: 2, maxRank: 2, prereq: 'orc_div_1' },
-      { id: 'orc_div_3', branch: 1, tier: 2, name: 'Spirit Compass',
-        desc: 'Reveals the path to the nearest legendary spiritkin', cost: 3, maxRank: 1, prereq: 'orc_div_2' },
-      { id: 'orc_div_4', branch: 1, tier: 3, name: 'The All-Seeing Eye',
-        desc: 'See every player and their active spiritkin on the map', cost: 4, maxRank: 1, prereq: 'orc_div_3' },
-      { id: 'orc_pro_1', branch: 2, tier: 0, name: 'Lucky Star',
-        desc: '+5% crit chance for yourself per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'orc_pro_2', branch: 2, tier: 1, name: 'Destiny\'s Favor',
-        desc: 'Once per day, auto-succeed a failed recruit attempt', cost: 2, maxRank: 2, prereq: 'orc_pro_1' },
-      { id: 'orc_pro_3', branch: 2, tier: 2, name: 'Twist of Fate',
-        desc: 'Once per battle, swap your roll with the enemy\'s', cost: 3, maxRank: 1, prereq: 'orc_pro_2' },
-      { id: 'orc_pro_4', branch: 2, tier: 3, name: 'Written in the Stars',
-        desc: 'Choose your dice outcome once per day (any battle)', cost: 4, maxRank: 1, prereq: 'orc_pro_3' },
+      // Branch 0: Garden Rites — meditate at gardens for escalating effects
+      { id: 'shm_grd_1', branch: 0, tier: 0, name: 'Garden Communion',
+        desc: 'Meditate at a garden: +1 die self-buff for 10 min (separate from Fortune)', cost: 1, maxRank: 1, prereq: null },
+      { id: 'shm_grd_2', branch: 0, tier: 1, name: 'Bloom Ritual',
+        desc: 'Meditating at a garden spawns rare spirits nearby', cost: 2, maxRank: 1, prereq: 'shm_grd_1' },
+      { id: 'shm_grd_3', branch: 0, tier: 2, name: 'Deep Communion',
+        desc: 'Garden meditation +1 die buff extended to 30 minutes', cost: 3, maxRank: 1, prereq: 'shm_grd_2' },
+      { id: 'shm_grd_4', branch: 0, tier: 3, name: 'Sacred Grove',
+        desc: 'Meditating at a garden gives the Cultivator owner cultivation XP', cost: 4, maxRank: 1, prereq: 'shm_grd_3' },
+
+      // Branch 1: Battle Spirit — spirit pets + party combat support
+      { id: 'shm_bat_1', branch: 1, tier: 0, name: 'Spirit Companion',
+        desc: 'Your spirit pet adds +1 damage to all your attacks', cost: 1, maxRank: 1, prereq: null },
+      { id: 'shm_bat_2', branch: 1, tier: 1, name: 'War Chant',
+        desc: 'Buff the next player who rolls in group battle: their spiritkin gets +2 damage', cost: 2, maxRank: 1, prereq: 'shm_bat_1' },
+      { id: 'shm_bat_3', branch: 1, tier: 2, name: 'Totemic Shield',
+        desc: 'Pop once per battle: absorb 3 damage for a party member', cost: 3, maxRank: 1, prereq: 'shm_bat_2' },
+      { id: 'shm_bat_4', branch: 1, tier: 3, name: 'Spirit\'s Luck',
+        desc: 'Your spirit pet gains +1 Lucky Stone per round', cost: 4, maxRank: 1, prereq: 'shm_bat_3' },
+
+      // Branch 2: Self-Attunement — personal power + party meditation sharing
+      { id: 'shm_slf_1', branch: 2, tier: 0, name: 'Nature\'s Pulse',
+        desc: 'Passively heal 1 HP every 2 minutes while near any garden', cost: 1, maxRank: 1, prereq: null },
+      { id: 'shm_slf_2', branch: 2, tier: 1, name: 'Elemental Skin',
+        desc: 'Take 1 less damage from the first hit of every battle', cost: 2, maxRank: 1, prereq: 'shm_slf_1' },
+      { id: 'shm_slf_3', branch: 2, tier: 2, name: 'Spirit Merge',
+        desc: 'Control your spirit pet as yourself — display as pet, interact with quests, cross terrain', cost: 3, maxRank: 1, prereq: 'shm_slf_2' },
+      { id: 'shm_slf_4', branch: 2, tier: 3, name: 'Shared Meditation',
+        desc: 'When you meditate, all party members nearby receive your meditation buffs too', cost: 4, maxRank: 1, prereq: 'shm_slf_3' },
     ],
   },
 
-  mystic: {
-    name: 'Mystic',
-    desc: 'Turn your fortunes inward. Meditate for power, enhance yourself, transcend limits.',
+  scholar: {
+    name: 'Scholar',
+    desc: 'Study the ancient arts. Prepare allies, trade wisely, and unlock the secrets of DNA. Path to Elder.',
     color: '#8888ff',
     requiresTree: 'fortune_teller',
-    branches: ['Meditation', 'Inner Fire', 'Transcendence'],
+    branches: ['Insight', 'Inner Power', 'Transcendence'],
     talents: [
-      { id: 'mys_med_1', branch: 0, tier: 0, name: 'Focus',
-        desc: '+1 to your own dice rolls for 5 min after meditating per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'mys_med_2', branch: 0, tier: 1, name: 'Deep Trance',
-        desc: 'Meditation heals your active spiritkin 2 HP', cost: 2, maxRank: 2, prereq: 'mys_med_1' },
-      { id: 'mys_med_3', branch: 0, tier: 2, name: 'Spirit Walk',
-        desc: 'Meditate to astral project — explore without triggering battles', cost: 3, maxRank: 1, prereq: 'mys_med_2' },
-      { id: 'mys_med_4', branch: 0, tier: 3, name: 'Zen Master',
-        desc: 'Meditation buffs last 30 minutes and stack', cost: 4, maxRank: 1, prereq: 'mys_med_3' },
-      { id: 'mys_fir_1', branch: 1, tier: 0, name: 'Inner Flame',
-        desc: '+1 base damage to your spiritkin per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'mys_fir_2', branch: 1, tier: 1, name: 'Spirit Surge',
-        desc: 'Your spiritkin\'s ability triggers twice (once per battle)', cost: 2, maxRank: 2, prereq: 'mys_fir_1' },
-      { id: 'mys_fir_3', branch: 1, tier: 2, name: 'Overcharge',
-        desc: 'Sacrifice 2 HP to add +3 damage on your next roll', cost: 3, maxRank: 1, prereq: 'mys_fir_2' },
-      { id: 'mys_fir_4', branch: 1, tier: 3, name: 'Avatar State',
-        desc: 'Once per day, your spiritkin deals double damage for one full battle', cost: 4, maxRank: 1, prereq: 'mys_fir_3' },
-      { id: 'mys_trn_1', branch: 2, tier: 0, name: 'Third Eye',
-        desc: 'See enemy abilities before battle begins per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'mys_trn_2', branch: 2, tier: 1, name: 'Phase Shift',
-        desc: 'Dodge the first attack in every battle', cost: 2, maxRank: 2, prereq: 'mys_trn_1' },
-      { id: 'mys_trn_3', branch: 2, tier: 2, name: 'Soul Mirror',
-        desc: 'Copy the enemy spiritkin\'s ability for one battle', cost: 3, maxRank: 1, prereq: 'mys_trn_2' },
-      { id: 'mys_trn_4', branch: 2, tier: 3, name: 'Ascension',
-        desc: 'Your spiritkin temporarily evolves during battle (+3 HP, +2 damage)', cost: 4, maxRank: 1, prereq: 'mys_trn_3' },
+      // Branch 0: Insight — Preparation buff + trading + vision
+      { id: 'sch_ins_1', branch: 0, tier: 0, name: 'Preparation',
+        desc: 'New buff: give anyone +1 die on first roll (10 min). Must be in a tavern to cast.', cost: 1, maxRank: 1, prereq: null },
+      { id: 'sch_ins_2', branch: 0, tier: 1, name: 'Shrewd Trader',
+        desc: '20% discount on all items at the trading post', cost: 2, maxRank: 1, prereq: 'sch_ins_1' },
+      { id: 'sch_ins_3', branch: 0, tier: 2, name: 'Deep Study',
+        desc: 'Preparation buff duration extended to 30 minutes', cost: 3, maxRank: 1, prereq: 'sch_ins_2' },
+      { id: 'sch_ins_4', branch: 0, tier: 3, name: 'Spirit Compass',
+        desc: 'Reveals the path to the nearest legendary spiritkin', cost: 4, maxRank: 1, prereq: 'sch_ins_3' },
+
+      // Branch 1: Inner Power — XP, teaching, lore
+      { id: 'sch_pow_1', branch: 1, tier: 0, name: 'Quick Learner',
+        desc: '+10% XP from all sources', cost: 1, maxRank: 1, prereq: null },
+      { id: 'sch_pow_2', branch: 1, tier: 1, name: 'Mentor',
+        desc: 'Teach a skill to a party member — they gain profession XP', cost: 2, maxRank: 1, prereq: 'sch_pow_1' },
+      { id: 'sch_pow_3', branch: 1, tier: 2, name: 'Ancient Reader',
+        desc: 'May decipher ancient lore tablets (other players see gibberish). Find all 4 to progress toward Elder.', cost: 3, maxRank: 1, prereq: 'sch_pow_2' },
+      { id: 'sch_pow_4', branch: 1, tier: 3, name: 'Grand Tutor',
+        desc: 'Party members gain +15% XP while grouped with you', cost: 4, maxRank: 1, prereq: 'sch_pow_3' },
+
+      // Branch 2: Transcendence — Scientist synergy, DNA knowledge
+      { id: 'sch_trn_1', branch: 2, tier: 0, name: 'DNA Insight',
+        desc: '+1 damage against spiritkin you have the DNA of', cost: 1, maxRank: 1, prereq: null },
+      { id: 'sch_trn_2', branch: 2, tier: 1, name: 'Refined Analysis',
+        desc: 'DNA you extract has +1 quality tier (better samples)', cost: 2, maxRank: 1, prereq: 'sch_trn_1' },
+      { id: 'sch_trn_3', branch: 2, tier: 2, name: 'Deep Knowledge',
+        desc: '+2 damage against spiritkin you have DNA of (stacks with DNA Insight)', cost: 3, maxRank: 1, prereq: 'sch_trn_2' },
+      { id: 'sch_trn_4', branch: 2, tier: 3, name: 'Residual Collection',
+        desc: '5% chance to auto-collect DNA from any spiritkin you defeat', cost: 4, maxRank: 1, prereq: 'sch_trn_3' },
     ],
   },
 
   enchanter: {
     name: 'Enchanter',
-    desc: 'Weave fortune magic into items and spiritkin. Permanent enhancements.',
+    desc: 'Enhance everything: essences, gear, and crafted items. All enhancements cost essences. Artisans need you.',
     color: '#44ddaa',
     requiresTree: 'fortune_teller',
-    branches: ['Gear Enchants', 'Spirit Enchants', 'Cursework'],
+    branches: ['Essence Enhancement', 'Equipment Enhancement', 'Essence Craft'],
     talents: [
-      { id: 'enc_gear_1', branch: 0, tier: 0, name: 'Minor Enchant',
-        desc: 'Enchant gear with +1 stat per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'enc_gear_2', branch: 0, tier: 1, name: 'Fortune Blade',
-        desc: 'Enchant weapons with +10% crit chance', cost: 2, maxRank: 2, prereq: 'enc_gear_1' },
-      { id: 'enc_gear_3', branch: 0, tier: 2, name: 'Ward of Stars',
-        desc: 'Enchant armor to absorb 1 damage per battle', cost: 3, maxRank: 1, prereq: 'enc_gear_2' },
-      { id: 'enc_gear_4', branch: 0, tier: 3, name: 'Legendary Enchant',
-        desc: 'Apply a legendary enchant — gear gains a unique passive', cost: 4, maxRank: 1, prereq: 'enc_gear_3' },
-      { id: 'enc_spr_1', branch: 1, tier: 0, name: 'Spirit Mark',
-        desc: 'Mark a spiritkin to gain +1 XP per battle per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'enc_spr_2', branch: 1, tier: 1, name: 'Blessed Bond',
-        desc: 'Enchanted spiritkin heals 1 HP after each victory', cost: 2, maxRank: 2, prereq: 'enc_spr_1' },
-      { id: 'enc_spr_3', branch: 1, tier: 2, name: 'Soul Rune',
-        desc: 'Permanently add +1 die to a spiritkin (once per spiritkin)', cost: 3, maxRank: 1, prereq: 'enc_spr_2' },
-      { id: 'enc_spr_4', branch: 1, tier: 3, name: 'Awaken Potential',
-        desc: 'Unlock a hidden second ability on any spiritkin', cost: 4, maxRank: 1, prereq: 'enc_spr_3' },
-      { id: 'enc_crs_1', branch: 2, tier: 0, name: 'Hex',
-        desc: 'Curse an enemy spiritkin: -1 damage per rank for 1 battle', cost: 1, maxRank: 3, prereq: null },
-      { id: 'enc_crs_2', branch: 2, tier: 1, name: 'Jinx',
-        desc: 'Cursed enemies have 20% chance to miss per rank', cost: 2, maxRank: 2, prereq: 'enc_crs_1' },
-      { id: 'enc_crs_3', branch: 2, tier: 2, name: 'Doom Mark',
-        desc: 'Mark an enemy — they take +2 damage from all sources', cost: 3, maxRank: 1, prereq: 'enc_crs_2' },
-      { id: 'enc_crs_4', branch: 2, tier: 3, name: 'Shatter Curse',
-        desc: 'Destroy one piece of enemy equipment permanently', cost: 4, maxRank: 1, prereq: 'enc_crs_3' },
+      // Branch 0: Essence Enhancement — REVISIT LATER (needs balance with Cultivator + other classes)
+      { id: 'enc_ess_1', branch: 0, tier: 0, name: 'Basic Infusion',
+        desc: '[WIP] Boost 1 stat on an essence by +100 (costs 1 essence) — revisit after Cultivator', cost: 1, maxRank: 1, prereq: null },
+      { id: 'enc_ess_2', branch: 0, tier: 1, name: 'Refined Infusion',
+        desc: '[WIP] Boost 1 stat on an essence by +200 (costs 2 essences) — revisit after Cultivator', cost: 2, maxRank: 1, prereq: 'enc_ess_1' },
+      { id: 'enc_ess_3', branch: 0, tier: 2, name: 'Dual Infusion',
+        desc: '[WIP] Boost 2 stats on an essence at once (costs 2 essences) — revisit after Cultivator', cost: 3, maxRank: 1, prereq: 'enc_ess_2' },
+      { id: 'enc_ess_4', branch: 0, tier: 3, name: 'Rarity Shift',
+        desc: '[WIP] Upgrade an essence rarity tier (costs 3 essences) — revisit after Cultivator', cost: 4, maxRank: 1, prereq: 'enc_ess_3' },
+
+      // Branch 1: Equipment Enhancement — enchant gear slots
+      { id: 'enc_eqp_1', branch: 1, tier: 0, name: 'Weapon Enchant',
+        desc: 'Enchant a weapon: +1 damage', cost: 1, maxRank: 1, prereq: null },
+      { id: 'enc_eqp_2', branch: 1, tier: 1, name: 'Helm Enchant',
+        desc: 'Enchant head slot: +1 damage reduction vs enemy triples or higher', cost: 2, maxRank: 1, prereq: 'enc_eqp_1' },
+      { id: 'enc_eqp_3', branch: 1, tier: 2, name: 'Accessory Enchant',
+        desc: 'Enchant accessories: +5% run speed', cost: 3, maxRank: 1, prereq: 'enc_eqp_2' },
+      { id: 'enc_eqp_4', branch: 1, tier: 3, name: 'Masterwork',
+        desc: 'Crafted battle items gain +1 to their main stat', cost: 4, maxRank: 1, prereq: 'enc_eqp_3' },
+
+      // Branch 2: Essence Craft — consume essences to create buffs
+      { id: 'enc_crf_1', branch: 2, tier: 0, name: 'Essence Spark',
+        desc: 'Consume 1 essence to create a buff: +5% XP for 10 min (any player)', cost: 1, maxRank: 1, prereq: null },
+      { id: 'enc_crf_2', branch: 2, tier: 1, name: 'Lingering Spark',
+        desc: 'Essence Spark buff duration extended to 30 minutes', cost: 2, maxRank: 1, prereq: 'enc_crf_1' },
+      { id: 'enc_crf_3', branch: 2, tier: 2, name: 'Potent Spark',
+        desc: 'Consume 3 essences: XP buff scales with potency (avg 10-15%, up to 80%) for 30 min', cost: 3, maxRank: 1, prereq: 'enc_crf_2' },
+      { id: 'enc_crf_4', branch: 2, tier: 3, name: 'Artifact Attunement',
+        desc: 'Unlock Artifact weapons — extremely rare, powerful gear only Enchanters can wield', cost: 4, maxRank: 1, prereq: 'enc_crf_3' },
     ],
   },
 
@@ -611,30 +628,35 @@ const CLASS_TREES = {
     hidden: 'elder',
     branches: ['Protection', 'Prosperity', 'Council'],
     talents: [
-      { id: 'eld_pro_1', branch: 0, tier: 0, name: 'Elder Shield',
-        desc: 'Shield absorbs the first roll of damage in every battle', cost: 1, maxRank: 3, prereq: null },
-      { id: 'eld_pro_2', branch: 0, tier: 1, name: 'Spirit Barrier',
-        desc: 'Shield also protects your sideline spiritkin', cost: 2, maxRank: 2, prereq: 'eld_pro_1' },
-      { id: 'eld_pro_3', branch: 0, tier: 2, name: 'Sanctuary',
-        desc: 'Declare a safe zone — no battles in a small radius', cost: 3, maxRank: 1, prereq: 'eld_pro_2' },
-      { id: 'eld_pro_4', branch: 0, tier: 3, name: 'Aegis of the Elder',
-        desc: 'Shield absorbs the first TWO rolls of damage', cost: 4, maxRank: 1, prereq: 'eld_pro_3' },
+      // Branch 0: Protection — world structure & defense
+      { id: 'eld_pro_1', branch: 0, tier: 0, name: 'Elder Barrier',
+        desc: 'AoE ability: ward away Dark Riders, defeat dark wights, and heal all nearby players to full HP. 2-hour cooldown.', cost: 1, maxRank: 1, prereq: null },
+      { id: 'eld_pro_2', branch: 0, tier: 1, name: 'Elder Texts',
+        desc: 'May read Elder texts found in the world (unlocks hidden knowledge)', cost: 2, maxRank: 1, prereq: 'eld_pro_1' },
+      { id: 'eld_pro_3', branch: 0, tier: 2, name: 'Spirit Ward',
+        desc: 'Create one Spirit Ward: everything in the area is immune to all corruption', cost: 3, maxRank: 1, prereq: 'eld_pro_2' },
+      { id: 'eld_pro_4', branch: 0, tier: 3, name: 'Elder Shield',
+        desc: 'Absorb the first roll of damage in every battle', cost: 4, maxRank: 1, prereq: 'eld_pro_3' },
+
+      // Branch 1: Prosperity — gold, XP, Elder Sanctum
       { id: 'eld_prs_1', branch: 1, tier: 0, name: 'Golden Touch',
-        desc: 'Unique buff: +15% gold from victories per rank', cost: 1, maxRank: 3, prereq: null },
+        desc: '+15% gold from victories', cost: 1, maxRank: 1, prereq: null },
       { id: 'eld_prs_2', branch: 1, tier: 1, name: 'Elder Bond',
-        desc: 'Party members gain +10% XP while grouped with you', cost: 2, maxRank: 2, prereq: 'eld_prs_1' },
-      { id: 'eld_prs_3', branch: 1, tier: 2, name: 'Teamup Surge',
-        desc: 'Party battles grant bonus dice to all members', cost: 3, maxRank: 1, prereq: 'eld_prs_2' },
+        desc: 'Party members gain +10% XP while grouped with you', cost: 2, maxRank: 1, prereq: 'eld_prs_1' },
+      { id: 'eld_prs_3', branch: 1, tier: 2, name: 'Shared Prosperity',
+        desc: '+15% gold for your entire party while grouped', cost: 3, maxRank: 1, prereq: 'eld_prs_2' },
       { id: 'eld_prs_4', branch: 1, tier: 3, name: 'Elder Sanctum',
         desc: 'Unlocks the Elder Sanctum — a unique area only Elders can visit', cost: 4, maxRank: 1, prereq: 'eld_prs_3' },
+
+      // Branch 2: Council — governance, voting, amendments
       { id: 'eld_cou_1', branch: 2, tier: 0, name: 'Council Voice',
-        desc: 'Vote in the weekly Elder Council', cost: 1, maxRank: 3, prereq: null },
-      { id: 'eld_cou_2', branch: 2, tier: 1, name: 'Proposal Rights',
-        desc: 'Propose new amendments for the Council to vote on', cost: 2, maxRank: 2, prereq: 'eld_cou_1' },
-      { id: 'eld_cou_3', branch: 2, tier: 2, name: 'Filibuster',
-        desc: 'Your vote counts double in Council elections', cost: 3, maxRank: 1, prereq: 'eld_cou_2' },
-      { id: 'eld_cou_4', branch: 2, tier: 3, name: 'Grand Elder',
-        desc: 'Break ties in Council votes. Your word is final.', cost: 4, maxRank: 1, prereq: 'eld_cou_3' },
+        desc: 'Vote in the weekly Elder Council (1 vote)', cost: 1, maxRank: 1, prereq: null },
+      { id: 'eld_cou_2', branch: 2, tier: 1, name: 'Greater Voice',
+        desc: 'Your Council vote increases to 2 votes', cost: 2, maxRank: 1, prereq: 'eld_cou_1' },
+      { id: 'eld_cou_3', branch: 2, tier: 2, name: 'Elder Authority',
+        desc: 'Your Council vote increases to 3 votes', cost: 3, maxRank: 1, prereq: 'eld_cou_2' },
+      { id: 'eld_cou_4', branch: 2, tier: 3, name: 'Proposal Rights',
+        desc: 'May propose new amendments for the Council to vote on', cost: 4, maxRank: 1, prereq: 'eld_cou_3' },
     ],
   },
 
@@ -1006,6 +1028,8 @@ const ELDER_AMENDMENTS = [
     desc: 'Surveying results increased by 200%' },
   { id: 'amend_4', name: 'Amendment IV: Spirit Limit',
     desc: 'Bans the 3rd Spiritkin — max 2 in battle' },
+  { id: 'amend_5', name: 'Amendment V: Dark Rider Ban',
+    desc: 'Submit a player\'s name — if the vote passes, they lose Dark Rider status and all Dark Rider XP' },
 ];
 
 
@@ -1027,17 +1051,35 @@ const ELDER_AMENDMENTS = [
 const APPRENTICE_COST = 2;
 const MASTER_COST = 5;
 
+const APPRENTICE_DESCRIPTIONS = {
+  fortune_teller: 'Unlocks [F] Fortune: 50/50 Good (+1 Lucky Stone) or Bad (-1 die). 30s cooldown.',
+  shaman: 'Unlocks Meditation: sit at gardens and spirit locations. Does nothing alone — abilities give meditation power.',
+  scholar: 'Party gains +10% XP while grouped with you. Requires Fortune XP to unlock.',
+  enchanter: 'Gain ability to enhance crafting materials. All enhancements cost essences. Artisans need you.',
+  elder: 'The Council recognizes your wisdom. No immediate ability — your power grows through the branches.',
+};
+
 function getApprenticeInfo(treeId) {
   const tree = CLASS_TREES[treeId];
   if (!tree) return null;
-  const realName = tree.hidden ? tree.name : tree.name;
-  return { id: '_app', name: 'Apprentice ' + realName, cost: APPRENTICE_COST, maxRank: 1 };
+  const desc = APPRENTICE_DESCRIPTIONS[treeId] || 'Begin your journey as a ' + tree.name + '.';
+  return { id: '_app', name: 'Apprentice ' + tree.name, desc: desc, cost: APPRENTICE_COST, maxRank: 1 };
 }
+
+// Master descriptions — custom effects per tree
+const MASTER_DESCRIPTIONS = {
+  fortune_teller: 'Pretty Darn Good: odds reset to 50/50, +1 bonus damage, +5% speed. Unlocks "Fortune Teller" title.',
+  shaman: 'Elemental Skin -2 total, meditation enhanced, +1 damage, spirit pets +1 damage. Unlocks "Shaman" title.',
+  scholar: '+1 special slot (5 total), Scholar title visible to all, Preparation buff lasts 1 hour',
+  enchanter: 'All enchantments cost 1 fewer essence (min 1). Enchanted items glow gold. Generate 1 random essence every 30 min. Unlocks "Enchanter" title.',
+  elder: 'Access to Artifact Armor (Elder-exclusive gear). Unlocks "Elder" title. Elder Barrier cooldown reduced to 1 hour.',
+};
 
 function getMasterInfo(treeId) {
   const tree = CLASS_TREES[treeId];
   if (!tree) return null;
-  return { id: '_mas', name: 'Master ' + tree.name, cost: MASTER_COST, maxRank: 1 };
+  const desc = MASTER_DESCRIPTIONS[treeId] || 'Mastery achieved. Unlocks advanced sub-trees.';
+  return { id: '_mas', name: 'Master ' + tree.name, desc: desc, cost: MASTER_COST, maxRank: 1 };
 }
 
 function isApprentice(treeId) { return getTalentRank(treeId, '_app') >= 1; }
