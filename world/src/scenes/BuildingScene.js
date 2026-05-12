@@ -64,6 +64,20 @@ const BUILDING_LAYOUTS = {
     ],
     counterY: 1,
   },
+  dungeons: {
+    name: 'The Dungeons',
+    npcName: 'Dungeon Keeper Vex',
+    npcTint: 0x553355,
+    floorColor: 0x2a2030,
+    wallColor: 0x1a1020,
+    accentColor: 0x3a2a3a,
+    furniture: [
+      { type: 'rect', x: 2, y: 4, w: 1, h: 1, color: 0x1a1018, label: 'Chest' },
+      { type: 'rect', x: 9, y: 4, w: 1, h: 1, color: 0x1a1018, label: 'Chest' },
+      { type: 'rect', x: 5, y: 5, w: 2, h: 2, color: 0x332233, label: 'Stairs' },
+    ],
+    counterY: 1,
+  },
 };
 
 class BuildingScene extends Phaser.Scene {
@@ -233,6 +247,8 @@ class BuildingScene extends Phaser.Scene {
       this.interactArena();
     } else if (type === 'cantina') {
       this.interactCantina();
+    } else if (type === 'dungeons') {
+      this.interactDungeons();
     }
   }
 
@@ -308,6 +324,10 @@ class BuildingScene extends Phaser.Scene {
       'Higher zone quality means better essence drops.',
     ];
     this.showMessage(tips[Math.floor(Math.random() * tips.length)]);
+  }
+
+  interactDungeons() {
+    this.showMessage('The dungeons are sealed for now. Come back later, traveler...');
   }
 
   showMessage(text) {
