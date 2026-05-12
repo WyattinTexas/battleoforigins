@@ -178,6 +178,7 @@ class WorldScene extends Phaser.Scene {
       { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3 },
       { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3 },
       { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5 },
+      { name: 'Dungeons', x: HUB.x + 3, y: HUB.y + 7 },
     ];
     for (const b of buildings) {
       // Building marker (slightly brighter square on top of tile)
@@ -196,6 +197,7 @@ class WorldScene extends Phaser.Scene {
       { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3, action: 'workshop' },
       { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3, action: 'inn' },
       { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5, action: 'cantina' },
+      { name: 'Dungeons', x: HUB.x + 3, y: HUB.y + 7, action: 'dungeons' },
     ];
 
     // ── Wave 3: Signposts ──
