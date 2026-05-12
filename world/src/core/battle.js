@@ -801,9 +801,12 @@ function buildPlayerBattleTeam() {
   if (activeG && !activeG.ko && activeG.hp > 0) {
     alive = [activeG, ...alive.filter(g => g !== activeG)];
   }
-  // Sideline unlocks after 5 battle wins — before that, 1v1 only
-  const sidelineUnlocked = (G.rep?.battlesWon || 0) >= 5;
-  const maxTeamSize = sidelineUnlocked ? 3 : 1;
+  // Sideline slots from Trainer talent tree
+  // Bonding T1 (trn_bnd_2) = 1st sideline partner (2 total)
+  // Master Trainer = 2nd sideline partner (3 total)
+  const hasSideline1 = (typeof getTalentRank === 'function' && getTalentRank('trainer', 'trn_bnd_2') >= 1);
+  const hasSideline2 = (typeof isMaster === 'function' && isMaster('trainer'));
+  const maxTeamSize = hasSideline2 ? 3 : (hasSideline1 ? 2 : 1);
   return alive.slice(0, maxTeamSize).map(g => ({
     ...g, hp: Math.max(1, g.hp), ko: false, usedOncePerGame: false, entryFired: false,
     _teamIdx: G.team.indexOf(g) // track which G.team slot this came from
