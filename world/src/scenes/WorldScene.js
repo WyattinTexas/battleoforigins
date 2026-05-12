@@ -2645,6 +2645,10 @@ class WorldScene extends Phaser.Scene {
 
     // Listen for incoming buffs and party requests
     this.checkIncomingBuffs();
+
+    // Build party sidebar (will show if G.party has members)
+    this.buildPartySidebar();
+    this.updatePartySidebar();
   }
 
   updateOtherPlayer(pid, data) {
@@ -2686,17 +2690,22 @@ class WorldScene extends Phaser.Scene {
 
       // Use the other player's sprite key if available, otherwise default
       const textureKey = (data.spriteKey && this.textures.exists(data.spriteKey)) ? data.spriteKey : 'player';
+      const isPartyMember = G.party && G.party.some(p => p.id === data.playerId);
       const sprite = this.add.sprite(px, py, textureKey, 0)
-        .setScale(2).setAlpha(0.5).setDepth(8).setTint(0x8888ff)
+        .setScale(2)
+        .setAlpha(isPartyMember ? 0.9 : 0.5)
+        .setDepth(isPartyMember ? 9 : 8)
+        .setTint(isPartyMember ? 0x44ff88 : 0x8888ff)
         .setInteractive({ useHandCursor: true });
 
       // Name label
       const displayName = data.name || 'Unknown';
       const lvl = (data.level && data.level > 1) ? ` (Lv${data.level})` : '';
+      const labelColor = isPartyMember ? '#44ff88' : '#88aaff';
       const label = this.add.text(px, py - 36, displayName + lvl, {
-        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88aaff',
+        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: labelColor,
         backgroundColor: '#00000088', padding: { x: 3, y: 1 },
-      }).setOrigin(0.5).setDepth(11).setAlpha(0.7);
+      }).setOrigin(0.5).setDepth(11).setAlpha(isPartyMember ? 0.9 : 0.7);
 
       // Click to interact — party up & buff
       sprite.on('pointerdown', () => {
@@ -2726,8 +2735,9 @@ class WorldScene extends Phaser.Scene {
     if (this.panels.isOpen()) { this.panels.close(); return; }
     const name = data.name || 'Unknown';
     const lvl = data.level || 1;
+    const alreadyInParty = G.party && G.party.some(p => p.id === data.playerId);
 
-    this.panels.open(`${name} — Level ${lvl}`, (container, w, h) => {
+    this.panels.open(`${name} \u2014 Level ${lvl}`, (container, w, h) => {
       let y = 10;
 
       // Player info
@@ -2736,72 +2746,78 @@ class WorldScene extends Phaser.Scene {
       }).setOrigin(0.5).setScrollFactor(0));
       y += 30;
 
-      // Party Up button
-      const partyBg = this.add.rectangle(w / 2, y + 16, w - 40, 36, 0x224488, 0.8)
-        .setStrokeStyle(1, 0x4488cc).setInteractive({ useHandCursor: true }).setScrollFactor(0);
-      container.add(partyBg);
-      container.add(this.add.text(w / 2, y + 16, 'Party Up', {
-        fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#88ccff',
-      }).setOrigin(0.5).setScrollFactor(0));
-      partyBg.on('pointerdown', () => {
-        this.sendPartyRequest(pid, name);
-        this.panels.close();
-      });
-      y += 50;
-
-      // Buff buttons
-      const buffs = [
-        { label: 'Battle Blessing (+1 dmg, 3 fights)', key: 'battleBlessing', color: 0x882222, icon: '\u2694\uFE0F' },
-        { label: 'Spirit Shield (-1 dmg taken, 3 fights)', key: 'spiritShield', color: 0x228844, icon: '\uD83D\uDEE1\uFE0F' },
-        { label: 'Lucky Aura (+20% recruit, 3 fights)', key: 'luckyAura', color: 0x886622, icon: '\u2728' },
-      ];
-
-      container.add(this.add.text(14, y, 'Send a Buff:', {
-        fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
-      }).setScrollFactor(0));
-      y += 22;
-
-      buffs.forEach(buff => {
-        const bg = this.add.rectangle(w / 2, y + 14, w - 40, 30, buff.color, 0.6)
-          .setStrokeStyle(1, 0x555566).setInteractive({ useHandCursor: true }).setScrollFactor(0);
-        container.add(bg);
-        container.add(this.add.text(w / 2, y + 14, `${buff.icon} ${buff.label}`, {
-          fontSize: '11px', fontFamily: 'monospace', color: '#ffffff',
+      // Invite to Party (or already in party)
+      if (alreadyInParty) {
+        container.add(this.add.text(w / 2, y + 12, '\u2714 In your party', {
+          fontSize: '13px', fontFamily: 'monospace', fontStyle: 'bold', color: '#44ff88',
         }).setOrigin(0.5).setScrollFactor(0));
-        bg.on('pointerdown', () => {
-          this.sendBuff(pid, name, buff.key);
+      } else if (G.party && G.party.length >= 4) {
+        container.add(this.add.text(w / 2, y + 12, 'Party full (4/4)', {
+          fontSize: '13px', fontFamily: 'monospace', color: '#888',
+        }).setOrigin(0.5).setScrollFactor(0));
+      } else {
+        const invBg = this.add.rectangle(w / 2, y + 16, w - 40, 36, 0x224488, 0.8)
+          .setStrokeStyle(1, 0x4488cc).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+        container.add(invBg);
+        container.add(this.add.text(w / 2, y + 16, 'Invite to Party', {
+          fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#88ccff',
+        }).setOrigin(0.5).setScrollFactor(0));
+        invBg.on('pointerdown', () => {
+          this.sendPartyRequest(pid, data);
           this.panels.close();
         });
-        y += 36;
-      });
-    }, { width: 360, height: 240 });
+      }
+      y += 46;
+
+      // Inspect — show their active spiritkin
+      container.add(this.add.text(w / 2, y, 'Active Spiritkin:', {
+        fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
+      }).setOrigin(0.5).setScrollFactor(0));
+      y += 18;
+      container.add(this.add.text(w / 2, y, data.activeName || 'Unknown', {
+        fontSize: '12px', fontFamily: 'monospace', color: '#cccccc',
+      }).setOrigin(0.5).setScrollFactor(0));
+    }, { width: 320, height: 140 });
   }
 
-  sendPartyRequest(pid, name) {
+  sendPartyRequest(pid, data) {
     if (db._stub) { this.showNotification('Multiplayer offline'); return; }
-    db.ref('party_requests/' + pid + '/' + G.playerId).set({
-      from: G.name, fromId: G.playerId, level: G.level, timestamp: Date.now(),
+    const targetId = data.playerId || pid;
+    const name = data.name || 'Unknown';
+    db.ref('party_requests/' + targetId + '/' + G.playerId).set({
+      from: G.name, fromId: G.playerId, level: G.level,
+      sessionKey: MultiplayerPresence._sessionKey,
+      timestamp: Date.now(),
     });
-    this.showNotification(`Party request sent to ${name}!`);
+    this.showNotification(`Party invite sent to ${name}!`);
     if (typeof GameAudio !== 'undefined') GameAudio.collect();
-  }
 
-  sendBuff(pid, name, buffKey) {
-    if (db._stub) { this.showNotification('Multiplayer offline'); return; }
-    db.ref('buffs/' + pid + '/' + Date.now()).set({
-      from: G.name, fromId: G.playerId, buff: buffKey, timestamp: Date.now(),
+    // Listen for acceptance
+    db.ref('party_accepted/' + G.playerId + '/' + targetId).on('value', (snap) => {
+      const acc = snap.val();
+      if (!acc) return;
+      // They accepted — add them to our party
+      if (!G.party) G.party = [];
+      if (!G.party.find(p => p.id === targetId)) {
+        G.party.push({ id: targetId, name: acc.name, level: acc.level });
+        saveGame();
+        this.showNotification(`${acc.name} joined your party!`);
+        if (typeof GameAudio !== 'undefined') GameAudio.levelUp();
+        this.updatePartySidebar();
+      }
+      // Clean up acceptance signal
+      snap.ref.remove();
+      db.ref('party_accepted/' + G.playerId + '/' + targetId).off();
     });
-    this.showNotification(`${buffKey === 'battleBlessing' ? 'Battle Blessing' : buffKey === 'spiritShield' ? 'Spirit Shield' : 'Lucky Aura'} sent to ${name}!`);
-    if (typeof GameAudio !== 'undefined') GameAudio.heal();
   }
 
-  // Check for incoming buffs/party requests
+  // Check for incoming party requests + buffs
   checkIncomingBuffs() {
     if (db._stub || !G.playerId) return;
     if (this._buffListenerSet) return;
     this._buffListenerSet = true;
 
-    // Listen for buffs sent to us
+    // Listen for buffs sent to us (from Fortune Teller or future systems)
     db.ref('buffs/' + G.playerId).on('child_added', (snap) => {
       const data = snap.val();
       if (!data) return;
@@ -2809,33 +2825,158 @@ class WorldScene extends Phaser.Scene {
         battleBlessing: 'Battle Blessing (+1 dmg)',
         spiritShield: 'Spirit Shield (-1 dmg taken)',
         luckyAura: 'Lucky Aura (+20% recruit)',
+        goodFortune: 'Good Fortune',
       };
       this.showNotification(`${data.from} sent you ${buffNames[data.buff] || data.buff}!`);
       if (typeof GameAudio !== 'undefined') GameAudio.levelUp();
-
-      // Apply buff to G
       if (!G.activeBuffs) G.activeBuffs = [];
       G.activeBuffs.push({ type: data.buff, from: data.from, fights: 3 });
       saveGame();
-
-      // Remove the consumed buff from Firebase
       snap.ref.remove();
     });
 
-    // Listen for party requests
+    // Listen for party requests — show accept/decline popup
     db.ref('party_requests/' + G.playerId).on('child_added', (snap) => {
       const data = snap.val();
       if (!data) return;
-      this.showNotification(`${data.from} (Lv${data.level}) wants to party up!`);
       if (typeof GameAudio !== 'undefined') GameAudio.collect();
+      this.showPartyInvitePopup(data, snap);
+    });
+  }
 
-      // Auto-accept for now — add to party list
+  // ═══════ PARTY INVITE POPUP (accept/decline) ═══════
+
+  showPartyInvitePopup(data, snap) {
+    // Dismiss any existing invite popup
+    if (this._invitePopup) this._invitePopup.forEach(o => o.destroy());
+    this._invitePopup = [];
+
+    const W = this.scale.width;
+    const popY = 140;
+
+    const bg = this.add.rectangle(W / 2, popY, 340, 70, 0x112244, 0.92)
+      .setStrokeStyle(2, 0x4488cc).setScrollFactor(0).setDepth(500);
+    const txt = this.add.text(W / 2, popY - 14, `${data.from} (Lv${data.level}) wants to party up!`, {
+      fontSize: '12px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#88ccff',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(501);
+
+    const accBg = this.add.rectangle(W / 2 - 55, popY + 16, 90, 28, 0x226622)
+      .setStrokeStyle(1, 0x44aa44).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(501);
+    const accTxt = this.add.text(W / 2 - 55, popY + 16, 'Accept', {
+      fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ff88',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(502);
+
+    const decBg = this.add.rectangle(W / 2 + 55, popY + 16, 90, 28, 0x662222)
+      .setStrokeStyle(1, 0xaa4444).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(501);
+    const decTxt = this.add.text(W / 2 + 55, popY + 16, 'Decline', {
+      fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ff8888',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(502);
+
+    this._invitePopup = [bg, txt, accBg, accTxt, decBg, decTxt];
+
+    const cleanup = () => {
+      this._invitePopup.forEach(o => o.destroy());
+      this._invitePopup = [];
+    };
+
+    accBg.on('pointerdown', () => {
+      // Accept — add to our party + notify sender
       if (!G.party) G.party = [];
+      if (G.party.length >= 4) {
+        this.showNotification('Party is full!');
+        cleanup();
+        snap.ref.remove();
+        return;
+      }
       if (!G.party.find(p => p.id === data.fromId)) {
         G.party.push({ id: data.fromId, name: data.from, level: data.level });
         saveGame();
       }
+      // Write acceptance so sender knows
+      db.ref('party_accepted/' + data.fromId + '/' + G.playerId).set({
+        name: G.name, level: G.level, timestamp: Date.now(),
+      });
+      this.showNotification(`${data.from} joined your party!`);
+      if (typeof GameAudio !== 'undefined') GameAudio.levelUp();
+      this.updatePartySidebar();
+      cleanup();
       snap.ref.remove();
     });
+
+    decBg.on('pointerdown', () => {
+      cleanup();
+      snap.ref.remove();
+    });
+
+    // Auto-dismiss after 15 seconds
+    this.time.delayedCall(15000, () => {
+      if (this._invitePopup.length > 0) {
+        cleanup();
+        snap.ref.remove();
+      }
+    });
+  }
+
+  // ═══════ PARTY SIDEBAR (Guild Wars style, right side) ═══════
+
+  buildPartySidebar() {
+    this._partySidebarObjs = [];
+  }
+
+  updatePartySidebar() {
+    // Clean up old sidebar
+    if (this._partySidebarObjs) {
+      this._partySidebarObjs.forEach(o => o.destroy());
+    }
+    this._partySidebarObjs = [];
+
+    if (!G.party || G.party.length === 0) return;
+
+    const W = this.scale.width;
+    const sidebarW = 170;
+    const sx = W - sidebarW / 2 - 8;
+    let sy = 130;
+
+    // Background
+    const bgH = 40 + G.party.length * 32 + 30;
+    const bg = this.add.rectangle(sx, sy + bgH / 2 - 10, sidebarW, bgH, 0x0a0a1a, 0.85)
+      .setStrokeStyle(1, 0x334466).setScrollFactor(0).setDepth(190);
+    this._partySidebarObjs.push(bg);
+
+    // Header
+    const header = this.add.text(sx, sy, `Party [${G.party.length}/4]`, {
+      fontSize: '12px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#44ff88',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(191);
+    this._partySidebarObjs.push(header);
+    sy += 20;
+
+    // Members
+    G.party.forEach((member, i) => {
+      const my = sy + i * 32;
+      // Green dot (online indicator — assume online if in party)
+      const dot = this.add.circle(sx - sidebarW / 2 + 16, my + 8, 4, 0x44ff88).setScrollFactor(0).setDepth(191);
+      const nameTxt = this.add.text(sx - sidebarW / 2 + 28, my, member.name, {
+        fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ccddcc',
+      }).setScrollFactor(0).setDepth(191);
+      const lvlTxt = this.add.text(sx + sidebarW / 2 - 12, my, `Lv${member.level || '?'}`, {
+        fontSize: '9px', fontFamily: 'monospace', color: '#888',
+      }).setOrigin(1, 0).setScrollFactor(0).setDepth(191);
+      this._partySidebarObjs.push(dot, nameTxt, lvlTxt);
+    });
+
+    // Leave Party button
+    const leaveY = sy + G.party.length * 32 + 6;
+    const leaveBg = this.add.rectangle(sx, leaveY, sidebarW - 20, 22, 0x442222, 0.7)
+      .setStrokeStyle(1, 0x664444).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(191);
+    const leaveTxt = this.add.text(sx, leaveY, 'Leave Party', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#ff8888',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(192);
+    leaveBg.on('pointerdown', () => {
+      G.party = [];
+      saveGame();
+      this.updatePartySidebar();
+      this.showNotification('Left the party.');
+    });
+    this._partySidebarObjs.push(leaveBg, leaveTxt);
   }
 }

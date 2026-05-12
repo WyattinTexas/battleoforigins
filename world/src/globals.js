@@ -636,6 +636,7 @@ const MultiplayerPresence = {
       if (this._currentRegion && this._currentRegion !== region) {
         db.ref('world/' + this._currentRegion + '/' + this._sessionKey).remove();
       }
+      const activeGhost = G.team && G.team[G.activeIdx];
       db.ref('world/' + region + '/' + this._sessionKey).set({
         name: playerData.name || G.name,
         playerId: G.playerId,
@@ -643,6 +644,7 @@ const MultiplayerPresence = {
         y: playerData.y || G.y,
         spriteKey: playerData.spriteKey || G.spriteKey,
         level: G.level || 1,
+        activeName: activeGhost ? activeGhost.name : '',
         region: region,
         ts: firebase.database.ServerValue.TIMESTAMP,
       });
