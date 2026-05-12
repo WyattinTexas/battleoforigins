@@ -606,11 +606,16 @@ var housingData = {};
 var showHomeOnMinimap = false;
 
 // ── Wave 6: Multiplayer Presence (Firebase-ready, graceful offline) ──
+// Session ID — unique per tab, NOT saved to localStorage
+const _sessionId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
 const MultiplayerPresence = {
-  _isStub: true,  // true until real Firebase is connected
+  _isStub: true,
   _listeners: {},
+  _sessionKey: '', // playerId + sessionId — unique per tab
 
   init() {
+    this._sessionKey = (G.playerId || 'anon') + '_' + _sessionId;
     // Check if db is a real Firebase reference (not our stub)
     try {
       const testRef = db.ref('_presence_test');
@@ -626,12 +631,13 @@ const MultiplayerPresence = {
     console.log('[MultiplayerPresence] init, stub:', this._isStub);
   },
 
-  // Write this player's presence data
+  // Write this player's presence data (uses _sessionKey — unique per tab)
   updatePresence(playerData) {
-    if (this._isStub || !G.playerId) return;
+    if (this._isStub || !this._sessionKey) return;
     try {
-      db.ref('presence/' + G.playerId).set({
+      db.ref('presence/' + this._sessionKey).set({
         name: playerData.name || G.name,
+        playerId: G.playerId,
         x: playerData.x || G.x,
         y: playerData.y || G.y,
         spriteKey: playerData.spriteKey || G.spriteKey,
@@ -649,16 +655,17 @@ const MultiplayerPresence = {
     if (this._isStub) return;
     try {
       const ref = db.ref('presence');
+      const self = this;
       ref.on('child_added', snap => {
         const data = snap.val();
         const pid = snap.key || '';
-        if (pid === G.playerId) return; // skip self
+        if (pid === self._sessionKey) return; // skip own session
         if (data && onPlayerUpdate) onPlayerUpdate(pid, data);
       });
       ref.on('child_changed', snap => {
         const data = snap.val();
         const pid = snap.key || '';
-        if (pid === G.playerId) return;
+        if (pid === self._sessionKey) return;
         if (data && onPlayerUpdate) onPlayerUpdate(pid, data);
       });
       ref.on('child_removed', snap => {
@@ -673,10 +680,10 @@ const MultiplayerPresence = {
 
   // Clean up on disconnect
   setupDisconnect() {
-    if (this._isStub || !G.playerId) return;
+    if (this._isStub || !this._sessionKey) return;
     try {
-      db.ref('presence/' + G.playerId).onDisconnect?.()?.remove?.();
-    } catch(e) { /* optional, may not exist on stub */ }
+      db.ref('presence/' + this._sessionKey).onDisconnect().remove();
+    } catch(e) { console.warn('[MultiplayerPresence] onDisconnect error:', e); }
   },
 
   // Stop listening
