@@ -311,34 +311,39 @@ const CLASS_TREES = {
 
   trainer: {
     name: 'Trainer',
-    desc: 'Master spiritkin combat and collection. Mastery unlocks Beastmaster, Gladiator & Ranger.',
+    desc: 'Learn to recruit, bond with, and grow your spiritkin. Mastery unlocks Beastmaster, Gladiator & Ranger.',
     color: '#44dd66',
-    branches: ['Combat', 'Collection', 'Bonding'],
+    branches: ['Training', 'Recruiting', 'Bonding'],
     talents: [
-      { id: 'trn_com_1', branch: 0, tier: 0, name: 'Battle Instinct',
-        desc: '+5% combat XP per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'trn_com_2', branch: 0, tier: 1, name: 'Veteran Tactics',
-        desc: 'See enemy HP before battle starts', cost: 2, maxRank: 2, prereq: 'trn_com_1' },
-      { id: 'trn_com_3', branch: 0, tier: 2, name: 'Challenger',
-        desc: '+1 Spirit reward from trainer battles', cost: 3, maxRank: 1, prereq: 'trn_com_2' },
-      { id: 'trn_com_4', branch: 0, tier: 3, name: 'Champion',
-        desc: 'Defeating a trainer grants a chance at their rarest spiritkin', cost: 4, maxRank: 1, prereq: 'trn_com_3' },
-      { id: 'trn_col_1', branch: 1, tier: 0, name: 'Keen Eye',
-        desc: '+10% recruit chance per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'trn_col_2', branch: 1, tier: 1, name: 'Spiritkin Whisperer',
-        desc: 'Wild spiritkin are less aggressive', cost: 2, maxRank: 2, prereq: 'trn_col_1' },
-      { id: 'trn_col_3', branch: 1, tier: 2, name: 'Rare Seeker',
-        desc: 'Increased rare spiritkin spawn rate', cost: 3, maxRank: 1, prereq: 'trn_col_2' },
-      { id: 'trn_col_4', branch: 1, tier: 3, name: 'Legendary Tracker',
-        desc: 'Sense legendary spiritkin in your region', cost: 4, maxRank: 1, prereq: 'trn_col_3' },
+      // Branch 0: Training — level up spiritkin through training tiers
+      { id: 'trn_trn_1', branch: 0, tier: 0, name: 'Basic Training',
+        desc: 'Spiritkin gain XP from training grounds', cost: 1, maxRank: 1, prereq: null },
+      { id: 'trn_trn_2', branch: 0, tier: 1, name: 'Advanced Training',
+        desc: 'Advanced Training available', cost: 2, maxRank: 1, prereq: 'trn_trn_1' },
+      { id: 'trn_trn_3', branch: 0, tier: 2, name: 'Elite Training',
+        desc: 'Elite Training available', cost: 3, maxRank: 1, prereq: 'trn_trn_2' },
+      { id: 'trn_trn_4', branch: 0, tier: 3, name: 'Master Training',
+        desc: 'Master Training available', cost: 4, maxRank: 1, prereq: 'trn_trn_3' },
+
+      // Branch 1: Recruiting — find and recruit spiritkin
+      { id: 'trn_rec_1', branch: 1, tier: 0, name: 'Keen Eye',
+        desc: '+10% recruit chance when rolling to recruit', cost: 1, maxRank: 1, prereq: null },
+      { id: 'trn_rec_2', branch: 1, tier: 1, name: 'Spiritkin Whisperer',
+        desc: 'Wild spiritkin are less aggressive toward you', cost: 2, maxRank: 1, prereq: 'trn_rec_1' },
+      { id: 'trn_rec_3', branch: 1, tier: 2, name: 'Rare Seeker',
+        desc: '+5% rare spiritkin spawn rate', cost: 3, maxRank: 1, prereq: 'trn_rec_2' },
+      { id: 'trn_rec_4', branch: 1, tier: 3, name: 'Legendary Tracker',
+        desc: 'Get a flash indicator when a legendary spiritkin is nearby in your area', cost: 4, maxRank: 1, prereq: 'trn_rec_3' },
+
+      // Branch 2: Bonding — team management + SIDELINE SLOT UNLOCKS
       { id: 'trn_bnd_1', branch: 2, tier: 0, name: 'Kindred Spirit',
-        desc: 'Active spiritkin gains +1 max HP per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'trn_bnd_2', branch: 2, tier: 1, name: 'Spirit Sync',
-        desc: 'Spiritkin abilities have +10% potency', cost: 2, maxRank: 2, prereq: 'trn_bnd_1' },
+        desc: 'Your spiritkin trusts you', cost: 1, maxRank: 1, prereq: null },
+      { id: 'trn_bnd_2', branch: 2, tier: 1, name: 'Sideline Partner',
+        desc: 'UNLOCK YOUR 1ST SIDELINE SLOT — bring a partner into battle', cost: 2, maxRank: 1, prereq: 'trn_bnd_1' },
       { id: 'trn_bnd_3', branch: 2, tier: 2, name: 'Soul Bond',
-        desc: 'Bonded spiritkin heals 1 HP between battles', cost: 3, maxRank: 1, prereq: 'trn_bnd_2' },
-      { id: 'trn_bnd_4', branch: 2, tier: 3, name: 'True Partner',
-        desc: 'Your lead spiritkin gains a unique passive', cost: 4, maxRank: 1, prereq: 'trn_bnd_3' },
+        desc: 'Your spiritkin heals 1 HP between battles', cost: 3, maxRank: 1, prereq: 'trn_bnd_2' },
+      { id: 'trn_bnd_4', branch: 2, tier: 3, name: 'True Companion',
+        desc: 'Your spiritkin is your friend', cost: 4, maxRank: 1, prereq: 'trn_bnd_3' },
     ],
   },
 
@@ -450,34 +455,41 @@ const CLASS_TREES = {
 
   scientist: {
     name: 'Scientist',
-    desc: 'Extract DNA and create mutations. Mastery unlocks Alchemist, Gene Splicer & Inventor.',
+    desc: 'Extract DNA, create mutations, supply components. Mastery unlocks Alchemist, Gene Splicer & Inventor.',
     color: '#aa55ff',
     branches: ['Extraction', 'Mutations', 'Synthesis'],
     talents: [
+      // Branch 0: Extraction — get DNA from spiritkin (XP from extracting)
       { id: 'sci_ext_1', branch: 0, tier: 0, name: 'DNA Probe',
-        desc: 'Unlock DNA extraction from wild spiritkin', cost: 1, maxRank: 3, prereq: null },
+        desc: 'Extract DNA from common spiritkin (low success rate)', cost: 1, maxRank: 1, prereq: null },
       { id: 'sci_ext_2', branch: 0, tier: 1, name: 'Refined Extraction',
-        desc: '+15% extraction success per rank', cost: 2, maxRank: 2, prereq: 'sci_ext_1' },
-      { id: 'sci_ext_3', branch: 0, tier: 2, name: 'Quick Getaway',
-        desc: 'Auto-escape after failed extraction', cost: 3, maxRank: 1, prereq: 'sci_ext_2' },
-      { id: 'sci_ext_4', branch: 0, tier: 3, name: 'Master Extractor',
-        desc: 'Extract DNA from legendary spiritkin', cost: 4, maxRank: 1, prereq: 'sci_ext_3' },
-      { id: 'sci_mut_1', branch: 1, tier: 0, name: 'Splice Basics',
-        desc: 'Create basic mutations in the lab', cost: 1, maxRank: 3, prereq: null },
-      { id: 'sci_mut_2', branch: 1, tier: 1, name: 'Combat Strain',
-        desc: 'Mutations gain +2 base damage', cost: 2, maxRank: 2, prereq: 'sci_mut_1' },
-      { id: 'sci_mut_3', branch: 1, tier: 2, name: 'Alpha Predator',
-        desc: 'Create ace-tier mutations with unique abilities', cost: 3, maxRank: 1, prereq: 'sci_mut_2' },
-      { id: 'sci_mut_4', branch: 1, tier: 3, name: 'Perfect Specimen',
-        desc: 'Mutations can evolve once in battle', cost: 4, maxRank: 1, prereq: 'sci_mut_3' },
-      { id: 'sci_syn_1', branch: 2, tier: 0, name: 'Bio Reactor',
-        desc: 'Mutations passively generate resources', cost: 1, maxRank: 3, prereq: null },
-      { id: 'sci_syn_2', branch: 2, tier: 1, name: 'Sideline Specialist',
-        desc: 'Create support mutations that buff your team', cost: 2, maxRank: 2, prereq: 'sci_syn_1' },
-      { id: 'sci_syn_3', branch: 2, tier: 2, name: 'Harvest Protocol',
-        desc: 'Double resource yield from mutations', cost: 3, maxRank: 1, prereq: 'sci_syn_2' },
-      { id: 'sci_syn_4', branch: 2, tier: 3, name: 'Living Factory',
-        desc: 'Mutations auto-generate rare materials over time', cost: 4, maxRank: 1, prereq: 'sci_syn_3' },
+        desc: '+15% DNA extraction success rate', cost: 2, maxRank: 1, prereq: 'sci_ext_1' },
+      { id: 'sci_ext_3', branch: 0, tier: 2, name: 'Consolation Gold',
+        desc: 'Gain 1 gold after a failed extraction attempt', cost: 3, maxRank: 1, prereq: 'sci_ext_2' },
+      { id: 'sci_ext_4', branch: 0, tier: 3, name: 'Universal Probe',
+        desc: 'Extract DNA from any rarity spiritkin', cost: 4, maxRank: 1, prereq: 'sci_ext_3' },
+
+      // Branch 1: Mutations — create in the lab (XP from mutating)
+      // Overload mechanic: push too hard and the spiritkin comes alive, destroys lab, attacks players
+      // Griefing 10 players via overloads = alternate Dark Rider unlock path
+      { id: 'sci_mut_1', branch: 1, tier: 0, name: 'DNA Cataloging',
+        desc: 'Catalogue your DNA collection in the lab (view stats, rarity, source)', cost: 1, maxRank: 1, prereq: null },
+      { id: 'sci_mut_2', branch: 1, tier: 1, name: 'Overload Risk',
+        desc: '+20% mutational overload chance — spiritkin may come alive, destroy lab, and attack players', cost: 2, maxRank: 1, prereq: 'sci_mut_1' },
+      { id: 'sci_mut_3', branch: 1, tier: 2, name: 'Selective Traits',
+        desc: 'Choose which parent\'s ability a hybrid inherits', cost: 3, maxRank: 1, prereq: 'sci_mut_2' },
+      { id: 'sci_mut_4', branch: 1, tier: 3, name: 'Hybrid Fusion',
+        desc: 'Combine 2 DNA samples to breed a hybrid spiritkin', cost: 4, maxRank: 1, prereq: 'sci_mut_3' },
+
+      // Branch 2: Synthesis — produce components for Artisans/Enchanters (XP from breaking down DNA)
+      { id: 'sci_syn_1', branch: 2, tier: 0, name: 'DNA Processing',
+        desc: 'Break down DNA into raw materials (essences, materials)', cost: 1, maxRank: 1, prereq: null },
+      { id: 'sci_syn_2', branch: 2, tier: 1, name: 'Basic Synthesis',
+        desc: 'Process DNA into crafting components other players need', cost: 2, maxRank: 1, prereq: 'sci_syn_1' },
+      { id: 'sci_syn_3', branch: 2, tier: 2, name: 'Refined Components',
+        desc: 'Produce higher quality components from DNA', cost: 3, maxRank: 1, prereq: 'sci_syn_2' },
+      { id: 'sci_syn_4', branch: 2, tier: 3, name: 'Master Components',
+        desc: 'Produce rare-tier components for Artisans and Enchanters', cost: 4, maxRank: 1, prereq: 'sci_syn_3' },
     ],
   },
 
@@ -885,33 +897,35 @@ const CLASS_TREES = {
     color: '#66cc66',
     branches: ['Gardening', 'Spirit Pets', 'Self-Harmony'],
     talents: [
-      // Branch 0: Gardening
-      { id: 'cul_grd_1', branch: 0, tier: 0, name: 'Green Thumb',
-        desc: 'Plant a basic garden plot (attracts common spirits)', cost: 1, maxRank: 3, prereq: null },
+      // Branch 0: Gardening (XP from gardening)
+      { id: 'cul_grd_1', branch: 0, tier: 0, name: 'Plant Trees',
+        desc: 'Plant trees and flowers using seeds. Combining certain plants in an area creates different effects.', cost: 1, maxRank: 1, prereq: null },
       { id: 'cul_grd_2', branch: 0, tier: 1, name: 'Spirit Bloom',
-        desc: 'Gardens attract uncommon spirits other players need', cost: 2, maxRank: 2, prereq: 'cul_grd_1' },
+        desc: 'Gardens attract uncommon spirits other players need', cost: 2, maxRank: 1, prereq: 'cul_grd_1' },
       { id: 'cul_grd_3', branch: 0, tier: 2, name: 'Enchanted Garden',
         desc: 'Gardens produce rare essences every 30 minutes', cost: 3, maxRank: 1, prereq: 'cul_grd_2' },
       { id: 'cul_grd_4', branch: 0, tier: 3, name: 'Spirit Grove',
         desc: 'Plant a sacred grove — attracts legendary spirits once per day', cost: 4, maxRank: 1, prereq: 'cul_grd_3' },
-      // Branch 1: Spirit Pets
+
+      // Branch 1: Spirit Pets (XP from having pets out during activities — combat, crafting, trainer XP)
       { id: 'cul_pet_1', branch: 1, tier: 0, name: 'Pet Bonding',
-        desc: 'Attract and bond with a basic spirit pet per rank', cost: 1, maxRank: 3, prereq: null },
+        desc: 'You may bond with a spirit pet', cost: 1, maxRank: 1, prereq: null },
       { id: 'cul_pet_2', branch: 1, tier: 1, name: 'Helpful Critter',
-        desc: 'Pet assists with gathering (+15% yield)', cost: 2, maxRank: 2, prereq: 'cul_pet_1' },
+        desc: 'Pet assists with gathering (+15% yield)', cost: 2, maxRank: 1, prereq: 'cul_pet_1' },
       { id: 'cul_pet_3', branch: 1, tier: 2, name: 'Battle Companion',
         desc: 'Pet grants +1 die in battle', cost: 3, maxRank: 1, prereq: 'cul_pet_2' },
       { id: 'cul_pet_4', branch: 1, tier: 3, name: 'Spirit Familiar',
-        desc: 'Pet evolves — grants a unique world ability', cost: 4, maxRank: 1, prereq: 'cul_pet_3' },
-      // Branch 2: Self-Harmony
+        desc: 'Your pet may level up (level 9 max)', cost: 4, maxRank: 1, prereq: 'cul_pet_3' },
+
+      // Branch 2: Self-Harmony (XP from beating wild spiritkin)
       { id: 'cul_har_1', branch: 2, tier: 0, name: 'Nature\'s Calm',
-        desc: '+1 HP regen out of combat every 2 minutes per rank', cost: 1, maxRank: 3, prereq: null },
-      { id: 'cul_har_2', branch: 2, tier: 1, name: 'Rooted',
-        desc: 'While near your garden, gain +1 to all dice rolls', cost: 2, maxRank: 2, prereq: 'cul_har_1' },
-      { id: 'cul_har_3', branch: 2, tier: 2, name: 'Photosynthesis',
-        desc: 'Passively gain resources while standing in sunlight areas', cost: 3, maxRank: 1, prereq: 'cul_har_2' },
-      { id: 'cul_har_4', branch: 2, tier: 3, name: 'One With Nature',
-        desc: 'Wild spiritkin never attack you — they greet you instead', cost: 4, maxRank: 1, prereq: 'cul_har_3' },
+        desc: '+1 HP regen out of combat every 2 minutes', cost: 1, maxRank: 1, prereq: null },
+      { id: 'cul_har_2', branch: 2, tier: 1, name: 'Garden\'s Gift',
+        desc: 'While in a garden, gain 1 Healing Seed for your next battle (2 min buff)', cost: 2, maxRank: 1, prereq: 'cul_har_1' },
+      { id: 'cul_har_3', branch: 2, tier: 2, name: 'One With Nature',
+        desc: 'Calm spiritkin never attack you', cost: 3, maxRank: 1, prereq: 'cul_har_2' },
+      { id: 'cul_har_4', branch: 2, tier: 3, name: 'Rooted',
+        desc: '+1 to all dice rolls while near your garden', cost: 4, maxRank: 1, prereq: 'cul_har_3' },
     ],
   },
 
@@ -1057,6 +1071,9 @@ const APPRENTICE_DESCRIPTIONS = {
   scholar: 'Party gains +10% XP while grouped with you. Requires Fortune XP to unlock.',
   enchanter: 'Gain ability to enhance crafting materials. All enhancements cost essences. Artisans need you.',
   elder: 'The Council recognizes your wisdom. No immediate ability — your power grows through the branches.',
+  trainer: 'You can roll to recruit wild spiritkin.',
+  scientist: 'Extract minor DNA from commons (very low %). Lab access. Basic mutations available.',
+  cultivator: 'Green Thumb: plant a basic garden (attracts common spirits). Your first garden introduces your first spirit pet.',
 };
 
 function getApprenticeInfo(treeId) {
@@ -1073,6 +1090,9 @@ const MASTER_DESCRIPTIONS = {
   scholar: '+1 special slot (5 total), Scholar title visible to all, Preparation buff lasts 1 hour',
   enchanter: 'All enchantments cost 1 fewer essence (min 1). Enchanted items glow gold. Generate 1 random essence every 30 min. Unlocks "Enchanter" title.',
   elder: 'Access to Artifact Armor (Elder-exclusive gear). Unlocks "Elder" title. Elder Barrier cooldown reduced to 1 hour.',
+  trainer: 'UNLOCK 2ND SIDELINE PARTNER. Unlocks "Trainer" title.',
+  scientist: 'Overload chance reduced by 10%. Much higher DNA extraction success. Unlocks "Scientist" title.',
+  cultivator: 'Your gardens never expire. Unlocks "Cultivator" title.',
 };
 
 function getMasterInfo(treeId) {
