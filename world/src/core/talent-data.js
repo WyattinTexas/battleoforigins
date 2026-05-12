@@ -1137,11 +1137,12 @@ function _allBranchTalentsMaxed(treeId) {
 const TALENT_POINT_CAP = 135;
 
 function getTalentPointsTotal() {
+  const basePoints = 10; // everyone starts with 10 — enough for 2-3 apprentices
   const fromLevel = (G.level || 1) * 3;
   const profXP = G.professionXP || {};
   const totalProfXP = Object.values(profXP).reduce((s, v) => s + v, 0);
   const fromProfXP = Math.floor(totalProfXP / 200);
-  return Math.min(TALENT_POINT_CAP, fromLevel + fromProfXP);
+  return Math.min(TALENT_POINT_CAP, basePoints + fromLevel + fromProfXP);
 }
 
 function getTalentPointsSpent() {
