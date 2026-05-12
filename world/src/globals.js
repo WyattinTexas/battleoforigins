@@ -728,9 +728,67 @@ const MultiplayerPresence = {
   },
 };
 
-// ── Chat stub ──
+// ── Chat system (Firebase-backed, region-scoped) ──
+const GameChat = {
+  _messages: [],       // local message buffer
+  _maxMessages: 50,
+  _currentRegion: null,
+  _listener: null,
+  _onMessage: null,    // callback set by WorldScene
+
+  init(onMessage) {
+    this._onMessage = onMessage;
+  },
+
+  // Subscribe to a region's chat
+  listenToRegion(region) {
+    if (db._stub) return;
+    if (this._currentRegion === region) return;
+
+    // Unsubscribe from old region
+    if (this._listener) {
+      try { this._listener.off(); } catch(e) {}
+    }
+    this._messages = [];
+    this._currentRegion = region;
+
+    // Subscribe to new region — only last 20 messages
+    try {
+      this._listener = db.ref('chat/' + region).orderByChild('ts').limitToLast(20);
+      this._listener.on('child_added', (snap) => {
+        const msg = snap.val();
+        if (!msg) return;
+        this._messages.push(msg);
+        if (this._messages.length > this._maxMessages) this._messages.shift();
+        if (this._onMessage) this._onMessage(msg);
+      });
+    } catch(e) {
+      console.warn('[GameChat] listen error:', e);
+    }
+  },
+
+  // Send a message to current region
+  send(text) {
+    if (db._stub || !this._currentRegion || !text.trim()) return;
+    const msg = {
+      name: G.name || 'Unknown',
+      text: text.trim().slice(0, 120), // max 120 chars
+      level: G.level || 1,
+      ts: firebase.database.ServerValue.TIMESTAMP,
+    };
+    try {
+      db.ref('chat/' + this._currentRegion).push(msg);
+    } catch(e) {
+      console.warn('[GameChat] send error:', e);
+    }
+  },
+
+  getMessages() { return this._messages; },
+};
+
+// Keep backwards compat — addChatMessage now sends to Firebase
 function addChatMessage(sender, text) {
-  console.log(`[Chat] ${sender}: ${text}`);
+  GameChat.send(`[${sender}] ${text}`);
 }
 
 // ── Housing data ──

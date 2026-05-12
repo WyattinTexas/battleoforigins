@@ -433,6 +433,12 @@ class WorldScene extends Phaser.Scene {
     if (G.inBattle) return;
     if (!this._updateLogged) { this._updateLogged = true; console.log('[WorldScene] update() running, player:', this.player?.x, this.player?.y); }
 
+    // Don't process movement/hotkeys while typing in chat
+    if (this._chatOpen) {
+      this.player.setVelocity(0, 0);
+      return;
+    }
+
     const speed = 140;
     let vx = 0, vy = 0;
 
@@ -557,6 +563,9 @@ class WorldScene extends Phaser.Scene {
 
     // Wave 3: Region transition banners + exploration XP
     this.checkRegionTransition(region);
+
+    // Switch chat region if needed
+    if (this.updateChatRegion) this.updateChatRegion();
 
     // Dynamic encounter rate — faster spawns inside encounter zones
     const zoneIdx = getCurrentZone(G.x, G.y);
@@ -2649,6 +2658,13 @@ class WorldScene extends Phaser.Scene {
     // Build party sidebar (will show if G.party has members)
     this.buildPartySidebar();
     this.updatePartySidebar();
+
+    // ── Chat system ──
+    this.buildChatBox();
+    GameChat.init((msg) => this.onChatMessage(msg));
+    const chatRegion = getCurrentRegion(G.x, G.y) || 'frost_valley';
+    GameChat.listenToRegion(chatRegion);
+    this._chatRegion = chatRegion;
   }
 
   updateOtherPlayer(pid, data) {
@@ -2978,5 +2994,123 @@ class WorldScene extends Phaser.Scene {
       this.showNotification('Left the party.');
     });
     this._partySidebarObjs.push(leaveBg, leaveTxt);
+  }
+
+  // ═══════ CHAT SYSTEM ═══════
+
+  buildChatBox() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const chatW = Math.min(400, W - 20);
+    const chatH = 160;
+    const chatX = 10;
+    const chatY = H - chatH - 30;
+
+    // Chat container (fixed to screen)
+    this._chatBg = this.add.rectangle(chatX + chatW / 2, chatY + chatH / 2, chatW, chatH, 0x0a0a1a, 0.75)
+      .setStrokeStyle(1, 0x334466).setScrollFactor(0).setDepth(180);
+
+    // Header
+    this._chatHeader = this.add.text(chatX + 8, chatY + 4, 'Chat', {
+      fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88aacc',
+    }).setScrollFactor(0).setDepth(181);
+
+    // Messages area
+    this._chatMessages = [];
+    this._chatMsgTexts = [];
+    this._chatMsgY = chatY + 20;
+    this._chatMsgX = chatX + 8;
+    this._chatMsgW = chatW - 16;
+    this._chatMsgMaxLines = 6;
+
+    // Input hint
+    this._chatInputHint = this.add.text(chatX + 8, chatY + chatH - 18, 'Press Enter to chat...', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#556677',
+    }).setScrollFactor(0).setDepth(181);
+
+    // Input state
+    this._chatOpen = false;
+    this._chatInput = '';
+    this._chatCursor = null;
+
+    // Enter key to toggle chat input
+    this.input.keyboard.on('keydown-ENTER', () => {
+      if (G.inBattle) return;
+      if (this._chatOpen) {
+        // Send message
+        if (this._chatInput.trim()) {
+          GameChat.send(this._chatInput.trim());
+        }
+        this._chatInput = '';
+        this._chatOpen = false;
+        this._chatInputHint.setText('Press Enter to chat...');
+        this._chatInputHint.setColor('#556677');
+        if (this._chatCursor) { this._chatCursor.destroy(); this._chatCursor = null; }
+      } else {
+        this._chatOpen = true;
+        this._chatInput = '';
+        this._chatInputHint.setText('> _');
+        this._chatInputHint.setColor('#aaccee');
+      }
+    });
+
+    // Capture typing when chat is open
+    this.input.keyboard.on('keydown', (event) => {
+      if (!this._chatOpen) return;
+      if (event.key === 'Enter' || event.key === 'Escape') return;
+      if (event.key === 'Backspace') {
+        this._chatInput = this._chatInput.slice(0, -1);
+      } else if (event.key.length === 1 && this._chatInput.length < 120) {
+        this._chatInput += event.key;
+        event.stopPropagation();
+      }
+      this._chatInputHint.setText('> ' + this._chatInput + '_');
+    });
+
+    // ESC to cancel chat
+    this.input.keyboard.on('keydown-ESC', () => {
+      if (this._chatOpen) {
+        this._chatOpen = false;
+        this._chatInput = '';
+        this._chatInputHint.setText('Press Enter to chat...');
+        this._chatInputHint.setColor('#556677');
+      }
+    });
+  }
+
+  onChatMessage(msg) {
+    // Add to display
+    const line = `${msg.name}: ${msg.text}`;
+    this._chatMessages.push(line);
+    if (this._chatMessages.length > this._chatMsgMaxLines) {
+      this._chatMessages.shift();
+    }
+    this.refreshChatDisplay();
+  }
+
+  refreshChatDisplay() {
+    // Clear old text objects
+    this._chatMsgTexts.forEach(t => t.destroy());
+    this._chatMsgTexts = [];
+
+    this._chatMessages.forEach((line, i) => {
+      const t = this.add.text(this._chatMsgX, this._chatMsgY + i * 18, line, {
+        fontSize: '10px', fontFamily: 'monospace', color: '#aabbcc',
+        wordWrap: { width: this._chatMsgW },
+      }).setScrollFactor(0).setDepth(181);
+      this._chatMsgTexts.push(t);
+    });
+  }
+
+  // Switch chat region when player crosses regions
+  updateChatRegion() {
+    const region = getCurrentRegion(G.x, G.y) || 'frost_valley';
+    if (region !== this._chatRegion) {
+      this._chatRegion = region;
+      this._chatMessages = [];
+      this.refreshChatDisplay();
+      GameChat.listenToRegion(region);
+      this._chatHeader.setText(`Chat - ${region.replace('_', ' ')}`);
+    }
   }
 }
