@@ -98,11 +98,11 @@ class BootScene extends Phaser.Scene {
       shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 8, fill: true }
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.3, 'The Spirit World Awaits', {
+    this.add.text(width / 2, height * 0.3, 'Online', {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v1.0.44 — Phaser Edition', {
+    this.add.text(width / 2, height * 0.34, 'v60', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 
