@@ -215,15 +215,15 @@ const CLASS_TREES = {
     requiresTree: 'artisan',
     branches: ['Civic Buildings', 'Enhancements', 'Recipes'],
     talents: [
-      // Branch 0: Civic Buildings — the 3 key structures
-      { id: 'arc_civ_1', branch: 0, tier: 0, name: 'Laboratory',
-        desc: 'Build a laboratory (Scientists need this for mutations)', cost: 1, maxRank: 1, prereq: null },
-      { id: 'arc_civ_2', branch: 0, tier: 1, name: 'Battle Arena',
-        desc: 'Build a battle arena (players can PvP here)', cost: 2, maxRank: 1, prereq: 'arc_civ_1' },
-      { id: 'arc_civ_3', branch: 0, tier: 2, name: 'Inn',
-        desc: 'Build an inn — players who rest here get a bonus when they return', cost: 3, maxRank: 1, prereq: 'arc_civ_2' },
-      { id: 'arc_civ_4', branch: 0, tier: 3, name: 'Grand Design',
-        desc: 'All civic buildings gain upgraded visuals and increased capacity', cost: 4, maxRank: 1, prereq: 'arc_civ_3' },
+      // Branch 0: Civic Buildings — key structures for your town
+      { id: 'arc_civ_1', branch: 0, tier: 0, name: 'Inn',
+        desc: 'Build an inn — players who rest here get a bonus when they return', cost: 1, maxRank: 1, prereq: null },
+      { id: 'arc_civ_2', branch: 0, tier: 1, name: 'Laboratory',
+        desc: 'Build a laboratory (Scientists need this for mutations)', cost: 2, maxRank: 1, prereq: 'arc_civ_1' },
+      { id: 'arc_civ_3', branch: 0, tier: 2, name: 'Battle Arena',
+        desc: 'Build a battle arena (players can PvP here)', cost: 3, maxRank: 1, prereq: 'arc_civ_2' },
+      { id: 'arc_civ_4', branch: 0, tier: 3, name: 'Train Station',
+        desc: 'Build a train station — teleport to any other town with a station (train arrives every 1 min)', cost: 4, maxRank: 1, prereq: 'arc_civ_3' },
 
       // Branch 1: Enhancements — town improvements, garden structures, Cultivator synergy
       { id: 'arc_enh_1', branch: 1, tier: 0, name: 'Garden Trellis',
