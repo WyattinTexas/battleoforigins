@@ -368,14 +368,28 @@ class WorldScene extends Phaser.Scene {
     this._otherPlayerSprites = {};
     this.initMultiplayerPresence();
 
-    // ── Wave 6: Periodic save + multiplayer presence update (every 30s) ──
-    this._presenceTimer = this.time.addEvent({
+    // ── Periodic save (every 30s) ──
+    this.time.addEvent({
       delay: 30000,
+      callback: () => saveGame(),
+      callbackScope: this,
+      loop: true,
+    });
+
+    // ── Live multiplayer presence (every 1.5s for responsive movement) ──
+    this._lastPresenceX = G.x;
+    this._lastPresenceY = G.y;
+    this._presenceTimer = this.time.addEvent({
+      delay: 1500,
       callback: () => {
-        saveGame();
-        MultiplayerPresence.updatePresence({
-          name: G.name, x: G.x, y: G.y, spriteKey: G.spriteKey,
-        });
+        // Only send update if player moved
+        if (Math.abs(G.x - this._lastPresenceX) > 0.5 || Math.abs(G.y - this._lastPresenceY) > 0.5) {
+          this._lastPresenceX = G.x;
+          this._lastPresenceY = G.y;
+          MultiplayerPresence.updatePresence({
+            name: G.name, x: G.x, y: G.y, spriteKey: G.spriteKey,
+          });
+        }
       },
       callbackScope: this,
       loop: true,
@@ -2627,22 +2641,28 @@ class WorldScene extends Phaser.Scene {
       const targetX = (data.x || 0) * T;
       const targetY = (data.y || 0) * T;
 
-      // Smooth movement
+      // Smooth movement — tween matches update interval for fluid motion
       if (entry.sprite && entry.sprite.active) {
+        this.tweens.killTweensOf(entry.sprite);
         this.tweens.add({
           targets: entry.sprite,
           x: targetX, y: targetY,
-          duration: 800, ease: 'Linear',
+          duration: 1200, ease: 'Power2',
         });
-        // Update label position too
         if (entry.label && entry.label.active) {
+          this.tweens.killTweensOf(entry.label);
           this.tweens.add({
             targets: entry.label,
             x: targetX, y: targetY - 36,
-            duration: 800, ease: 'Linear',
+            duration: 1200, ease: 'Power2',
           });
+          // Update name in case it changed
+          const dn = data.name || 'Unknown';
+          const lv = (data.level && data.level > 1) ? ` Lv${data.level}` : '';
+          entry.label.setText(dn + lv);
         }
       }
+      entry.data = data;
       entry.lastSeen = Date.now();
     } else {
       // Create new player sprite (semi-transparent ghost appearance)
