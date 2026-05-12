@@ -139,11 +139,11 @@ class WorldScene extends Phaser.Scene {
     // ── HUD ──
     this.buildHUD();
 
-    // ── Buff HUD (bottom-left, above controls hint) ──
-    this._buffHudText = this.add.text(10, this.scale.height - 40, '', {
+    // ── Buff HUD (above action bar, centered) ──
+    this._buffHudText = this.add.text(this.scale.width / 2, this.scale.height - 105, '', {
       fontSize: '9px', fontFamily: 'monospace', color: '#88ff88',
-      backgroundColor: '#000000aa', padding: { x: 4, y: 2 },
-    }).setScrollFactor(0).setDepth(200).setVisible(false);
+      backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
 
     // ── Render player structures ──
     this._structureSprites = [];
@@ -281,9 +281,12 @@ class WorldScene extends Phaser.Scene {
       bg.on('pointerout', () => bg.setAlpha(0.85));
     });
 
+    // ── Class Action Bar (bottom center) ──
+    this._buildActionBar();
+
     // ── Controls hint ──
-    this.add.text(10, this.scale.height - 20, 'WASD: Move | E: Interact | I: Items | T: Team | H: Help', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#666666',
+    this.add.text(10, this.scale.height - 20, 'WASD: Move | E: Interact', {
+      fontSize: '9px', fontFamily: 'monospace', color: '#444444',
     }).setScrollFactor(0).setDepth(200);
 
     // ── Region text ──
@@ -572,9 +575,10 @@ class WorldScene extends Phaser.Scene {
       this._showBuildMenu();
     }
 
-    // Tick buffs + update buff HUD
+    // Tick buffs + update HUDs
     if (typeof tickBuffs === 'function') tickBuffs();
     this._updateBuffHUD();
+    this._updateActionBar();
 
     // Structure proximity interactions
     this._checkStructureProximity();
@@ -3135,6 +3139,180 @@ class WorldScene extends Phaser.Scene {
       this.refreshChatDisplay();
       GameChat.listenToRegion(region);
       this._chatHeader.setText(`Chat - ${region.replace('_', ' ')}`);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  CLASS ACTION BAR (bottom center, MMO-style)
+  // ══════════════════════════════════════════════════════
+
+  _buildActionBar() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const barY = H - 70;
+    const btnSize = 44;
+    const gap = 6;
+
+    // Dark background bar
+    this._actionBarBg = this.add.rectangle(W / 2, barY + 10, 380, 64, 0x0a0a1a, 0.85)
+      .setStrokeStyle(1, 0x333355).setScrollFactor(0).setDepth(300);
+
+    // Action buttons — only show for unlocked apprentices
+    this._actionButtons = [];
+    const actions = [
+      { id: 'fortune', label: '★', name: 'Fortune', color: 0x44bbff,
+        check: () => typeof canGiveFortune === 'function' && canGiveFortune(),
+        action: () => this._useFortuneFromBar(),
+        status: () => {
+          if (typeof hasActiveFortune === 'function' && hasActiveFortune()) return 'ACTIVE';
+          if (typeof isFortuneReady === 'function' && !isFortuneReady()) return getFortuneCooldownSec() + 's';
+          return 'READY';
+        }
+      },
+      { id: 'build', label: '⚒', name: 'Build', color: 0xdd9933,
+        check: () => typeof isApprentice === 'function' && isApprentice('artisan'),
+        action: () => this._showBuildMenu(),
+        status: () => 'READY',
+      },
+      { id: 'garden', label: '❀', name: 'Garden', color: 0x66cc66,
+        check: () => typeof isApprentice === 'function' && isApprentice('cultivator'),
+        action: () => { if (typeof placeStructure === 'function') this._placementMode('garden'); },
+        status: () => 'READY',
+      },
+      { id: 'extract', label: '⚗', name: 'DNA', color: 0xaa55ff,
+        check: () => typeof isApprentice === 'function' && isApprentice('scientist'),
+        action: () => { if (typeof notify === 'function') notify('DNA extraction available in battle — look for the Extract button!'); },
+        status: () => 'BATTLE',
+      },
+      { id: 'recruit', label: '♥', name: 'Recruit', color: 0x44dd66,
+        check: () => typeof isApprentice === 'function' && isApprentice('trainer'),
+        action: () => { if (typeof notify === 'function') notify('Recruit spiritkin during wild encounters!'); },
+        status: () => 'BATTLE',
+      },
+    ];
+
+    const visibleActions = actions.filter(a => a.check());
+    const totalW = visibleActions.length * (btnSize + gap) - gap;
+    const startX = W / 2 - totalW / 2 + btnSize / 2;
+
+    // Resize bar to fit
+    this._actionBarBg.setSize(Math.max(200, totalW + 30), 64);
+
+    visibleActions.forEach((a, i) => {
+      const x = startX + i * (btnSize + gap);
+
+      const bg = this.add.rectangle(x, barY, btnSize, btnSize, 0x1a1a2e, 0.9)
+        .setStrokeStyle(2, a.color).setScrollFactor(0).setDepth(301)
+        .setInteractive({ useHandCursor: true });
+
+      const icon = this.add.text(x, barY - 6, a.label, {
+        fontSize: '16px', fontFamily: 'monospace', color: '#ffffff',
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
+
+      const label = this.add.text(x, barY + 12, a.name, {
+        fontSize: '7px', fontFamily: 'monospace', fontStyle: 'bold', color: '#' + a.color.toString(16).padStart(6, '0'),
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
+
+      const statusText = this.add.text(x, barY + 26, '', {
+        fontSize: '7px', fontFamily: 'monospace', color: '#888888',
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
+
+      bg.on('pointerdown', a.action);
+      bg.on('pointerover', () => bg.setFillStyle(0x333366));
+      bg.on('pointerout', () => bg.setFillStyle(0x1a1a2e));
+
+      this._actionButtons.push({ id: a.id, bg, icon, label, statusText, statusFn: a.status, color: a.color });
+    });
+
+    // XP bars row underneath
+    this._xpBarY = barY + 36;
+    this._xpBars = [];
+    const xpSources = [
+      { id: 'fortune', name: 'Fortune', color: 0x44bbff, getXP: () => G.fortuneXP || 0 },
+      { id: 'crafting', name: 'Craft', color: 0xdd9933, getXP: () => (G.professionXP || {}).crafting || 0 },
+      { id: 'combat', name: 'Combat', color: 0x44dd66, getXP: () => (G.professionXP || {}).combat || 0 },
+      { id: 'exploration', name: 'Explore', color: 0xaa55ff, getXP: () => (G.professionXP || {}).exploration || 0 },
+    ];
+    const xpBarW = 80;
+    const xpStartX = W / 2 - (xpSources.length * (xpBarW + 4)) / 2;
+    xpSources.forEach((xp, i) => {
+      const bx = xpStartX + i * (xpBarW + 4) + xpBarW / 2;
+      const barBg = this.add.rectangle(bx, this._xpBarY, xpBarW, 8, 0x111122, 0.8)
+        .setStrokeStyle(1, 0x222244).setScrollFactor(0).setDepth(300);
+      const barFill = this.add.rectangle(bx - xpBarW / 2, this._xpBarY, 0, 6, xp.color, 0.6)
+        .setOrigin(0, 0.5).setScrollFactor(0).setDepth(301);
+      const barLabel = this.add.text(bx, this._xpBarY - 7, xp.name + ': 0', {
+        fontSize: '7px', fontFamily: 'monospace', color: '#666688',
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(301);
+      this._xpBars.push({ ...xp, barBg, barFill, barLabel, maxW: xpBarW - 2 });
+    });
+  }
+
+  _updateActionBar() {
+    // Update status text on each action button
+    if (this._actionButtons) {
+      for (const btn of this._actionButtons) {
+        const status = btn.statusFn();
+        btn.statusText.setText(status);
+        btn.statusText.setColor(status === 'READY' ? '#88ff88' : (status === 'ACTIVE' ? '#ffdd44' : '#666688'));
+      }
+    }
+    // Update XP bars
+    if (this._xpBars) {
+      for (const bar of this._xpBars) {
+        const xp = bar.getXP();
+        const nextMilestone = Math.max(100, Math.ceil(xp / 100) * 100);
+        const progress = (xp % 100) / 100;
+        bar.barFill.setSize(Math.max(1, progress * bar.maxW), 6);
+        bar.barLabel.setText(bar.name + ': ' + xp);
+      }
+    }
+  }
+
+  _useFortuneFromBar() {
+    // Find nearest NPC to give fortune to
+    if (!this.npcSprites) return;
+    let nearest = null, nearestDist = Infinity;
+    for (const npc of this.npcSprites) {
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
+      if (dist < 100 && dist < nearestDist) { nearest = npc; nearestDist = dist; }
+    }
+    if (!nearest) {
+      if (typeof notify === 'function') notify('Walk near an NPC or player to give a Fortune');
+      return;
+    }
+    if (typeof hasActiveFortune === 'function' && hasActiveFortune()) {
+      if (typeof notify === 'function') notify('Target already has a Fortune — wait for it to expire');
+      return;
+    }
+    if (typeof isFortuneReady === 'function' && !isFortuneReady()) {
+      if (typeof notify === 'function') notify('Fortune on cooldown: ' + getFortuneCooldownSec() + 's');
+      return;
+    }
+    const result = giveFortune(nearest.name, false);
+    if (result) {
+      const color = result.type === 'good' ? '#88ff44' : '#ff6666';
+      const icon = result.type === 'good' ? '★' : '☆';
+      const floatText = this.add.text(nearest.x, nearest.y - 16, icon + ' ' + result.name + ' ' + icon, {
+        fontSize: '12px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: color,
+        backgroundColor: '#000000cc', padding: { x: 6, y: 3 },
+      }).setOrigin(0.5).setDepth(100);
+      this.tweens.add({ targets: floatText, y: nearest.y - 60, alpha: 0, duration: 2000, ease: 'Power2', onComplete: () => floatText.destroy() });
+      const descText = this.add.text(nearest.x, nearest.y, result.desc, {
+        fontSize: '9px', fontFamily: 'monospace', color: '#aaaacc',
+        backgroundColor: '#000000aa', padding: { x: 4, y: 2 },
+      }).setOrigin(0.5).setDepth(100);
+      this.tweens.add({ targets: descText, y: nearest.y - 30, alpha: 0, duration: 2500, delay: 500, ease: 'Power2', onComplete: () => descText.destroy() });
+      GameAudio.collect();
+      if (result.darkRiderUnlocked) {
+        this.time.delayedCall(1500, () => {
+          const drText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'The darkness you\'ve sown has taken root within you...', {
+            fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#cc2244',
+            backgroundColor: '#000000dd', padding: { x: 20, y: 12 },
+          }).setOrigin(0.5).setScrollFactor(0).setDepth(500);
+          this.tweens.add({ targets: drText, alpha: 0, duration: 5000, delay: 3000, onComplete: () => drText.destroy() });
+        });
+      }
     }
   }
 
