@@ -134,9 +134,20 @@ class WorldScene extends Phaser.Scene {
     this.pKey = this.input.keyboard.addKey('P');
     this.yKey = this.input.keyboard.addKey('Y');
     this.fKey = this.input.keyboard.addKey('F');
+    this.bKey = this.input.keyboard.addKey('B');
 
     // ── HUD ──
     this.buildHUD();
+
+    // ── Buff HUD (bottom-left, above controls hint) ──
+    this._buffHudText = this.add.text(10, this.scale.height - 40, '', {
+      fontSize: '9px', fontFamily: 'monospace', color: '#88ff88',
+      backgroundColor: '#000000aa', padding: { x: 4, y: 2 },
+    }).setScrollFactor(0).setDepth(200).setVisible(false);
+
+    // ── Render player structures ──
+    this._structureSprites = [];
+    this._renderStructures();
 
     // ── Dialogue box ──
     this.dialogueContainer = this.add.container(0, 0).setDepth(300).setScrollFactor(0);
@@ -253,6 +264,7 @@ class WorldScene extends Phaser.Scene {
       { label: 'CRAFT (C)', key: 'C', action: () => { GameAudio.menuOpen(); this.scene.launch('CraftScene'); this.scene.pause(); }, color: 0x665533 },
       { label: 'PROF (P)', key: 'P', action: () => this.showProfessionPanel(), color: 0x664488 },
       { label: 'TALENT (Y)', key: 'Y', action: () => { GameAudio.menuOpen(); this.scene.launch('TalentScene'); this.scene.pause(); }, color: 0x884466 },
+      { label: 'BUILD (B)', key: 'B', action: () => this._showBuildMenu(), color: 0x997744 },
       { label: 'HELP (H)', key: 'H', action: () => this.showHelpPanel(), color: 0x448844 },
     ];
     const startX = this.scale.width / 2 - (buttons.length * (btnW + btnGap)) / 2;
@@ -556,6 +568,16 @@ class WorldScene extends Phaser.Scene {
       this.scene.launch('TalentScene');
       this.scene.pause();
     }
+    if (Phaser.Input.Keyboard.JustDown(this.bKey)) {
+      this._showBuildMenu();
+    }
+
+    // Tick buffs + update buff HUD
+    if (typeof tickBuffs === 'function') tickBuffs();
+    this._updateBuffHUD();
+
+    // Structure proximity interactions
+    this._checkStructureProximity();
 
     // Wave 3: Signpost interactions (E key near signposts)
     this.checkSignpostProximity();
@@ -3114,5 +3136,143 @@ class WorldScene extends Phaser.Scene {
       GameChat.listenToRegion(region);
       this._chatHeader.setText(`Chat - ${region.replace('_', ' ')}`);
     }
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  BUFF HUD
+  // ══════════════════════════════════════════════════════
+
+  _updateBuffHUD() {
+    if (!this._buffHudText || typeof getActiveBuffs !== 'function') return;
+    const buffs = getActiveBuffs();
+    if (buffs.length === 0) { this._buffHudText.setVisible(false); return; }
+    let text = '';
+    for (const b of buffs) {
+      const remaining = b.expiresAt > 0 ? Math.ceil((b.expiresAt - Date.now()) / 1000) : '∞';
+      const timeStr = typeof remaining === 'number' ? (remaining > 60 ? Math.ceil(remaining / 60) + 'm' : remaining + 's') : remaining;
+      text += b.icon + ' ' + b.name + ' (' + timeStr + ')  ';
+    }
+    this._buffHudText.setText(text.trim());
+    this._buffHudText.setVisible(true);
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  STRUCTURE RENDERING + INTERACTION
+  // ══════════════════════════════════════════════════════
+
+  _renderStructures() {
+    if (this._structureSprites) {
+      this._structureSprites.forEach(s => { if (s.rect) s.rect.destroy(); if (s.label) s.label.destroy(); });
+    }
+    this._structureSprites = [];
+    if (!G.structures || typeof STRUCTURE_TYPES === 'undefined') return;
+    const T = 32;
+    for (const s of G.structures) {
+      const info = STRUCTURE_TYPES[s.type];
+      if (!info) continue;
+      const px = s.x * T + (info.w * T) / 2;
+      const py = s.y * T + (info.h * T) / 2;
+      const rect = this.add.rectangle(px, py, info.w * T, info.h * T, info.color, 0.4)
+        .setStrokeStyle(1, info.color).setDepth(3);
+      const label = this.add.text(px, py - 4, info.icon + ' ' + info.name, {
+        fontSize: '8px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffffff',
+        backgroundColor: '#00000088', padding: { x: 2, y: 1 },
+      }).setOrigin(0.5).setDepth(4);
+      this._structureSprites.push({ id: s.id, rect, label });
+    }
+  }
+
+  _checkStructureProximity() {
+    if (typeof getStructuresNear !== 'function') return;
+    const nearby = getStructuresNear(Math.floor(G.x), Math.floor(G.y), 3);
+    for (const s of nearby) {
+      if (s.type === 'garden' && typeof isApprentice === 'function' && isApprentice('shaman') && !hasBuff('meditation')) {}
+      if (s.type === 'tavern' && typeof isApprentice === 'function' && isApprentice('scholar') && !hasBuff('preparation')) {}
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  BUILD MENU (B key)
+  // ══════════════════════════════════════════════════════
+
+  _showBuildMenu() {
+    if (typeof getBuildableStructures !== 'function') return;
+    const buildable = getBuildableStructures();
+    if (buildable.length === 0) {
+      if (typeof notify === 'function') notify('No structures available. Learn Artisan or Cultivator skills first.');
+      return;
+    }
+    GameAudio.menuOpen();
+    this.panels.open('BUILD', (container, panelW, panelH) => {
+      let y = 10;
+      const title = this.add.text(panelW / 2, y, 'Select a structure to build', {
+        fontSize: '12px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffdd44',
+      }).setOrigin(0.5, 0);
+      container.add(title);
+      y += 28;
+      for (const item of buildable) {
+        const row = this.add.rectangle(panelW / 2, y + 16, panelW - 20, 32, 0x222244, 0.8)
+          .setStrokeStyle(1, item.color).setInteractive({ useHandCursor: true });
+        container.add(row);
+        const txt = this.add.text(14, y + 8, item.icon + '  ' + item.name, {
+          fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold',
+          color: '#' + item.color.toString(16).padStart(6, '0'),
+        });
+        container.add(txt);
+        const desc = this.add.text(panelW - 14, y + 20, item.desc, {
+          fontSize: '8px', fontFamily: 'monospace', color: '#888899',
+        }).setOrigin(1, 0.5);
+        container.add(desc);
+        row.on('pointerover', () => row.setFillStyle(0x333366));
+        row.on('pointerout', () => row.setFillStyle(0x222244));
+        row.on('pointerdown', () => { this.panels.close(); this._placementMode(item.type); });
+        y += 38;
+      }
+    }, { width: 400, height: Math.min(500, 60 + buildable.length * 38) });
+  }
+
+  _placementMode(structureType) {
+    const info = STRUCTURE_TYPES[structureType];
+    if (!info) return;
+    const T = 32;
+    const ghost = this.add.rectangle(0, 0, info.w * T, info.h * T, info.color, 0.3)
+      .setStrokeStyle(2, 0xffffff).setDepth(500);
+    const ghostLabel = this.add.text(0, -20, 'Click to place ' + info.name + ' (ESC to cancel)', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#ffffff',
+      backgroundColor: '#000000cc', padding: { x: 6, y: 3 },
+    }).setOrigin(0.5).setDepth(501);
+    const moveHandler = (pointer) => {
+      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+      const tx = Math.floor(worldPoint.x / T);
+      const ty = Math.floor(worldPoint.y / T);
+      ghost.setPosition(tx * T + (info.w * T) / 2, ty * T + (info.h * T) / 2);
+      ghostLabel.setPosition(ghost.x, ghost.y - (info.h * T) / 2 - 14);
+    };
+    const clickHandler = (pointer) => {
+      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+      const tx = Math.floor(worldPoint.x / T);
+      const ty = Math.floor(worldPoint.y / T);
+      const result = placeStructure(structureType, tx, ty);
+      if (result) {
+        ghost.destroy(); ghostLabel.destroy();
+        this.input.off('pointermove', moveHandler);
+        this.input.off('pointerdown', clickHandler);
+        this.input.keyboard.off('keydown-ESC', escHandler);
+        this._renderStructures();
+        GameAudio.collect();
+        if (typeof notify === 'function') notify(info.name + ' placed!');
+      } else {
+        if (typeof notify === 'function') notify('Can\'t build here — overlapping structure');
+      }
+    };
+    const escHandler = () => {
+      ghost.destroy(); ghostLabel.destroy();
+      this.input.off('pointermove', moveHandler);
+      this.input.off('pointerdown', clickHandler);
+      this.input.keyboard.off('keydown-ESC', escHandler);
+    };
+    this.input.on('pointermove', moveHandler);
+    this.input.on('pointerdown', clickHandler);
+    this.input.keyboard.on('keydown-ESC', escHandler);
   }
 }

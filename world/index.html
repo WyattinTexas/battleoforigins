@@ -54,6 +54,8 @@
 <script src="src/core/professions.js?v=52"></script>
 <script src="src/core/talent-data.js?v=52"></script>
 <script src="src/core/fortune.js?v=52"></script>
+<script src="src/core/buffs.js?v=52"></script>
+<script src="src/core/structures.js?v=52"></script>
 <script src="src/core/market.js?v=52"></script>
 <script src="src/core/world-events.js?v=52"></script>
 <script src="src/core/housing.js?v=52"></script>
@@ -87,6 +89,8 @@
   loadGame();
   ensurePlayerDefaults();
   if (typeof ensureFortuneDefaults === 'function') ensureFortuneDefaults();
+  if (typeof ensureBuffDefaults === 'function') ensureBuffDefaults();
+  if (typeof ensureStructureDefaults === 'function') ensureStructureDefaults();
   // Add scenes to config (they're defined by now)
   config.scene = [BootScene, WorldScene, BattleScene, CraftScene, TalentScene, BuildingScene];
   // Start Phaser

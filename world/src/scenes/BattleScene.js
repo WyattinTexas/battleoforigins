@@ -16,7 +16,8 @@ class BattleScene extends Phaser.Scene {
 
     if (!B) { this.endBattle(false); return; }
 
-    // Apply Fortune Teller effects (Good Fortune = +1 LS, Bad Fortune = -1 die flag)
+    // Apply all buff effects at battle start (fortunes, meditation, preparation, etc.)
+    if (typeof applyBuffsToBattle === 'function') applyBuffsToBattle();
     if (typeof applyFortuneToBattle === 'function') applyFortuneToBattle();
 
     const pg = activePlayerGhost();
@@ -229,8 +230,9 @@ class BattleScene extends Phaser.Scene {
 
     // Roll dice (surge grants extra dice, bad fortune removes one on first roll)
     const extraDice = committed.surge || 0;
+    const buffDiceMod = (typeof consumeBuffDiceMod === 'function') ? consumeBuffDiceMod() : 0;
     const fortuneMod = (typeof consumeFortuneBadDice === 'function') ? consumeFortuneBadDice() : 0;
-    const pDiceCount = Math.max(1, 3 + extraDice + fortuneMod);
+    const pDiceCount = Math.max(1, 3 + extraDice + buffDiceMod + fortuneMod);
     const pDice = weightedRoll(this.pg, pDiceCount).sort((a, b) => a - b);
     const eDice = weightedRoll(this.eg, 3).sort((a, b) => a - b);
 
