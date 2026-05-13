@@ -94,6 +94,17 @@ class BattleScene extends Phaser.Scene {
   //  BUILD THE STAGE — Testroom layout
   // ═══════════════════════════════════════════════════════════
   _buildStage() {
+    console.log('[BattleScene] _buildStage entered');
+    try {
+      this._doBuildStage();
+      console.log('[BattleScene] _buildStage completed');
+    } catch (e) {
+      console.error('[BattleScene] _buildStage threw:', e, e?.stack);
+      // Force-exit so user isn't stuck if the stage build threw silently.
+      this._exit(false);
+    }
+  }
+  _doBuildStage() {
     const W = this.cameras.main.width;
     const H = this.cameras.main.height;
     this._W = W; this._H = H;

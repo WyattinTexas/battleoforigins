@@ -408,16 +408,22 @@ class DungeonScene extends Phaser.Scene {
       }
     }
 
-    // Launch directly — BattleScene fades itself in. Skipping the
-    // pre-launch fadeOut + delayedCall removed a class of timing hangs.
-    this.scene.launch('BattleScene', {
-      enemyCard: card,
-      trainerName: enemy.isBoss ? `${enemy.name.toUpperCase()} (BOSS)` : enemy.name,
-      dungeon: true,
-      returnScene: 'DungeonScene',
+    // Match the world-boss launch pattern exactly. The delayedCall is
+    // load-bearing: it puts scene.launch + scene.pause in a fresh call
+    // frame outside the update tick so BattleScene can fully initialize
+    // before this scene pauses. Calling them synchronously from update
+    // can cause Phaser 4 to pause before BattleScene's create finishes.
+    this.cameras.main.fadeOut(250, 0, 0, 0);
+    this.time.delayedCall(250, () => {
+      this.scene.launch('BattleScene', {
+        enemyCard: card,
+        trainerName: enemy.isBoss ? `${enemy.name.toUpperCase()} (BOSS)` : enemy.name,
+        dungeon: true,
+        returnScene: 'DungeonScene',
+      });
+      this.scene.pause();
+      console.log('[Dungeon] battle launched, scene paused');
     });
-    this.scene.pause();
-    console.log('[Dungeon] battle launched, scene paused');
   }
 
   // ═══════════════════════════════════════════════════════════
