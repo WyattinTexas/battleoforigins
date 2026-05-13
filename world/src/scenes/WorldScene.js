@@ -36,6 +36,29 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
+    // ── Sprite overlays: stamp real tileset art on trees, flowers, buildings ──
+    // Frame index = row * COLS + col  (Nature=24cols, House=33cols, Desert=20cols)
+    const TILE_SPRITES = {
+      10: { key: 'tiles_nature', frames: [152, 153, 176, 177], depth: 1 },   // flowers — small plants/flowers
+      1:  { key: 'tiles_nature', frames: [7, 8, 31, 32], depth: 2 },         // frost trees — snowy crowns
+      13: { key: 'tiles_nature', frames: [13, 14, 37, 38], depth: 2 },       // warm trees — green crowns
+      21: { key: 'tiles_desert', frames: [86, 87, 106, 107], depth: 2 },     // palm trees
+      25: { key: 'tiles_nature', frames: [1, 19, 25, 43], depth: 2 },        // dark/dead trees
+      5:  { key: 'tiles_house', frames: [0, 1, 2, 33, 34], depth: 2 },       // buildings — house facades
+      8:  { key: 'tiles_house', frames: [3, 4, 36, 37], depth: 2 },          // workshop
+      12: { key: 'tiles_house', frames: [5, 6, 38, 39], depth: 2 },          // cantina
+    };
+    for (let y = 0; y < MH; y++) {
+      for (let x = 0; x < MW; x++) {
+        const tileType = worldMap[y] ? worldMap[y][x] : 0;
+        const si = TILE_SPRITES[tileType];
+        if (si) {
+          const frame = si.frames[(x * 7 + y * 13) % si.frames.length];
+          this.add.image(x * T + T / 2, y * T + T / 2, si.key, frame).setScale(2).setDepth(si.depth);
+        }
+      }
+    }
+
     // No physics static group — collision is handled by tile lookup in update()
 
     // ── Player ──
