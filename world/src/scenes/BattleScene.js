@@ -13,8 +13,9 @@ class BattleScene extends Phaser.Scene {
     const H = this.scale.height;
 
     // Transparent camera — world scene bleeds through underneath
+    // Semi-transparent overlay — world bleeds through underneath (82% opacity)
     this.cameras.main.setBackgroundColor('rgba(0,0,0,0)');
-    this.add.rectangle(W / 2, H / 2, W, H, 0xEBE7E3, 0.72).setDepth(-1).setScrollFactor(0);
+    this.add.rectangle(W / 2, H / 2, W, H, 0xEBE7E3, 0.82).setDepth(-1).setScrollFactor(0);
 
     if (!B) { this.endBattle(false); return; }
 

@@ -143,50 +143,128 @@ function spawnValkinEvent(scene) {
   event.battleDialogue._said10hp = false;
   event.battleDialogue._saidLowHp = false;
 
-  // Announce in world chat as Valkin
-  valkinChat('I have arrived. Tremble before Valkin the Grand!');
-  if (typeof notify === 'function') {
-    notify('⚠ VALKIN THE GRAND HAS APPEARED! ⚠');
-  }
+  // Spawn Valkin at the east edge (Dark Castle direction), walking toward Polaris Hub center
+  const spawnX = (HUB.x + 25) * T; // east of hub
+  const spawnY = (HUB.y + 1) * T;
+  const targetX = (HUB.x + 3) * T; // hub center plaza
+  const targetY = (HUB.y + 3) * T;
 
-  // Spawn Valkin near the player (3 tiles away, random direction)
-  const angle = Math.random() * Math.PI * 2;
-  const hubX = Math.floor(scene.player.x / T) + Math.round(Math.cos(angle) * 3);
-  const hubY = Math.floor(scene.player.y / T) + Math.round(Math.sin(angle) * 3);
-  const valkinSprite = scene.physics.add.sprite(hubX * T, hubY * T, 'npc_elder');
+  const valkinSprite = scene.physics.add.sprite(spawnX, spawnY, 'npc_elder');
   valkinSprite.setDepth(10);
   valkinSprite.setTint(0xcc66ff);
+  valkinSprite.setScale(2.5); // bigger than normal NPCs
 
   // Label
-  const valkinLabel = scene.add.text(hubX * T, hubY * T - 16, 'Valkin the Grand', {
-    fontSize: '9px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#cc66ff',
+  const valkinLabel = scene.add.text(spawnX, spawnY - 20, 'Valkin the Grand', {
+    fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#cc66ff',
     backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
   }).setOrigin(0.5).setDepth(11);
 
   // Title
-  const titleLabel = scene.add.text(hubX * T, hubY * T - 26, '★ The Corruptor ★', {
-    fontSize: '7px', fontFamily: 'monospace', color: '#ff8844',
+  const titleLabel = scene.add.text(spawnX, spawnY - 32, '★ The Corruptor ★', {
+    fontSize: '8px', fontFamily: 'monospace', color: '#ff8844',
   }).setOrigin(0.5).setDepth(11);
 
-  // Store reference
+  // Store reference — phase: 'approaching' → 'declaring' → 'hunting'
   scene._valkinEvent = {
     sprite: valkinSprite,
     label: valkinLabel,
     titleLabel: titleLabel,
     event: event,
     active: true,
+    phase: 'approaching', // walking to town center
+    targetX: targetX,
+    targetY: targetY,
     lastAmbient: Date.now(),
     huntTarget: null,
+    declareTime: 0,
+    spawnTime: Date.now(),
+    expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutes
   };
 
-  // Collision with player triggers the boss battle
-  scene.physics.add.overlap(scene.player, valkinSprite, () => {
-    if (G.inBattle || !scene._valkinEvent.active) return;
-    triggerValkinBattle(scene);
-  });
+  // Announce approach
+  valkinChat('I have arrived. Tremble before Valkin the Grand!');
+  if (typeof notify === 'function') notify('⚠ VALKIN THE GRAND APPROACHES! ⚠');
 
-  // Update loop for hunting behavior
-  scene._valkinUpdateFn = () => updateValkinHunt(scene);
+  // Update loop — handles all phases
+  scene._valkinUpdateFn = () => updateValkinEvent(scene);
+}
+
+// ── Unified Valkin event update (approach → declare → hunt) ──
+function updateValkinEvent(scene) {
+  if (!scene._valkinEvent || !scene._valkinEvent.active) return;
+  const v = scene._valkinEvent;
+  const T = 32;
+
+  // Check expiry (30 min)
+  if (Date.now() > v.expiresAt) {
+    valkinChat('This land bores me. I will return.');
+    v.sprite.destroy(); v.label.destroy(); v.titleLabel.destroy();
+    scene._valkinEvent = null;
+    return;
+  }
+
+  // Update label positions
+  v.label.setPosition(v.sprite.x, v.sprite.y - 20);
+  v.titleLabel.setPosition(v.sprite.x, v.sprite.y - 32);
+
+  // ── PHASE: APPROACHING ──
+  if (v.phase === 'approaching') {
+    const dx = v.targetX - v.sprite.x;
+    const dy = v.targetY - v.sprite.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 8) {
+      // Walk toward hub center at 1.5 tiles/sec
+      const speed = 1.5 * T * 0.016;
+      const angle = Math.atan2(dy, dx);
+      v.sprite.x += Math.cos(angle) * speed;
+      v.sprite.y += Math.sin(angle) * speed;
+
+      // Trash talk while walking (every 8 seconds)
+      if (Date.now() - v.lastAmbient > 8000) {
+        v.lastAmbient = Date.now();
+        const walkLines = [
+          'Your little village amuses me.',
+          'I grow tired of waiting. Who dares approach?',
+          'The spirits tremble at my name.',
+        ];
+        valkinChat(walkLines[Math.floor(Math.random() * walkLines.length)]);
+      }
+
+      // If player walks into Valkin during approach, fight
+      const px = scene.player.x, py = scene.player.y;
+      const pDist = Phaser.Math.Distance.Between(px, py, v.sprite.x, v.sprite.y);
+      if (pDist < 30 && !G.inBattle) {
+        triggerValkinBattle(scene);
+      }
+    } else {
+      // Arrived at town center — declare war
+      v.phase = 'declaring';
+      v.declareTime = Date.now();
+      valkinChat('Attention Citizens! By right, I Valkin the Grand am the ruler of this land. Declare war against the Intruders!');
+      if (typeof notify === 'function') notify('⚠ VALKIN DECLARES WAR! ⚠');
+    }
+  }
+
+  // ── PHASE: DECLARING (3 second pause before hunting) ──
+  if (v.phase === 'declaring') {
+    if (Date.now() - v.declareTime > 3000) {
+      v.phase = 'hunting';
+      valkinChat('Now... who wants to go first?');
+
+      // NOW set up collision with player
+      scene.physics.add.overlap(scene.player, v.sprite, () => {
+        if (G.inBattle || !scene._valkinEvent?.active) return;
+        triggerValkinBattle(scene);
+      });
+    }
+  }
+
+  // ── PHASE: HUNTING ──
+  if (v.phase === 'hunting') {
+    updateValkinHunt(scene);
+  }
 }
 
 // ── Trigger Valkin Boss Battle ──────────────────────────

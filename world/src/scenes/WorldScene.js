@@ -3219,10 +3219,11 @@ class WorldScene extends Phaser.Scene {
     const zoom = this.cameras.main.zoom || 1;
     const W = this.scale.width / zoom;
     const H = this.scale.height / zoom;
-    const chatW = Math.min(300, W - 20);
-    const chatH = 130;
-    const chatX = 10;
-    const chatY = H - chatH - 90;
+    const chatW = Math.min(260, W * 0.4);
+    const chatH = 100;
+    // Position above the action bar, left-aligned but with generous padding
+    const chatX = 20;
+    const chatY = H - chatH - 85;
 
     // Chat container (fixed to screen)
     this._chatBg = this.add.rectangle(chatX + chatW / 2, chatY + chatH / 2, chatW, chatH, 0x0a0a1a, 0.75)
