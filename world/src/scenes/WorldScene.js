@@ -1203,7 +1203,7 @@ class WorldScene extends Phaser.Scene {
     let battleName;
     if (isBlackRider && enemy._riderTeam) {
       enemyIds = enemy._riderTeam;
-      battleName = enemy._riderName + ' challenges you!';
+      battleName = enemy._riderName;
     } else {
       const scaledMaxHp = Math.round(cardData.maxHp * (1 + (G.level - 1) * 0.15));
       enemyIds = [cardData.id];
@@ -2254,16 +2254,17 @@ class WorldScene extends Phaser.Scene {
   spawnBlackRiders() {
     if (!this.player) return;
 
-    // 8 unique Dark Riders — labeled "Dark Rider" on map (except Lucy), real name in battle
+    // 8 unique Dark Riders — "Dark Rider" on map, real name in battle
+    // Lucy is special: shows her name on map, uses dragon sprite, max 1
     const DARK_RIDERS = [
-      { name: 'Lucy',              team: [108],       tint: 0x4444aa, mapName: 'Lucy', sprite: 'creature_dragon' },
-      { name: 'Dark Jeff',         team: [74],        tint: 0x446644 },
-      { name: 'Outlaw & Pete',     team: [209, 311],  tint: 0x886644 },
-      { name: 'Shade',             team: [111, 205],  tint: 0x442266 },
-      { name: 'Tyler',             team: [105],       tint: 0x664422 },
-      { name: 'Doc',               team: [42, 100],   tint: 0x444444 },
-      { name: 'Harvey',            team: [448, 424],  tint: 0x662244 },
-      { name: 'Redd',              team: [98],        tint: 0x220044 },
+      { name: 'Lucy',              team: [108],       tint: 0x4444aa, mapName: 'Lucy', sprite: 'creature_dragon', unique: true },
+      { name: 'Dark Rider Jeff',   team: [74],        tint: 0x446644 },
+      { name: 'Dark Rider Outlaw', team: [43, 93],    tint: 0x886644 },
+      { name: 'Dark Rider Shade',  team: [111, 205],  tint: 0x442266 },
+      { name: 'Dark Rider Tyler',  team: [105],       tint: 0x664422 },
+      { name: 'Dark Rider Doc',    team: [42, 100],   tint: 0x444444 },
+      { name: 'Dark Rider Harvey', team: [448, 424],  tint: 0x662244 },
+      { name: 'Dark Rider Redd',   team: [98],        tint: 0x220044 },
     ];
 
     const count = Phaser.Math.Between(2, 3);
@@ -2280,8 +2281,11 @@ class WorldScene extends Phaser.Scene {
       if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) continue;
       if (this._impassableSet.has(worldMap[ty]?.[tx])) continue;
 
-      // Pick a random rider identity
-      const rider = DARK_RIDERS[Math.floor(Math.random() * DARK_RIDERS.length)];
+      // Pick a random rider identity (unique riders like Lucy can only appear once)
+      const usedNames = this._blackRiders.map(r => r.rider?.name).filter(Boolean);
+      const available = DARK_RIDERS.filter(r => !r.unique || !usedNames.includes(r.name));
+      if (available.length === 0) continue;
+      const rider = available[Math.floor(Math.random() * available.length)];
       const spriteKey = rider.sprite || 'creature_skull';
 
       const sprite = this.enemies.create(rx, ry, spriteKey, 0).setScale(2.5);
