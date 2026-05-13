@@ -78,10 +78,12 @@ const DUNGEONS = {
     ],
 
     // ── Mobs (non-boss). Position is tile coords. ────────────
-    // Add/remove freely. cardId maps to ALL_CARDS.
+    // Add/remove freely. cardId maps to ALL_CARDS; spriteKey is the
+    // texture used to render the mob in the dungeon world (16x16
+    // creature sprites, scaled up like overworld NPCs).
     mobs: [
-      { mobId: 'logey_1',  cardId: 26, room: 'r1', x: 6, y: 19 }, // Logey "Heinous" common
-      { mobId: 'pelter_1', cardId: 86, room: 'r2', x: 6, y: 12 }, // Pelter "Snowball" rare
+      { mobId: 'logey_1',  cardId: 26, room: 'r1', x: 6, y: 19, spriteKey: 'creature_slime'    }, // Logey "Heinous" common
+      { mobId: 'pelter_1', cardId: 86, room: 'r2', x: 6, y: 12, spriteKey: 'creature_mushroom' }, // Pelter "Snowball" rare
     ],
 
     // ── Final boss ────────────────────────────────────────────
@@ -90,6 +92,7 @@ const DUNGEONS = {
       cardId: 114, // Romy "Valley Guardian" legendary
       room: 'r3',
       x: 6, y: 4,
+      spriteKey: 'creature_dragon',
     },
 
     // ── Tile palette (colors for the ice-cavern theme) ───────

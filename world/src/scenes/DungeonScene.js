@@ -111,13 +111,29 @@ class DungeonScene extends Phaser.Scene {
     }
     this._mapGfx = g;
 
-    // Door sprites we can recolor when they open — track by index
-    this._doorSprites = this.config.doors.map((d, i) => {
-      const rect = this.add.rectangle(
-        d.x * T + T / 2, d.y * T + T / 2, T - 2, T - 2, p.doorClosed
-      ).setStrokeStyle(1, 0x223344).setDepth(2);
-      return rect;
-    });
+    // ── Physics colliders for every impassable tile ─────────
+    // One static body per wall + closed-door tile. Phaser handles
+    // collision — no manual predictive math, no overshoot bugs.
+    // Doors are tracked separately so we can destroy their body on open.
+    this._wallGroup = this.physics.add.staticGroup();
+    this._doorBodies = {};  // key "x,y" -> static body
+
+    for (let y = 0; y < this.mapH; y++) {
+      for (let x = 0; x < this.mapW; x++) {
+        const t = this.grid[y][x];
+        if (!D_IMPASSABLE.has(t)) continue;
+        const rect = this.add.rectangle(x * T + T / 2, y * T + T / 2, T, T, 0x000000, 0);
+        this.physics.add.existing(rect, true); // true = static body
+        this._wallGroup.add(rect);
+        if (t === D_TILE.DOOR_CLOSED) {
+          // Visible door sprite on top of the collider
+          rect.setFillStyle(p.doorClosed, 1);
+          rect.setStrokeStyle(1, 0x223344);
+          rect.setDepth(2);
+          this._doorBodies[`${x},${y}`] = rect;
+        }
+      }
+    }
 
     this.cameras.main.setBounds(0, 0, this.mapW * T, this.mapH * T);
   }
@@ -135,12 +151,12 @@ class DungeonScene extends Phaser.Scene {
       const cx = def.x * T + T / 2;
       const cy = def.y * T + T / 2;
 
-      // Visual: use card art if it was preloaded; otherwise colored rectangle.
-      const artKey = `card_${def.cardId}`;
+      // Visual: world-style creature sprite (16x16, scaled up like overworld NPCs).
+      // Falls back to a tinted rect if the texture didn't load.
+      const skey = def.spriteKey || (isBoss ? 'creature_dragon' : 'enemy_sprite');
       let sprite;
-      if (this.textures.exists(artKey)) {
-        const size = isBoss ? 56 : 40;
-        sprite = this.add.image(cx, cy, artKey).setDisplaySize(size, size).setDepth(8);
+      if (this.textures.exists(skey)) {
+        sprite = this.add.sprite(cx, cy, skey, 0).setScale(isBoss ? 3 : 2.2).setDepth(8);
       } else {
         sprite = this.add.rectangle(cx, cy, isBoss ? 56 : 40, isBoss ? 56 : 40,
           isBoss ? 0xcc2244 : 0x7777aa, 0.95).setStrokeStyle(2, 0xffffff).setDepth(8);
@@ -183,6 +199,14 @@ class DungeonScene extends Phaser.Scene {
     const tex = (G.spriteKey && this.textures.exists(G.spriteKey)) ? G.spriteKey : 'player';
     this.player = this.physics.add.sprite(spawnPX, spawnPY, tex, 0);
     this.player.setScale(2).setDepth(10).setCollideWorldBounds(true);
+    // Shrink physics body so player can fit through tile-wide doorways
+    // without their sprite edges catching wall colliders.
+    if (this.player.body && this.player.body.setSize) {
+      this.player.body.setSize(10, 10);
+      this.player.body.setOffset(3, 5);
+    }
+    // Real Phaser collision against wall + closed-door static bodies.
+    if (this._wallGroup) this.physics.add.collider(this.player, this._wallGroup);
 
     // Pulsing marker so you always find yourself
     this._marker = this.add.circle(spawnPX, spawnPY, 24, 0x88ccff, 0.4).setDepth(9);
@@ -265,7 +289,9 @@ class DungeonScene extends Phaser.Scene {
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  MOVEMENT — WASD/arrows, blocked by walls + closed doors
+  //  MOVEMENT — WASD/arrows. Wall + door collision is handled by
+  //  Phaser's static-body collider registered in _buildMap(); we
+  //  just set the velocity and let physics resolve overlaps.
   // ═══════════════════════════════════════════════════════════
   _handleMovement() {
     const speed = 160;
@@ -275,20 +301,10 @@ class DungeonScene extends Phaser.Scene {
     if (k.D.isDown || k.right.isDown) vx =  speed;
     if (k.W.isDown || k.up.isDown)    vy = -speed;
     if (k.S.isDown || k.down.isDown)  vy =  speed;
-
-    // Normalize diagonal
+    // Normalize diagonal so diagonal isn't faster than cardinal
     if (vx && vy) { vx *= 0.707; vy *= 0.707; }
 
-    // Predict next position and reject if it hits an impassable tile.
-    const T = this.T;
-    const dt = 1 / 60; // approx — physics uses delta but this is plenty for tile checks
-    const nx = this.player.x + vx * dt;
-    const ny = this.player.y + vy * dt;
-
-    if (this._isWalkable(nx, this.player.y)) this.player.setVelocityX(vx);
-    else this.player.setVelocityX(0);
-    if (this._isWalkable(this.player.x, ny)) this.player.setVelocityY(vy);
-    else this.player.setVelocityY(0);
+    this.player.setVelocity(vx, vy);
 
     // Walk anim
     const moving = vx !== 0 || vy !== 0;
@@ -302,17 +318,6 @@ class DungeonScene extends Phaser.Scene {
     } else {
       this.player.anims && this.player.anims.stop();
     }
-  }
-
-  _isWalkable(px, py) {
-    const tx = Math.floor(px / this.T);
-    const ty = Math.floor(py / this.T);
-    if (tx < 0 || ty < 0 || tx >= this.mapW || ty >= this.mapH) return false;
-    const t = this.grid[ty][tx];
-    if (D_IMPASSABLE.has(t)) return false;
-    // Boss-gated staircase: can only step on stairs after boss dies
-    if (t === D_TILE.STAIRS && !this._state.bossDefeated) return false;
-    return true;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -382,33 +387,36 @@ class DungeonScene extends Phaser.Scene {
     const card = ALL_CARDS.find(c => c.id === enemy.cardId);
     if (!card) { console.warn('[Dungeon] missing card for', enemy); return; }
 
-    // Build enemy ghost (HP-scaled per config)
     const mult = enemy.isBoss ? this.config.bossHpMultiplier : this.config.mobHpMultiplier;
     const scaledMaxHp = Math.max(1, Math.round(card.maxHp * mult));
-    const enemyGhost = {
-      id: card.id, name: card.name, hp: scaledMaxHp, maxHp: scaledMaxHp,
-      ko: false, ability: card.ability, abilityDesc: card.desc, rarity: card.rarity,
-      usedOncePerGame: false, entryFired: false,
-    };
 
     this._pendingEnemy = enemy;
     G.inBattle = true;
     const playerGhosts = buildPlayerBattleTeam();
+    console.log('[Dungeon] launching battle vs', enemy.name, '| player team size:', playerGhosts.length, '| scaled HP:', scaledMaxHp);
 
     if (typeof initBattle === 'function') {
-      initBattle(playerGhosts.map(g => g.id), [enemyGhost.id], { type: 'dungeon', dungeonId: this.dungeonId, bossFight: enemy.isBoss });
+      initBattle(playerGhosts.map(g => g.id), [card.id], {
+        type: 'dungeon', dungeonId: this.dungeonId, bossFight: enemy.isBoss
+      });
+      // Apply the dungeon-config HP multiplier (initBattle's makeTeam resets
+      // HP from the card; mutate B AFTER so the multiplier actually takes effect).
+      if (typeof B !== 'undefined' && B && B.blue && B.blue.ghosts && B.blue.ghosts[0]) {
+        B.blue.ghosts[0].maxHp = scaledMaxHp;
+        B.blue.ghosts[0].hp = scaledMaxHp;
+      }
     }
 
-    this.cameras.main.fadeOut(250, 0, 0, 0);
-    this.time.delayedCall(250, () => {
-      this.scene.launch('BattleScene', {
-        enemyCard: card,
-        trainerName: enemy.isBoss ? `${enemy.name.toUpperCase()} (BOSS)` : enemy.name,
-        dungeon: true,
-        returnScene: 'DungeonScene',
-      });
-      this.scene.pause();
+    // Launch directly — BattleScene fades itself in. Skipping the
+    // pre-launch fadeOut + delayedCall removed a class of timing hangs.
+    this.scene.launch('BattleScene', {
+      enemyCard: card,
+      trainerName: enemy.isBoss ? `${enemy.name.toUpperCase()} (BOSS)` : enemy.name,
+      dungeon: true,
+      returnScene: 'DungeonScene',
     });
+    this.scene.pause();
+    console.log('[Dungeon] battle launched, scene paused');
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -425,9 +433,6 @@ class DungeonScene extends Phaser.Scene {
     if (this.config.healBetweenFights && !enemy.isBoss) {
       for (const g of G.team) { if (!g.ko) g.hp = g.maxHp; }
     }
-
-    // Camera back
-    this.cameras.main.fadeIn(250, 0, 0, 0);
 
     if (enemy.isBoss) {
       this._state.bossDefeated = true;
@@ -447,23 +452,24 @@ class DungeonScene extends Phaser.Scene {
   _checkRoomClear(roomId) {
     const remaining = this.enemies.filter(e => e.room === roomId && !e.defeated);
     if (remaining.length > 0) return;
-    // Open every door gated by this room
+    // Open every door gated by this room: kill its physics body + repaint floor
     this.config.doors.forEach((d, i) => {
       if (d.unlockedBy !== roomId) return;
       if (this._state.doorsOpen.has(i)) return;
       this._state.doorsOpen.add(i);
       this.grid[d.y][d.x] = D_TILE.DOOR_OPEN;
-      // Recolor door tile
       const T = this.T;
       const p = this.config.palette;
       this._mapGfx.fillStyle(p.doorOpen, 1);
       this._mapGfx.fillRect(d.x * T, d.y * T, T, T);
-      if (this._doorSprites[i]) this._doorSprites[i].setVisible(false);
+      // Destroy the door's static body so the player can walk through
+      const key = `${d.x},${d.y}`;
+      const doorObj = this._doorBodies[key];
+      if (doorObj) { doorObj.destroy(); delete this._doorBodies[key]; }
     });
   }
 
   _onBattleLoss(enemy) {
-    this.cameras.main.fadeIn(250, 0, 0, 0);
     this._showKOModal();
   }
 

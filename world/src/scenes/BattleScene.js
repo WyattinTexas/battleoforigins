@@ -35,6 +35,7 @@ class BattleScene extends Phaser.Scene {
   init(data) { this.battleData = data || {}; }
 
   create() {
+    console.log('[BattleScene] create entered, B=', B ? 'set' : 'NULL', '| returnScene=', this.battleData?.returnScene || 'WorldScene');
     if (!B) { this._exit(false); return; }
     if (typeof applyBuffsToBattle === 'function') applyBuffsToBattle();
     if (typeof applyFortuneToBattle === 'function') applyFortuneToBattle();
