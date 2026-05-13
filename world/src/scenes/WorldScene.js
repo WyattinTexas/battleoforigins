@@ -567,7 +567,14 @@ class WorldScene extends Phaser.Scene {
 
     // NPC + Building interactions — read E once, share across all checks
     // NPCs check FIRST so dialogue takes priority over entering nearby buildings
-    this._ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
+    // Manual once-per-press guard (JustDown can be unreliable in Phaser 4)
+    const eDown = this.eKey.isDown;
+    if (eDown && !this._ePrevDown) {
+      this._ePressed = true;
+    } else {
+      this._ePressed = false;
+    }
+    this._ePrevDown = eDown;
     this._eConsumed = false;
     this.checkNPCProximity();
     this.checkBuildingProximity();
@@ -743,6 +750,7 @@ class WorldScene extends Phaser.Scene {
 
         if (ePressed) {
           this._eConsumed = true;
+          console.log('[NPC] E pressed near', npc.name, 'comm=', !!this.comm, 'commActive=', this.comm?.isActive);
           if (this.comm && this.comm.isActive) {
             this.comm.dismiss();
           } else if (npc.hostile) {
@@ -750,9 +758,15 @@ class WorldScene extends Phaser.Scene {
           } else if (npc.name === 'Crazy Lou' && this.comm) {
             this.showZaraMenu();
           } else if (this.comm) {
-            this.comm.show(npc.name, this.getNPCDialogue(npc.name), { color: '#88ff88' });
+            console.log('[NPC] Calling comm.show for', npc.name);
+            try {
+              this.comm.show(npc.name, this.getNPCDialogue(npc.name), { color: '#88ff88' });
+            } catch(e) {
+              console.error('[NPC] comm.show FAILED:', e);
+              this.showDialogue(npc.name, this.getNPCDialogue(npc.name));
+            }
           } else {
-            // Fallback if CommOverlay failed to initialize
+            console.log('[NPC] CommOverlay null — using fallback dialogue');
             this.showDialogue(npc.name, this.getNPCDialogue(npc.name));
           }
         }
