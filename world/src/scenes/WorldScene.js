@@ -3165,7 +3165,9 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _repositionHUD(W, H) {
-    const barY = H - 36;
+    const btnSize = 56, gap = 8, barBottomPad = 6;
+    const barY = H - barBottomPad - btnSize / 2;
+    const barH = btnSize + 20;
 
     // Menu bar
     if (this._menuBtns) {
@@ -3178,45 +3180,42 @@ class WorldScene extends Phaser.Scene {
       });
     }
 
-    // Action bar
-    if (this._actionBarBg) this._actionBarBg.setPosition(W / 2, barY + 8);
+    // Action bar background
+    if (this._actionBarBg) this._actionBarBg.setPosition(W / 2, H - barH / 2);
     if (this._actionButtons) {
-      const btnSize = 38, gap = 5;
       const totalW = this._actionButtons.length * (btnSize + gap) - gap;
       const startX = W / 2 - totalW / 2 + btnSize / 2;
       this._actionButtons.forEach((btn, i) => {
         const x = startX + i * (btnSize + gap);
-        btn.bg.setPosition(x, barY);
-        btn.bg.setSize(btnSize, btnSize);
-        btn.icon.setPosition(x, barY - 5);
-        btn.label.setPosition(x, barY + 10);
-        btn.statusText.setPosition(x, barY + 22);
+        btn.bg.setPosition(x, barY); btn.bg.setSize(btnSize, btnSize);
+        btn.icon.setPosition(x, barY - 8);
+        btn.label.setPosition(x, barY + 16);
+        btn.statusText.setPosition(x, barY + 28);
       });
     }
 
     // XP bars
     if (this._xpBars) {
-      const xpBarW = 70;
-      const xpY = barY + 30;
+      const xpBarW = 90, xpY = H - 4;
       const xpStartX = W / 2 - (this._xpBars.length * (xpBarW + 4)) / 2;
       this._xpBars.forEach((bar, i) => {
         const bx = xpStartX + i * (xpBarW + 4) + xpBarW / 2;
         bar.barBg.setPosition(bx, xpY);
         bar.barFill.setPosition(bx - xpBarW / 2, xpY);
-        bar.barLabel.setPosition(bx, xpY - 7);
+        bar.barLabel.setPosition(bx, xpY - 6);
       });
     }
 
     // Buff HUD
-    if (this._buffHudText) this._buffHudText.setPosition(W / 2, barY - 24);
+    if (this._buffHudText) this._buffHudText.setPosition(W / 2, H - barH - 10);
 
     // Controls hint
-    if (this._controlsHint) this._controlsHint.setPosition(6, H - 14);
+    if (this._controlsHint) this._controlsHint.setPosition(6, H - barH - 6);
 
-    // Minimap
+    // Minimap — above the action bar on the right
     if (this.minimapBg) {
       const mmW = 120, mmH = 90;
-      this.minimapBg.setPosition(W - mmW/2 - 6, H - mmH/2 - 6);
+      this.minimapBg.setPosition(W - mmW/2 - 6, H - barH - mmH/2 - 4);
     }
   }
 
@@ -3228,15 +3227,12 @@ class WorldScene extends Phaser.Scene {
     const zoom = this.cameras.main.zoom || 1.5;
     const W = this.scale.width / zoom;
     const H = this.scale.height / zoom;
-    const barY = H - 36;
-    const btnSize = 38;
-    const gap = 5;
+    const btnSize = 56;
+    const gap = 8;
+    const barBottomPad = 6; // pixels from absolute bottom
+    const barY = H - barBottomPad - btnSize / 2; // center of buttons
 
-    // Dark background bar
-    this._actionBarBg = this.add.rectangle(W / 2, barY + 10, 380, 64, 0x0a0a1a, 0.85)
-      .setStrokeStyle(1, 0x333355).setScrollFactor(0).setDepth(300);
-
-    // Action buttons — only show for unlocked apprentices
+    // Action definitions
     this._actionButtons = [];
     const actions = [
       { id: 'fortune', label: '★', name: 'Fortune', color: 0x44bbff,
@@ -3260,12 +3256,12 @@ class WorldScene extends Phaser.Scene {
       },
       { id: 'extract', label: '⚗', name: 'DNA', color: 0xaa55ff,
         check: () => typeof isApprentice === 'function' && isApprentice('scientist'),
-        action: () => { if (typeof notify === 'function') notify('DNA extraction available in battle — look for the Extract button!'); },
+        action: () => { if (typeof notify === 'function') notify('DNA extraction available in battle!'); },
         status: () => 'BATTLE',
       },
       { id: 'recruit', label: '♥', name: 'Recruit', color: 0x44dd66,
         check: () => typeof isApprentice === 'function' && isApprentice('trainer'),
-        action: () => { if (typeof notify === 'function') notify('Recruit spiritkin during wild encounters!'); },
+        action: () => { if (typeof notify === 'function') notify('Recruit spiritkin during encounters!'); },
         status: () => 'BATTLE',
       },
     ];
@@ -3274,37 +3270,39 @@ class WorldScene extends Phaser.Scene {
     const totalW = visibleActions.length * (btnSize + gap) - gap;
     const startX = W / 2 - totalW / 2 + btnSize / 2;
 
-    // Resize bar to fit
-    this._actionBarBg.setSize(Math.max(200, totalW + 30), 64);
+    // Dark background bar — hugs the bottom edge
+    const barH = btnSize + 20;
+    this._actionBarBg = this.add.rectangle(W / 2, H - barH / 2, Math.max(300, totalW + 40), barH, 0x0a0a1a, 0.9)
+      .setStrokeStyle(2, 0x334466).setScrollFactor(0).setDepth(300);
 
     visibleActions.forEach((a, i) => {
       const x = startX + i * (btnSize + gap);
 
-      const bg = this.add.rectangle(x, barY, btnSize, btnSize, 0x1a1a2e, 0.9)
+      const bg = this.add.rectangle(x, barY, btnSize, btnSize, 0x1a1a2e, 0.95)
         .setStrokeStyle(2, a.color).setScrollFactor(0).setDepth(301)
         .setInteractive({ useHandCursor: true });
 
-      const icon = this.add.text(x, barY - 6, a.label, {
-        fontSize: '16px', fontFamily: 'monospace', color: '#ffffff',
+      const icon = this.add.text(x, barY - 8, a.label, {
+        fontSize: '22px', fontFamily: 'monospace', color: '#ffffff',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
 
-      const label = this.add.text(x, barY + 12, a.name, {
-        fontSize: '7px', fontFamily: 'monospace', fontStyle: 'bold', color: '#' + a.color.toString(16).padStart(6, '0'),
+      const label = this.add.text(x, barY + 16, a.name, {
+        fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold',
+        color: '#' + a.color.toString(16).padStart(6, '0'),
       }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
 
-      const statusText = this.add.text(x, barY + 26, '', {
-        fontSize: '7px', fontFamily: 'monospace', color: '#888888',
+      const statusText = this.add.text(x, barY + 28, '', {
+        fontSize: '8px', fontFamily: 'monospace', color: '#888888',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
 
       bg.on('pointerdown', a.action);
-      bg.on('pointerover', () => bg.setFillStyle(0x333366));
-      bg.on('pointerout', () => bg.setFillStyle(0x1a1a2e));
+      bg.on('pointerover', () => { bg.setFillStyle(0x333366); bg.setStrokeStyle(3, 0xffffff); });
+      bg.on('pointerout', () => { bg.setFillStyle(0x1a1a2e); bg.setStrokeStyle(2, a.color); });
 
       this._actionButtons.push({ id: a.id, bg, icon, label, statusText, statusFn: a.status, color: a.color });
     });
 
-    // XP bars row underneath
-    this._xpBarY = barY + 36;
+    // XP bars inside the bar background
     this._xpBars = [];
     const xpSources = [
       { id: 'fortune', name: 'Fortune', color: 0x44bbff, getXP: () => G.fortuneXP || 0 },
@@ -3312,16 +3310,17 @@ class WorldScene extends Phaser.Scene {
       { id: 'combat', name: 'Combat', color: 0x44dd66, getXP: () => (G.professionXP || {}).combat || 0 },
       { id: 'exploration', name: 'Explore', color: 0xaa55ff, getXP: () => (G.professionXP || {}).exploration || 0 },
     ];
-    const xpBarW = 80;
+    const xpBarW = 90;
+    const xpY = H - 4;
     const xpStartX = W / 2 - (xpSources.length * (xpBarW + 4)) / 2;
     xpSources.forEach((xp, i) => {
       const bx = xpStartX + i * (xpBarW + 4) + xpBarW / 2;
-      const barBg = this.add.rectangle(bx, this._xpBarY, xpBarW, 8, 0x111122, 0.8)
+      const barBg = this.add.rectangle(bx, xpY, xpBarW, 6, 0x111122, 0.8)
         .setStrokeStyle(1, 0x222244).setScrollFactor(0).setDepth(300);
-      const barFill = this.add.rectangle(bx - xpBarW / 2, this._xpBarY, 0, 6, xp.color, 0.6)
+      const barFill = this.add.rectangle(bx - xpBarW / 2, xpY, 0, 4, xp.color, 0.7)
         .setOrigin(0, 0.5).setScrollFactor(0).setDepth(301);
-      const barLabel = this.add.text(bx, this._xpBarY - 7, xp.name + ': 0', {
-        fontSize: '7px', fontFamily: 'monospace', color: '#666688',
+      const barLabel = this.add.text(bx, xpY - 6, xp.name + ': 0', {
+        fontSize: '7px', fontFamily: 'monospace', color: '#556677',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(301);
       this._xpBars.push({ ...xp, barBg, barFill, barLabel, maxW: xpBarW - 2 });
     });
