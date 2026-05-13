@@ -105,9 +105,9 @@ class WorldScene extends Phaser.Scene {
     this.spawnNPC('Cursed Scholar', 95 * T, 22 * T, 'npc_elder', 0x6a4a8a);
 
     // Hostile NPCs (from HOSTILE_NPCS positions)
-    this.spawnNPC('Brawler Jax', 30 * T, 20 * T, 'enemy_sprite', 0xcc4444, true);
+    this.spawnNPC('Brawler Jax', 30 * T, 20 * T, 'creature_bear', 0xcc4444, true);
     this.spawnNPC('Ice Queen Vera', 40 * T, 15 * T, 'npc_knight', 0x6688cc, true);
-    this.spawnNPC('Bandit Marcus', 28 * T, 48 * T, 'enemy_sprite', 0xa88844, true);
+    this.spawnNPC('Bandit Marcus', 28 * T, 48 * T, 'creature_dragon', 0xa88844, true);
     this.spawnNPC('Lava Raider Kira', 68 * T, 25 * T, 'npc_hunter', 0xee8844, true);
     this.spawnNPC('Shadow Knight Vex', 92 * T, 18 * T, 'npc_elder', 0x8866aa, true);
     this.spawnNPC('The Exile', 55 * T, 35 * T, 'npc_knight', 0x666666, true);
@@ -976,6 +976,11 @@ class WorldScene extends Phaser.Scene {
     if (!info) return;
     if (!isFirstSet) GameAudio.levelUp();
 
+    // Trigger Valkin event when entering Dark Castle (once per session)
+    if (currentRegion === 'dark_castle' && !isFirstSet && !this._valkinEvent && typeof spawnValkinEvent === 'function') {
+      this.time.delayedCall(3000, () => spawnValkinEvent(this));
+    }
+
     // Large banner text — fade in, hold, fade out
     const banner = this.add.text(640, 200, `Entering ${info.name}`, {
       fontSize: '28px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: info.color,
@@ -1018,7 +1023,9 @@ class WorldScene extends Phaser.Scene {
     const ey = py + Math.sin(angle) * dist;
 
     const wildCard = ALL_CARDS[Math.floor(Math.random() * ALL_CARDS.length)];
-    const enemy = this.enemies.create(ex, ey, 'enemy_sprite', 0).setScale(1.8);
+    const creatureKeys = ['creature_bear','creature_dragon','creature_axolot','creature_axolotblue','creature_butterfly','creature_butterflyblue','creature_bluebat','creature_slime','creature_mushroom','creature_bamboo'];
+    const creatureKey = creatureKeys[Math.floor(Math.random() * creatureKeys.length)];
+    const enemy = this.enemies.create(ex, ey, creatureKey, 0).setScale(1.8);
     enemy.cardData = wildCard;
     enemy.setDepth(9);
     enemy.setTint(wildCard.rarity === 'rare' ? 0xaa55ff : wildCard.rarity === 'uncommon' ? 0x5599ff : 0xffffff);
@@ -1028,10 +1035,34 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#00000088', padding: { x: 2, y: 1 },
     }).setOrigin(0.5).setDepth(11);
 
+    // Wander with directional walk animations
+    const prefix = creatureKey + '_';
+    enemy._lastX = ex;
+    enemy._lastY = ey;
+    enemy._animPrefix = prefix;
+    // Start with a random walk anim
+    if (this.anims.exists(prefix + 'walk_down')) enemy.play(prefix + 'walk_down');
+
     this.tweens.add({
-      targets: enemy, x: ex + Phaser.Math.Between(-40, 40), y: ey + Phaser.Math.Between(-40, 40),
+      targets: enemy, x: ex + Phaser.Math.Between(-60, 60), y: ey + Phaser.Math.Between(-60, 60),
       duration: Phaser.Math.Between(2000, 4000), yoyo: true, repeat: -1,
-      onUpdate: () => { if (enemy.label) enemy.label.setPosition(enemy.x, enemy.y - 28); }
+      onUpdate: () => {
+        if (!enemy.active) return;
+        if (enemy.label) enemy.label.setPosition(enemy.x, enemy.y - 28);
+        // Update walk direction
+        const dx = enemy.x - (enemy._lastX || enemy.x);
+        const dy = enemy.y - (enemy._lastY || enemy.y);
+        const p = enemy._animPrefix;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          const key = dx > 0 ? p + 'walk_right' : p + 'walk_left';
+          if (enemy.anims.currentAnim?.key !== key && this.anims.exists(key)) enemy.play(key, true);
+        } else if (Math.abs(dy) > 0.1) {
+          const key = dy > 0 ? p + 'walk_down' : p + 'walk_up';
+          if (enemy.anims.currentAnim?.key !== key && this.anims.exists(key)) enemy.play(key, true);
+        }
+        enemy._lastX = enemy.x;
+        enemy._lastY = enemy.y;
+      }
     });
   }
 
@@ -2144,7 +2175,7 @@ class WorldScene extends Phaser.Scene {
       if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) continue;
       if (this._impassableSet.has(worldMap[ty]?.[tx])) continue;
 
-      const sprite = this.enemies.create(rx, ry, 'enemy_sprite', 0).setScale(2.5);
+      const sprite = this.enemies.create(rx, ry, 'creature_skull', 0).setScale(2.5);
       sprite.setTint(0x220022);
       sprite.setDepth(9);
       sprite._isBlackRider = true;
