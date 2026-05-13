@@ -29,9 +29,14 @@ const DUNGEONS = {
     goldLossOnFail: 15,
     healBetweenFights: true,   // restore team HP after each non-final battle (testing flag)
     aggroOnContact: true,      // walk into a mob = battle starts
-    bossHpMultiplier: 3,       // boss HP = card.maxHp * 3 (matches world boss scaling)
-    mobHpMultiplier: 1,        // common mob HP scaling (1 = card default)
+    bossHpMultiplier: 0.1,     // TEMP for victory-exit testing — revert to 3 after
+    mobHpMultiplier: 0.1,      // TEMP for victory-exit testing — revert to 1 after
     bossRewardGold: 100,       // gold awarded on final boss defeat
+
+    // Overworld tile the player is dropped onto when leaving the dungeon
+    // (success or failure). MUST be walkable. The world-gen explicitly
+    // sets (38, 5) to a path tile south of the dungeon entrance.
+    overworldExit: { x: 38, y: 5 },
 
     // ── Map (each row is a string of single-char tiles) ──────
     // Chars: '#'=wall, '.'=floor, '|'=closed door, 'E'=entry spawn, 'S'=staircase spawn slot

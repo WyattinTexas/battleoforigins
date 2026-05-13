@@ -599,23 +599,44 @@ class DungeonScene extends Phaser.Scene {
 
     this.cameras.main.fadeOut(400, 0, 0, 0);
     this.time.delayedCall(420, () => {
-      // Drop player at the overworld return position (set by WorldScene before launch)
-      if (typeof this.returnX === 'number' && typeof this.returnY === 'number') {
-        G.x = this.returnX / 32;
-        G.y = this.returnY / 32;
+      // Resolve overworld drop point. Prefer the dungeon's declared
+      // `overworldExit` tile (guaranteed walkable, picked when authoring
+      // the dungeon) over the raw pixel coords where the player pressed
+      // E — those can sit at the edge of an impassable dungeon tile and
+      // trip WorldScene's stuck-recovery, which warps the player to the
+      // hub. Fall back to returnX/Y only if the config didn't declare.
+      const T = 32;
+      let exitPx, exitPy;
+      if (this.config.overworldExit) {
+        exitPx = this.config.overworldExit.x * T + T / 2;
+        exitPy = this.config.overworldExit.y * T + T / 2;
+      } else if (typeof this.returnX === 'number') {
+        exitPx = this.returnX; exitPy = this.returnY;
       }
-      this.scene.stop('DungeonScene');
+      // Order matters: resume first (so the scene's update is live),
+      // setPosition while DungeonScene still exists (this.scene.get is
+      // reliable), then stop DungeonScene last.
       this.scene.resume('WorldScene');
-      // Snap world scene player position to return location, if available
       const ws = this.scene.get('WorldScene');
-      if (ws && ws.player && typeof this.returnX === 'number') {
-        ws.player.setPosition(this.returnX, this.returnY);
-        if (ws.cameras && ws.cameras.main) ws.cameras.main.fadeIn(400, 0, 0, 0);
+      if (ws && ws.player && typeof exitPx === 'number') {
+        ws.player.setPosition(exitPx, exitPy);
+        ws.player.setVelocity && ws.player.setVelocity(0, 0);
+        // Sync G so any save/refresh also lands here, not the hub.
+        G.x = exitPx / T;
+        G.y = exitPy / T;
+        saveGame();
+        if (ws.cameras && ws.cameras.main) {
+          // Snap camera to the player so we don't briefly see the hub.
+          const cam = ws.cameras.main;
+          cam.centerOn(exitPx, exitPy);
+          cam.fadeIn(400, 0, 0, 0);
+        }
       }
       if (ws && typeof ws.showNotification === 'function') {
         if (reason === 'victory') ws.showNotification(`${this.config.name} cleared! +${this.config.bossRewardGold} gold.`);
         else ws.showNotification(`Left ${this.config.name}. -${this.config.goldLossOnFail} gold.`);
       }
+      this.scene.stop('DungeonScene');
     });
   }
 
