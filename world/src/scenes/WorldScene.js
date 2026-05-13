@@ -1435,6 +1435,26 @@ class WorldScene extends Phaser.Scene {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  //  DUNGEON ENTRY — single entrypoint for every dungeon.
+  //  Fades out, launches DungeonScene with the given config id,
+  //  and remembers where to drop the player back on exit.
+  // ═══════════════════════════════════════════════════════════
+  _enterDungeon(dungeonId) {
+    if (G.team.length === 0) {
+      this.showNotification('You need a team to enter a dungeon!');
+      return;
+    }
+    if (typeof GameAudio !== 'undefined') GameAudio.menuOpen();
+    const returnX = this.player.x;
+    const returnY = this.player.y;
+    this.cameras.main.fadeOut(400, 0, 0, 0);
+    this.time.delayedCall(400, () => {
+      this.scene.launch('DungeonScene', { dungeonId, returnX, returnY });
+      this.scene.pause();
+    });
+  }
+
   checkFrostDungeonProximity() {
     if (!this._frostDungeon || !this.player) return;
     const dist = Phaser.Math.Distance.Between(
@@ -1453,7 +1473,7 @@ class WorldScene extends Phaser.Scene {
       if (Phaser.Input.Keyboard.JustDown(this.eKey) && !this._eConsumed && !this.panels.isOpen()) {
         if (!this.comm || !this.comm.isActive) {
           this._eConsumed = true;
-          this.showNotification('The Frost Dungeon entrance hums with cold... (entry coming soon)');
+          this._enterDungeon('frost_dungeon');
         }
       }
     } else if (this._frostDungeonHint) {

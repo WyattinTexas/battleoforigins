@@ -795,8 +795,12 @@ class BattleScene extends Phaser.Scene {
       if (B?.isHostileNPC && typeof markHostileNPCDefeated === 'function') markHostileNPCDefeated(B.isHostileNPC);
       if (this.battleData.worldBoss) G.worldBossesDefeated = (G.worldBossesDefeated||0)+1;
     } else {
-      const pen = Math.min(G.coins, 2+Math.floor(Math.random()*3));
-      if (pen > 0) { G.coins -= pen; coinChange = -pen; }
+      // Skip the default loss penalty inside dungeons — the dungeon's own
+      // goldLossOnFail handles that (avoid double-tax). See DungeonScene.
+      if (!this.battleData.dungeon) {
+        const pen = Math.min(G.coins, 2+Math.floor(Math.random()*3));
+        if (pen > 0) { G.coins -= pen; coinChange = -pen; }
+      }
     }
 
     if (pT) pT.ghosts.forEach((g,i) => { if(G.team[i]){G.team[i].hp=g.hp;G.team[i].ko=g.ko;} });
@@ -814,7 +818,14 @@ class BattleScene extends Phaser.Scene {
     this.time.delayedCall(2800, () => {
       if (typeof GameAudio !== 'undefined') { won?GameAudio.victory():GameAudio.defeat(); }
       this.cameras.main.fadeOut(300, 0, 0, 0, (cam, p) => {
-        if (p >= 1) { this.scene.stop(); this.scene.resume('WorldScene'); const ws=this.scene.get('WorldScene'); if(ws&&ws.cameras) ws.cameras.main.fadeIn(300); }
+        if (p >= 1) {
+          // Return to whichever scene launched the battle (defaults to WorldScene).
+          const target = this.battleData.returnScene || 'WorldScene';
+          this.scene.stop();
+          this.scene.resume(target);
+          const rs = this.scene.get(target);
+          if (rs && rs.cameras) rs.cameras.main.fadeIn(300);
+        }
       });
     });
   }
