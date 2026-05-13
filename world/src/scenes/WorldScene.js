@@ -474,6 +474,8 @@ class WorldScene extends Phaser.Scene {
     cam.setZoom(1.5);
     cam.setScroll(spawnPX - cam.width / (2 * cam.zoom), spawnPY - cam.height / (2 * cam.zoom));
     cam.startFollow(this.player, true, 1, 1);
+    // Enable camera culling — only render objects within viewport + margin
+    cam.useBounds = true;
 
     this._uiElements = [];
 
@@ -917,8 +919,8 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Don't process movement/hotkeys while typing in chat
-    if (this._chatOpen) {
+    // Don't process movement/hotkeys while typing in chat (Phaser or DOM)
+    if (this._chatOpen || G._chatFocused) {
       this.player.setVelocity(0, 0);
       return;
     }

@@ -290,17 +290,17 @@ function generateWorld() {
   }
 
   // ── Ocean water border (2-3 tiles wide on all edges) ──
-  // Top water strip (y:3-5)
+  // Top water strip (y:3-4) — thinner, more land
   for (let x = 56; x < 88; x++) {
-    worldMap[3][x] = 3; worldMap[4][x] = 3; worldMap[5][x] = 3;
+    worldMap[3][x] = 3; worldMap[4][x] = 3;
   }
-  // Bottom water strip (y:72-74)
+  // Bottom water strip (y:73-74) — thinner
   for (let x = 56; x < 88; x++) {
-    worldMap[72][x] = 3; worldMap[73][x] = 3; worldMap[74][x] = 3;
+    worldMap[73][x] = 3; worldMap[74][x] = 3;
   }
-  // Right water strip (x:85-87)
+  // Right water strip (x:86-87) — thinner, more land to explore
   for (let y = 3; y < 75; y++) {
-    worldMap[y][85] = 3; worldMap[y][86] = 3; worldMap[y][87] = 3;
+    worldMap[y][86] = 3; worldMap[y][87] = 3;
   }
   // Left water (x:56-57) — partial, leave passage area at y:19-23 dry
   for (let y = 3; y < 75; y++) {
@@ -384,12 +384,12 @@ function generateWorld() {
       const t = worldMap[y][x];
       if (t !== 20 && t !== 17) continue; // only on sand or ash
       const density = forestNoise(x, y, 55); // unique seed for volcanic palms
-      // Thinned — scattered palms, not a wall
-      if (density > 0.78) {
+      // Very sparse palms — mostly open sandy terrain
+      if (density > 0.88) {
         worldMap[y][x] = 21; // palm_tree
-      } else if (density > 0.72 && t === 20) {
-        const edgeChance = (density - 0.72) / 0.06;
-        if (_hash(x * 7, y * 11) / 0x7fffffff < edgeChance * 0.2) {
+      } else if (density > 0.82 && t === 20) {
+        const edgeChance = (density - 0.82) / 0.06;
+        if (_hash(x * 7, y * 11) / 0x7fffffff < edgeChance * 0.15) {
           worldMap[y][x] = 21;
         }
       }

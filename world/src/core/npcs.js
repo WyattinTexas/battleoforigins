@@ -304,7 +304,8 @@ function checkHostileNPCProximity() {
 // ═══════ BLACK RIDERS (Night Path Patrols) ═══════
 const BLACK_RIDERS = [];
 const BLACK_RIDER_MAX = 1;
-const BLACK_RIDER_SPAWN_INTERVAL = 60000; // 1 per minute, max 1 at a time
+const BLACK_RIDER_SPAWN_INTERVAL = 10 * 60 * 1000; // one every 10 minutes
+const BLACK_RIDER_LIFESPAN = 2 * 60 * 1000; // despawn after 2 minutes
 
 function spawnBlackRiders() {
   if (BLACK_RIDERS.length >= BLACK_RIDER_MAX) return;
@@ -329,7 +330,7 @@ function spawnBlackRiders() {
       state: 'patrol',
       angle: Math.random() * Math.PI * 2,
       team: [202, 111, 108],
-      
+      spawnedAt: Date.now(),
       particles: [],
     });
     break;
@@ -338,6 +339,14 @@ function spawnBlackRiders() {
 setInterval(spawnBlackRiders, BLACK_RIDER_SPAWN_INTERVAL);
 
 function despawnBlackRidersAtDawn() {
+  // Despawn riders that have been alive > 2 minutes
+  const now = Date.now();
+  for (let i = BLACK_RIDERS.length - 1; i >= 0; i--) {
+    if (BLACK_RIDERS[i].spawnedAt && now - BLACK_RIDERS[i].spawnedAt > BLACK_RIDER_LIFESPAN) {
+      BLACK_RIDERS.splice(i, 1);
+    }
+  }
+  // Also despawn at dawn
   const tod = getTimeOfDay();
   if (tod.phase === 'dawn' && BLACK_RIDERS.length > 0) {
     BLACK_RIDERS.length = 0;
