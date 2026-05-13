@@ -409,14 +409,13 @@ class WorldScene extends Phaser.Scene {
       loop: true,
     });
 
-    // ── Live multiplayer presence (500ms, low threshold — feels alive) ──
-    // Firebase Realtime DB handles this fine even on free tier.
-    // At ~2 writes/sec with a few players, we're well under the 100 simultaneous
-    // connections and 10GB/month transfer limits of the Spark plan.
+    // ── Live multiplayer presence (90ms — near real-time) ──
+    // ~11 writes/sec per player. Fine for small groups testing.
+    // TODO: Throttle to 500ms when 10+ players are online to stay under Firebase limits.
     this._lastPresenceX = G.x;
     this._lastPresenceY = G.y;
     this._presenceTimer = this.time.addEvent({
-      delay: 500,
+      delay: 90,
       callback: () => {
         // Send if player moved at all (0.3 tile threshold for sub-tile smoothness)
         if (Math.abs(G.x - this._lastPresenceX) > 0.3 || Math.abs(G.y - this._lastPresenceY) > 0.3) {
@@ -2913,20 +2912,20 @@ class WorldScene extends Phaser.Scene {
       const targetX = (data.x || 0) * T;
       const targetY = (data.y || 0) * T;
 
-      // Smooth movement — fast tween (400ms) matches 500ms update interval
+      // Smooth movement — 80ms tween matches 90ms update interval
       if (entry.sprite && entry.sprite.active) {
         this.tweens.killTweensOf(entry.sprite);
         this.tweens.add({
           targets: entry.sprite,
           x: targetX, y: targetY,
-          duration: 400, ease: 'Power2',
+          duration: 80, ease: 'Linear',
         });
         if (entry.label && entry.label.active) {
           this.tweens.killTweensOf(entry.label);
           this.tweens.add({
             targets: entry.label,
             x: targetX, y: targetY - 36,
-            duration: 400, ease: 'Power2',
+            duration: 80, ease: 'Linear',
           });
           // Update name in case it changed
           const dn = data.name || 'Unknown';
