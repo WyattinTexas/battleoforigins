@@ -367,24 +367,66 @@ class DungeonScene extends Phaser.Scene {
   _spawnStaircase() {
     if (!this.stairsSlot) return;
     const T = this.T;
-    const x = this.stairsSlot.x * T + T / 2;
-    const y = this.stairsSlot.y * T + T / 2;
+    const tileX = this.stairsSlot.x * T;
+    const tileY = this.stairsSlot.y * T;
+    const cx = tileX + T / 2;
+    const cy = tileY + T / 2;
     this.grid[this.stairsSlot.y][this.stairsSlot.x] = D_TILE.STAIRS;
 
-    const p = this.config.palette;
-    // Rebuild map tile on top of mapGfx so the staircase visually appears
-    this._mapGfx.fillStyle(p.stairs, 1);
-    this._mapGfx.fillRect(this.stairsSlot.x * T, this.stairsSlot.y * T, T, T);
-    // Drawn glyph: triple chevron pointing up
-    this.add.text(x, y, '▲\n▲\n▲', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#1a2230', align: 'center', lineSpacing: -2,
-    }).setOrigin(0.5).setDepth(3);
-    // Glow
-    const glow = this.add.circle(x, y, 30, 0x88ccff, 0.3).setDepth(2);
-    this.tweens.add({ targets: glow, scaleX: 1.5, scaleY: 1.5, alpha: 0.05,
-      duration: 1400, yoyo: true, repeat: -1 });
+    // Darken the slot tile to suggest a recessed stairwell opening.
+    this._mapGfx.fillStyle(0x2a3848, 1);
+    this._mapGfx.fillRect(tileX, tileY, T, T);
+
+    // ── Pixel-art stairs (top-down with perspective) ───────
+    // Four receding steps: top narrowest (farthest), bottom widest (closest).
+    // Each step has a light highlight on top, mid tread, dark shadow at bottom.
+    const g = this.add.graphics().setDepth(3);
+    const TREAD_LIGHT = 0xeaf3ff;
+    const TREAD       = 0xb8d4e6;
+    const TREAD_DARK  = 0x6a88a0;
+    const RISER       = 0x2a3848;
+
+    // Each entry: {x offset, y offset, width, treadH}
+    // Step positions tuned so they tile cleanly inside 32x32.
+    const steps = [
+      { x: 10, y: 2,  w: 12, h: 4 },  // step 4 (top, farthest)
+      { x:  8, y: 8,  w: 16, h: 4 },
+      { x:  6, y: 14, w: 20, h: 4 },
+      { x:  4, y: 20, w: 24, h: 5 },  // step 1 (bottom, closest)
+    ];
+
+    for (const s of steps) {
+      const sx = tileX + s.x;
+      const sy = tileY + s.y;
+      // Tread main
+      g.fillStyle(TREAD, 1);
+      g.fillRect(sx, sy + 1, s.w, s.h - 1);
+      // Top highlight (1px)
+      g.fillStyle(TREAD_LIGHT, 1);
+      g.fillRect(sx, sy, s.w, 1);
+      // Bottom shadow / step edge (1px)
+      g.fillStyle(TREAD_DARK, 1);
+      g.fillRect(sx, sy + s.h, s.w, 1);
+      // Riser (front face of step, drawn below the shadow line, 1px)
+      g.fillStyle(RISER, 1);
+      g.fillRect(sx, sy + s.h + 1, s.w, 1);
+    }
+
+    // Little icy crystal accents flanking the stairs (frost theme)
+    g.fillStyle(0xbfd6e8, 0.8);
+    g.fillTriangle(tileX + 2,  tileY + 14, tileX + 4,  tileY + 10, tileX + 6,  tileY + 14);
+    g.fillTriangle(tileX + 26, tileY + 14, tileX + 28, tileY + 10, tileX + 30, tileY + 14);
+    g.fillStyle(0xeaf3ff, 0.9);
+    g.fillRect(tileX + 3, tileY + 14, 2, 1);
+    g.fillRect(tileX + 27, tileY + 14, 2, 1);
+
+    // Pulsing glow at the top of the stairs — "light from above" feel
+    const glow = this.add.circle(cx, tileY + 6, 14, 0x88ccff, 0.35).setDepth(2);
+    this.tweens.add({ targets: glow, scaleX: 1.6, scaleY: 1.6, alpha: 0.1,
+      duration: 1500, yoyo: true, repeat: -1 });
+
     // Hint
-    this.add.text(x, y + 28, '[Step on stairs to exit]', {
+    this.add.text(cx, cy + T / 2 + 10, '[Step on stairs to exit]', {
       fontSize: '9px', fontFamily: 'monospace', color: '#bfe4ff',
       backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
     }).setOrigin(0.5).setDepth(11);
