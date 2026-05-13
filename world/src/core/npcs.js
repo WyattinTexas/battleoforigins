@@ -8,7 +8,7 @@ const NPCS = [
   // Polaris (Frost Valley)
   { name: 'Elder Frost', x: HUB.x + 2, y: HUB.y - 1, color: '#daa520', sprite: 'npc_elder' },
   { name: 'Smith Ember', x: HUB.x + 0, y: HUB.y + 5, color: '#e07020', sprite: 'npc_smith' },
-  { name: 'Keeper Zara', x: HUB.x + 7, y: HUB.y + 1, color: '#c0a040', sprite: 'npc_zara' },
+  { name: 'Crazy Lou', x: HUB.x + 7, y: HUB.y + 1, color: '#c0a040', sprite: 'npc_zara' },
   // Meadowbrook (Rolling Hills)
   { name: 'Farmer Bea', x: 24, y: 58, color: '#6a8a4a', sprite: 'npc_elder' },
   { name: 'Herbalist Sage', x: 28, y: 60, color: '#4a8a6a', sprite: 'npc_smith' },
@@ -65,17 +65,31 @@ function getSmithEmberDialogue() {
   return lines[Math.floor(Math.random() * lines.length)];
 }
 
-function getKeeperZaraDialogue() {
+function getCrazyLouDialogue() {
+  // After a few normal lines, Crazy Lou summons Valkin
+  if (!getCrazyLouDialogue._visitCount) getCrazyLouDialogue._visitCount = 0;
+  getCrazyLouDialogue._visitCount++;
+
+  // On the 3rd talk, she summons Valkin
+  if (getCrazyLouDialogue._visitCount === 3 && typeof spawnValkinEvent === 'function') {
+    // Find the active WorldScene to pass to spawnValkinEvent
+    const worldScene = Phaser.Display.Canvas.CanvasPool ? null : null; // placeholder
+    // Use global scene reference if available
+    if (typeof window._worldScene !== 'undefined' && window._worldScene && !window._worldScene._valkinEvent) {
+      setTimeout(() => spawnValkinEvent(window._worldScene), 2000);
+      return `Be on guard, word has it Valkin approaches.`;
+    }
+  }
+
   const lines = [
-    `The encounter zones are quiet today. Good day to grind some essences.`,
-    `Saw a warden take down a Skylar yesterday with just a Sad Sal. Never underestimate the underdog.`,
-    `Your team's looking... interesting. Not how I'd build it, but hey, that's the beauty of this.`,
-    `Ghost-rare essences are where the real money is. Those quality stats are on another level.`,
-    `Sometimes the best strategy is knowing when to flee. No shame in regrouping at the inn.`,
-    `The market board's changed everything. Used to be you were stuck with whatever you crafted. Now there's a whole economy.`,
-    `The Spirit Ranger who mapped all three regions? Legend says they could talk to wild Spiritkin.`,
-    `World bosses aren't just strong. They're ancient. Valkin has been here since the Rift opened.`,
-    `If you find all the lore tablets, bring them to Elder Frost. He'll want to see them.`,
+    `...you smell that? Smoke. But there's no fire.`,
+    `I used to have a team. Full roster. Gone now.`,
+    `Don't go past the hills at night. Just don't.`,
+    `Something's wrong with the spirits lately. They won't look at me.`,
+    `I've been out here too long. But somebody's gotta watch.`,
+    `You remind me of someone. Forget it.`,
+    `The ground shakes sometimes. Nobody talks about it.`,
+    `Stay close to the hub. Trust me on that.`,
   ];
   return lines[Math.floor(Math.random() * lines.length)];
 }
@@ -140,7 +154,7 @@ function getCursedScholarDialogue() {
 const NPC_DIALOGUE_MAP = {
   'Elder Frost': { getLine: getElderFrostDialogue, portrait: '&#129461;', portraitBg: '#3a2a10' },
   'Smith Ember': { getLine: getSmithEmberDialogue, portrait: '&#128296;', portraitBg: '#3a1a0a' },
-  'Keeper Zara': { getLine: getKeeperZaraDialogue, portrait: '&#9876;&#65039;', portraitBg: '#2a2a1a' },
+  'Crazy Lou': { getLine: getCrazyLouDialogue, portrait: '&#129322;', portraitBg: '#2a2a1a' },
   'Farmer Bea': { getLine: getFarmerBeaDialogue, portrait: '&#127806;', portraitBg: '#2a3a1a' },
   'Herbalist Sage': { getLine: getHerbalistSageDialogue, portrait: '&#127807;', portraitBg: '#1a3a2a' },
   'Captain Flint': { getLine: getCaptainFlintDialogue, portrait: '&#9875;', portraitBg: '#3a1a0a' },

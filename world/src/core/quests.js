@@ -429,7 +429,7 @@ const QUEST_POOL = {
     { id_prefix: 'se_002', title: 'Double Down', desc: 'Craft 2 items of any quality.', type: 'craft_count', requirement: { count: 2 }, reward: { coins: 10, title: null }, target: 2 },
     { id_prefix: 'se_003', title: 'Masterwork', desc: 'Craft a Mastercraft item.', type: 'craft_quality', requirement: { minTier: 'Mastercraft' }, reward: { coins: 30, title: 'Forge Master', rewardItem: 'spirit_trap' }, target: 1 },
   ],
-  'Keeper Zara': [
+  'Crazy Lou': [
     { id_prefix: 'kz_001', title: 'Spirit Patrol', desc: 'Win 5 wild encounters.', type: 'win_battles', requirement: { count: 5 }, reward: { coins: 12, title: null }, target: 5 },
     { id_prefix: 'kz_002', title: 'Rare Hunt', desc: 'Defeat a rare or better Spiritkin.', type: 'defeat_rarity', requirement: { minRarity: 'rare' }, reward: { coins: 20, title: null }, target: 1 },
     { id_prefix: 'kz_003', title: 'No Retreat', desc: 'Win 3 encounters without fleeing.', type: 'win_no_flee', requirement: { count: 3 }, reward: { coins: 15, title: null }, target: 3 },

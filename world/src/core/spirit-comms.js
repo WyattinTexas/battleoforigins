@@ -8,7 +8,7 @@ const NPC_COMM_PORTRAITS = {
   // Friendly NPCs
   'Elder Frost':     { art: 'https://drbango.com/testroom/art/originals/Cornelius.png', color: '#daa520' },
   'Smith Ember':     { art: 'https://drbango.com/testroom/art/gary.png',                color: '#ff6633' },
-  'Keeper Zara':     { art: 'https://drbango.com/testroom/art/originals/Katrina.png',   color: '#c0a040' },
+  'Crazy Lou':     { art: 'https://drbango.com/testroom/art/originals/Katrina.png',   color: '#c0a040' },
   'Farmer Bea':      { art: 'https://drbango.com/testroom/art/originals/Flora.png',     color: '#6a8a4a' },
   'Herbalist Sage':  { art: 'https://drbango.com/testroom/art/originals/Cornelius.png', color: '#4a8a6a' },
   'Captain Flint':   { art: 'https://drbango.com/testroom/art/originals/Floop.png',     color: '#cc6644' },

@@ -58,6 +58,9 @@ class WorldScene extends Phaser.Scene {
     const spawnPY = Math.floor(G.y) * T + T / 2;
     console.log('[WorldScene] Spawning player at tile', Math.floor(G.x), Math.floor(G.y), '-> px', spawnPX, spawnPY);
 
+    // Store scene reference for global access (NPC dialogue triggers, etc.)
+    window._worldScene = this;
+
     // Wave 6: Use selected character sprite (G.spriteKey), fall back to 'player'
     const playerTexture = (G.spriteKey && G.spriteKey !== 'player' && this.textures.exists(G.spriteKey)) ? G.spriteKey : 'player';
     this._playerTexture = playerTexture;
@@ -93,7 +96,7 @@ class WorldScene extends Phaser.Scene {
     // Friendly — Frost Valley hub
     this.spawnNPC('Elder Frost', (HUB.x + 2) * T, (HUB.y - 1) * T, 'npc_elder', 0xdaa520);
     this.spawnNPC('Smith Ember', HUB.x * T, (HUB.y + 5) * T, 'npc_knight', 0xe07020);
-    this.spawnNPC('Keeper Zara', (HUB.x + 7) * T, (HUB.y + 1) * T, 'npc_hunter', 0xc0a040);
+    this.spawnNPC('Crazy Lou', (HUB.x + 7) * T, (HUB.y + 1) * T, 'npc_hunter', 0xc0a040);
     // Friendly — Rolling Hills
     this.spawnNPC('Farmer Bea', 24 * T, 58 * T, 'npc_elder', 0x6a8a4a);
     this.spawnNPC('Herbalist Sage', 28 * T, 60 * T, 'npc_knight', 0x4a8a6a);
@@ -639,6 +642,10 @@ class WorldScene extends Phaser.Scene {
     // Wave 5: Daily challenge check
     this.updateDailyChallenge();
 
+    // Cultivator: Spirit pet follower + Nature's Calm heal
+    this.updateSpiritPet();
+    this.updateNaturesCalmHeal();
+
     // Wave 6: Tutorial progression checks
     this.updateTutorial(vx, vy);
 
@@ -735,6 +742,8 @@ class WorldScene extends Phaser.Scene {
             this.comm.dismiss();
           } else if (npc.hostile) {
             this.triggerTrainerBattle(npc);
+          } else if (npc.name === 'Crazy Lou' && this.comm) {
+            this.showZaraMenu();
           } else if (this.comm) {
             this.comm.show(npc.name, this.getNPCDialogue(npc.name), { color: '#88ff88' });
           } else {
@@ -759,7 +768,7 @@ class WorldScene extends Phaser.Scene {
     const lines = {
       'Elder Frost': ['The spirits remember what men forget.', 'Frost Valley was the first land the Spiritkin claimed.'],
       'Smith Ember': ['Iron sings when you heat it right.', 'Bring me ore and I will make you something worth carrying.'],
-      'Keeper Zara': ['Every Spiritkin has a story.', 'The battle is won before the dice are rolled.'],
+      'Crazy Lou': ['Every Spiritkin has a story.', 'The battle is won before the dice are rolled.'],
     };
     const pool = lines[name] || ['...'];
     return pool[Math.floor(Math.random() * pool.length)];
@@ -771,6 +780,78 @@ class WorldScene extends Phaser.Scene {
     this.dialogueContainer.setVisible(true);
     if (this._dialogueTimer) this._dialogueTimer.remove();
     this._dialogueTimer = this.time.delayedCall(4000, () => this.dialogueContainer.setVisible(false));
+  }
+
+  // ═══════ CRAZY LOU — Valkin Raid Trigger ═══════
+
+  showZaraMenu() {
+    const louLines = [
+      'Something wicked stirs beyond the rift. I can feel it in my bones.',
+      'You want a real fight? I know how to call one.',
+      'Most folks run from what I can summon. You don\'t look like most folks.',
+    ];
+    const line = louLines[Math.floor(Math.random() * louLines.length)];
+
+    // Check cooldown (5 minutes)
+    const cooldownMs = 5 * 60 * 1000;
+    const now = Date.now();
+    const onCooldown = G.lastValkinSummon && (now - G.lastValkinSummon < cooldownMs);
+    const cooldownLeft = onCooldown ? Math.ceil((cooldownMs - (now - G.lastValkinSummon)) / 1000) : 0;
+
+    if (onCooldown) {
+      this.comm.show('Crazy Lou', `The rift is still sealing... ${cooldownLeft}s remain before I can summon again.`, { color: '#c0a040' });
+      return;
+    }
+
+    this.comm.showChoice('Crazy Lou', line, [
+      {
+        label: '⚔ Summon Valkin the Grand',
+        callback: () => this.triggerZaraValkinRaid(),
+      },
+      {
+        label: 'Just passing through.',
+        callback: () => {},
+      },
+    ]);
+  }
+
+  triggerZaraValkinRaid() {
+    G.lastValkinSummon = Date.now();
+    if (typeof saveGame === 'function') saveGame();
+
+    // Lou's warning
+    this.comm.show('Crazy Lou', 'He comes. Prepare yourself.', { color: '#ff8844', duration: 2500 });
+
+    // Screen shake + dramatic pause, then spawn
+    this.time.delayedCall(1500, () => {
+      this.cameras.main.shake(500, 0.008);
+      if (typeof GameAudio !== 'undefined') GameAudio.defeat();
+
+      // Spawn Valkin event
+      if (typeof spawnValkinEvent === 'function') {
+        spawnValkinEvent(this);
+      }
+
+      // Also write to Firebase so other players see the boss
+      if (typeof db !== 'undefined' && !db._stub && typeof uid !== 'undefined') {
+        const bossData = {
+          active: true,
+          bossId: 432,
+          bossName: 'Valkin the Grand',
+          bossTitle: 'The Corruptor',
+          bossPlayers: '2-3',
+          maxHp: 25,
+          hp: 25,
+          x: 55, y: 30,
+          spawnedAt: firebase.database.ServerValue.TIMESTAMP,
+          expiresAt: Date.now() + 600000, // 10 minutes
+          cycle: -1, // manual summon
+          contributors: {},
+          summonedBy: G.name || 'Unknown',
+        };
+        db.ref('overworld/worldboss').set(bossData);
+      }
+    });
   }
 
   showNotification(text) {
@@ -2367,14 +2448,90 @@ class WorldScene extends Phaser.Scene {
 
     if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
 
+    // Create raid if in a party (co-op boss fight)
+    let raidId = null;
+    if (G.party && G.party.length > 0 && typeof RaidManager !== 'undefined') {
+      raidId = RaidManager.createRaid(bossTeam[0].id, bossTeam[0].name, bossTeam[0].maxHp, bossTeam);
+    }
+
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.time.delayedCall(300, () => {
       this.scene.launch('BattleScene', {
         enemyCard: getCard(bossTeam[0].id),
         trainerName: 'WORLD BOSS',
         worldBoss: true,
+        raidId: raidId,
       });
       this.scene.pause();
+    });
+  }
+
+  // ═══════ RAID INVITE HANDLER ═══════
+
+  setupRaidInviteListener() {
+    if (typeof RaidManager === 'undefined' || typeof db === 'undefined' || db._stub) return;
+
+    RaidManager.listenForInvites((invite) => {
+      if (G.inBattle) return; // already in battle, ignore
+      if (!invite || !invite.raidId) return;
+
+      // Auto-join the raid — show notification and launch battle
+      this.showNotification(`${invite.from} started a raid! Joining...`);
+      if (typeof GameAudio !== 'undefined') GameAudio.levelUp();
+
+      this.time.delayedCall(1500, () => {
+        if (G.inBattle) return;
+        G.inBattle = true;
+
+        // Build our own battle state against the raid boss
+        const playerGhosts = buildPlayerBattleTeam();
+        const bossCards = (invite.bossTeamIds || []).map(id => {
+          const card = typeof getCard === 'function' ? getCard(id) : ALL_CARDS.find(c => c.id === id);
+          if (!card) return null;
+          const scaledMaxHp = card.maxHp * 3;
+          return { id: card.id, name: card.name, hp: scaledMaxHp, maxHp: scaledMaxHp,
+            ko: false, ability: card.ability, abilityDesc: card.desc, rarity: card.rarity,
+            usedOncePerGame: false, entryFired: false };
+        }).filter(Boolean);
+
+        if (bossCards.length === 0) { G.inBattle = false; return; }
+
+        const _resources = {
+          iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0,
+          healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0,
+          surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0,
+        };
+        B = {
+          round: 1,
+          player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
+          enemy: { ghosts: bossCards, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
+          enemyCard: typeof getCard === 'function' ? getCard(bossCards[0].id) : null,
+          phase: 'ready', log: [], playerDice: [], enemyDice: [],
+          nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
+          resources: { ..._resources },
+          entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
+          koSwapTeam: null, committed: {},
+        };
+
+        if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+
+        // Join the raid
+        RaidManager.listenToRaid(invite.raidId);
+        db.ref('raids/' + invite.raidId + '/participants/' + G.playerId).set({
+          name: G.name, level: G.level, totalDamage: 0, alive: true,
+        });
+
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.time.delayedCall(300, () => {
+          this.scene.launch('BattleScene', {
+            enemyCard: typeof getCard === 'function' ? getCard(bossCards[0].id) : null,
+            trainerName: `RAID: ${invite.bossName}`,
+            worldBoss: true,
+            raidId: invite.raidId,
+          });
+          this.scene.pause();
+        });
+      });
     });
   }
 
@@ -2729,8 +2886,9 @@ class WorldScene extends Phaser.Scene {
 
     console.log('[WorldScene] Multiplayer presence initialized');
 
-    // Listen for incoming buffs and party requests
+    // Listen for incoming buffs, party requests, and raid invites
     this.checkIncomingBuffs();
+    this.setupRaidInviteListener();
 
     // Build party sidebar (will show if G.party has members)
     this.buildPartySidebar();
@@ -3081,7 +3239,7 @@ class WorldScene extends Phaser.Scene {
     const chatW = Math.min(400, W - 20);
     const chatH = 160;
     const chatX = 10;
-    const chatY = H - chatH - 30;
+    const chatY = H - chatH - 120;
 
     // Chat container (fixed to screen)
     this._chatBg = this.add.rectangle(chatX + chatW / 2, chatY + chatH / 2, chatW, chatH, 0x0a0a1a, 0.75)
@@ -3471,10 +3629,176 @@ class WorldScene extends Phaser.Scene {
 
   _checkStructureProximity() {
     if (typeof getStructuresNear !== 'function') return;
-    const nearby = getStructuresNear(Math.floor(G.x), Math.floor(G.y), 3);
+    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
+    if (!ePressed) return;
+    if (this.panels.isOpen() || (this.comm && this.comm.isActive)) return;
+
+    const nearby = getStructuresNear(Math.floor(G.x), Math.floor(G.y), 2);
     for (const s of nearby) {
-      if (s.type === 'garden' && typeof isApprentice === 'function' && isApprentice('shaman') && !hasBuff('meditation')) {}
-      if (s.type === 'tavern' && typeof isApprentice === 'function' && isApprentice('scholar') && !hasBuff('preparation')) {}
+      if (s.type === 'garden') {
+        this._eConsumed = true;
+        this.showGardenPanel(s);
+        return;
+      }
+    }
+  }
+
+  // ═══════ GARDEN INTERACTION PANEL ═══════
+
+  showGardenPanel(structure) {
+    if (this.panels.isOpen()) { this.panels.close(); return; }
+    if (typeof ensureGardenData !== 'function') return;
+    GameAudio.menuOpen();
+
+    const status = typeof getGardenStatus === 'function' ? getGardenStatus(structure.id) : [];
+    const isOwner = structure.owner === G.playerId;
+
+    this.panels.open('❀ Garden', (container, w, h) => {
+      let y = 8;
+
+      // Owner info
+      container.add(this.add.text(w / 2, y, isOwner ? 'Your Garden' : `${structure.ownerName}'s Garden`, {
+        fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#88cc88',
+      }).setOrigin(0.5).setScrollFactor(0));
+      y += 22;
+
+      // Plants
+      if (status.length === 0) {
+        container.add(this.add.text(w / 2, y, 'Empty — no plants yet', {
+          fontSize: '11px', fontFamily: 'monospace', color: '#888888',
+        }).setOrigin(0.5).setScrollFactor(0));
+        y += 20;
+      } else {
+        status.forEach(plant => {
+          // Plant name + progress bar
+          container.add(this.add.text(20, y, plant.name, {
+            fontSize: '11px', fontFamily: 'monospace', color: plant.color,
+          }).setOrigin(0, 0.5).setScrollFactor(0));
+
+          // Progress bar
+          const barW = 100, barH = 8;
+          const barX = w - 30 - barW;
+          container.add(this.add.rectangle(barX + barW/2, y, barW, barH, 0x333333).setScrollFactor(0));
+          const fillW = barW * plant.progress;
+          const fillColor = plant.ready ? 0x44dd44 : 0x668844;
+          if (fillW > 0) {
+            container.add(this.add.rectangle(barX + fillW/2, y, fillW, barH, fillColor).setScrollFactor(0));
+          }
+          container.add(this.add.text(w - 20, y, plant.ready ? '✓' : `${Math.floor(plant.progress * 100)}%`, {
+            fontSize: '9px', fontFamily: 'monospace', color: plant.ready ? '#44dd44' : '#aaaaaa',
+          }).setOrigin(1, 0.5).setScrollFactor(0));
+
+          y += 18;
+        });
+      }
+
+      y += 8;
+
+      // Buttons (only for owner)
+      if (isOwner) {
+        // Plant button
+        if (status.length < 4) {
+          const seeds = ['frost_seed', 'ember_seed', 'spirit_seed', 'moon_seed'];
+          const seedNames = { frost_seed: '❄ Frost', ember_seed: '🔥 Ember', spirit_seed: '✦ Spirit', moon_seed: '☽ Moon' };
+          seeds.forEach((seed, i) => {
+            const btnX = 20 + i * 72;
+            const btn = this.add.rectangle(btnX + 30, y + 14, 62, 26, 0x224422, 0.9)
+              .setStrokeStyle(1, 0x448844).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+            container.add(btn);
+            container.add(this.add.text(btnX + 30, y + 14, seedNames[seed], {
+              fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ff88',
+            }).setOrigin(0.5).setScrollFactor(0));
+            btn.on('pointerdown', () => {
+              if (typeof plantInGarden === 'function') {
+                plantInGarden(structure.id, seed);
+                this.panels.close();
+                this.showNotification('Planted!');
+              }
+            });
+          });
+          y += 36;
+        }
+
+        // Harvest button
+        const readyCount = status.filter(p => p.ready).length;
+        if (readyCount > 0) {
+          const hvBtn = this.add.rectangle(w / 2, y + 14, w - 40, 30, 0x225522, 0.9)
+            .setStrokeStyle(2, 0x44aa44).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+          container.add(hvBtn);
+          container.add(this.add.text(w / 2, y + 14, `Harvest (${readyCount} ready)`, {
+            fontSize: '13px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#44ff44',
+          }).setOrigin(0.5).setScrollFactor(0));
+          hvBtn.on('pointerdown', () => {
+            if (typeof harvestGarden === 'function') {
+              const harvested = harvestGarden(structure.id);
+              this.panels.close();
+              harvested.forEach(h => this.showNotification(`+${h.amount} ${h.resource}!`));
+              if (typeof GameAudio !== 'undefined') GameAudio.collect();
+            }
+          });
+          y += 36;
+        }
+
+        // Meditate button (Shaman talent)
+        if (typeof getTalentRank === 'function' && getTalentRank('shaman', 'shm_grd_1') >= 1) {
+          const medBtn = this.add.rectangle(w / 2, y + 14, w - 40, 30, 0x222255, 0.9)
+            .setStrokeStyle(2, 0x6666cc).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+          container.add(medBtn);
+          container.add(this.add.text(w / 2, y + 14, '🧘 Meditate (+1 die buff)', {
+            fontSize: '12px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#aaccff',
+          }).setOrigin(0.5).setScrollFactor(0));
+          medBtn.on('pointerdown', () => {
+            if (typeof addBuff === 'function') {
+              const duration = getTalentRank('shaman', 'shm_grd_3') >= 1 ? 30 : 10;
+              addBuff('meditation', duration);
+              this.panels.close();
+              this.showNotification(`Meditation: +1 die for ${duration} min`);
+              if (typeof GameAudio !== 'undefined') GameAudio.heal();
+            }
+          });
+        }
+      }
+    }, { width: 340, height: 260 });
+  }
+
+  // ═══════ SPIRIT PET FOLLOWER ═══════
+
+  updateSpiritPet() {
+    if (!G.spiritPet || !this.player) return;
+
+    // Create pet sprite if not exists
+    if (!this._petSprite) {
+      this._petSprite = this.add.circle(this.player.x - 20, this.player.y - 10, 5, 0xaa66ff, 0.7).setDepth(9);
+      this._petGlow = this.add.circle(this.player.x - 20, this.player.y - 10, 8, 0xaa66ff, 0.15).setDepth(8);
+      this._petLabel = this.add.text(this.player.x - 20, this.player.y - 22, G.spiritPet.name, {
+        fontSize: '7px', fontFamily: 'monospace', color: '#cc88ff',
+      }).setOrigin(0.5).setDepth(10);
+
+      // Pulse glow
+      this.tweens.add({ targets: this._petGlow, scaleX: 1.5, scaleY: 1.5, alpha: 0.05, duration: 1500, yoyo: true, repeat: -1 });
+    }
+
+    // Lerp pet toward player (trails behind with smooth motion)
+    const targetX = this.player.x - 20;
+    const targetY = this.player.y - 10;
+    this._petSprite.x += (targetX - this._petSprite.x) * 0.06;
+    this._petSprite.y += (targetY - this._petSprite.y) * 0.06;
+    this._petGlow.setPosition(this._petSprite.x, this._petSprite.y);
+    this._petLabel.setPosition(this._petSprite.x, this._petSprite.y - 12);
+  }
+
+  // ═══════ NATURE'S CALM PASSIVE HEAL ═══════
+
+  updateNaturesCalmHeal() {
+    if (typeof checkNaturesCalmHeal !== 'function') return;
+    if (!this._lastHealCheck) this._lastHealCheck = 0;
+    const now = Date.now();
+    if (now - this._lastHealCheck < 120000) return; // every 2 minutes
+    this._lastHealCheck = now;
+
+    if (checkNaturesCalmHeal()) {
+      this.showNotification('Nature\'s Calm: +1 HP');
+      if (typeof GameAudio !== 'undefined') GameAudio.heal();
     }
   }
 

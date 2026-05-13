@@ -802,6 +802,143 @@ function addChatMessage(sender, text) {
   GameChat.send(`[${sender}] ${text}`);
 }
 
+// ── Raid system (co-op boss fights via Firebase) ──
+const RaidManager = {
+  _raidId: null,
+  _listener: null,
+  _feedListener: null,
+  _inviteListener: null,
+  _isLeader: false,
+
+  // Create a raid (called by party leader when engaging a boss)
+  createRaid(bossId, bossName, bossHp, bossTeam) {
+    if (db._stub) return null;
+    const raidId = G.playerId + '_' + Date.now().toString(36);
+    this._raidId = raidId;
+    this._isLeader = true;
+
+    const raidData = {
+      bossId, bossName, bossMaxHp: bossHp, bossHp: bossHp,
+      leaderId: G.playerId, leaderName: G.name,
+      phase: 'active',
+      startedAt: firebase.database.ServerValue.TIMESTAMP,
+      expiresAt: Date.now() + 600000, // 10 min
+      participants: {},
+    };
+    raidData.participants[G.playerId] = {
+      name: G.name, level: G.level, totalDamage: 0, alive: true,
+    };
+
+    db.ref('raids/' + raidId).set(raidData);
+
+    // Notify party members
+    if (G.party && G.party.length > 0) {
+      G.party.forEach(member => {
+        db.ref('raid_invites/' + member.id).set({
+          raidId, bossName, bossHp,
+          from: G.name, leaderId: G.playerId,
+          bossTeamIds: bossTeam.map(g => g.id),
+        });
+      });
+    }
+
+    // Listen for raid state changes
+    this.listenToRaid(raidId);
+    return raidId;
+  },
+
+  // Listen for raid state (boss HP, participants, completion)
+  listenToRaid(raidId) {
+    if (db._stub) return;
+    this._raidId = raidId;
+
+    if (this._listener) try { this._listener.off(); } catch(e) {}
+    this._listener = db.ref('raids/' + raidId);
+
+    this._listener.on('value', (snap) => {
+      const data = snap.val();
+      if (!data) return;
+      RaidManager._raidState = data;
+
+      // Boss defeated check
+      if (data.bossHp <= 0 && data.phase !== 'completed') {
+        db.ref('raids/' + raidId + '/phase').set('completed');
+      }
+    });
+
+    // Listen to dice feed
+    if (this._feedListener) try { this._feedListener.off(); } catch(e) {}
+    this._feedListener = db.ref('raids/' + raidId + '/feed').orderByChild('ts').limitToLast(10);
+    this._feedListener.on('child_added', (snap) => {
+      const entry = snap.val();
+      if (!entry || entry.playerId === G.playerId) return;
+      // Dispatch to BattleScene if active
+      if (RaidManager._onFeedEntry) RaidManager._onFeedEntry(entry);
+    });
+  },
+
+  // Report damage dealt after a round
+  reportDamage(damage, playerName, diceResult) {
+    if (db._stub || !this._raidId) return;
+    const raidId = this._raidId;
+
+    // Decrement boss HP atomically
+    db.ref('raids/' + raidId + '/bossHp').transaction((hp) => {
+      if (hp === null) return 0;
+      return Math.max(0, hp - damage);
+    });
+
+    // Update participant damage total
+    db.ref('raids/' + raidId + '/participants/' + G.playerId + '/totalDamage')
+      .transaction((d) => (d || 0) + damage);
+
+    // Post to feed
+    db.ref('raids/' + raidId + '/feed').push({
+      playerId: G.playerId,
+      name: playerName || G.name,
+      damage,
+      dice: diceResult || [],
+      ts: firebase.database.ServerValue.TIMESTAMP,
+    });
+  },
+
+  // Listen for incoming raid invites (called once at startup)
+  listenForInvites(onInvite) {
+    if (db._stub || !G.playerId) return;
+    if (this._inviteListener) return;
+
+    this._inviteListener = db.ref('raid_invites/' + G.playerId);
+    this._inviteListener.on('value', (snap) => {
+      const data = snap.val();
+      if (!data) return;
+      snap.ref.remove(); // consume the invite
+      if (onInvite) onInvite(data);
+    });
+  },
+
+  // Get current raid boss HP (for BattleScene to read)
+  getRaidBossHp() {
+    return this._raidState ? this._raidState.bossHp : null;
+  },
+
+  getParticipants() {
+    return this._raidState?.participants || {};
+  },
+
+  // Clean up listeners
+  leaveRaid() {
+    if (this._listener) try { this._listener.off(); } catch(e) {}
+    if (this._feedListener) try { this._feedListener.off(); } catch(e) {}
+    this._raidId = null;
+    this._raidState = null;
+    this._isLeader = false;
+    this._onFeedEntry = null;
+  },
+
+  _raidState: null,
+  _onFeedEntry: null,
+};
+
 // ── Housing data ──
 var HOUSE_PLOTS = [
   { id: 'frost_1', name: 'Polaris Cottage', x: 12, y: 18, region: 'Frost Valley' },

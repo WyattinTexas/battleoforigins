@@ -151,3 +151,113 @@ function countStructures(type) {
   if (!G.structures) return 0;
   return G.structures.filter(s => s.type === type).length;
 }
+
+// ═══════ GARDEN SYSTEM (Cultivator Talent Effects) ═══════
+
+// Initialize garden data on a structure
+function ensureGardenData(structure) {
+  if (!structure.data) structure.data = {};
+  if (!structure.data.plants) structure.data.plants = [];
+  if (structure.data.lastHarvest === undefined) structure.data.lastHarvest = 0;
+  if (structure.data.spiritAttraction === undefined) structure.data.spiritAttraction = 0;
+  return structure.data;
+}
+
+// Plant a seed in a garden
+function plantInGarden(structureId, seedType) {
+  const garden = (G.structures || []).find(s => s.id === structureId && s.type === 'garden');
+  if (!garden) return false;
+  const data = ensureGardenData(garden);
+  if (data.plants.length >= 4) return false; // max 4 plants
+
+  const seedDefs = {
+    frost_seed:  { name: 'Frost Bloom',  growTime: 120000, color: '#88ccff', yield: 'iceShards' },
+    ember_seed:  { name: 'Ember Root',   growTime: 180000, color: '#ff8844', yield: 'sacredFire' },
+    spirit_seed: { name: 'Spirit Vine',  growTime: 240000, color: '#aa66ff', yield: 'healingSeeds' },
+    moon_seed:   { name: 'Moon Blossom', growTime: 300000, color: '#eeddaa', yield: 'moonstone' },
+  };
+  const def = seedDefs[seedType] || seedDefs.frost_seed;
+
+  data.plants.push({
+    type: seedType,
+    name: def.name,
+    color: def.color,
+    yield: def.yield,
+    plantedAt: Date.now(),
+    growTime: def.growTime,
+    harvested: false,
+  });
+
+  if (typeof saveGame === 'function') saveGame();
+  return true;
+}
+
+// Harvest ready plants from a garden
+function harvestGarden(structureId) {
+  const garden = (G.structures || []).find(s => s.id === structureId && s.type === 'garden');
+  if (!garden) return [];
+  const data = ensureGardenData(garden);
+  const now = Date.now();
+  const harvested = [];
+
+  data.plants = data.plants.filter(plant => {
+    const elapsed = now - plant.plantedAt;
+    if (elapsed >= plant.growTime && !plant.harvested) {
+      // Yield the resource
+      const amount = 1;
+      if (G[plant.yield] !== undefined) G[plant.yield] += amount;
+      harvested.push({ name: plant.name, resource: plant.yield, amount });
+      return false; // remove from garden
+    }
+    return true; // keep growing
+  });
+
+  data.lastHarvest = now;
+  if (typeof saveGame === 'function') saveGame();
+  return harvested;
+}
+
+// Get growth progress for all plants in a garden (0-1)
+function getGardenStatus(structureId) {
+  const garden = (G.structures || []).find(s => s.id === structureId && s.type === 'garden');
+  if (!garden) return [];
+  const data = ensureGardenData(garden);
+  const now = Date.now();
+  return data.plants.map(plant => ({
+    name: plant.name,
+    color: plant.color,
+    progress: Math.min(1, (now - plant.plantedAt) / plant.growTime),
+    ready: (now - plant.plantedAt) >= plant.growTime,
+  }));
+}
+
+// ═══════ TALENT EFFECT HELPERS ═══════
+
+// Check if player has a specific cultivator talent
+function hasCultivatorTalent(talentId) {
+  return typeof getTalentRank === 'function' && getTalentRank('cultivator', talentId) >= 1;
+}
+
+// Get bonus dice from talents (for BattleScene)
+function getTalentBonusDice() {
+  let bonus = 0;
+  // Battle Companion (cul_pet_3): +1 die
+  if (hasCultivatorTalent('cul_pet_3') && G.spiritPet) bonus += 1;
+  // Rooted (cul_har_4): +1 die when near a garden
+  if (hasCultivatorTalent('cul_har_4') && isNearStructure('garden', 5)) bonus += 1;
+  return bonus;
+}
+
+// Check if player should passively heal (Nature's Calm — cul_har_1)
+function checkNaturesCalmHeal() {
+  if (!hasCultivatorTalent('cul_har_1')) return false;
+  if (!isNearStructure('garden', 5)) return false;
+  // Heal 1 HP to active ghost
+  const active = G.team && G.team[G.activeIdx];
+  if (active && active.hp < active.maxHp && !active.ko) {
+    active.hp = Math.min(active.maxHp, active.hp + 1);
+    if (typeof saveGame === 'function') saveGame();
+    return true;
+  }
+  return false;
+}

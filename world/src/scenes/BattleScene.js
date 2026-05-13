@@ -12,9 +12,20 @@ class BattleScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    this.cameras.main.setBackgroundColor('#EBE7E3');
+    // Transparent camera — world scene bleeds through underneath
+    this.cameras.main.setBackgroundColor('rgba(0,0,0,0)');
+    // Semi-transparent cream overlay so battle UI remains readable
+    this.add.rectangle(W / 2, H / 2, W, H, 0xEBE7E3, 0.72).setDepth(-1).setScrollFactor(0);
 
     if (!B) { this.endBattle(false); return; }
+
+    // ── Raid setup (co-op boss fights) ──
+    this._raidId = this.battleData.raidId || null;
+    this._raidFeedTexts = [];
+    if (this._raidId && typeof RaidManager !== 'undefined') {
+      RaidManager._onFeedEntry = (entry) => this.showRaidFeedEntry(entry);
+      this.buildRaidPartyStrip(W);
+    }
 
     // Apply all buff effects at battle start (fortunes, meditation, preparation, etc.)
     if (typeof applyBuffsToBattle === 'function') applyBuffsToBattle();
@@ -228,11 +239,12 @@ class BattleScene extends Phaser.Scene {
       GameAudio.heal();
     }
 
-    // Roll dice (surge grants extra dice, bad fortune removes one on first roll)
+    // Roll dice (surge grants extra dice, bad fortune removes one on first roll, talent bonuses)
     const extraDice = committed.surge || 0;
     const buffDiceMod = (typeof consumeBuffDiceMod === 'function') ? consumeBuffDiceMod() : 0;
     const fortuneMod = (typeof consumeFortuneBadDice === 'function') ? consumeFortuneBadDice() : 0;
-    const pDiceCount = Math.max(1, 3 + extraDice + buffDiceMod + fortuneMod);
+    const talentDice = (typeof getTalentBonusDice === 'function') ? getTalentBonusDice() : 0;
+    const pDiceCount = Math.max(1, 3 + extraDice + buffDiceMod + fortuneMod + talentDice);
     const pDice = weightedRoll(this.pg, pDiceCount).sort((a, b) => a - b);
     const eDice = weightedRoll(this.eg, 3).sort((a, b) => a - b);
 
@@ -298,6 +310,8 @@ class BattleScene extends Phaser.Scene {
       this.showFloatingText(this.scale.width * 0.75, this.scale.height * 0.35, `-${dmg}`, '#cc2211');
       GameAudio.hit();
       if (dmg >= 4) this.flashScreen();
+      // Report to raid feed
+      this.reportRaidDamage(dmg, pDice);
     } else if (winner === 'b') {
       let dmg = eRes.damage;
       // Equipment defense
@@ -642,6 +656,11 @@ class BattleScene extends Phaser.Scene {
   }
 
   transitionOut(leveledUp) {
+    // Clean up raid listeners
+    if (this._raidId && typeof RaidManager !== 'undefined') {
+      RaidManager.leaveRaid();
+    }
+
     this.cameras.main.fadeOut(400);
     const returnTo = this.battleData.returnScene || 'WorldScene';
     this.time.delayedCall(500, () => {
@@ -651,5 +670,80 @@ class BattleScene extends Phaser.Scene {
       if (rs?.cameras?.main) rs.cameras.main.fadeIn(300);
       if (leveledUp && rs?.showNotification) rs.showNotification(`Level up! Now level ${G.level}!`);
     });
+  }
+
+  // ═══════ RAID CO-OP SYSTEM ═══════
+
+  buildRaidPartyStrip(W) {
+    if (typeof RaidManager === 'undefined') return;
+    const participants = RaidManager.getParticipants();
+    const names = Object.values(participants).map(p => p.name);
+    if (names.length <= 1) return;
+
+    // Party strip at top of battle screen
+    const stripY = 12;
+    const label = this.add.text(W / 2, stripY, '⚔ RAID: ' + names.join(' • '), {
+      fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ccff',
+      backgroundColor: '#0a0a2ecc', padding: { x: 8, y: 3 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+
+    // Pulse it to draw attention
+    this.tweens.add({ targets: label, alpha: 0.6, duration: 1200, yoyo: true, repeat: 2 });
+  }
+
+  showRaidFeedEntry(entry) {
+    if (!entry) return;
+    const W = this.scale.width;
+
+    // Show dice result from party member
+    const diceStr = (entry.dice || []).map(d => `[${d}]`).join('');
+    const text = `${entry.name}: ${diceStr} → ${entry.damage} dmg`;
+
+    // Slide in from right side
+    const feedY = 30 + this._raidFeedTexts.length * 18;
+    const feedText = this.add.text(W - 10, feedY, text, {
+      fontSize: '10px', fontFamily: 'monospace', color: '#aaddff',
+      backgroundColor: '#0a0a1eaa', padding: { x: 4, y: 1 },
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(100).setAlpha(0);
+
+    this.tweens.add({
+      targets: feedText, alpha: 1, duration: 300,
+    });
+
+    this._raidFeedTexts.push(feedText);
+
+    // Fade out after 5 seconds
+    this.time.delayedCall(5000, () => {
+      this.tweens.add({
+        targets: feedText, alpha: 0, duration: 500,
+        onComplete: () => {
+          feedText.destroy();
+          const idx = this._raidFeedTexts.indexOf(feedText);
+          if (idx > -1) this._raidFeedTexts.splice(idx, 1);
+        },
+      });
+    });
+
+    // Keep max 5 feed items visible
+    if (this._raidFeedTexts.length > 5) {
+      const old = this._raidFeedTexts.shift();
+      old.destroy();
+    }
+
+    // Update boss HP from raid state if available
+    const raidHp = RaidManager.getRaidBossHp();
+    if (raidHp !== null && this.eg) {
+      this.eg.hp = Math.max(0, raidHp);
+      this.updateHP();
+      if (raidHp <= 0) {
+        this.time.delayedCall(600, () => this.endBattle(true));
+      }
+    }
+  }
+
+  // Report our dice results to the raid feed
+  reportRaidDamage(damage, pDice) {
+    if (!this._raidId || typeof RaidManager === 'undefined') return;
+    RaidManager.reportDamage(damage, G.name, pDice);
   }
 }

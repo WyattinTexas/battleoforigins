@@ -8,6 +8,7 @@ const config = {
   width: 1280,
   height: 720,
   pixelArt: true,
+  transparent: true,
   physics: {
     default: 'arcade',
     arcade: {
