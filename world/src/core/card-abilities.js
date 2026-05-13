@@ -508,6 +508,199 @@ function triggerPreRoll(teamName, logFn) {
 
   // Hank (207) — each 4 rolled gains Lucky Stones (tracked in win/roll hooks, handled there)
 
+  // Boo Brothers (17) — Teamwork: remove 1 die to gain 1 HP (auto: always activate if HP < maxHp)
+  if (f.id === 17 && f.hp < f.maxHp) {
+    if (!B.booTeamworkDieDebt) B.booTeamworkDieDebt = {};
+    B.booTeamworkDieDebt[teamName] = (B.booTeamworkDieDebt[teamName] || 0) + 1;
+    wpHeal(f, 1);
+    callouts.push({ name: 'TEAMWORK!', color: '#66aa44', desc: `${f.name} — removed 1 die to gain +1 HP!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Teamwork! -1 die, +1 HP.`);
+  }
+
+  // Cameron (25) — Unstoppable Force: if opponent used a special last turn, +1 die immediately
+  if (f.id === 25) {
+    const enemyUsedSpecial = B.lastTurnSpecialUsed && B.lastTurnSpecialUsed[enemyName];
+    if (enemyUsedSpecial) {
+      if (!B.cameronBonusDice) B.cameronBonusDice = {};
+      B.cameronBonusDice[teamName] = (B.cameronBonusDice[teamName] || 0) + 1;
+      callouts.push({ name: 'UNSTOPPABLE FORCE!', color: '#ff6644', desc: `${f.name} — opponent used a special! +1 die!`, team: teamName });
+      if (logFn) logFn(`${f.name} — Unstoppable Force! +1 die.`);
+    }
+  }
+
+  // Doug (63) — Caution: switch with sideline once per game, then +1 die (auto: just grant +1 die)
+  if (f.id === 63 && !f._dougCautionUsed) {
+    const hasSidelineGhosts = team.ghosts.some((g, i) => i !== team.activeIdx && !g.ko);
+    if (hasSidelineGhosts) {
+      f._dougCautionUsed = true;
+      if (!B.dougCautionDieBonus) B.dougCautionDieBonus = {};
+      B.dougCautionDieBonus[teamName] = true;
+      callouts.push({ name: 'CAUTION!', color: '#cc44ff', desc: `${f.name} — may swap out! +1 die next roll!`, team: teamName });
+      if (logFn) logFn(`${f.name} — Caution! +1 die next roll.`);
+    }
+  }
+
+  // Mallow (89) — Dozy Cozy: sideline, spend 2 Sacred Fire for 3 HP + 1 Burn (auto-trigger if affordable)
+  if (hasSideline(team, 89) && (team.resources.fire || 0) >= 2 && f.hp < f.maxHp) {
+    team.resources.fire -= 2;
+    wpHeal(f, 3);
+    team.resources.burn = (team.resources.burn || 0) + 1;
+    callouts.push({ name: 'DOZY COZY!', color: '#ff6644', desc: `Mallow — spent 2 Sacred Fire! ${f.name} gains +3 HP, +1 Burn!`, team: teamName });
+    if (logFn) logFn(`Mallow — Dozy Cozy! -2 Sacred Fire, +3 HP, +1 Burn.`);
+  }
+
+  // Jeanie (90) — Hidden Treasure: sideline, force opponent reroll all dice, once per game
+  // (Auto: primes a flag that the battle engine checks after opponent rolls)
+  if (hasSideline(team, 90) && !B.jeanieUsed) {
+    if (!B.jeanieUsed) B.jeanieUsed = {};
+    if (!B.jeanieUsed[teamName]) {
+      B.jeanieUsed[teamName] = true;
+      if (!B.jeanieForceReroll) B.jeanieForceReroll = {};
+      B.jeanieForceReroll[enemyName] = true;
+      callouts.push({ name: 'HIDDEN TREASURE!', color: '#cc44ff', desc: `Jeanie — opponent must reroll all dice!`, team: teamName });
+      if (logFn) logFn(`Jeanie — Hidden Treasure! Opponent rerolls.`);
+    }
+  }
+
+  // Toby (97) — Pure Heart: if declared LAST turn, Toby is defeated this turn before rolling
+  if (f.id === 97 && f._pureHeartDeclared && B.pureHeartDeclared && B.pureHeartDeclared[teamName]) {
+    // Second turn after declaring — Toby falls
+    if (f._pureHeartRoundDeclared && f._pureHeartRoundDeclared < B.round) {
+      wpDamage(f, f.hp);
+      f.ko = true;
+      f.killedBy = -5; // self-KO from Pure Heart
+      callouts.push({ name: 'PURE HEART!', color: '#ffcc00', desc: `${f.name} — Pure Heart expired! ${f.name} is defeated!`, team: teamName });
+      if (logFn) logFn(`${f.name} — Pure Heart! Toby falls.`);
+      return callouts;
+    }
+  }
+
+  // Toby (97) — Pure Heart: declare final roll. Defeated next turn. Win = instant KO enemy
+  // (Auto: declare at low HP as last stand)
+  if (f.id === 97 && !f._pureHeartDeclared && ef && !ef.ko && f.hp <= 3) {
+    f._pureHeartDeclared = true;
+    f._pureHeartRoundDeclared = B.round;
+    if (!B.pureHeartDeclared) B.pureHeartDeclared = {};
+    B.pureHeartDeclared[teamName] = true;
+    callouts.push({ name: 'PURE HEART!', color: '#ffcc00', desc: `${f.name} — declares final roll! Win = instant KO!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Pure Heart! Final stand declared.`);
+  }
+
+  // Happy Crystal (208) — Spark Strike: sacrifice self to gain 1 Moonstone (auto: only if no moonstone)
+  if (f.id === 208 && !f._happyCrystalUsed && (team.resources.moonstone || 0) < 1) {
+    f._happyCrystalUsed = true;
+    team.resources.moonstone = 1;
+    wpDamage(f, f.hp);
+    f.ko = true;
+    f.killedBy = -4; // self-sacrifice
+    callouts.push({ name: 'SPARK STRIKE!', color: '#ffcc44', desc: `${f.name} — sacrificed! +1 Moonstone!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Spark Strike! Sacrificed for 1 Moonstone.`);
+  }
+
+  // Harrison (315) — Ascend: discard Healing Seeds for +1 die per seed (auto: spend up to 2)
+  if (f.id === 315 && (team.resources.healingSeed || 0) > 0) {
+    const seedsToSpend = Math.min(team.resources.healingSeed, 2);
+    team.resources.healingSeed -= seedsToSpend;
+    if (!B.scallywagsFrenzyBonus) B.scallywagsFrenzyBonus = {};
+    B.scallywagsFrenzyBonus[teamName] = (B.scallywagsFrenzyBonus[teamName] || 0) + seedsToSpend;
+    callouts.push({ name: 'ASCEND!', color: '#66aa44', desc: `${f.name} — spent ${seedsToSpend} Healing Seed${seedsToSpend > 1 ? 's' : ''}! +${seedsToSpend} dice!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Ascend! -${seedsToSpend} seeds, +${seedsToSpend} dice.`);
+  }
+
+  // Smudge (403) — Blackout: name a number, that die doesn't count for opponent (auto: pick 6)
+  if (f.id === 403) {
+    if (!B.blackoutNum) B.blackoutNum = {};
+    B.blackoutNum[teamName] = 6; // auto-pick 6 as the most impactful
+    callouts.push({ name: 'BLACKOUT!', color: '#888888', desc: `${f.name} — named 6! Opponent's 6s don't count!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Blackout! Named 6.`);
+  }
+
+  // Nick & Knack (409) — Knick Knack: steal 1 special, gain 1 HP + 2 Burn (auto-trigger)
+  if (f.id === 409 && enemy) {
+    const er = enemy.resources;
+    let stolen = null;
+    // Steal highest-value resource from opponent
+    if ((er.moonstone || 0) > 0) { er.moonstone--; team.resources.moonstone = Math.min(1, (team.resources.moonstone || 0) + 1); stolen = 'Moonstone'; }
+    else if ((er.fire || 0) > 0) { er.fire--; team.resources.fire = (team.resources.fire || 0) + 1; stolen = 'Sacred Fire'; }
+    else if ((er.ice || 0) > 0) { er.ice--; team.resources.ice = (team.resources.ice || 0) + 1; stolen = 'Ice Shard'; }
+    else if ((er.luckyStone || 0) > 0) { er.luckyStone--; team.resources.luckyStone = (team.resources.luckyStone || 0) + 1; stolen = 'Lucky Stone'; }
+    else if ((er.healingSeed || 0) > 0) { er.healingSeed--; team.resources.healingSeed = (team.resources.healingSeed || 0) + 1; stolen = 'Healing Seed'; }
+    else if ((er.surge || 0) > 0) { er.surge--; team.resources.surge = (team.resources.surge || 0) + 1; stolen = 'Surge'; }
+
+    if (stolen) {
+      wpHeal(f, 1);
+      team.resources.burn = (team.resources.burn || 0) + 2;
+      callouts.push({ name: 'KNICK KNACK!', color: '#cc44ff', desc: `${f.name} — stole 1 ${stolen}! +1 HP, +2 Burn!`, team: teamName });
+      if (logFn) logFn(`${f.name} — Knick Knack! Stole ${stolen}.`);
+    }
+  }
+
+  // Chow (414) — Secret Ingredient: spend 1 Healing Seed for +2 dice (auto-trigger if affordable)
+  if (f.id === 414 && (team.resources.healingSeed || 0) >= 1) {
+    team.resources.healingSeed--;
+    if (!B.scallywagsFrenzyBonus) B.scallywagsFrenzyBonus = {};
+    B.scallywagsFrenzyBonus[teamName] = (B.scallywagsFrenzyBonus[teamName] || 0) + 2;
+    callouts.push({ name: 'SECRET INGREDIENT!', color: '#66aa44', desc: `${f.name} — spent 1 Healing Seed! +2 dice!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Secret Ingredient! -1 Healing Seed, +2 dice.`);
+    // Boopies (419) synergy: gain 1 Lucky Stone when Healing Seed spent
+    if (hasSideline(team, 419)) {
+      team.resources.luckyStone = (team.resources.luckyStone || 0) + 1;
+      callouts.push({ name: 'BOOPIE MAGIC!', color: '#44cc44', desc: `Boopies — Healing Seed spent! +1 Lucky Stone!`, team: teamName });
+    }
+  }
+
+  // Twyla (417) — Lucky Dance: when Lucky Stones are spent, add +1 die + +1 Healing Seed per stone
+  // (Auto: spend up to 2 Lucky Stones pre-roll for dice + seeds)
+  if (f.id === 417 && (team.resources.luckyStone || 0) > 0) {
+    const stonesToSpend = Math.min(team.resources.luckyStone, 2);
+    team.resources.luckyStone -= stonesToSpend;
+    if (!B.scallywagsFrenzyBonus) B.scallywagsFrenzyBonus = {};
+    B.scallywagsFrenzyBonus[teamName] = (B.scallywagsFrenzyBonus[teamName] || 0) + stonesToSpend;
+    team.resources.healingSeed = (team.resources.healingSeed || 0) + stonesToSpend;
+    callouts.push({ name: 'LUCKY DANCE!', color: '#44cc44', desc: `${f.name} — spent ${stonesToSpend} Lucky Stone${stonesToSpend > 1 ? 's' : ''}! +${stonesToSpend} dice, +${stonesToSpend} Healing Seeds!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Lucky Dance! -${stonesToSpend} stones, +${stonesToSpend} dice + seeds.`);
+  }
+
+  // Castle Gardener (442) — Cultivate: discard Healing Seeds for 2 Sacred Fire each (auto: spend up to 2)
+  if (f.id === 442 && (team.resources.healingSeed || 0) > 0) {
+    const seedsToConvert = Math.min(team.resources.healingSeed, 2);
+    team.resources.healingSeed -= seedsToConvert;
+    team.resources.fire = (team.resources.fire || 0) + (seedsToConvert * 2);
+    callouts.push({ name: 'CULTIVATE!', color: '#ff6644', desc: `${f.name} — converted ${seedsToConvert} Healing Seed${seedsToConvert > 1 ? 's' : ''} to ${seedsToConvert * 2} Sacred Fire!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Cultivate! -${seedsToConvert} seeds, +${seedsToConvert * 2} Sacred Fire.`);
+    // Boopies synergy
+    if (hasSideline(team, 419)) {
+      team.resources.luckyStone = (team.resources.luckyStone || 0) + seedsToConvert;
+      callouts.push({ name: 'BOOPIE MAGIC!', color: '#44cc44', desc: `Boopies — Healing Seeds spent! +${seedsToConvert} Lucky Stones!`, team: teamName });
+    }
+  }
+
+  // Zork (463) — Smolder: discard Burn for +1 die per Burn (auto: spend all Burn)
+  if (f.id === 463 && (team.resources.burn || 0) > 0) {
+    const burnToSpend = team.resources.burn;
+    team.resources.burn = 0;
+    if (!B.zorkExtraDie) B.zorkExtraDie = {};
+    B.zorkExtraDie[teamName] = (B.zorkExtraDie[teamName] || 0) + burnToSpend;
+    callouts.push({ name: 'SMOLDER!', color: '#cc4400', desc: `${f.name} — spent ${burnToSpend} Burn! +${burnToSpend} dice!`, team: teamName });
+    if (logFn) logFn(`${f.name} — Smolder! -${burnToSpend} Burn, +${burnToSpend} dice.`);
+  }
+
+  // Ryder (456) — Toll: opponent chooses take 1 damage OR give +1 Sacred Fire
+  // (Auto-trigger in pre-roll — simplified: opponent takes 1 damage)
+  if (f.id === 456 && ef && !ef.ko) {
+    const piperNegates = hasSideline(enemy, 107) || (ef.id === 107 && !ef.ko);
+    if (dylanBlocks) {
+      callouts.push({ name: 'SCARECROW!', color: '#888888', desc: `Dylan blocks Ryder's Toll!`, team: enemyName });
+    } else if (piperNegates) {
+      callouts.push({ name: 'PIPER!', color: '#66aa44', desc: `Piper negates Ryder's Toll!`, team: enemyName });
+    } else if (!maskedHeroImmune(ef)) {
+      wpDamage(ef, 1);
+      if (ef.ko) ef.killedBy = f.id;
+      callouts.push({ name: 'TOLL!', color: '#ff6644', desc: `${f.name} — Toll! ${ef.name} takes 1 damage!`, team: teamName });
+      if (logFn) logFn(`${f.name} — Toll! 1 damage to ${ef.name}.`);
+    }
+  }
+
   return callouts;
 }
 
@@ -1240,6 +1433,33 @@ function triggerWinPath(teamName, rollResult, logFn, dice) {
     callouts.push({ name: 'FORAGER!', color: '#66aa44', desc: `${f.name} — +1 Healing Seed!`, team: teamName });
   }
 
+  // Sophia (457) — Masquerade: Win = gain Mask of Day or Mask of Night, once per game
+  // (Auto: gain Mask of Day first, then Mask of Night. Grants bonus based on mask type)
+  if (f.id === 457 && !f._masqueradeDayUsed) {
+    f._masqueradeDayUsed = true;
+    // Mask of Day: +1 die next roll
+    if (!B.scallywagsFrenzyBonus) B.scallywagsFrenzyBonus = {};
+    B.scallywagsFrenzyBonus[teamName] = (B.scallywagsFrenzyBonus[teamName] || 0) + 1;
+    callouts.push({ name: 'MASQUERADE!', color: '#ffcc44', desc: `${f.name} — Mask of Day gained! +1 die next roll!`, team: teamName });
+  } else if (f.id === 457 && f._masqueradeDayUsed && !f._masqueradeNightUsed) {
+    f._masqueradeNightUsed = true;
+    // Mask of Night: +2 damage next roll
+    if (!B.haywireDamageBonus) B.haywireDamageBonus = {};
+    B.haywireDamageBonus[teamName] = (B.haywireDamageBonus[teamName] || 0) + 2;
+    callouts.push({ name: 'MASQUERADE!', color: '#8866aa', desc: `${f.name} — Mask of Night gained! +2 damage next roll!`, team: teamName });
+  }
+
+  // Toby (97) — Pure Heart: if declared and won, instant KO enemy
+  if (f.id === 97 && B.pureHeartDeclared && B.pureHeartDeclared[teamName] && ef && !ef.ko) {
+    wpDamage(ef, ef.hp);
+    ef.ko = true;
+    ef.killedBy = f.id;
+    callouts.push({ name: 'PURE HEART!', color: '#ffcc00', desc: `${f.name} — final roll WIN! ${ef.name} is defeated!`, team: teamName });
+  }
+
+  // Nyx & Bessie (415) — sideline: gain 4 Healing Seeds if you defeat a ghost (KO check)
+  // (Already handled above — ID 415)
+
   return callouts;
 }
 
@@ -1777,6 +1997,19 @@ function calculateDamageReduction(teamName, rollResult, incomingDamage) {
     }
   }
 
+  // Cameron (25) — Unstoppable Force: damage cannot be negated
+  // If Cameron is the attacker, all reduction is zeroed out
+  if (f && f.id !== undefined) {
+    const attackerTeamName = oppTeam(teamName);
+    const attackerTeam = B[attackerTeamName];
+    if (attackerTeam) {
+      const attacker = activeGhost(attackerTeam);
+      if (attacker && attacker.id === 25 && !attacker.ko) {
+        return 0; // Cameron's damage cannot be negated
+      }
+    }
+  }
+
   // ── SIDELINE DAMAGE REDUCTION ──
 
   if (team) {
@@ -1889,6 +2122,27 @@ function triggerPostRoll(teamName, rollResult, dice, logFn) {
 
   // Masked Hero (55) — Underdog: +1 Burn per 3 rolled (all rolls)
   // (Win handled in triggerWinPath; loss/tie also triggers)
+
+  // Kaylee (453) — Slipstream: if any die shows a 2, swap one die with opponent
+  // (Auto: swap our lowest die with opponent's highest die if we have a 2)
+  if (f.id === 453 && dice && dice.includes(2)) {
+    const enemyName = oppTeam(teamName);
+    if (B.lastRollDice && B.lastRollDice[enemyName]) {
+      const enemyDice = B.lastRollDice[enemyName];
+      if (enemyDice && enemyDice.length > 0) {
+        const myMin = Math.min(...dice);
+        const theirMax = Math.max(...enemyDice);
+        if (theirMax > myMin) {
+          // Swap: replace our lowest with their highest
+          const myIdx = dice.indexOf(myMin);
+          const theirIdx = enemyDice.indexOf(theirMax);
+          dice[myIdx] = theirMax;
+          enemyDice[theirIdx] = myMin;
+          callouts.push({ name: 'SLIPSTREAM!', color: '#cc44ff', desc: `${f.name} — swapped die ${myMin} for ${theirMax}!`, team: teamName });
+        }
+      }
+    }
+  }
 
   return callouts;
 }
@@ -2356,7 +2610,7 @@ function declareBonzai(teamName) {
 }
 
 // ── TOBY (97) — PURE HEART: declare final roll, defeated next turn ──
-// (Stored in B.pureHeartDeclared)
+// IMPLEMENTED in triggerPreRoll (auto-declare at <=3 HP) + triggerWinPath (instant KO on win)
 
 // ── TIMBER (210) — HOWL: opponent must discard 2 specials OR remove 1 die ──
 // (UI decision — simplified to auto-remove 1 die)
@@ -2449,34 +2703,34 @@ function isWispBlocking(teamName) {
 }
 
 // ── HARRISON (315) — ASCEND: discard Healing Seeds for +1 die each ──
-// (Handled in resource commit system)
+// IMPLEMENTED in triggerPreRoll (auto-spend up to 2 seeds)
 
 // ── HAPPY CRYSTAL (208) — SPARK STRIKE: sacrifice for 1 Moonstone ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-sacrifice if no moonstone held)
 
 // ── BOO BROTHERS (17) — TEAMWORK: remove 1 die to gain 1 HP ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-activate if HP < maxHp)
 
 // ── DOUG (63) — CAUTION: switch with sideline once per game, +1 die ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-grant +1 die bonus, once per game)
 
 // ── MALLOW (89) — DOZY COZY: sideline, spend 2 Sacred Fire for 3 HP + 1 Burn ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-trigger if affordable and active ghost needs HP)
 
 // ── JEANIE (90) — HIDDEN TREASURE: sideline, force opponent reroll, once per game ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-trigger once per game, sets B.jeanieForceReroll flag)
 
 // ── CHOW (414) — SECRET INGREDIENT: spend 1 Healing Seed for +2 dice ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-spend 1 Healing Seed if available)
 
 // ── ZORK (463) — SMOLDER: discard Burn for +1 die each ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-spend all Burn for dice)
 
 // ── CASTLE GARDENER (442) — CULTIVATE: discard Healing Seeds for 2 Sacred Fire each ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-convert up to 2 seeds)
 
 // ── NICK & KNACK (409) — KNICK KNACK: steal 1 special, gain 1 HP + 2 Burn ──
-// (Handled in pre-roll UI)
+// IMPLEMENTED in triggerPreRoll (auto-steal highest-value resource)
 
 // ── ZIPPA (423) — GLIMMER: gain 1 Lucky Stone per Healing Seed held ──
 
@@ -2498,30 +2752,20 @@ function checkZippaGlimmer(teamName) {
 }
 
 // ── TWYLA (417) — LUCKY DANCE: Lucky Stones add +1 die + +1 Healing Seed ──
-// (Handled in resource commit system)
+// IMPLEMENTED in triggerPreRoll (auto-spend up to 2 Lucky Stones for dice + seeds)
 
 // ── KAYLEE (453) — SLIPSTREAM: if any die shows 2, swap one die with opponent ──
-// (Handled in post-roll UI)
+// IMPLEMENTED in triggerPostRoll (auto-swap lowest die with opponent's highest)
 
 // ── SOPHIA (457) — MASQUERADE: win = deal no damage, gain mask once per game ──
-// (Handled in win-path UI)
+// IMPLEMENTED in triggerWinPath (auto-gain Mask of Day then Mask of Night)
 
 // ── RYDER (456) — TOLL: opponent chooses: take 1 damage or give +1 Sacred Fire ──
-// (Handled in pre-roll UI — simplified to auto-choose Sacred Fire)
-
+// IMPLEMENTED in triggerPreRoll (auto: opponent takes 1 damage, respects Dylan/Piper blocks)
+// Legacy helper kept for backward compatibility
 function checkRyderToll(teamName) {
-  if (!B) return [];
-  const team = B[teamName];
-  if (!team) return [];
-  const f = activeGhost(team);
-  if (!f || f.id !== 456 || f.ko) return [];
-  const callouts = [];
-
-  // Simplified: opponent gives Ryder 1 Sacred Fire
-  team.resources.fire = (team.resources.fire || 0) + 1;
-  callouts.push({ name: 'TOLL!', color: '#ff6644', desc: `${f.name} — Toll! +1 Sacred Fire!`, team: teamName });
-
-  return callouts;
+  // Now handled in triggerPreRoll — this function is a no-op
+  return [];
 }
 
 // ── BOOPIES (419) — BOOPIE MAGIC: sideline, when active spends Healing Seed, gain 1 Lucky Stone ──
