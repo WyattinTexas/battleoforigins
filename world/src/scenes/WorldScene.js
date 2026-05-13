@@ -139,6 +139,11 @@ class WorldScene extends Phaser.Scene {
     // ── HUD ──
     this.buildHUD();
 
+    // ── HUD positioning: divide canvas size by zoom to get visible area ──
+    const zoom = cam.zoom || 1.5;
+    const hudW = this.scale.width / zoom;
+    const hudH = this.scale.height / zoom;
+
     // ── Buff HUD (above action bar, centered) ──
     this._buffHudText = this.add.text(hudW / 2, hudH - 80, '', {
       fontSize: '8px', fontFamily: 'monospace', color: '#88ff88',
@@ -254,12 +259,6 @@ class WorldScene extends Phaser.Scene {
         backgroundColor: '#00000044', padding: { x: 2, y: 1 },
       }).setOrigin(0.5).setDepth(5);
     }
-
-    // ── HUD positioning: divide canvas size by zoom to get visible area ──
-    const zoom = cam.zoom || 1.5;
-    const hudW = this.scale.width / zoom;
-    const hudH = this.scale.height / zoom;
-    console.log('[HUD] canvas:', this.scale.width, 'x', this.scale.height, 'zoom:', zoom, 'hud:', hudW, 'x', hudH);
 
     // ── Menu buttons bar (top-center) ──
     const menuY = 8;
