@@ -53,8 +53,7 @@ class BattleScene extends Phaser.Scene {
 
     this.pg = activeGhost(pT); this.eg = activeGhost(eT);
 
-    // Transfer world resources into battle
-    if (pT.resources && G.healingSeeds) pT.resources.healingSeed = (pT.resources.healingSeed || 0) + (G.healingSeeds || 0);
+    // No world resource transfer — resources earned in battle only (talents/gear/buffs handle world→battle later)
     if (!this.pg || !this.eg) { this._exit(false); return; }
 
     B.battleStarted = true; this.roundNum = 0; this._rolling = false;
@@ -366,9 +365,7 @@ class BattleScene extends Phaser.Scene {
     let rx = -20;
     Object.entries(RDISPLAY).forEach(([key, cfg]) => {
       const count = res[key] || 0;
-      // Always show committable resources + healing seeds for player; hide zeros for enemy
-      const alwaysShow = ['ice', 'fire', 'surge', 'moonstone', 'luckyStone', 'healingSeed'];
-      if (count <= 0 && !(team === 'red' && alwaysShow.includes(key))) return;
+      if (count <= 0) return; // Only show resources you actually have
 
       // Show committed count if any
       const committed = (B.committed && B.committed[tKey] && B.committed[tKey][key]) || 0;
