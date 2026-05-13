@@ -256,7 +256,6 @@ class WorldScene extends Phaser.Scene {
     }
 
     // ── HUD positioning: divide canvas size by zoom to get visible area ──
-    const cam = this.cameras.main;
     const zoom = cam.zoom || 1.5;
     const hudW = this.scale.width / zoom;
     const hudH = this.scale.height / zoom;
