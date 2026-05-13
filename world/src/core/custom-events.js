@@ -151,12 +151,11 @@ function spawnValkinEvent(scene) {
 
   const valkinSprite = scene.physics.add.sprite(spawnX, spawnY, 'npc_elder');
   valkinSprite.setDepth(10);
-  valkinSprite.setTint(0xcc66ff);
-  valkinSprite.setScale(2.5); // bigger than normal NPCs
+  valkinSprite.setScale(2.5); // bigger than normal NPCs — no tint, natural color
 
   // Label
   const valkinLabel = scene.add.text(spawnX, spawnY - 20, 'Valkin the Grand', {
-    fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#cc66ff',
+    fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ff4444',
     backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
   }).setOrigin(0.5).setDepth(11);
 
@@ -232,12 +231,7 @@ function updateValkinEvent(scene) {
         valkinChat(walkLines[Math.floor(Math.random() * walkLines.length)]);
       }
 
-      // If player walks into Valkin during approach, fight
-      const px = scene.player.x, py = scene.player.y;
-      const pDist = Phaser.Math.Distance.Between(px, py, v.sprite.x, v.sprite.y);
-      if (pDist < 30 && !G.inBattle) {
-        triggerValkinBattle(scene);
-      }
+      // During approach, Valkin ignores the player — he has a destination
     } else {
       // Arrived at town center — declare war
       v.phase = 'declaring';

@@ -2257,7 +2257,7 @@ class WorldScene extends Phaser.Scene {
     // 8 unique Dark Riders — "Dark Rider" on map, real name in battle
     // Lucy is special: shows her name on map, uses dragon sprite, max 1
     const DARK_RIDERS = [
-      { name: 'Lucy',              team: [108],       tint: 0x4444aa, mapName: 'Lucy', sprite: 'creature_dragon', unique: true },
+      { name: 'Lucy',              team: [108],       tint: null, mapName: 'Lucy', sprite: 'creature_dragon', unique: true },
       { name: 'Dark Rider Jeff',   team: [74],        tint: 0x446644 },
       { name: 'Dark Rider Outlaw', team: [43, 93],    tint: 0x886644 },
       { name: 'Dark Rider Shade',  team: [111, 205],  tint: 0x442266 },
@@ -2289,7 +2289,7 @@ class WorldScene extends Phaser.Scene {
       const spriteKey = rider.sprite || 'creature_skull';
 
       const sprite = this.enemies.create(rx, ry, spriteKey, 0).setScale(2.5);
-      sprite.setTint(rider.tint);
+      if (rider.tint) sprite.setTint(rider.tint);
       sprite.setDepth(9);
       sprite._isBlackRider = true;
       sprite._riderName = rider.name;
@@ -3566,10 +3566,7 @@ class WorldScene extends Phaser.Scene {
       if (typeof notify === 'function') notify('Walk near an NPC or player to give a Fortune');
       return;
     }
-    if (typeof hasActiveFortune === 'function' && hasActiveFortune()) {
-      if (typeof notify === 'function') notify('Target already has a Fortune — wait for it to expire');
-      return;
-    }
+    // Allow giving multiple fortunes (active fortune doesn't block)
     if (typeof isFortuneReady === 'function' && !isFortuneReady()) {
       if (typeof notify === 'function') notify('Fortune on cooldown: ' + getFortuneCooldownSec() + 's');
       return;
