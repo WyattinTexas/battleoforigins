@@ -140,8 +140,8 @@ class WorldScene extends Phaser.Scene {
     this.buildHUD();
 
     // ── Buff HUD (above action bar, centered) ──
-    this._buffHudText = this.add.text(this.scale.width / 2, this.scale.height - 105, '', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#88ff88',
+    this._buffHudText = this.add.text(hudW / 2, hudH - 80, '', {
+      fontSize: '8px', fontFamily: 'monospace', color: '#88ff88',
       backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
 
@@ -255,9 +255,14 @@ class WorldScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(5);
     }
 
+    // ── HUD uses camera viewport dimensions (accounts for zoom) ──
+    const cam = this.cameras.main;
+    const hudW = cam.width;
+    const hudH = cam.height;
+
     // ── Menu buttons bar (top-center) ──
     const menuY = 8;
-    const btnW = 80, btnH = 28, btnGap = 6;
+    const btnW = 68, btnH = 24, btnGap = 4;
     const buttons = [
       { label: 'TEAM (T)', key: 'T', action: () => this.showTeamLineup(), color: 0x445588 },
       { label: 'ITEMS (I)', key: 'I', action: () => this.showInventory(), color: 0x885544 },
@@ -267,33 +272,34 @@ class WorldScene extends Phaser.Scene {
       { label: 'BUILD (B)', key: 'B', action: () => this._showBuildMenu(), color: 0x997744 },
       { label: 'HELP (H)', key: 'H', action: () => this.showHelpPanel(), color: 0x448844 },
     ];
-    const startX = this.scale.width / 2 - (buttons.length * (btnW + btnGap)) / 2;
+    const startX = hudW / 2 - (buttons.length * (btnW + btnGap)) / 2;
+    this._menuBtns = [];
     buttons.forEach((btn, i) => {
       const x = startX + i * (btnW + btnGap) + btnW / 2;
       const bg = this.add.rectangle(x, menuY + btnH/2, btnW, btnH, btn.color, 0.85)
         .setScrollFactor(0).setDepth(200).setInteractive({ useHandCursor: true })
         .setStrokeStyle(1, 0x666666);
-      this.add.text(x, menuY + btnH/2, btn.label, {
-        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffffff',
+      const label = this.add.text(x, menuY + btnH/2, btn.label, {
+        fontSize: '8px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffffff',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
       bg.on('pointerdown', btn.action);
       bg.on('pointerover', () => bg.setAlpha(1));
       bg.on('pointerout', () => bg.setAlpha(0.85));
+      this._menuBtns.push({ bg, label });
     });
 
     // ── Class Action Bar (bottom center) ──
     this._buildActionBar();
 
     // ── Controls hint ──
-    this._controlsHint = this.add.text(10, this.scale.height - 20, 'WASD: Move | E: Interact', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#444444',
+    this._controlsHint = this.add.text(6, hudH - 14, 'WASD: Move | E: Interact', {
+      fontSize: '8px', fontFamily: 'monospace', color: '#444444',
     }).setScrollFactor(0).setDepth(200);
 
     // ── Resize handler — reposition HUD on window resize ──
-    this.scale.on('resize', (gameSize) => {
-      const W = gameSize.width;
-      const H = gameSize.height;
-      this._repositionHUD(W, H);
+    this.scale.on('resize', () => {
+      const c = this.cameras.main;
+      this._repositionHUD(c.width, c.height);
     });
 
     // ── Region text ──
@@ -3159,27 +3165,39 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _repositionHUD(W, H) {
-    const barY = H - 50;
+    const barY = H - 44;
+
+    // Menu bar
+    if (this._menuBtns) {
+      const btnW = 68, btnGap = 4;
+      const startX = W / 2 - (this._menuBtns.length * (btnW + btnGap)) / 2;
+      this._menuBtns.forEach((btn, i) => {
+        const x = startX + i * (btnW + btnGap) + btnW / 2;
+        btn.bg.setPosition(x, 20);
+        btn.label.setPosition(x, 20);
+      });
+    }
 
     // Action bar
-    if (this._actionBarBg) this._actionBarBg.setPosition(W / 2, barY + 10);
+    if (this._actionBarBg) this._actionBarBg.setPosition(W / 2, barY + 8);
     if (this._actionButtons) {
-      const btnSize = 44, gap = 6;
+      const btnSize = 38, gap = 5;
       const totalW = this._actionButtons.length * (btnSize + gap) - gap;
       const startX = W / 2 - totalW / 2 + btnSize / 2;
       this._actionButtons.forEach((btn, i) => {
         const x = startX + i * (btnSize + gap);
         btn.bg.setPosition(x, barY);
-        btn.icon.setPosition(x, barY - 6);
-        btn.label.setPosition(x, barY + 12);
-        btn.statusText.setPosition(x, barY + 26);
+        btn.bg.setSize(btnSize, btnSize);
+        btn.icon.setPosition(x, barY - 5);
+        btn.label.setPosition(x, barY + 10);
+        btn.statusText.setPosition(x, barY + 22);
       });
     }
 
     // XP bars
     if (this._xpBars) {
-      const xpBarW = 80;
-      const xpY = barY + 36;
+      const xpBarW = 70;
+      const xpY = barY + 30;
       const xpStartX = W / 2 - (this._xpBars.length * (xpBarW + 4)) / 2;
       this._xpBars.forEach((bar, i) => {
         const bx = xpStartX + i * (xpBarW + 4) + xpBarW / 2;
@@ -3190,15 +3208,15 @@ class WorldScene extends Phaser.Scene {
     }
 
     // Buff HUD
-    if (this._buffHudText) this._buffHudText.setPosition(W / 2, barY - 30);
+    if (this._buffHudText) this._buffHudText.setPosition(W / 2, barY - 24);
 
     // Controls hint
-    if (this._controlsHint) this._controlsHint.setPosition(10, H - 14);
+    if (this._controlsHint) this._controlsHint.setPosition(6, H - 14);
 
     // Minimap
     if (this.minimapBg) {
-      const mmW = 160, mmH = 120;
-      this.minimapBg.setPosition(W - mmW/2 - 8, H - mmH/2 - 8);
+      const mmW = 120, mmH = 90;
+      this.minimapBg.setPosition(W - mmW/2 - 6, H - mmH/2 - 6);
     }
   }
 
@@ -3207,11 +3225,12 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _buildActionBar() {
-    const W = this.scale.width;
-    const H = this.scale.height;
-    const barY = H - 50;
-    const btnSize = 44;
-    const gap = 6;
+    const cam = this.cameras.main;
+    const W = cam.width;
+    const H = cam.height;
+    const barY = H - 44;
+    const btnSize = 38;
+    const gap = 5;
 
     // Dark background bar
     this._actionBarBg = this.add.rectangle(W / 2, barY + 10, 380, 64, 0x0a0a1a, 0.85)
