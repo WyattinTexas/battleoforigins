@@ -24,6 +24,12 @@ class BootScene extends Phaser.Scene {
     this.load.spritesheet('player', 'assets/characters/Boy_walk.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('enemy_sprite', 'assets/characters/FighterRed_walk.png', { frameWidth: 16, frameHeight: 16 });
 
+    // Creature sprites for wild enemies (16x16 per frame, 4x4 = 64x64 sheets)
+    const CREATURE_FILES = ['Bear','Dragon','Axolot','AxolotBlue','Butterfly','ButterflyBlue','BlueBat','Slime','Mushroom','Bamboo','Skull'];
+    for (const name of CREATURE_FILES) {
+      this.load.spritesheet('creature_' + name.toLowerCase(), 'assets/monsters/' + name + '.png', { frameWidth: 16, frameHeight: 16 });
+    }
+
     // Wave 6: Load ALL 8 character spritesheets for sprite select
     for (const cs of CHARACTER_SPRITES) {
       this.load.spritesheet(cs.key, 'assets/characters/' + cs.file, { frameWidth: 16, frameHeight: 16 });
@@ -80,6 +86,12 @@ class BootScene extends Phaser.Scene {
       this.createWalkAnims(cs.key);
     }
 
+    // Creature walk anims
+    const CREATURE_KEYS = ['bear','dragon','axolot','axolotblue','butterfly','butterflyblue','bluebat','slime','mushroom','bamboo','skull'];
+    for (const ck of CREATURE_KEYS) {
+      this.createWalkAnims('creature_' + ck);
+    }
+
     // ── Title screen ──
     this.cameras.main.setBackgroundColor('#1a1a2e');
 
@@ -102,7 +114,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v65', {
+    this.add.text(width / 2, height * 0.34, 'v68', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 
