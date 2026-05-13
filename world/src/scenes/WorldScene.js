@@ -5,6 +5,12 @@
 class WorldScene extends Phaser.Scene {
   constructor() { super('WorldScene'); }
 
+  // Screen-space dimensions for UI (scrollFactor=0 elements)
+  // With camera zoom, scrollFactor(0) positions are multiplied by zoom on render.
+  // So to place UI at screen edge, divide canvas size by zoom.
+  get uiW() { return this.scale.width / (this.cameras?.main?.zoom || 1); }
+  get uiH() { return this.scale.height / (this.cameras?.main?.zoom || 1); }
+
   create() {
     // Safety: clear stale battle state from previous session
     G.inBattle = false;
@@ -25,24 +31,19 @@ class WorldScene extends Phaser.Scene {
     function hexToNum(hex) { return parseInt(hex.replace('#', ''), 16); }
 
     // ── ERW terrain tile mapping (32x32, 55 cols in terrain-grass.png) ──
-    // ONLY used for Rolling Hills (grass region y>=45) and sand/path where appropriate.
-    // Frost Valley, Volcanic Isles, Dark Castle keep their flat colors — ERW is a grass pack.
+    // Region-aware: each region gets the tiles that fit its biome.
     // Use small consistent frame sets (3-4 frames) to avoid patchwork look.
     const ERW_TERRAIN = {
-      // Dense grass — 4 visually similar frames for uniform ground
-      grass:      [416, 417, 471, 472],
-      // Lighter grass variant for hills
-      hillGrass:  [418, 419, 473, 474],
-      // Dirt path — consistent brown fills
-      dirt:       [1131, 1132, 1186, 1187],
+      // Dense grass — lush green for Rolling Hills ground
+      grass:      [1735, 1680, 1625, 1511],
+      // Lighter grass variant for hills/meadows
+      hillGrass:  [247, 336, 302, 248],
       // Stone floor — plaza / town center
-      stone:      [2335, 2336, 2390, 2391],
-      // Sand — beach areas
-      sand:       [2628, 2629, 2683, 2684],
+      
+      // Sand — warm yellow for beaches + Volcanic Isles ground
+      sand:       [3317, 3314, 3315, 3320],
     };
 
-    // Only map tile types that make sense for ERW grass pack
-    // Region-aware: check if tile is in Rolling Hills (y >= 45) or a beach/sand zone
     const hasERW = this.textures.exists('erw_terrain');
 
     // Draw entire map
@@ -51,21 +52,25 @@ class WorldScene extends Phaser.Scene {
       for (let x = 0; x < MW; x++) {
         const tileType = worldMap[y] ? worldMap[y][x] : 0;
 
-        // Determine if this tile should use ERW terrain
+        // Determine if this tile should use ERW terrain (region-aware)
         let erwGroup = null;
         if (hasERW) {
-          const isRollingHills = y >= 45;  // Rolling Hills is the southern half
-          const isBeach = tileType === 20; // sand is sand everywhere
+          const region = getCurrentRegion(x, y);
 
-          if (isRollingHills) {
-            // Rolling Hills — this is where ERW grass belongs
-            if (tileType === 9 || tileType === 10) erwGroup = 'grass';
+          if (region === 'rolling_hills') {
+            // Rolling Hills — lush grass everywhere, stone for plazas
+            if (tileType === 9 || tileType === 10 || tileType === 2) erwGroup = 'grass';
             else if (tileType === 11) erwGroup = 'hillGrass';
-            else if (tileType === 2) erwGroup = 'dirt';
-            else if (tileType === 19) erwGroup = 'stone';
+            else if (tileType === 19) erwGroup = 'hillGrass'; // plazas get darker grass
+          } else if (region === 'volcanic_isles') {
+            // Volcanic Isles — sandy paradise with lava rivers
+            // Sand for ground tiles, lava/water keep flat colors
+            if (tileType === 14 || tileType === 17 || tileType === 18) erwGroup = 'sand';
+            else if (tileType === 20) erwGroup = 'sand';
+            else if (tileType === 2) erwGroup = 'sand'; // paths are sandy too
           }
-          // Sand tiles anywhere
-          if (isBeach) erwGroup = 'sand';
+          // Sand tiles (beaches) anywhere
+          if (tileType === 20) erwGroup = 'sand';
         }
 
         if (erwGroup) {
@@ -73,7 +78,7 @@ class WorldScene extends Phaser.Scene {
           const frame = frames[(x * 3 + y * 5) % frames.length];
           this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', frame).setDepth(0);
         } else {
-          // Flat color — Frost Valley, Volcanic, Dark Castle, water, mountains, etc.
+          // Flat color — Frost Valley snow, Dark Castle, water, lava, mountains, etc.
           const colorHex = TILE_COLORS[tileType] || '#d8e8f0';
           const color = hexToNum(colorHex);
           mapGfx.fillStyle(color, 1);
@@ -231,25 +236,7 @@ class WorldScene extends Phaser.Scene {
     cam.setScroll(spawnPX - cam.width / (2 * cam.zoom), spawnPY - cam.height / (2 * cam.zoom));
     cam.startFollow(this.player, true, 1, 1);
 
-    // ── UI Camera (zoom=1, no scroll) — all HUD elements go here ──
-    // This is the standard Phaser pattern: world camera zooms/scrolls,
-    // UI camera stays fixed at 1:1 pixel mapping to screen edges.
-    this.uiCam = this.cameras.add(0, 0, this.scale.width, this.scale.height);
-    this.uiCam.setScroll(0, 0);
-    this.uiCam.setZoom(1);
     this._uiElements = [];
-
-    // ── DEBUG: UI position test — red bar at screen bottom, green at canvas/zoom bottom ──
-    const testW = this.scale.width;
-    const testH = this.scale.height;
-    const testZoom = cam.zoom;
-    // Test 1: raw canvas coords
-    this.add.rectangle(testW / 2, testH - 20, 200, 10, 0xff0000).setScrollFactor(0).setDepth(999);
-    // Test 2: canvas / zoom
-    this.add.rectangle(testW / (2 * testZoom), testH / testZoom - 20, 200, 10, 0x00ff00).setScrollFactor(0).setDepth(999);
-    // Test 3: fixed small values
-    this.add.rectangle(200, 50, 200, 10, 0x0000ff).setScrollFactor(0).setDepth(999);
-    console.log('[UI DEBUG] canvas:', testW, 'x', testH, 'zoom:', testZoom, 'canvas/zoom:', testW/testZoom, 'x', testH/testZoom);
 
     // ── NPCs (positions from npcs.js NPCS + HOSTILE_NPCS data) ──
     this.npcSprites = [];
@@ -320,9 +307,9 @@ class WorldScene extends Phaser.Scene {
     this._structureSprites = [];
     this._renderStructures();
 
-    // ── Dialogue box (scrollFactor 0 — raw canvas coords) ──
-    const dlgW = this.scale.width;
-    const dlgH = this.scale.height;
+    // ── Dialogue box (scrollFactor 0 — /zoom coords) ──
+    const dlgW = this.uiW;
+    const dlgH = this.uiH;
     this.dialogueContainer = this.add.container(0, 0).setDepth(300).setScrollFactor(0);
     this.dialogueBg = this.add.rectangle(dlgW / 2, dlgH - 60, dlgW - 40, 60, 0x111128, 0.92)
       .setStrokeStyle(2, 0x4444aa);
@@ -467,7 +454,7 @@ class WorldScene extends Phaser.Scene {
     // ── Resize handler — reposition HUD on window resize ──
     this.scale.on('resize', () => {
       // Raw canvas dimensions for scrollFactor(0) UI
-      this._repositionHUD(this.scale.width, this.scale.height);
+      this._repositionHUD(this.uiW, this.uiH);
     });
 
     // ── Region text ──
@@ -1025,7 +1012,7 @@ class WorldScene extends Phaser.Scene {
   }
 
   showNotification(text) {
-    const cx = this.scale.width / 2;
+    const cx = this.uiW / 2;
     const notif = this.add.text(cx, 60, text, {
       fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
       backgroundColor: '#000000aa', padding: { x: 10, y: 5 },
@@ -2157,9 +2144,8 @@ class WorldScene extends Phaser.Scene {
   // ═══════ HUD ═══════
 
   buildHUD() {
-    // scrollFactor(0) — use raw canvas dimensions
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = this.uiW;
+    const H = this.uiH;
 
     // Top-left: player info
     this.hudPlayerText = this.add.text(10, 8, '', {
@@ -2181,8 +2167,7 @@ class WorldScene extends Phaser.Scene {
 
     // ── Minimap (bottom-right) ──
     const mmW = 90, mmH = 65;
-    const vW = W, vH = H; // raw canvas for scrollFactor(0)
-    this.minimapBg = this.add.rectangle(vW - mmW/2 - 8, vH - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
+    this.minimapBg = this.add.rectangle(W - mmW/2 - 8, H - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
       .setStrokeStyle(1, 0x444466).setScrollFactor(0).setDepth(200);
 
     // Minimap graphics
@@ -2196,8 +2181,8 @@ class WorldScene extends Phaser.Scene {
   }
 
   drawMinimap() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = this.uiW;
+    const H = this.uiH;
     const mmW = 90, mmH = 65;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
@@ -2347,8 +2332,8 @@ class WorldScene extends Phaser.Scene {
     }
 
     // Minimap player dot
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = this.uiW;
+    const H = this.uiH;
     const mmW = 90, mmH = 65;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
@@ -3251,7 +3236,7 @@ class WorldScene extends Phaser.Scene {
     if (this._invitePopup) this._invitePopup.forEach(o => o.destroy());
     this._invitePopup = [];
 
-    const W = this.scale.width;
+    const W = this.uiW;
     const popY = 140;
 
     const bg = this.add.rectangle(W / 2, popY, 340, 70, 0x112244, 0.92)
@@ -3332,7 +3317,7 @@ class WorldScene extends Phaser.Scene {
 
     if (!G.party || G.party.length === 0) return;
 
-    const W = this.scale.width;
+    const W = this.uiW;
     const sidebarW = 170;
     const sx = W - sidebarW / 2 - 8;
     let sy = 130;
@@ -3383,9 +3368,8 @@ class WorldScene extends Phaser.Scene {
   // ═══════ CHAT SYSTEM ═══════
 
   buildChatBox() {
-    // scrollFactor(0) — use raw canvas dimensions
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = this.uiW;
+    const H = this.uiH;
     const chatW = Math.min(260, W * 0.4);
     const chatH = 100;
     // Position above the action bar, left-aligned but with generous padding
@@ -3570,9 +3554,8 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _buildActionBar() {
-    // scrollFactor(0) elements use RAW canvas coords, NOT divided by zoom
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = this.uiW;
+    const H = this.uiH;
     // Scale button size based on viewport — smaller on small screens
     const btnSize = Math.min(40, Math.floor(W / 14));
     const gap = 4;

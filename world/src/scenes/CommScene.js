@@ -34,9 +34,10 @@ class CommOverlay {
   build() {
     if (this.container) return; // Already built
 
-    // scrollFactor(0) elements use raw canvas dimensions
-    const W = this.scene.scale.width;
-    const H = this.scene.scale.height;
+    // scrollFactor(0) with zoom: position = desired_screen_pos / zoom
+    const zoom = this.scene.cameras?.main?.zoom || 1;
+    const W = this.scene.scale.width / zoom;
+    const H = this.scene.scale.height / zoom;
 
     this.container = this.scene.add.container(0, 0).setDepth(500).setScrollFactor(0);
 
@@ -239,8 +240,9 @@ class CommOverlay {
   _buildChoiceButtons(choices) {
     if (!this.container) return;
 
-    const W = this.scene.scale.width;
-    const H = this.scene.scale.height;
+    const zoom = this.scene.cameras?.main?.zoom || 1;
+    const W = this.scene.scale.width / zoom;
+    const H = this.scene.scale.height / zoom;
     const boxY = H - 90;
     const startY = boxY + 52;
 
