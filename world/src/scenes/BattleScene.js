@@ -405,10 +405,14 @@ class BattleScene extends Phaser.Scene {
       rx += 46;
     });
 
-    // Click to activate willpower (player only)
+    // Click to activate willpower (player only) — use Zone for reliable hit detection
     if (team === 'red') {
-      wpIcon.setInteractive(new Phaser.Geom.Rectangle(-22, -28, 44, 56), Phaser.Geom.Rectangle.Contains);
-      wpIcon.on('pointerdown', () => this._activateWillpower());
+      const wpZone = this.add.zone(0, 0, 50, 60).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      wpZone.on('pointerdown', () => {
+        console.log('[WP] Click detected on willpower card');
+        this._activateWillpower();
+      });
+      c.add(wpZone);
     }
 
     return c;
@@ -422,14 +426,29 @@ class BattleScene extends Phaser.Scene {
   }
 
   _activateWillpower() {
-    if (this._rolling) return;
-    if (typeof activateWillpower !== 'function') return;
-    const card = activateWillpower(this._pt, this._pt, (msg) => this._addLog(msg, 'ability'));
+    if (this._rolling) { console.log('[WP] Blocked: rolling'); return; }
+    if (typeof activateWillpower !== 'function') { console.log('[WP] activateWillpower not found'); return; }
+
+    const ghost = activeGhost(B[this._pt]);
+    const topId = ghost && ghost.willpower && ghost.willpower.length > 0 ? ghost.willpower[0] : null;
+    const topCard = topId !== null && typeof wpCardById === 'function' ? wpCardById(topId) : null;
+    console.log('[WP] Attempting activation. Top card:', topCard ? topCard.name : 'none',
+      'HP:', ghost ? ghost.hp : '?', 'Cost:', topCard ? (topCard.hpCost || 1) : '?',
+      'Used this turn:', B.wpUsedThisTurn ? B.wpUsedThisTurn[this._pt] : false);
+
+    const card = activateWillpower(this._pt, this._pt, (msg) => {
+      console.log('[WP] Log:', msg);
+      this._addLog(msg);
+    });
+
     if (card) {
+      console.log('[WP] Activated:', card.name, '→', card.effect);
       this._setStatus(`${this.pg.name} activated ${card.emoji} ${card.name}!`);
       if (typeof GameAudio !== 'undefined') GameAudio.collect();
       this._rebuildWP();
       this.syncUI();
+    } else {
+      console.log('[WP] Activation returned null — blocked or failed');
     }
   }
 
