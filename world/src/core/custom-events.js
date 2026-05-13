@@ -365,15 +365,28 @@ function triggerValkinBattle(scene) {
   const enemyIds = enemyGhosts.map(g => g.id);
   if (typeof initBattle === 'function') {
     initBattle(playerIds, enemyIds, { type: 'valkin', isValkinEvent: true });
+    // Override enemy HP with Valkin event custom values (Valkin = 30 HP, not card default)
+    if (B) {
+      const eTeam = B.red ? B.blue : B.enemy;
+      if (eTeam) {
+        event.team.forEach((member, idx) => {
+          if (eTeam.ghosts[idx]) {
+            eTeam.ghosts[idx].hp = member.hp;
+            eTeam.ghosts[idx].maxHp = member.hp;
+          }
+        });
+      }
+    }
   }
 
-  // Show entry dialogue
-  const entryLine = event.battleDialogue.onBossEntry();
-
-  scene.scene.pause();
-  scene.scene.launch('BattleScene', {
-    trainerName: 'Valkin the Grand',
-    _valkinEvent: true,
+  // Launch battle scene THEN pause (correct order)
+  scene.cameras.main.fadeOut(300, 0, 0, 0);
+  scene.time.delayedCall(300, () => {
+    scene.scene.launch('BattleScene', {
+      trainerName: 'Valkin the Grand',
+      _valkinEvent: true,
+    });
+    scene.scene.pause();
   });
 }
 
