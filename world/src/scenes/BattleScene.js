@@ -355,18 +355,51 @@ class BattleScene extends Phaser.Scene {
       fontFamily: 'Courier New, monospace', fontSize: '7px', color: '#4a4a60',
     }).setOrigin(0, 0.5));
 
-    // Resources below
+    // Resources below — clickable for player to commit
     const res = t.resources || {};
     const RDISPLAY = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
+    const committable = ['ice', 'fire', 'surge']; // resources that can be committed pre-roll
+    const usable = ['moonstone', 'luckyStone', 'healingSeed']; // resources used via special actions
     let rx = -20;
     Object.entries(RDISPLAY).forEach(([key, cfg]) => {
       const count = res[key] || 0;
       if (count <= 0) return;
-      c.add(this.add.text(rx, 38, `${cfg.emoji}${count}`, {
+
+      // Show committed count if any
+      const committed = (B.committed && B.committed[tKey] && B.committed[tKey][key]) || 0;
+      const label = committed > 0 ? `${cfg.emoji}${count}(${committed})` : `${cfg.emoji}${count}`;
+
+      const resTxt = this.add.text(rx, 38, label, {
         fontFamily: 'sans-serif', fontSize: '13px', color: cfg.color || BC.TEXT,
-        backgroundColor: '#0a0a14aa', padding: { x: 3, y: 1 },
-      }).setOrigin(0, 0.5));
-      rx += 40;
+        backgroundColor: committed > 0 ? '#2a1a00cc' : '#0a0a14aa',
+        padding: { x: 4, y: 2 },
+      }).setOrigin(0, 0.5);
+      c.add(resTxt);
+
+      // Make clickable for player side
+      if (team === 'red' && !this._rolling) {
+        resTxt.setInteractive({ useHandCursor: true });
+        resTxt.on('pointerdown', () => {
+          if (this._rolling) return;
+          if (committable.includes(key) && typeof cycleCommit === 'function') {
+            cycleCommit(tKey, key);
+            this._rebuildWP();
+            this._setStatus(`Committed ${cfg.label}!`);
+          } else if (key === 'moonstone' && typeof useMoonstone === 'function') {
+            useMoonstone(tKey, (msg) => this._setStatus(msg));
+            this._rebuildWP();
+          } else if (key === 'luckyStone' && typeof useLuckyStone === 'function') {
+            useLuckyStone(tKey, (msg) => this._setStatus(msg));
+            this._rebuildWP();
+          } else if (key === 'healingSeed' && typeof spendHealingSeed === 'function') {
+            spendHealingSeed(tKey, (msg) => this._setStatus(msg));
+            this._rebuildWP();
+            this.syncUI();
+          }
+        });
+      }
+
+      rx += 46;
     });
 
     // Click to activate willpower (player only)
