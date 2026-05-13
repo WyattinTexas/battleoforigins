@@ -285,9 +285,16 @@ class WorldScene extends Phaser.Scene {
     this._buildActionBar();
 
     // ── Controls hint ──
-    this.add.text(10, this.scale.height - 20, 'WASD: Move | E: Interact', {
+    this._controlsHint = this.add.text(10, this.scale.height - 20, 'WASD: Move | E: Interact', {
       fontSize: '9px', fontFamily: 'monospace', color: '#444444',
     }).setScrollFactor(0).setDepth(200);
+
+    // ── Resize handler — reposition HUD on window resize ──
+    this.scale.on('resize', (gameSize) => {
+      const W = gameSize.width;
+      const H = gameSize.height;
+      this._repositionHUD(W, H);
+    });
 
     // ── Region text ──
     this.regionText = this.add.text(640, 40, '', {
@@ -3143,13 +3150,61 @@ class WorldScene extends Phaser.Scene {
   }
 
   // ══════════════════════════════════════════════════════
+  //  RESPONSIVE HUD — reposition on window resize
+  // ══════════════════════════════════════════════════════
+
+  _repositionHUD(W, H) {
+    const barY = H - 50;
+
+    // Action bar
+    if (this._actionBarBg) this._actionBarBg.setPosition(W / 2, barY + 10);
+    if (this._actionButtons) {
+      const btnSize = 44, gap = 6;
+      const totalW = this._actionButtons.length * (btnSize + gap) - gap;
+      const startX = W / 2 - totalW / 2 + btnSize / 2;
+      this._actionButtons.forEach((btn, i) => {
+        const x = startX + i * (btnSize + gap);
+        btn.bg.setPosition(x, barY);
+        btn.icon.setPosition(x, barY - 6);
+        btn.label.setPosition(x, barY + 12);
+        btn.statusText.setPosition(x, barY + 26);
+      });
+    }
+
+    // XP bars
+    if (this._xpBars) {
+      const xpBarW = 80;
+      const xpY = barY + 36;
+      const xpStartX = W / 2 - (this._xpBars.length * (xpBarW + 4)) / 2;
+      this._xpBars.forEach((bar, i) => {
+        const bx = xpStartX + i * (xpBarW + 4) + xpBarW / 2;
+        bar.barBg.setPosition(bx, xpY);
+        bar.barFill.setPosition(bx - xpBarW / 2, xpY);
+        bar.barLabel.setPosition(bx, xpY - 7);
+      });
+    }
+
+    // Buff HUD
+    if (this._buffHudText) this._buffHudText.setPosition(W / 2, barY - 30);
+
+    // Controls hint
+    if (this._controlsHint) this._controlsHint.setPosition(10, H - 14);
+
+    // Minimap
+    if (this.minimapBg) {
+      const mmW = 160, mmH = 120;
+      this.minimapBg.setPosition(W - mmW/2 - 8, H - mmH/2 - 8);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
   //  CLASS ACTION BAR (bottom center, MMO-style)
   // ══════════════════════════════════════════════════════
 
   _buildActionBar() {
     const W = this.scale.width;
     const H = this.scale.height;
-    const barY = H - 70;
+    const barY = H - 50;
     const btnSize = 44;
     const gap = 6;
 
