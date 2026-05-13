@@ -1197,15 +1197,20 @@ class WorldScene extends Phaser.Scene {
     // Set up battle using real engine
     G.inBattle = true;
     const playerGhosts = buildPlayerBattleTeam();
-    // Scale enemy HP with player level (+15% per level above 1)
-    const scaledMaxHp = Math.round(cardData.maxHp * (1 + (G.level - 1) * 0.15));
-    const enemyGhosts = [{ id: cardData.id, name: cardData.name, hp: scaledMaxHp, maxHp: scaledMaxHp,
-      ko: false, ability: cardData.ability, abilityDesc: cardData.desc, rarity: cardData.rarity,
-      usedOncePerGame: false, entryFired: false }];
 
-    // Use new battle engine factory
+    // Dark Riders have unique teams; wild encounters are single ghost
+    let enemyIds;
+    let battleName;
+    if (isBlackRider && enemy._riderTeam) {
+      enemyIds = enemy._riderTeam;
+      battleName = enemy._riderName + ' challenges you!';
+    } else {
+      const scaledMaxHp = Math.round(cardData.maxHp * (1 + (G.level - 1) * 0.15));
+      enemyIds = [cardData.id];
+      battleName = null;
+    }
+
     const playerIds = playerGhosts.map(g => g.id);
-    const enemyIds = enemyGhosts.map(g => g.id);
     if (typeof initBattle === 'function') {
       initBattle(playerIds, enemyIds, { type: isBlackRider ? 'blackrider' : 'wild' });
     }
@@ -1215,7 +1220,7 @@ class WorldScene extends Phaser.Scene {
       this.scene.launch('BattleScene', {
         enemyCard: cardData,
         blackRider: isBlackRider,
-        trainerName: isBlackRider ? 'Black Rider' : undefined,
+        trainerName: isBlackRider ? battleName : undefined,
       });
       this.scene.pause();
     });
@@ -2248,9 +2253,23 @@ class WorldScene extends Phaser.Scene {
 
   spawnBlackRiders() {
     if (!this.player) return;
+
+    // 8 unique Dark Riders — each has a name and specific team
+    // All labeled "Dark Rider" in the overworld, but their real name shows in battle
+    const DARK_RIDERS = [
+      { name: 'Lucy',              team: [108],       tint: 0x4444aa },
+      { name: 'Dark Jeff',         team: [314, 7],    tint: 0x446644 },
+      { name: 'Outlaw & Pete',     team: [209, 311],  tint: 0x886644 },
+      { name: 'Shade',             team: [111, 205],  tint: 0x442266 },
+      { name: 'Dark Fang',         team: [202],       tint: 0x664422 },
+      { name: 'The Exile',         team: [47, 101],   tint: 0x444444 },
+      { name: 'Bigsby',            team: [424, 34],   tint: 0x662244 },
+      { name: 'Night Master',      team: [306, 98, 94], tint: 0x220044 },
+    ];
+
     const count = Phaser.Math.Between(2, 3);
     for (let i = 0; i < count; i++) {
-      if (this._blackRiders.length >= 8) break; // cap at 8 on screen
+      if (this._blackRiders.length >= 8) break;
       const angle = Math.random() * Math.PI * 2;
       const dist = Phaser.Math.Between(200, 450);
       const rx = this.player.x + Math.cos(angle) * dist;
@@ -2262,17 +2281,21 @@ class WorldScene extends Phaser.Scene {
       if (tx < 0 || ty < 0 || tx >= WORLD_W || ty >= WORLD_H) continue;
       if (this._impassableSet.has(worldMap[ty]?.[tx])) continue;
 
+      // Pick a random rider identity
+      const rider = DARK_RIDERS[Math.floor(Math.random() * DARK_RIDERS.length)];
+
       const sprite = this.enemies.create(rx, ry, 'creature_skull', 0).setScale(2.5);
-      sprite.setTint(0x220022);
+      sprite.setTint(rider.tint);
       sprite.setDepth(9);
       sprite._isBlackRider = true;
+      sprite._riderName = rider.name;
+      sprite._riderTeam = rider.team;
 
-      // Pick a rare or legendary ghost for the battle
-      const rarePool = ALL_CARDS.filter(c => c.rarity === 'rare' || c.rarity === 'ghost-rare' || c.rarity === 'legendary');
-      const riderCard = rarePool[Math.floor(Math.random() * rarePool.length)];
-      sprite.cardData = riderCard;
+      // Use the first ghost in the rider's team as the encounter card
+      const leadCard = ALL_CARDS.find(c => c.id === rider.team[0]);
+      sprite.cardData = leadCard || ALL_CARDS.find(c => c.rarity === 'rare');
 
-      const label = this.add.text(rx, ry - 40, 'Black Rider', {
+      const label = this.add.text(rx, ry - 40, 'Dark Rider', {
         fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#aa44cc',
         backgroundColor: '#00000088', padding: { x: 3, y: 1 },
       }).setOrigin(0.5).setDepth(11);
@@ -2287,7 +2310,7 @@ class WorldScene extends Phaser.Scene {
         onUpdate: () => { if (label && sprite.active) label.setPosition(sprite.x, sprite.y - 40); },
       });
 
-      this._blackRiders.push({ sprite, label });
+      this._blackRiders.push({ sprite, label, rider });
     }
   }
 
