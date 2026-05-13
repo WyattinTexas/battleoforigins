@@ -67,20 +67,7 @@ class BattleScene extends Phaser.Scene {
     all.forEach(g => { const k='ghost_'+g.id; if(!this.textures.exists(k)){const u=_artUrl(g);if(u){this.load.image(k,u);n++;}} });
     if (n > 0) {
       this.load.on('loaderror',()=>{});
-      this.load.once('complete', () => {
-        // Set card art to LINEAR filtering (smooth) instead of NEAREST (pixelated)
-        all.forEach(g => {
-          const k = 'ghost_' + g.id;
-          if (this.textures.exists(k)) {
-            const tex = this.textures.get(k);
-            if (tex && tex.source && tex.source[0]) {
-              tex.source[0].glTexture = null; // force re-upload
-              tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
-            }
-          }
-        });
-        cb();
-      });
+      this.load.once('complete', cb);
       this.load.start();
     } else cb();
   }
@@ -181,12 +168,9 @@ class BattleScene extends Phaser.Scene {
     if (this.textures.exists(artKey)) {
       const art = this.add.image(0, artY, artKey);
       // Preserve aspect ratio: fit within frame
-      const tex = this.textures.get(artKey);
-      const srcW = tex.source[0].width || artFrameW;
-      const srcH = tex.source[0].height || artFrameH;
-      const scaleW = artFrameW / srcW;
-      const scaleH = artFrameH / srcH;
-      const scale = Math.min(scaleW, scaleH); // fit, don't stretch
+      const srcW = art.width || artFrameW;
+      const srcH = art.height || artFrameH;
+      const scale = Math.min(artFrameW / srcW, artFrameH / srcH);
       art.setScale(scale);
       c.add(art);
     } else {
@@ -286,9 +270,8 @@ class BattleScene extends Phaser.Scene {
     const artKey = 'ghost_' + ghost.id;
     if (this.textures.exists(artKey)) {
       const art = this.add.image(0, artFrameH/2 + 4, artKey);
-      const tex = this.textures.get(artKey);
-      const srcW = tex.source[0].width || artFrameW;
-      const srcH = tex.source[0].height || artFrameH;
+      const srcW = art.width || artFrameW;
+      const srcH = art.height || artFrameH;
       const scale = Math.min(artFrameW / srcW, artFrameH / srcH);
       art.setScale(scale);
       if (isKO) art.setTint(0x333344);
