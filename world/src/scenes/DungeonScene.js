@@ -373,60 +373,105 @@ class DungeonScene extends Phaser.Scene {
     const cy = tileY + T / 2;
     this.grid[this.stairsSlot.y][this.stairsSlot.x] = D_TILE.STAIRS;
 
-    // Darken the slot tile to suggest a recessed stairwell opening.
-    this._mapGfx.fillStyle(0x2a3848, 1);
-    this._mapGfx.fillRect(tileX, tileY, T, T);
+    // Visual is centered on the tile but overflows ~4px on each side so the
+    // doorway has presence; trigger zone is still the underlying tile.
+    const vw = 40, vh = 38;
+    const vx = cx - vw / 2;
+    const vy = cy - vh / 2;
 
-    // ── Pixel-art stairs (top-down with perspective) ───────
-    // Four receding steps: top narrowest (farthest), bottom widest (closest).
-    // Each step has a light highlight on top, mid tread, dark shadow at bottom.
-    const g = this.add.graphics().setDepth(3);
-    const TREAD_LIGHT = 0xeaf3ff;
-    const TREAD       = 0xb8d4e6;
+    // ── Doorway frame (icy stone) ───────────────────────────
+    const FRAME_DARK  = 0x3a4858;
+    const FRAME       = 0x6a8090;
+    const FRAME_LIGHT = 0xb0c4d4;
+    const DARK        = 0x141a26;
+    const TREAD_LIGHT = 0xd8e8f0;
+    const TREAD_MID   = 0xa0bccc;
     const TREAD_DARK  = 0x6a88a0;
-    const RISER       = 0x2a3848;
+    const STEP_GAP    = 0x2a3848;
 
-    // Each entry: {x offset, y offset, width, treadH}
-    // Step positions tuned so they tile cleanly inside 32x32.
-    const steps = [
-      { x: 10, y: 2,  w: 12, h: 4 },  // step 4 (top, farthest)
-      { x:  8, y: 8,  w: 16, h: 4 },
-      { x:  6, y: 14, w: 20, h: 4 },
-      { x:  4, y: 20, w: 24, h: 5 },  // step 1 (bottom, closest)
+    const g = this.add.graphics().setDepth(3);
+
+    // Frame outer (with rounded top corners for smoother feel)
+    g.fillStyle(FRAME_DARK, 1);
+    g.fillRoundedRect(vx, vy, vw, vh - 2, { tl: 4, tr: 4, bl: 0, br: 0 });
+    // Frame inner shoulder
+    g.fillStyle(FRAME, 1);
+    g.fillRoundedRect(vx + 2, vy + 2, vw - 4, vh - 5, { tl: 3, tr: 3, bl: 0, br: 0 });
+    // Inner highlight (top edge)
+    g.fillStyle(FRAME_LIGHT, 1);
+    g.fillRoundedRect(vx + 4, vy + 3, vw - 8, 2, 1);
+
+    // Interior cavity (where the steps live)
+    const iw = vw - 12, ih = vh - 10;
+    const ix = vx + 6, iy = vy + 6;
+    g.fillStyle(DARK, 1);
+    g.fillRoundedRect(ix, iy, iw, ih, { tl: 2, tr: 2, bl: 0, br: 0 });
+
+    // ── Step bands inside, ascending into darkness ──────────
+    // Closest band at bottom = lightest + widest. Farthest at top = darker.
+    const bands = [
+      { y: ih - 6,  pad: 2, color: TREAD_LIGHT },
+      { y: ih - 12, pad: 3, color: TREAD_MID },
+      { y: ih - 18, pad: 4, color: TREAD_DARK },
+      { y: ih - 23, pad: 5, color: 0x4a6878 },
     ];
-
-    for (const s of steps) {
-      const sx = tileX + s.x;
-      const sy = tileY + s.y;
-      // Tread main
-      g.fillStyle(TREAD, 1);
-      g.fillRect(sx, sy + 1, s.w, s.h - 1);
-      // Top highlight (1px)
-      g.fillStyle(TREAD_LIGHT, 1);
-      g.fillRect(sx, sy, s.w, 1);
-      // Bottom shadow / step edge (1px)
-      g.fillStyle(TREAD_DARK, 1);
-      g.fillRect(sx, sy + s.h, s.w, 1);
-      // Riser (front face of step, drawn below the shadow line, 1px)
-      g.fillStyle(RISER, 1);
-      g.fillRect(sx, sy + s.h + 1, s.w, 1);
+    for (const b of bands) {
+      const bw = iw - b.pad * 2;
+      const bx = ix + b.pad;
+      const by = iy + b.y;
+      if (bw <= 0) continue;
+      // Tread (with subtle rounded corners)
+      g.fillStyle(b.color, 1);
+      g.fillRoundedRect(bx, by, bw, 3, 1);
+      // Step gap shadow below the tread
+      g.fillStyle(STEP_GAP, 1);
+      g.fillRect(bx, by + 3, bw, 1);
     }
 
-    // Little icy crystal accents flanking the stairs (frost theme)
-    g.fillStyle(0xbfd6e8, 0.8);
-    g.fillTriangle(tileX + 2,  tileY + 14, tileX + 4,  tileY + 10, tileX + 6,  tileY + 14);
-    g.fillTriangle(tileX + 26, tileY + 14, tileX + 28, tileY + 10, tileX + 30, tileY + 14);
-    g.fillStyle(0xeaf3ff, 0.9);
-    g.fillRect(tileX + 3, tileY + 14, 2, 1);
-    g.fillRect(tileX + 27, tileY + 14, 2, 1);
+    // ── Torches flanking the doorway ────────────────────────
+    const drawTorch = (px, py) => {
+      // Wall bracket
+      g.fillStyle(0x4a3828, 1);
+      g.fillRect(px - 1, py + 4, 3, 5);
+      g.fillStyle(0x6a5040, 1);
+      g.fillRect(px, py + 4, 1, 4);
+      // Flame body (two-frame flicker via tween below)
+      const flame = this.add.graphics().setDepth(4);
+      const drawFlame = (tall) => {
+        flame.clear();
+        // Outer flame (orange)
+        flame.fillStyle(0xff7733, 1);
+        flame.fillCircle(px + 0.5, py + 1, tall ? 3 : 2.5);
+        // Inner flame (yellow)
+        flame.fillStyle(0xffcc44, 1);
+        flame.fillCircle(px + 0.5, py + 1, tall ? 2 : 1.5);
+        // Hot core (white-yellow)
+        flame.fillStyle(0xffee99, 1);
+        flame.fillCircle(px + 0.5, py + 1, 1);
+      };
+      drawFlame(true);
+      // Soft halo
+      const halo = this.add.circle(px + 0.5, py + 1, 7, 0xff9944, 0.18).setDepth(3);
+      // Flicker (alternate flame size)
+      this.time.addEvent({
+        delay: 220, loop: true,
+        callback: () => drawFlame(!flame._tall),
+      });
+      flame._tall = false;
+      this.tweens.add({ targets: halo, alpha: 0.08, scaleX: 1.2, scaleY: 1.2,
+        duration: 350, yoyo: true, repeat: -1 });
+    };
 
-    // Pulsing glow at the top of the stairs — "light from above" feel
-    const glow = this.add.circle(cx, tileY + 6, 14, 0x88ccff, 0.35).setDepth(2);
-    this.tweens.add({ targets: glow, scaleX: 1.6, scaleY: 1.6, alpha: 0.1,
-      duration: 1500, yoyo: true, repeat: -1 });
+    drawTorch(vx - 1, vy + 4);          // left torch
+    drawTorch(vx + vw + 1, vy + 4);     // right torch
+
+    // Subtle inviting glow inside the doorway
+    const glow = this.add.circle(cx, iy + 6, 12, 0xbfe4ff, 0.35).setDepth(2);
+    this.tweens.add({ targets: glow, scaleX: 1.4, scaleY: 1.4, alpha: 0.12,
+      duration: 1600, yoyo: true, repeat: -1 });
 
     // Hint
-    this.add.text(cx, cy + T / 2 + 10, '[Step on stairs to exit]', {
+    this.add.text(cx, vy + vh + 10, '[Step on stairs to exit]', {
       fontSize: '9px', fontFamily: 'monospace', color: '#bfe4ff',
       backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
     }).setOrigin(0.5).setDepth(11);
