@@ -255,10 +255,12 @@ class WorldScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(5);
     }
 
-    // ── HUD uses camera viewport dimensions (accounts for zoom) ──
+    // ── HUD positioning: divide canvas size by zoom to get visible area ──
     const cam = this.cameras.main;
-    const hudW = cam.width;
-    const hudH = cam.height;
+    const zoom = cam.zoom || 1.5;
+    const hudW = this.scale.width / zoom;
+    const hudH = this.scale.height / zoom;
+    console.log('[HUD] canvas:', this.scale.width, 'x', this.scale.height, 'zoom:', zoom, 'hud:', hudW, 'x', hudH);
 
     // ── Menu buttons bar (top-center) ──
     const menuY = 8;
@@ -298,8 +300,8 @@ class WorldScene extends Phaser.Scene {
 
     // ── Resize handler — reposition HUD on window resize ──
     this.scale.on('resize', () => {
-      const c = this.cameras.main;
-      this._repositionHUD(c.width, c.height);
+      const z = this.cameras.main.zoom || 1.5;
+      this._repositionHUD(this.scale.width / z, this.scale.height / z);
     });
 
     // ── Region text ──
@@ -3165,7 +3167,7 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _repositionHUD(W, H) {
-    const barY = H - 44;
+    const barY = H - 36;
 
     // Menu bar
     if (this._menuBtns) {
@@ -3225,10 +3227,10 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _buildActionBar() {
-    const cam = this.cameras.main;
-    const W = cam.width;
-    const H = cam.height;
-    const barY = H - 44;
+    const zoom = this.cameras.main.zoom || 1.5;
+    const W = this.scale.width / zoom;
+    const H = this.scale.height / zoom;
+    const barY = H - 36;
     const btnSize = 38;
     const gap = 5;
 
