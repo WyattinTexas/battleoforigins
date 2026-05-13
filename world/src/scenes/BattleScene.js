@@ -52,6 +52,9 @@ class BattleScene extends Phaser.Scene {
     pT.ghosts.forEach(enrich); eT.ghosts.forEach(enrich);
 
     this.pg = activeGhost(pT); this.eg = activeGhost(eT);
+
+    // Transfer world resources into battle
+    if (pT.resources && G.healingSeeds) pT.resources.healingSeed = (pT.resources.healingSeed || 0) + (G.healingSeeds || 0);
     if (!this.pg || !this.eg) { this._exit(false); return; }
 
     B.battleStarted = true; this.roundNum = 0; this._rolling = false;
@@ -363,7 +366,9 @@ class BattleScene extends Phaser.Scene {
     let rx = -20;
     Object.entries(RDISPLAY).forEach(([key, cfg]) => {
       const count = res[key] || 0;
-      if (count <= 0) return;
+      // Always show committable resources + healing seeds for player; hide zeros for enemy
+      const alwaysShow = ['ice', 'fire', 'surge', 'moonstone', 'luckyStone', 'healingSeed'];
+      if (count <= 0 && !(team === 'red' && alwaysShow.includes(key))) return;
 
       // Show committed count if any
       const committed = (B.committed && B.committed[tKey] && B.committed[tKey][key]) || 0;
@@ -380,6 +385,7 @@ class BattleScene extends Phaser.Scene {
       if (team === 'red' && !this._rolling) {
         resTxt.setInteractive({ useHandCursor: true });
         resTxt.on('pointerdown', () => {
+          console.log('[Battle] Resource clicked:', key, 'count:', count, 'rolling:', this._rolling);
           if (this._rolling) return;
           if (committable.includes(key) && typeof cycleCommit === 'function') {
             cycleCommit(tKey, key);
