@@ -587,6 +587,11 @@ class WorldScene extends Phaser.Scene {
     this._updateBuffHUD();
     this._updateActionBar();
 
+    // Valkin event hunt AI
+    if (this._valkinEvent && this._valkinEvent.active && typeof updateValkinHunt === 'function') {
+      updateValkinHunt(this);
+    }
+
     // Structure proximity interactions
     this._checkStructureProximity();
 
