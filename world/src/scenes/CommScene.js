@@ -34,8 +34,11 @@ class CommOverlay {
   build() {
     if (this.container) return; // Already built
 
-    const W = this.scene.scale.width;
-    const H = this.scene.scale.height;
+    // Use camera viewport divided by zoom for correct positioning with zoomed cameras
+    const cam = this.scene.cameras.main;
+    const zoom = cam.zoom || 1;
+    const W = cam.width / zoom;
+    const H = cam.height / zoom;
 
     this.container = this.scene.add.container(0, 0).setDepth(500).setScrollFactor(0);
 
@@ -238,8 +241,10 @@ class CommOverlay {
   _buildChoiceButtons(choices) {
     if (!this.container) return;
 
-    const W = this.scene.scale.width;
-    const H = this.scene.scale.height;
+    const cam = this.scene.cameras.main;
+    const zoom = cam.zoom || 1;
+    const W = cam.width / zoom;
+    const H = cam.height / zoom;
     const boxY = H - 90;
     const startY = boxY + 52;
 
