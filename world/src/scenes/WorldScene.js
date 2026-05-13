@@ -2040,7 +2040,7 @@ class WorldScene extends Phaser.Scene {
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
 
     // ── Minimap (bottom-right, zoom-corrected) ──
-    const mmW = 160, mmH = 120;
+    const mmW = 90, mmH = 65;
     const camZoom = this.cameras.main.zoom || 1;
     const vW = W / camZoom, vH = H / camZoom;
     this.minimapBg = this.add.rectangle(vW - mmW/2 - 8, vH - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
@@ -2060,7 +2060,7 @@ class WorldScene extends Phaser.Scene {
     const camZoom = this.cameras.main.zoom || 1;
     const W = this.scale.width / camZoom;
     const H = this.scale.height / camZoom;
-    const mmW = 160, mmH = 120;
+    const mmW = 90, mmH = 65;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
     const scaleX = mmW / WORLD_W;
@@ -2211,7 +2211,7 @@ class WorldScene extends Phaser.Scene {
     // Minimap player dot
     const W = this.scale.width;
     const H = this.scale.height;
-    const mmW = 160, mmH = 120;
+    const mmW = 90, mmH = 65;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
     this.minimapDot.setPosition(mmX + G.x * (mmW / WORLD_W), mmY + G.y * (mmH / WORLD_H));
@@ -3367,9 +3367,11 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _repositionHUD(W, H) {
-    const btnSize = 56, gap = 8, barBottomPad = 6;
+    const btnSize = Math.min(40, Math.floor(W / 14));
+    const gap = 4;
+    const barBottomPad = 4;
     const barY = H - barBottomPad - btnSize / 2;
-    const barH = btnSize + 20;
+    const barH = btnSize + 14;
 
     // Menu bar
     if (this._menuBtns) {
@@ -3429,10 +3431,11 @@ class WorldScene extends Phaser.Scene {
     const zoom = this.cameras.main.zoom || 1.5;
     const W = this.scale.width / zoom;
     const H = this.scale.height / zoom;
-    const btnSize = 56;
-    const gap = 8;
-    const barBottomPad = 6; // pixels from absolute bottom
-    const barY = H - barBottomPad - btnSize / 2; // center of buttons
+    // Scale button size based on viewport — smaller on small screens
+    const btnSize = Math.min(40, Math.floor(W / 14));
+    const gap = 4;
+    const barBottomPad = 4;
+    const barY = H - barBottomPad - btnSize / 2;
 
     // Action definitions
     this._actionButtons = [];
@@ -3472,10 +3475,10 @@ class WorldScene extends Phaser.Scene {
     const totalW = visibleActions.length * (btnSize + gap) - gap;
     const startX = W / 2 - totalW / 2 + btnSize / 2;
 
-    // Dark background bar — hugs the bottom edge
-    const barH = btnSize + 20;
-    this._actionBarBg = this.add.rectangle(W / 2, H - barH / 2, Math.max(300, totalW + 40), barH, 0x0a0a1a, 0.9)
-      .setStrokeStyle(2, 0x334466).setScrollFactor(0).setDepth(300);
+    // Dark background bar — hugs the bottom edge, scaled
+    const barH = btnSize + 14;
+    this._actionBarBg = this.add.rectangle(W / 2, H - barH / 2, Math.min(W - 10, totalW + 30), barH, 0x0a0a1a, 0.9)
+      .setStrokeStyle(1, 0x334466).setScrollFactor(0).setDepth(300);
 
     visibleActions.forEach((a, i) => {
       const x = startX + i * (btnSize + gap);
@@ -3484,17 +3487,19 @@ class WorldScene extends Phaser.Scene {
         .setStrokeStyle(2, a.color).setScrollFactor(0).setDepth(301)
         .setInteractive({ useHandCursor: true });
 
-      const icon = this.add.text(x, barY - 8, a.label, {
-        fontSize: '22px', fontFamily: 'monospace', color: '#ffffff',
+      const iconSize = Math.max(12, Math.floor(btnSize * 0.45)) + 'px';
+      const labelSize = Math.max(7, Math.floor(btnSize * 0.2)) + 'px';
+      const icon = this.add.text(x, barY - btnSize * 0.15, a.label, {
+        fontSize: iconSize, fontFamily: 'monospace', color: '#ffffff',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
 
-      const label = this.add.text(x, barY + 16, a.name, {
-        fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold',
+      const label = this.add.text(x, barY + btnSize * 0.3, a.name, {
+        fontSize: labelSize, fontFamily: 'monospace', fontStyle: 'bold',
         color: '#' + a.color.toString(16).padStart(6, '0'),
       }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
 
-      const statusText = this.add.text(x, barY + 28, '', {
-        fontSize: '8px', fontFamily: 'monospace', color: '#888888',
+      const statusText = this.add.text(x, barY + btnSize * 0.45, '', {
+        fontSize: labelSize, fontFamily: 'monospace', color: '#888888',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(302);
 
       bg.on('pointerdown', a.action);
