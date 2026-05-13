@@ -65,8 +65,24 @@ class BattleScene extends Phaser.Scene {
     const all = [...B[this._pt].ghosts, ...B[this._et].ghosts];
     let n = 0;
     all.forEach(g => { const k='ghost_'+g.id; if(!this.textures.exists(k)){const u=_artUrl(g);if(u){this.load.image(k,u);n++;}} });
-    if (n > 0) { this.load.on('loaderror',()=>{}); this.load.once('complete',cb); this.load.start(); }
-    else cb();
+    if (n > 0) {
+      this.load.on('loaderror',()=>{});
+      this.load.once('complete', () => {
+        // Set card art to LINEAR filtering (smooth) instead of NEAREST (pixelated)
+        all.forEach(g => {
+          const k = 'ghost_' + g.id;
+          if (this.textures.exists(k)) {
+            const tex = this.textures.get(k);
+            if (tex && tex.source && tex.source[0]) {
+              tex.source[0].glTexture = null; // force re-upload
+              tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+            }
+          }
+        });
+        cb();
+      });
+      this.load.start();
+    } else cb();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -139,55 +155,65 @@ class BattleScene extends Phaser.Scene {
     const tCol = isRed ? BC.RED : BC.BLUE;
     const tStr = isRed ? BC.RED_S : BC.BLUE_S;
 
-    // Card dimensions (responsive)
-    const cw = Math.min(this._W * 0.22, 280);
-    const ch = cw * 1.35;
+    // Card dimensions — BIGGER, fill the screen properly
+    const cw = Math.round(this._W * 0.24);
+    const ch = Math.round(cw * 1.4);
+    const pad = 10;
 
-    // Card background
+    // Card background with thicker team border
     const bg = this.add.graphics();
     bg.fillStyle(BC.CARD_BG, 0.95);
-    bg.fillRoundedRect(-cw/2, -ch/2, cw, ch, 10);
-    bg.lineStyle(2, tCol, 0.9);
-    bg.strokeRoundedRect(-cw/2, -ch/2, cw, ch, 10);
+    bg.fillRoundedRect(-cw/2, -ch/2, cw, ch, 12);
+    bg.lineStyle(3, tCol, 0.9);
+    bg.strokeRoundedRect(-cw/2, -ch/2, cw, ch, 12);
     c.add(bg);
 
-    // Name at top
-    c.add(this.add.text(0, -ch/2 + 16, ghost.name, {
-      fontFamily: 'Cinzel, Georgia, serif', fontSize: '17px', color: BC.TEXT, fontStyle: 'bold',
+    // Name at top — larger font
+    c.add(this.add.text(0, -ch/2 + 20, ghost.name, {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '20px', color: BC.TEXT, fontStyle: 'bold',
     }).setOrigin(0.5));
 
-    // Art (fills most of the card)
-    const artH = ch * 0.55;
-    const artY = -ch/2 + 38 + artH/2;
+    // Art — PRESERVE ASPECT RATIO, fit within frame
+    const artFrameW = cw - pad * 2;
+    const artFrameH = ch * 0.52;
+    const artY = -ch/2 + 44 + artFrameH/2;
     const artKey = 'ghost_' + ghost.id;
     if (this.textures.exists(artKey)) {
       const art = this.add.image(0, artY, artKey);
-      art.setDisplaySize(cw - 16, artH);
+      // Preserve aspect ratio: fit within frame
+      const tex = this.textures.get(artKey);
+      const srcW = tex.source[0].width || artFrameW;
+      const srcH = tex.source[0].height || artFrameH;
+      const scaleW = artFrameW / srcW;
+      const scaleH = artFrameH / srcH;
+      const scale = Math.min(scaleW, scaleH); // fit, don't stretch
+      art.setScale(scale);
       c.add(art);
     } else {
       const ph = this.add.graphics();
       ph.fillStyle(_rarH(ghost.rarity), 0.15);
-      ph.fillRect(-(cw-16)/2, artY - artH/2, cw-16, artH);
+      ph.fillRect(-artFrameW/2, artY - artFrameH/2, artFrameW, artFrameH);
       c.add(ph);
       c.add(this.add.text(0, artY, ghost.name.substring(0,8).toUpperCase(), {
-        fontFamily: 'Cinzel, serif', fontSize: '22px', color: _rarS(ghost.rarity),
+        fontFamily: 'Cinzel, serif', fontSize: '24px', color: _rarS(ghost.rarity),
       }).setOrigin(0.5));
     }
 
-    // Ability badge
-    const badgeY = artY + artH/2 + 18;
+    // Ability badge — wider, more prominent
+    const badgeY = artY + artFrameH/2 + 20;
+    const badgeW = Math.min(cw * 0.7, 140);
     const badgeBg = this.add.graphics();
     badgeBg.fillStyle(tCol, 0.9);
-    badgeBg.fillRoundedRect(-50, badgeY - 10, 100, 20, 4);
+    badgeBg.fillRoundedRect(-badgeW/2, badgeY - 12, badgeW, 24, 5);
     c.add(badgeBg);
     c.add(this.add.text(0, badgeY, (ghost.ability || '').toUpperCase(), {
-      fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: '#fff', fontStyle: 'bold',
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '11px', color: '#fff', fontStyle: 'bold',
     }).setOrigin(0.5));
 
-    // Ability description
-    c.add(this.add.text(0, badgeY + 22, ghost.abilityDesc || '', {
-      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#aab0c0',
-      align: 'center', wordWrap: { width: cw - 24 }, lineSpacing: 2,
+    // Ability description — readable
+    c.add(this.add.text(0, badgeY + 26, ghost.abilityDesc || '', {
+      fontFamily: 'Georgia, serif', fontSize: '11px', color: '#aab0c0',
+      align: 'center', wordWrap: { width: cw - 20 }, lineSpacing: 3,
     }).setOrigin(0.5, 0));
 
     // HP bar at bottom
@@ -228,8 +254,8 @@ class BattleScene extends Phaser.Scene {
     const t = B[tKey];
     const c = this.add.container(cx, topY);
     const bench = t.ghosts.filter((_, i) => i !== t.activeIdx);
-    const cw = Math.min(this._W * 0.12, 150);
-    const ch = cw * 1.55;
+    const cw = Math.round(this._W * 0.13);
+    const ch = Math.round(cw * 1.6);
     const gap = 12;
 
     bench.forEach((g, i) => {
@@ -254,12 +280,17 @@ class BattleScene extends Phaser.Scene {
     bg.strokeRoundedRect(-cw/2, 0, cw, ch, 6);
     c.add(bg);
 
-    // Art
-    const artH = ch * 0.45;
+    // Art — preserve aspect ratio
+    const artFrameH = ch * 0.45;
+    const artFrameW = cw - 8;
     const artKey = 'ghost_' + ghost.id;
     if (this.textures.exists(artKey)) {
-      const art = this.add.image(0, artH/2 + 4, artKey);
-      art.setDisplaySize(cw - 8, artH);
+      const art = this.add.image(0, artFrameH/2 + 4, artKey);
+      const tex = this.textures.get(artKey);
+      const srcW = tex.source[0].width || artFrameW;
+      const srcH = tex.source[0].height || artFrameH;
+      const scale = Math.min(artFrameW / srcW, artFrameH / srcH);
+      art.setScale(scale);
       if (isKO) art.setTint(0x333344);
       c.add(art);
     }
