@@ -36,13 +36,16 @@ class BattleScene extends Phaser.Scene {
 
   create() {
     console.log('[BattleScene] create entered, B=', B ? 'set' : 'NULL', '| returnScene=', this.battleData?.returnScene || 'WorldScene');
-    if (!B) { this._exit(false); return; }
+    if (!B) { console.warn('[BattleScene] EXIT EARLY: B is null'); this._exit(false); return; }
     if (typeof applyBuffsToBattle === 'function') applyBuffsToBattle();
     if (typeof applyFortuneToBattle === 'function') applyFortuneToBattle();
 
     this._pt = 'red'; this._et = 'blue';
     const pT = B[this._pt], eT = B[this._et];
-    if (!pT || !eT) { this._exit(false); return; }
+    if (!pT || !eT) {
+      console.warn('[BattleScene] EXIT EARLY: missing team. pT=', !!pT, 'eT=', !!eT, 'B keys=', Object.keys(B||{}));
+      this._exit(false); return;
+    }
 
     // Hide world HUD
     const hud = document.getElementById('hud-overlay');
@@ -55,7 +58,12 @@ class BattleScene extends Phaser.Scene {
     this.pg = activeGhost(pT); this.eg = activeGhost(eT);
 
     // No world resource transfer — resources earned in battle only (talents/gear/buffs handle world→battle later)
-    if (!this.pg || !this.eg) { this._exit(false); return; }
+    if (!this.pg || !this.eg) {
+      console.warn('[BattleScene] EXIT EARLY: missing active ghost. pg=', !!this.pg, 'eg=', !!this.eg,
+        '| pT.ghosts.length=', pT.ghosts?.length, 'pT.activeIdx=', pT.activeIdx,
+        '| eT.ghosts.length=', eT.ghosts?.length, 'eT.activeIdx=', eT.activeIdx);
+      this._exit(false); return;
+    }
 
     B.battleStarted = true; this.roundNum = 0; this._rolling = false;
     this._raidId = this.battleData.raidId || null;

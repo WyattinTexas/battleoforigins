@@ -253,11 +253,13 @@ class DungeonScene extends Phaser.Scene {
   // ═══════════════════════════════════════════════════════════
   _setupResumeHandler() {
     this.events.on('resume', () => {
+      console.log('[Dungeon] scene resumed, pendingEnemy=', this._pendingEnemy?.name || 'NONE');
       if (!this._pendingEnemy) return;
       const enemy = this._pendingEnemy;
       this._pendingEnemy = null;
 
       const playerWiped = !G.team.some(g => !g.ko && g.hp > 0);
+      console.log('[Dungeon] battle resolved. playerWiped=', playerWiped, '| enemy:', enemy.name, '| room:', enemy.room);
       if (playerWiped) {
         this._onBattleLoss(enemy);
       } else {
@@ -272,7 +274,6 @@ class DungeonScene extends Phaser.Scene {
   update() {
     if (G.inBattle) return;       // battle in progress — pause world updates
     if (this._state.koActive) return; // KO modal up — block movement
-    if (this.cameras.main._fading) return;
 
     this._handleMovement();
     this._checkAggro();
@@ -451,6 +452,8 @@ class DungeonScene extends Phaser.Scene {
 
   _checkRoomClear(roomId) {
     const remaining = this.enemies.filter(e => e.room === roomId && !e.defeated);
+    console.log('[Dungeon] _checkRoomClear room=', roomId, '| remaining mobs:', remaining.length,
+      '| doors gated by this room:', this.config.doors.filter(d => d.unlockedBy === roomId).length);
     if (remaining.length > 0) return;
     // Open every door gated by this room: kill its physics body + repaint floor
     this.config.doors.forEach((d, i) => {
