@@ -1,0 +1,314 @@
+/* ═══════════════════════════════════════════════════
+   BATTLE CALLOUT OVERLAY — Battle of Origins World
+   Dramatic banners for big combat moments.
+   Matches testroom2 scroll-drop aesthetic.
+   ═══════════════════════════════════════════════════ */
+
+/* ── Container ── */
+#battleCalloutRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* ── Overlay (the whole banner unit) ── */
+.bc-overlay {
+  position: fixed;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  animation: bc-descend 1.15s cubic-bezier(0.34, 1.40, 0.50, 1) both;
+}
+
+.bc-overlay.bc-exit {
+  animation: bc-ascend 0.6s ease-in forwards;
+}
+
+/* ── Drop-in animation (proscenium scroll) ── */
+@keyframes bc-descend {
+  0% {
+    transform: translate(-50%, -260%) rotate(-1.8deg) scale(0.92);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  25% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  55% {
+    transform: translate(-50%, -38%) rotate(0.9deg) scale(1.05);
+  }
+  72% {
+    transform: translate(-50%, -56%) rotate(-0.4deg) scale(0.985);
+  }
+  86% {
+    transform: translate(-50%, -47%) rotate(0.2deg) scale(1.012);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* ── Exit animation ── */
+@keyframes bc-ascend {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translate(-50%, -200%) scale(0.9);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+/* ── Banner (the dark backdrop strip) ── */
+.bc-banner {
+  position: relative;
+  padding: 28px 90px 32px;
+  background:
+    linear-gradient(180deg,
+      rgba(8, 12, 20, 0.97) 0%,
+      rgba(18, 22, 36, 0.95) 50%,
+      rgba(8, 12, 20, 0.97) 100%);
+  border-top: 4px solid #d4a040;
+  border-bottom: 4px solid #d4a040;
+  box-shadow:
+    0 0 0 1px rgba(212, 160, 64, 0.4),
+    0 0 60px rgba(212, 160, 64, 0.35),
+    0 0 120px rgba(212, 160, 64, 0.15),
+    0 30px 80px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(2px);
+  min-width: 320px;
+}
+
+/* ── Side ribbon glow ── */
+.bc-banner::before,
+.bc-banner::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 70px;
+  pointer-events: none;
+}
+.bc-banner::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(212, 160, 64, 0.45), transparent);
+}
+.bc-banner::after {
+  right: 0;
+  background: linear-gradient(-90deg, rgba(212, 160, 64, 0.45), transparent);
+}
+
+/* ── Main text ── */
+.bc-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin: 0;
+  position: relative;
+}
+
+/* ── Subtitle ── */
+.bc-subtitle {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 14px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+  animation: bc-subtitle-rise 0.5s ease-out 0.95s both;
+}
+
+@keyframes bc-subtitle-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════
+   TYPE-SPECIFIC COLORS
+   ═══════════════════════════════════════════════════ */
+
+/* ABILITY — gold/gilt */
+.bc-type-ability .bc-banner {
+  border-color: #d4a040;
+  box-shadow:
+    0 0 0 1px rgba(212, 160, 64, 0.4),
+    0 0 60px rgba(212, 160, 64, 0.35),
+    0 0 120px rgba(212, 160, 64, 0.15),
+    0 30px 80px rgba(0, 0, 0, 0.85);
+}
+.bc-type-ability .bc-banner::before {
+  background: linear-gradient(90deg, rgba(212, 160, 64, 0.45), transparent);
+}
+.bc-type-ability .bc-banner::after {
+  background: linear-gradient(-90deg, rgba(212, 160, 64, 0.45), transparent);
+}
+.bc-type-ability .bc-text {
+  color: #d4a040;
+  text-shadow:
+    0 0 30px rgba(212, 160, 64, 0.85),
+    0 0 60px rgba(212, 160, 64, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.95);
+}
+.bc-type-ability .bc-subtitle {
+  color: #e8d4a8;
+}
+
+/* DAMAGE — blood red */
+.bc-type-damage .bc-banner {
+  border-color: #c03030;
+  box-shadow:
+    0 0 0 1px rgba(192, 48, 48, 0.4),
+    0 0 60px rgba(192, 48, 48, 0.4),
+    0 0 120px rgba(192, 48, 48, 0.15),
+    0 30px 80px rgba(0, 0, 0, 0.85);
+}
+.bc-type-damage .bc-banner::before {
+  background: linear-gradient(90deg, rgba(192, 48, 48, 0.45), transparent);
+}
+.bc-type-damage .bc-banner::after {
+  background: linear-gradient(-90deg, rgba(192, 48, 48, 0.45), transparent);
+}
+.bc-type-damage .bc-text {
+  color: #e84040;
+  text-shadow:
+    0 0 30px rgba(232, 64, 64, 0.85),
+    0 0 60px rgba(232, 64, 64, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.95);
+}
+.bc-type-damage .bc-subtitle {
+  color: #f0a0a0;
+}
+
+/* HEAL — nature green */
+.bc-type-heal .bc-banner {
+  border-color: #30a050;
+  box-shadow:
+    0 0 0 1px rgba(48, 160, 80, 0.4),
+    0 0 60px rgba(48, 160, 80, 0.4),
+    0 0 120px rgba(48, 160, 80, 0.15),
+    0 30px 80px rgba(0, 0, 0, 0.85);
+}
+.bc-type-heal .bc-banner::before {
+  background: linear-gradient(90deg, rgba(48, 160, 80, 0.45), transparent);
+}
+.bc-type-heal .bc-banner::after {
+  background: linear-gradient(-90deg, rgba(48, 160, 80, 0.45), transparent);
+}
+.bc-type-heal .bc-text {
+  color: #40d070;
+  text-shadow:
+    0 0 30px rgba(64, 208, 112, 0.85),
+    0 0 60px rgba(64, 208, 112, 0.4),
+    0 4px 20px rgba(0, 0, 0, 0.95);
+}
+.bc-type-heal .bc-subtitle {
+  color: #a0e8b8;
+}
+
+/* KO — dark crimson */
+.bc-type-ko .bc-banner {
+  border-color: #8b0000;
+  background:
+    linear-gradient(180deg,
+      rgba(30, 5, 5, 0.97) 0%,
+      rgba(50, 10, 10, 0.95) 50%,
+      rgba(30, 5, 5, 0.97) 100%);
+  box-shadow:
+    0 0 0 1px rgba(139, 0, 0, 0.5),
+    0 0 80px rgba(139, 0, 0, 0.5),
+    0 0 160px rgba(139, 0, 0, 0.2),
+    0 30px 80px rgba(0, 0, 0, 0.9);
+}
+.bc-type-ko .bc-banner::before {
+  background: linear-gradient(90deg, rgba(139, 0, 0, 0.55), transparent);
+}
+.bc-type-ko .bc-banner::after {
+  background: linear-gradient(-90deg, rgba(139, 0, 0, 0.55), transparent);
+}
+.bc-type-ko .bc-text {
+  color: #ff2020;
+  text-shadow:
+    0 0 40px rgba(255, 32, 32, 0.9),
+    0 0 80px rgba(139, 0, 0, 0.5),
+    0 4px 20px rgba(0, 0, 0, 0.95);
+}
+.bc-type-ko .bc-subtitle {
+  color: #d08080;
+}
+
+/* CRITICAL — bright gold (legendary feel) */
+.bc-type-critical .bc-banner {
+  border-color: #ffd700;
+  box-shadow:
+    0 0 0 1px rgba(255, 215, 0, 0.5),
+    0 0 80px rgba(255, 215, 0, 0.5),
+    0 0 160px rgba(255, 215, 0, 0.25),
+    0 30px 80px rgba(0, 0, 0, 0.85);
+}
+.bc-type-critical .bc-banner::before {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.55), transparent);
+}
+.bc-type-critical .bc-banner::after {
+  background: linear-gradient(-90deg, rgba(255, 215, 0, 0.55), transparent);
+}
+.bc-type-critical .bc-text {
+  color: #ffd700;
+  text-shadow:
+    0 0 40px rgba(255, 215, 0, 0.9),
+    0 0 80px rgba(255, 215, 0, 0.5),
+    0 4px 20px rgba(0, 0, 0, 0.95);
+  animation: bc-critical-pulse 0.6s ease-in-out 1.2s 3;
+}
+.bc-type-critical .bc-subtitle {
+  color: #fff0a0;
+}
+
+@keyframes bc-critical-pulse {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.4); }
+}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .bc-text {
+    font-size: 20px;
+    letter-spacing: 0.04em;
+  }
+  .bc-subtitle {
+    font-size: 9px;
+  }
+  .bc-banner {
+    padding: 20px 40px 24px;
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bc-text {
+    font-size: 16px;
+  }
+  .bc-subtitle {
+    font-size: 8px;
+  }
+  .bc-banner {
+    padding: 16px 24px 20px;
+  }
+}

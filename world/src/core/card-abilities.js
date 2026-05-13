@@ -420,7 +420,7 @@ function calculateDiceCount(teamName) {
 
   // Fredrick (27) — caps opponent at 3 dice
   const oppName = oppTeam(teamName);
-  const oppF = B[oppName] ? active(B[oppName]) : null;
+  const oppF = B[oppName] ? activeGhost(B[oppName]) : null;
   if (oppF && oppF.id === 27 && !oppF.ko && count > 3) {
     count = 3;
   }
@@ -475,7 +475,7 @@ function triggerWinPath(teamName, rollResult, logFn) {
   // Timpleton (312) — Big Target: +3 damage if enemy HP > own
   if (f.id === 312) {
     const enemyName = oppTeam(teamName);
-    const ef = B[enemyName] ? active(B[enemyName]) : null;
+    const ef = B[enemyName] ? activeGhost(B[enemyName]) : null;
     if (ef && ef.hp > f.hp) {
       // Extra damage applied during resolve
       callouts.push({ name: 'BIG TARGET!', color: '#ff6644', desc: `${f.name} — +3 damage (enemy HP > yours)!`, team: teamName });
@@ -584,9 +584,9 @@ function calculateDamage(teamName, rollResult, dice) {
 
   // Timpleton (312) — Big Target: +3 if enemy HP > own
   const team = B[teamName];
-  const f = team ? active(team) : null;
+  const f = team ? activeGhost(team) : null;
   const oppName = oppTeam(teamName);
-  const ef = B[oppName] ? active(B[oppName]) : null;
+  const ef = B[oppName] ? activeGhost(B[oppName]) : null;
   if (f && f.id === 312 && ef && ef.hp > f.hp) dmg += 3;
 
   // Pudge (311) — +2 on doubles
@@ -628,7 +628,7 @@ function calculateDamageReduction(teamName, rollResult) {
   if (!B) return 0;
   let reduction = 0;
   const team = B[teamName];
-  const f = team ? active(team) : null;
+  const f = team ? activeGhost(team) : null;
 
   // Shell (Willpower card) — block 1 damage
   if (f && f.shellActive) {

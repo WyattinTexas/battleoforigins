@@ -1,0 +1,160 @@
+/* ═══════════════════════════════════════════════════
+   STAR FOX 64 COMM SYSTEM — Battle of Origins
+   Import: <link rel="stylesheet" href="starfox-comm.css">
+   ═══════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* ═══════ COMM BOX — Star Fox 64 style ═══════ */
+.sf-comm-box {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) scaleY(0);
+  transform-origin: bottom center;
+  z-index: 8000;
+  display: flex;
+  align-items: stretch;
+  width: min(520px, 92vw);
+  background: rgba(4, 6, 18, 0.92);
+  border: 2px solid rgba(80, 130, 200, 0.35);
+  border-radius: 3px;
+  overflow: hidden;
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 20px rgba(40, 80, 160, 0.15), inset 0 0 30px rgba(5, 10, 25, 0.6);
+  pointer-events: auto;
+}
+.sf-comm-box.open { transform: translateX(-50%) scaleY(1); }
+
+/* ── Portrait (small square) ── */
+.sf-portrait-cell {
+  position: relative;
+  width: 72px;
+  min-height: 72px;
+  flex-shrink: 0;
+  background: #080c1a;
+  border-right: 2px solid rgba(80, 130, 200, 0.35);
+  overflow: hidden;
+}
+.sf-portrait-cell img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  filter: saturate(0.8) contrast(1.15) brightness(0.95);
+}
+.sf-portrait-cell.glitch img {
+  animation: sf-pglitch 0.25s steps(3) forwards;
+}
+@keyframes sf-pglitch {
+  0%   { filter: saturate(3) hue-rotate(80deg) contrast(2.5); transform: translate(2px,-1px); }
+  33%  { filter: saturate(0) contrast(3); transform: translate(-2px,1px); }
+  66%  { filter: saturate(1.5) hue-rotate(-30deg) contrast(1.4); transform: translate(1px,0); }
+  100% { filter: saturate(0.8) contrast(1.15) brightness(0.95); transform: translate(0,0); }
+}
+
+/* ── HP bar ── */
+.sf-hp-bar-wrap {
+  position: absolute;
+  left: 4px; top: 4px; bottom: 4px;
+  width: 6px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.sf-hp-bar-fill {
+  width: 100%;
+  border-radius: 2px;
+  transition: height 0.4s ease, background 0.4s;
+}
+
+/* ── Text area ── */
+.sf-comm-content {
+  flex: 1;
+  padding: 8px 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 2px;
+}
+.sf-comm-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.sf-comm-dialogue {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #e8e8e8;
+  margin-top: 4px;
+}
+.sf-comm-dialogue .sf-cursor {
+  display: inline-block;
+  width: 7px; height: 12px;
+  background: #e8e8e8;
+  margin-left: 1px;
+  animation: sf-blink 0.5s step-end infinite;
+  vertical-align: text-bottom;
+}
+@keyframes sf-blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+/* ── Advance arrow ── */
+.sf-comm-advance {
+  position: absolute; bottom: 5px; right: 8px;
+  font-size: 8px; color: #5a6a8a; letter-spacing: 1px;
+  animation: sf-advpulse 1.2s ease-in-out infinite;
+  display: none;
+}
+@keyframes sf-advpulse { 0%,100% { opacity:0.3; } 50% { opacity:1; } }
+
+/* ── Queue pips ── */
+.sf-queue-bar {
+  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; z-index: 8001;
+  pointer-events: none;
+}
+.sf-queue-pip { width: 6px; height: 6px; border-radius: 50%; background: #5a6a8a; transition: all 0.3s; }
+.sf-queue-pip.active { background: #40a0ff; box-shadow: 0 0 6px #40a0ff; transform: scale(1.4); }
+.sf-queue-pip.done { background: rgba(100,160,255,0.25); }
+
+/* ── Alert flash ── */
+.sf-alert-flash { position: fixed; inset: 0; z-index: 8500; background: rgba(255,60,100,0.12); pointer-events: none; opacity: 0; }
+.sf-alert-flash.fire { animation: sf-aburst 0.35s ease-out forwards; }
+@keyframes sf-aburst { 0% { opacity:1; } 100% { opacity:0; } }
+
+/* ── Warning banner ── */
+.sf-warning-banner {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
+  z-index: 8600; font-family: 'Press Start 2P', monospace; font-size: clamp(16px,3vw,28px);
+  font-weight: 900; letter-spacing: 3px; color: #ff4060;
+  text-shadow: 0 0 16px rgba(255,60,100,0.5), 0 0 50px rgba(255,60,100,0.25);
+  white-space: nowrap; pointer-events: none; opacity: 0;
+}
+.sf-warning-banner.show { animation: sf-wslam 1.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes sf-wslam {
+  0% { transform: translate(-50%,-50%) scale(2.5); opacity:0; }
+  12% { transform: translate(-50%,-50%) scale(1); opacity:1; }
+  65% { transform: translate(-50%,-50%) scale(1); opacity:1; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity:0; }
+}
+
+/* ── Scanlines (optional, light) ── */
+.sf-scanlines {
+  position: fixed; inset: 0; z-index: 7999; pointer-events: none; opacity: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(100,160,255,0.02) 2px, rgba(100,160,255,0.02) 4px);
+  transition: opacity 0.3s;
+}
+.sf-scanlines.active { opacity: 1; }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .sf-comm-box { width: 96vw; }
+  .sf-portrait-cell { width: 58px; min-height: 58px; }
+  .sf-comm-name { font-size: 8px; }
+  .sf-comm-dialogue { font-size: 9px; }
+}

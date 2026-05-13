@@ -288,8 +288,7 @@ class BuildingScene extends Phaser.Scene {
     }
     if (enemyGhosts.length === 0) { G.inBattle = false; return; }
     const playerGhosts = buildPlayerBattleTeam();
-    const _res = { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0,
-      luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 };
+    const _res = { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 };
     B = {
       round: 1, player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._res } },
       enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: {} },

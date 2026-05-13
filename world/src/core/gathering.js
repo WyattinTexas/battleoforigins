@@ -433,7 +433,7 @@ function triggerRoamingBattle(enemy) {
     player: {
       ghosts: playerGhosts,
       activeIdx: 0,
-      resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+      resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     },
     enemy: {
       ghosts: enemyGhosts,
@@ -447,7 +447,7 @@ function triggerRoamingBattle(enemy) {
     playerDice: [],
     enemyDice: [],
     entryFired: false,
-    resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+    resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     isAggressive: true,
     nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
     enemyUsedResource: false,

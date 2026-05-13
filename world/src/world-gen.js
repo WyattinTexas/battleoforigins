@@ -1,3 +1,29 @@
+// ═══ Simple 2D value noise for organic tree placement ═══
+function _hash(x, y) {
+  let h = x * 374761393 + y * 668265263;
+  h = (h ^ (h >> 13)) * 1274126177;
+  return (h ^ (h >> 16)) & 0x7fffffff;
+}
+function _noise2d(x, y, freq) {
+  const fx = x * freq, fy = y * freq;
+  const ix = Math.floor(fx), iy = Math.floor(fy);
+  const dx = fx - ix, dy = fy - iy;
+  const sx = dx * dx * (3 - 2 * dx), sy = dy * dy * (3 - 2 * dy);
+  const n00 = _hash(ix, iy) / 0x7fffffff;
+  const n10 = _hash(ix + 1, iy) / 0x7fffffff;
+  const n01 = _hash(ix, iy + 1) / 0x7fffffff;
+  const n11 = _hash(ix + 1, iy + 1) / 0x7fffffff;
+  return (n00 * (1 - sx) + n10 * sx) * (1 - sy) + (n01 * (1 - sx) + n11 * sx) * sy;
+}
+// Multi-octave noise: returns 0-1
+function forestNoise(x, y, seed) {
+  const s = seed || 0;
+  const n1 = _noise2d(x + s, y + s, 0.12);       // large forest shapes
+  const n2 = _noise2d(x + s + 100, y + s + 100, 0.25) * 0.4; // medium detail
+  const n3 = _noise2d(x + s + 200, y + s + 200, 0.5) * 0.15; // small clumps
+  return Math.min(1, Math.max(0, n1 + n2 + n3));
+}
+
 const ENCOUNTER_ZONES = [
   { name: 'Crystal Glade', x: 25, y: 12, w: 8, h: 6 },
   { name: 'Frozen Hollow', x: 8, y: 28, w: 7, h: 5 },
@@ -33,12 +59,23 @@ function generateWorld() {
   for (let y = 18; y < 24; y++) for (let x = 35; x < 45; x++) worldMap[y][x] = 4; // ice
   for (let y = 19; y < 23; y++) for (let x = 36; x < 44; x++) worldMap[y][x] = 3; // water center
 
-  // Trees scattered
+  // Frost Valley trees — noise-based organic forests
   const treePositions = [];
-  for (let i = 0; i < 120; i++) {
-    const tx = 3 + Math.floor(Math.random() * (WORLD_W - 6));
-    const ty = 3 + Math.floor(Math.random() * (WORLD_H - 6));
-    if (worldMap[ty][tx] === 0) { worldMap[ty][tx] = 1; treePositions.push({x: tx, y: ty}); }
+  for (let y = 3; y < 42; y++) {
+    for (let x = 3; x < 56; x++) {
+      if (worldMap[y][x] !== 0) continue;
+      const density = forestNoise(x, y, 42);
+      // Dense groves where noise > 0.55, sparse edges 0.45-0.55
+      if (density > 0.55) {
+        worldMap[y][x] = 1; treePositions.push({x, y});
+      } else if (density > 0.45) {
+        // Soft edge: scatter probability falls off
+        const edgeChance = (density - 0.45) / 0.1;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.6) {
+          worldMap[y][x] = 1; treePositions.push({x, y});
+        }
+      }
+    }
   }
 
   // Main path (horizontal through center)
@@ -113,14 +150,7 @@ function generateWorld() {
   for (let y = 17; y < 25; y++) for (let x = 34; x < 46; x++) {
     if (worldMap[y][x] === 0) worldMap[y][x] = 4;
   }
-  // Tree clusters (2x2 groups)
-  const treeClusters = [{x:6,y:8},{x:20,y:16},{x:42,y:14},{x:50,y:20},{x:10,y:35},{x:38,y:36}];
-  for (const tc of treeClusters) {
-    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
-      const ty = tc.y + dy, tx = tc.x + dx;
-      if (ty >= 2 && ty < 43 && tx >= 2 && tx < WORLD_W - 2 && worldMap[ty][tx] === 0) worldMap[ty][tx] = 1;
-    }
-  }
+  // (Tree clusters now handled by noise-based forest generation above)
   // More path connections between zones
   // Path from frozen lake to Crystal Glade
   for (let x = 25; x < 36; x++) { if (worldMap[18][x] === 0) worldMap[18][x] = 2; }
@@ -163,11 +193,20 @@ function generateWorld() {
     }
   }
 
-  // Warm trees
-  for (let i = 0; i < 50; i++) {
-    const tx = 3 + Math.floor(Math.random() * (WORLD_W - 6));
-    const ty = 46 + Math.floor(Math.random() * 21);
-    if (ty < 68 && worldMap[ty][tx] === 9) worldMap[ty][tx] = 13;
+  // Warm trees — noise-based organic groves
+  for (let y = 46; y < 68; y++) {
+    for (let x = 3; x < WORLD_W - 3; x++) {
+      if (worldMap[y][x] !== 9) continue;
+      const density = forestNoise(x, y, 77); // different seed than frost
+      if (density > 0.58) {
+        worldMap[y][x] = 13;
+      } else if (density > 0.48) {
+        const edgeChance = (density - 0.48) / 0.1;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.5) {
+          worldMap[y][x] = 13;
+        }
+      }
+    }
   }
 
   // Path continuing south into Rolling Hills
@@ -329,12 +368,21 @@ function generateWorld() {
   // Path south from main path
   for (let y = 21; y <= 35; y++) { worldMap[y][100] = 24; worldMap[y][101] = 24; }
 
-  // Dead/twisted trees scattered — dense
+  // Dead/twisted trees — noise-based dark groves
   const dcTreePositions = [];
-  for (let i = 0; i < 80; i++) {
-    const tx = 92 + Math.floor(Math.random() * 14);
-    const ty = 3 + Math.floor(Math.random() * 36);
-    if (worldMap[ty][tx] === 22) dcTreePositions.push({x:tx,y:ty});
+  for (let y = 3; y < 39; y++) {
+    for (let x = 92; x < 107; x++) {
+      if (worldMap[y][x] !== 22) continue;
+      const density = forestNoise(x, y, 131); // unique seed
+      if (density > 0.52) {
+        dcTreePositions.push({x, y});
+      } else if (density > 0.42) {
+        const edgeChance = (density - 0.42) / 0.1;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.5) {
+          dcTreePositions.push({x, y});
+        }
+      }
+    }
   }
   for (const tp of dcTreePositions) { worldMap[tp.y][tp.x] = 25; }
 

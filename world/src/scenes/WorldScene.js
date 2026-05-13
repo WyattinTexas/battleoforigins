@@ -38,14 +38,13 @@ class WorldScene extends Phaser.Scene {
       grass:      [1735, 1680, 1625, 1511],
       // Lighter grass variant for hills/meadows
       hillGrass:  [247, 336, 302, 248],
-      // Stone floor — plaza / town center
-      
       // Sand — warm yellow for beaches + Volcanic Isles ground
       sand:       [3317, 3314, 3315, 3320],
     };
 
     const hasERW = this.textures.exists('erw_terrain');
     const hasERWWater = this.textures.exists('erw_water') && this.anims.exists('erw_water_flow');
+    const hasERWTrees = this.textures.exists('erw_tree_green1');
 
     // Draw entire map
     const mapGfx = this.add.graphics();
@@ -81,10 +80,8 @@ class WorldScene extends Phaser.Scene {
             if (tileType === 14 || tileType === 17 || tileType === 18) erwGroup = 'sand';
             else if (tileType === 20) erwGroup = 'sand';
             else if (tileType === 2) erwGroup = 'sand';
-          } else if (region === 'frost_valley') {
-            // Frost Valley — ice tiles near the frozen lake become sandy shore
-            if (tileType === 4) erwGroup = 'sand';
           }
+          // Frost Valley stays as flat snow — no ERW override
           // Sand tiles (beaches) anywhere
           if (tileType === 20) erwGroup = 'sand';
         }
@@ -94,35 +91,156 @@ class WorldScene extends Phaser.Scene {
           const frame = frames[(x * 3 + y * 5) % frames.length];
           this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', frame).setDepth(0);
         } else {
-          // Flat color — snow, lava, mountains, trees, buildings, etc.
-          const colorHex = TILE_COLORS[tileType] || '#d8e8f0';
-          const color = hexToNum(colorHex);
-          mapGfx.fillStyle(color, 1);
-          mapGfx.fillRect(x * T, y * T, T, T);
+          // Tree tiles (1, 13, 21, 25) — if ERW trees are loaded, draw region ground
+          // instead of the tree's flat color so the sprite sits on natural terrain
+          const isTreeTile = (tileType === 1 || tileType === 13 || tileType === 21 || tileType === 25);
+          if (hasERWTrees && isTreeTile) {
+            const region = getCurrentRegion(x, y);
+            if (region === 'rolling_hills') {
+              // Draw grass under the tree
+              const gf = ERW_TERRAIN.grass;
+              this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', gf[(x * 3 + y * 5) % gf.length]).setDepth(0);
+            } else if (region === 'volcanic_isles') {
+              const sf = ERW_TERRAIN.sand;
+              this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', sf[(x * 3 + y * 5) % sf.length]).setDepth(0);
+            } else if (region === 'dark_castle') {
+              // Dark Castle — flat dark ground
+              mapGfx.fillStyle(hexToNum('#1a1020'), 1);
+              mapGfx.fillRect(x * T, y * T, T, T);
+            } else {
+              // Frost Valley + others — flat snow/default ground under trees
+              const gc = region === 'frost_valley' ? '#d8e8f0' : (TILE_COLORS[tileType] || '#d8e8f0');
+              mapGfx.fillStyle(hexToNum(gc), 1);
+              mapGfx.fillRect(x * T, y * T, T, T);
+            }
+          } else {
+            // Normal flat color
+            const colorHex = TILE_COLORS[tileType] || '#d8e8f0';
+            const color = hexToNum(colorHex);
+            mapGfx.fillStyle(color, 1);
+            mapGfx.fillRect(x * T, y * T, T, T);
+          }
         }
       }
     }
 
-    // ── Sprite overlays: stamp real tileset art on trees, flowers, buildings ──
-    // ERW terrain handles ground; these overlay objects on top
-    // Frame index = row * COLS + col  (Nature=24cols, House=33cols, Desert=20cols)
-    const TILE_SPRITES = {
-      10: { key: 'tiles_nature', frames: [156, 157, 158, 159, 160], depth: 1 }, // flowers — colorful blooms (row 6)
-      1:  { key: 'tiles_nature', frames: [30, 31, 32], depth: 2 },              // frost trees — snowy crowns (row 1, cols 6-8)
-      13: { key: 'tiles_nature', frames: [44, 45, 46, 47], depth: 2 },          // warm trees — green crowns (row 1, cols 20-23)
-      21: { key: 'tiles_desert', frames: [70, 71, 90, 91], depth: 2 },          // palm trees — fronds (rows 3-4)
-      25: { key: 'tiles_nature', frames: [24, 25, 120, 121], depth: 2 },        // dark/dead trees (row 1 + row 5)
-      5:  { key: 'tiles_house', frames: [12, 13, 14], depth: 2 },               // buildings — house fronts (row 0)
-      8:  { key: 'tiles_house', frames: [16, 17, 18], depth: 2 },               // workshop — stone buildings (row 0)
-      12: { key: 'tiles_house', frames: [45, 46, 47], depth: 2 },               // cantina — warm fronts (row 1)
+    // ── Sprite overlays: trees, flowers, buildings ──
+    // ERW full tree sprites replace the old 16x16 tile stamps where available.
+    // Trees are multi-tile sprites (96-192px) scaled to fit ~2 tile widths.
+
+    // ERW tree keys by region/biome
+    const ERW_TREES = {
+      frost:    ['erw_tree_pine1', 'erw_tree_pine2', 'erw_tree_pine3'],
+      green:    ['erw_tree_green1', 'erw_tree_green2', 'erw_tree_green3', 'erw_tree_green4', 'erw_tree_green5'],
+      palm:     ['erw_tree_palm1', 'erw_tree_palm2', 'erw_tree_palm3'],
+      dead:     ['erw_tree_dead1', 'erw_tree_dead2', 'erw_tree_dead3'],
+      deadSmall:['erw_tree_dead_sm1', 'erw_tree_dead_sm2'],
     };
+
+    // ERW building sprites — map tile types to ERW images (NO stamp fallback)
+    const hasERWBuildings = this.textures.exists('erw_cabin');
+    // ERW building config: { erwKey, scale, yOffset }
+    const ERW_BUILDINGS = {
+      5:  { erwKey: 'erw_cabin', scale: 0.16, yOffset: -8 },      // buildings → cabin
+      8:  { erwKey: 'erw_tent_small', scale: 0.35, yOffset: -4 },  // workshop → small tent
+      12: { erwKey: 'erw_tent', scale: 0.18, yOffset: -10 },       // cantina → big tent
+    };
+    // Track placed ERW buildings to avoid duplicates on adjacent tiles
+    const _placedBuildings = new Set();
+
     for (let y = 0; y < MH; y++) {
       for (let x = 0; x < MW; x++) {
         const tileType = worldMap[y] ? worldMap[y][x] : 0;
-        const si = TILE_SPRITES[tileType];
-        if (si) {
-          const frame = si.frames[(x * 7 + y * 13) % si.frames.length];
-          this.add.image(x * T + T / 2, y * T + T / 2, si.key, frame).setScale(2).setDepth(si.depth);
+
+        // ── ERW full tree sprites (region-aware) ──
+        if (hasERWTrees && (tileType === 1 || tileType === 13 || tileType === 21 || tileType === 25)) {
+          const region = getCurrentRegion(x, y);
+          let treeKeys;
+          let treeScale;
+
+          // Deterministic size variation: 0.85x to 1.15x base scale per tree
+          const sizeVar = 0.85 + ((x * 31 + y * 17) % 7) / 20; // 0.85, 0.90, 0.95, 1.0, 1.05, 1.10, 1.15
+
+          if (tileType === 1) {
+            // Frost trees → pine trees (BIGGER: 0.55-0.73 base)
+            treeKeys = ERW_TREES.frost;
+            treeScale = 0.6 * sizeVar;
+          } else if (tileType === 13) {
+            // Warm trees → big green trees (BIGGER: 0.48-0.63 base)
+            treeKeys = ERW_TREES.green;
+            treeScale = 0.52 * sizeVar;
+          } else if (tileType === 21) {
+            // Palm trees (BIGGER: 0.55-0.73 base)
+            treeKeys = ERW_TREES.palm;
+            treeScale = 0.6 * sizeVar;
+          } else if (tileType === 25) {
+            // Dark/dead trees
+            treeKeys = region === 'dark_castle' ? ERW_TREES.dead : ERW_TREES.deadSmall;
+            treeScale = (region === 'dark_castle' ? 0.5 : 0.6) * sizeVar;
+          }
+
+          if (treeKeys) {
+            const key = treeKeys[(x * 7 + y * 13) % treeKeys.length];
+            if (this.textures.exists(key)) {
+              const tx = x * T + T / 2;
+              const ty = y * T + T / 2 + 4;
+              // Ground shadow — scales with tree size
+              let shadowW, shadowH, shadowOffY, shadowAlpha;
+              if (tileType === 1)       { shadowW = 34; shadowH = 12; shadowOffY = 26; shadowAlpha = 0.15; }
+              else if (tileType === 13) { shadowW = 44; shadowH = 14; shadowOffY = 24; shadowAlpha = 0.18; }
+              else if (tileType === 21) { shadowW = 26; shadowH = 10; shadowOffY = 28; shadowAlpha = 0.12; }
+              else if (tileType === 25 && region === 'dark_castle') { shadowW = 36; shadowH = 12; shadowOffY = 22; shadowAlpha = 0.12; }
+              else                      { shadowW = 22; shadowH = 8;  shadowOffY = 16; shadowAlpha = 0.1;  }
+              this.add.ellipse(tx, ty + shadowOffY * sizeVar, shadowW * sizeVar, shadowH * sizeVar, 0x000000, shadowAlpha)
+                .setDepth(1);
+              this.add.image(tx, ty, key)
+                .setScale(treeScale).setDepth(2 + y * 0.01);
+            }
+          }
+          continue;
+        }
+
+        // Flower tiles (type 10) — no stamp overlay, ERW grass terrain handles the ground
+
+        // ── Building overlays — ERW sprites only, NO stamp fallback ──
+        if (tileType === 5 || tileType === 8 || tileType === 12) {
+          const eb = ERW_BUILDINGS[tileType];
+          if (hasERWBuildings && eb && this.textures.exists(eb.erwKey)) {
+            // Only place one ERW building per cluster — skip if neighbor already placed one
+            const clusterKey = Math.floor(x / 2) + ',' + y;
+            if (!_placedBuildings.has(clusterKey)) {
+              _placedBuildings.add(clusterKey);
+              // Shadow under building
+              this.add.ellipse(x * T + T / 2, y * T + T / 2 + 12, 50, 14, 0x000000, 0.15).setDepth(1);
+              this.add.image(x * T + T / 2, y * T + T / 2 + (eb.yOffset || 0), eb.erwKey)
+                .setScale(eb.scale).setDepth(2 + y * 0.01);
+            }
+          }
+          // No fallback — stamps are dead
+        }
+      }
+    }
+
+    // ── Ground scatter: grass tufts in Rolling Hills (rocks removed — ugly black edges) ──
+    const tuftKeys = ['erw_tuft1', 'erw_tuft2', 'erw_tuft3', 'erw_tuft4'];
+    const hasTufts = tuftKeys.some(k => this.textures.exists(k));
+
+    if (hasTufts) {
+      for (let y = 0; y < MH; y++) {
+        for (let x = 0; x < MW; x++) {
+          const tileType = worldMap[y] ? worldMap[y][x] : 0;
+          if (tileType !== 9 && tileType !== 11) continue;
+          if (getCurrentRegion(x, y) !== 'rolling_hills') continue;
+
+          const hash = (x * 31 + y * 17) % 100;
+
+          if (hash < 15) {
+            const key = tuftKeys[(x * 7 + y * 13) % tuftKeys.length];
+            if (this.textures.exists(key)) {
+              this.add.image(x * T + T / 2, y * T + T / 2, key)
+                .setScale(0.35).setDepth(1).setAlpha(0.8);
+            }
+          }
         }
       }
     }
@@ -778,14 +896,15 @@ class WorldScene extends Phaser.Scene {
 
     // Tick buffs
     if (typeof tickBuffs === 'function') tickBuffs();
+    // Garden growth + rendering (every frame for visuals, tick handles timing internally)
+    if (typeof tickGarden === 'function') tickGarden();
+    if (typeof renderGardenPlants === 'function') renderGardenPlants(this);
     // Phaser HUD updates — only if Phaser HUD exists (may be DOM-only now)
     if (this._actionButtons && this._actionButtons.length > 0) this._updateActionBar();
     if (this._buffHudText) this._updateBuffHUD();
 
-    // Valkin event hunt AI
-    if (this._valkinEvent && this._valkinEvent.active && typeof updateValkinHunt === 'function') {
-      updateValkinHunt(this);
-    }
+    // Event engine — drives all scripted events (Valkin, future bosses, NPCs, etc.)
+    if (typeof EventEngine !== 'undefined') EventEngine.update(this);
 
     // Structure proximity interactions
     this._checkStructureProximity();
@@ -929,7 +1048,7 @@ class WorldScene extends Phaser.Scene {
             this.comm.dismiss();
           } else if (npc.hostile) {
             this.triggerTrainerBattle(npc);
-          } else if (npc.name === 'Crazy Lou' && this.comm) {
+          } else if (npc.name === 'Crazy Lou' && this.comm && !npc._louHiding) {
             this.showZaraMenu();
           } else if (this.comm) {
             console.log('[NPC] Calling comm.show for', npc.name);
@@ -998,8 +1117,26 @@ class WorldScene extends Phaser.Scene {
     G.lastValkinSummon = Date.now();
     if (typeof saveGame === 'function') saveGame();
 
-    // Lou's warning
-    this.comm.show('Crazy Lou', 'He comes. Prepare yourself.', { color: '#ff8844', duration: 2500 });
+    // Lou's warning — then he runs away
+    this.comm.show('Crazy Lou', 'He comes. Prepare yourself!', { color: '#ff8844', duration: 2500 });
+
+    // Crazy Lou runs away and hides (comes back in 60 minutes)
+    const louNpc = this.npcSprites?.find(n => n.name === 'Crazy Lou');
+    if (louNpc) {
+      this.time.delayedCall(2000, () => {
+        if (louNpc.sprite) louNpc.sprite.setVisible(false);
+        if (louNpc.label) louNpc.label.setVisible(false);
+        if (louNpc.marker) louNpc.marker.setVisible(false);
+        louNpc._louHiding = true;
+      });
+      // Lou comes back after 60 minutes
+      this.time.delayedCall(60 * 60 * 1000, () => {
+        if (louNpc.sprite) louNpc.sprite.setVisible(true);
+        if (louNpc.label) louNpc.label.setVisible(true);
+        if (louNpc.marker) louNpc.marker.setVisible(true);
+        louNpc._louHiding = false;
+      });
+    }
 
     // Screen shake + dramatic pause, then spawn
     this.time.delayedCall(1500, () => {
@@ -1645,12 +1782,8 @@ class WorldScene extends Phaser.Scene {
 
     } else if (this._invTab === 'materials') {
       let y = cy + 6;
-      const mats = {
-        'Ice Shards': G.iceShards || 0,
-        'Sacred Fire': G.sacredFire || 0,
-        'Surge': G.surge || 0,
-        'Moonstone': G.moonstone || 0,
-      };
+      // Combat resources removed — they're battle-only, not inventory items
+      const mats = {};
       if (G.materials) {
         for (const [k, v] of Object.entries(G.materials)) {
           if (v > 0) mats[k] = v;
@@ -2256,6 +2389,7 @@ class WorldScene extends Phaser.Scene {
     const sideline = wins >= 5 ? 'UNLOCKED' : `${wins}/5 wins`;
 
     const xpNeeded = G.level * 3;
+    if (!this.hudPlayerText) return;
     this.hudPlayerText.setText(`${G.name} | LV ${G.level} (${G.xp}/${xpNeeded} XP) | ${G.coins} Gold`);
 
     const ghost = G.team[G.activeIdx];
@@ -3477,6 +3611,8 @@ class WorldScene extends Phaser.Scene {
   }
 
   onChatMessage(msg) {
+    // Guard: chat may not be initialized yet when Firebase callbacks fire early
+    if (!this._chatMessages) this._chatMessages = [];
     // Add to display
     const line = `${msg.name}: ${msg.text}`;
     this._chatMessages.push(line);
@@ -3487,6 +3623,9 @@ class WorldScene extends Phaser.Scene {
   }
 
   refreshChatDisplay() {
+    // Guard: chat may not be initialized yet
+    if (!this._chatMsgTexts) this._chatMsgTexts = [];
+    if (!this._chatMessages) this._chatMessages = [];
     // Clear old text objects
     this._chatMsgTexts.forEach(t => t.destroy());
     this._chatMsgTexts = [];
@@ -4094,12 +4233,12 @@ class WorldScene extends Phaser.Scene {
     const time = document.getElementById('hud-time');
     if (time && typeof getTimeOfDay === 'function') time.textContent = getTimeOfDay();
 
-    // Region
-    const region = document.getElementById('hud-top-right');
-    if (region && typeof getCurrentRegion === 'function') {
+    // Region — display on hud-top-right directly
+    const regionEl = document.getElementById('hud-top-right');
+    if (regionEl && typeof getCurrentRegion === 'function') {
       const r = getCurrentRegion(G.x, G.y);
       const names = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
-      if (time) time.textContent = (names[r] || '') + '  ' + (time.textContent || '');
+      regionEl.textContent = names[r] || '';
     }
 
     // Fortune status

@@ -71,12 +71,9 @@ function getCrazyLouDialogue() {
   getCrazyLouDialogue._visitCount++;
 
   // On the 3rd talk, she summons Valkin
-  if (getCrazyLouDialogue._visitCount === 3 && typeof spawnValkinEvent === 'function') {
-    // Find the active WorldScene to pass to spawnValkinEvent
-    const worldScene = Phaser.Display.Canvas.CanvasPool ? null : null; // placeholder
-    // Use global scene reference if available
-    if (typeof window._worldScene !== 'undefined' && window._worldScene && !window._worldScene._valkinEvent) {
-      setTimeout(() => spawnValkinEvent(window._worldScene), 2000);
+  if (getCrazyLouDialogue._visitCount === 3 && typeof EventEngine !== 'undefined' && typeof VALKIN_SCRIPT !== 'undefined') {
+    if (typeof window._worldScene !== 'undefined' && window._worldScene && !EventEngine.isActive('valkin_the_grand')) {
+      setTimeout(() => EventEngine.start(VALKIN_SCRIPT, window._worldScene), 2000);
       return `Be on guard, word has it Valkin approaches.`;
     }
   }
@@ -267,7 +264,7 @@ function triggerHostileNPCBattle(npc) {
     round: 1,
     player: {
       ghosts: playerGhosts, activeIdx: 0,
-      resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+      resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     },
     enemy: {
       ghosts: enemyGhosts, activeIdx: 0,
@@ -277,7 +274,7 @@ function triggerHostileNPCBattle(npc) {
     enemyCards: npc.team.map(id => getCard(id)).filter(Boolean),
     log: [], phase: 'ready', playerDice: [], enemyDice: [],
     entryFired: false,
-    resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+    resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     isAggressive: true,
     isHostileNPC: npc.id,
     nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
@@ -456,7 +453,7 @@ function triggerBlackRiderBattle(rider) {
     round: 1,
     player: {
       ghosts: playerGhosts, activeIdx: 0,
-      resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+      resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     },
     enemy: {
       ghosts: enemyGhosts, activeIdx: 0,
@@ -466,7 +463,7 @@ function triggerBlackRiderBattle(rider) {
     enemyCards: rider.team.map(id => getCard(id)).filter(Boolean),
     log: [], phase: 'ready', playerDice: [], enemyDice: [],
     entryFired: false,
-    resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+    resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     isAggressive: true,
     isBlackRider: true,
     nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },

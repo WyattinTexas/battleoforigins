@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Battle of Origins — Comms</title>
+<link rel="icon" href="../testroom/art/timber.jpg" type="image/jpeg">
+<style>
+/* ═══════════════════════════════════════════════════
+   STAR FOX 64 COMM SYSTEM — Battle of Origins
+   Compact portrait + HP bar + punchy dialogue
+   ═══════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+  --bg: #050510;
+  --panel-bg: rgba(4, 6, 18, 0.88);
+  --border: rgba(80, 130, 200, 0.35);
+  --text: #e8e8e8;
+  --text-dim: #5a6a8a;
+  --hud-green: #40ff90;
+  --hud-blue: #40a0ff;
+  --warning: #ff4060;
+  --hp-green: #44cc44;
+  --hp-yellow: #ccaa22;
+  --hp-red: #cc3333;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ── Space background ── */
+.space-bg {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 120%, rgba(20, 10, 60, 0.6), transparent 60%),
+    radial-gradient(circle at 15% 25%, rgba(40, 20, 100, 0.25), transparent 40%),
+    radial-gradient(circle at 85% 55%, rgba(10, 40, 80, 0.25), transparent 40%),
+    var(--bg);
+}
+
+.stars { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+.star {
+  position: absolute; width: 2px; height: 2px;
+  background: #fff; border-radius: 50%;
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+@keyframes twinkle { 0% { opacity: 0.15; } 100% { opacity: 0.8; } }
+
+/* ── Scanlines ── */
+.scanlines {
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(100,160,255,0.03) 2px, rgba(100,160,255,0.03) 4px);
+}
+
+/* ── HUD top ── */
+.hud-top {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 20px;
+  background: linear-gradient(180deg, rgba(5,5,16,0.9) 0%, transparent 100%);
+}
+.hud-label { font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 3px; color: var(--hud-blue); opacity: 0.6; }
+.hud-signal { display: flex; align-items: center; gap: 5px; font-size: 9px; color: var(--hud-green); letter-spacing: 2px; }
+.hud-signal .dot { width: 5px; height: 5px; background: var(--hud-green); border-radius: 50%; animation: pulse-dot 1.5s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+/* ── Scene select ── */
+.scene-select {
+  position: fixed; top: 48px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; z-index: 100; max-width: 95vw;
+}
+.scene-btn {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 1px;
+  padding: 5px 12px; background: rgba(40,60,100,0.25); border: 1px solid rgba(100,160,255,0.18);
+  color: var(--hud-blue); border-radius: 2px; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+}
+.scene-btn:hover { background: rgba(60,100,180,0.35); border-color: rgba(100,160,255,0.45); }
+.scene-btn.active { background: rgba(60,100,200,0.45); border-color: var(--hud-blue); color: #fff; }
+
+/* ── Idle prompt ── */
+.idle-prompt {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  text-align: center; z-index: 50;
+}
+.idle-prompt h1 {
+  font-family: 'Orbitron', sans-serif; font-size: clamp(16px,3vw,24px);
+  font-weight: 700; letter-spacing: 4px; color: var(--hud-blue); margin-bottom: 10px;
+  text-shadow: 0 0 16px rgba(60,140,255,0.4);
+}
+.idle-prompt p { font-size: 12px; color: var(--text-dim); letter-spacing: 2px; }
+
+/* ═══════ COMM BOX — Star Fox 64 style ═══════ */
+.comm-box {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) scaleY(0);
+  transform-origin: bottom center;
+  z-index: 200;
+  display: flex;
+  align-items: stretch;
+  width: min(520px, 92vw);
+  background: var(--panel-bg);
+  border: 2px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 20px rgba(40, 80, 160, 0.15), inset 0 0 30px rgba(5, 10, 25, 0.6);
+}
+.comm-box.open { transform: translateX(-50%) scaleY(1); }
+
+/* ── Portrait (small square like SF64) ── */
+.portrait-cell {
+  position: relative;
+  width: 72px;
+  min-height: 72px;
+  flex-shrink: 0;
+  background: #080c1a;
+  border-right: 2px solid var(--border);
+  overflow: hidden;
+}
+.portrait-cell img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  filter: saturate(0.8) contrast(1.15) brightness(0.95);
+}
+/* Glitch — only on first appearance */
+.portrait-cell.glitch img {
+  animation: pglitch 0.25s steps(3) forwards;
+}
+@keyframes pglitch {
+  0%   { filter: saturate(3) hue-rotate(80deg) contrast(2.5); transform: translate(2px,-1px); }
+  33%  { filter: saturate(0) contrast(3); transform: translate(-2px,1px); }
+  66%  { filter: saturate(1.5) hue-rotate(-30deg) contrast(1.4); transform: translate(1px,0); }
+  100% { filter: saturate(0.8) contrast(1.15) brightness(0.95); transform: translate(0,0); }
+}
+
+/* ── HP bar (stacked next to portrait) ── */
+.hp-bar-wrap {
+  position: absolute;
+  left: 4px; top: 4px; bottom: 4px;
+  width: 6px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 2px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.hp-bar-fill {
+  width: 100%;
+  border-radius: 2px;
+  transition: height 0.4s ease, background 0.4s;
+}
+
+/* ── Text area ── */
+.comm-content {
+  flex: 1;
+  padding: 8px 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 2px;
+}
+.comm-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.comm-dialogue {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--text);
+  margin-top: 4px;
+}
+.comm-dialogue .cursor {
+  display: inline-block;
+  width: 7px; height: 12px;
+  background: var(--text);
+  margin-left: 1px;
+  animation: blink 0.5s step-end infinite;
+  vertical-align: text-bottom;
+}
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0; } }
+
+/* ── Advance arrow ── */
+.comm-advance {
+  position: absolute; bottom: 5px; right: 8px;
+  font-size: 8px; color: var(--text-dim); letter-spacing: 1px;
+  animation: advpulse 1.2s ease-in-out infinite;
+  display: none;
+}
+@keyframes advpulse { 0%,100% { opacity:0.3; } 50% { opacity:1; } }
+
+/* ── Queue pips ── */
+.queue-bar {
+  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; z-index: 100;
+}
+.queue-pip { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); transition: all 0.3s; }
+.queue-pip.active { background: var(--hud-blue); box-shadow: 0 0 6px var(--hud-blue); transform: scale(1.4); }
+.queue-pip.done { background: rgba(100,160,255,0.25); }
+
+/* ── Alert flash ── */
+.alert-flash { position: fixed; inset: 0; z-index: 500; background: rgba(255,60,100,0.12); pointer-events: none; opacity: 0; }
+.alert-flash.fire { animation: aburst 0.35s ease-out forwards; }
+@keyframes aburst { 0% { opacity:1; } 100% { opacity:0; } }
+
+/* ── Warning banner ── */
+.warning-banner {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0);
+  z-index: 300; font-family: 'Orbitron', sans-serif; font-size: clamp(22px,4vw,40px);
+  font-weight: 900; letter-spacing: 5px; color: var(--warning);
+  text-shadow: 0 0 16px rgba(255,60,100,0.5), 0 0 50px rgba(255,60,100,0.25);
+  white-space: nowrap; pointer-events: none; opacity: 0;
+}
+.warning-banner.show { animation: wslam 1.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes wslam {
+  0% { transform: translate(-50%,-50%) scale(2.5); opacity:0; }
+  12% { transform: translate(-50%,-50%) scale(1); opacity:1; }
+  65% { transform: translate(-50%,-50%) scale(1); opacity:1; }
+  100% { transform: translate(-50%,-50%) scale(1); opacity:0; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .comm-box { width: 96vw; }
+  .portrait-cell { width: 58px; min-height: 58px; }
+  .comm-name { font-size: 8px; }
+  .comm-dialogue { font-size: 9px; }
+}
+</style>
+</head>
+<body>
+
+<div class="space-bg"></div>
+<div class="stars" id="stars"></div>
+<div class="scanlines"></div>
+<div class="alert-flash" id="alertFlash"></div>
+<div class="warning-banner" id="warningBanner"></div>
+
+<div class="hud-top">
+  <span class="hud-label">Battle of Origins — Spirit Comms</span>
+  <span class="hud-signal"><span class="dot"></span> FREQ OPEN</span>
+</div>
+
+<div class="scene-select" id="sceneSelect"></div>
+
+<div class="idle-prompt" id="idlePrompt">
+  <h1>INCOMING TRANSMISSION</h1>
+  <p>SELECT A SCENE — OR PRESS SPACE</p>
+</div>
+
+<!-- The comm box -->
+<div class="comm-box" id="commBox">
+  <div class="portrait-cell" id="portraitCell">
+    <img id="portraitImg" src="" alt="">
+    <div class="hp-bar-wrap">
+      <div class="hp-bar-fill" id="hpBar"></div>
+    </div>
+  </div>
+  <div class="comm-content">
+    <div class="comm-name" id="commName"></div>
+    <div class="comm-dialogue" id="commDialogue"></div>
+  </div>
+  <div class="comm-advance" id="commAdvance">&#9660;</div>
+</div>
+
+<div class="queue-bar" id="queueBar"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   STARFOX COMM ENGINE v2 — compact & punchy
+   ═══════════════════════════════════════════════════ */
+
+const ART = p => `../testroom/art/originals/${p}.png`;
+const ART_OLD = p => `../testroom/art/${p}`;
+
+// ── Audio ──
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playBlip(freq = 440, dur = 0.025) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = freq + (Math.random() * 50 - 25);
+  gain.gain.value = 0.035;
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+
+function playAlertChime() {
+  [0, 80, 160].forEach((d, i) => setTimeout(() => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square'; o.frequency.value = [330,440,660][i];
+    g.gain.value = 0.05; g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+    o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.1);
+  }, d));
+}
+
+function playDarkChime() {
+  [0, 120, 240, 400].forEach((d, i) => setTimeout(() => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = [220,185,147,110][i];
+    g.gain.value = 0.04; g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.2);
+  }, d));
+}
+
+// ── Characters ──
+const CHARACTERS = {
+  valkin:       { name: 'Valkin',        color: '#aa44ff', art: ART('ValkinTheGrand'), hp: 30, blipFreq: 160, blipSpeed: 40 },
+  elderFrost:   { name: 'Elder Frost',   color: '#daa520', art: ART('Cornelius'),      hp: 6,  blipFreq: 380, blipSpeed: 28 },
+  crazyLou:     { name: 'Crazy Lou',     color: '#c0a040', art: ART('Katrina'),        hp: 5,  blipFreq: 520, blipSpeed: 22 },
+  darkFang:     { name: 'Dark Fang',     color: '#cc4444', art: ART('DarkFang'),       hp: 5,  blipFreq: 200, blipSpeed: 32 },
+  flora:        { name: 'Flora',         color: '#6a8a4a', art: ART('Flora'),          hp: 4,  blipFreq: 600, blipSpeed: 20 },
+  shade:        { name: '???',           color: '#6a6a8a', art: ART('Shade'),          hp: 5,  blipFreq: 140, blipSpeed: 50 },
+  shadowWarden: { name: 'Shadow Warden', color: '#8a6aaa', art: ART('DarkWing'),       hp: 6,  blipFreq: 240, blipSpeed: 35 },
+  vera:         { name: 'Vera',          color: '#6688cc', art: ART('Sonya'),          hp: 5,  blipFreq: 480, blipSpeed: 25 },
+  gary:         { name: 'Ember',         color: '#ff6633', art: ART_OLD('gary.png'),   hp: 7,  blipFreq: 350, blipSpeed: 26 },
+  hugo:         { name: 'Jax',           color: '#cc4444', art: ART('Hugo'),           hp: 7,  blipFreq: 190, blipSpeed: 30 },
+  wanderer:     { name: 'The Exile',     color: '#888888', art: ART('Wanderer'),       hp: 4,  blipFreq: 280, blipSpeed: 40 },
+  timber:       { name: 'Timber',        color: '#8ab060', art: ART_OLD('timber.jpg'), hp: 8,  blipFreq: 300, blipSpeed: 24 },
+};
+
+// ── Scenes — SHORT, theatrical, in-the-moment ──
+const SCENES = {
+  'valkin-arrives': {
+    title: "Valkin's Arrival",
+    warning: '★ THREAT DETECTED ★',
+    lines: [
+      { char: 'elderFrost', text: "Something stirs in the east..." },
+      { char: 'crazyLou', text: "Everyone get inside. NOW!" },
+      { char: 'shade', text: "...He comes." },
+      { char: 'valkin', text: "Did you think my servants could fall?" },
+      { char: 'valkin', text: "I grow tired of waiting." },
+      { char: 'elderFrost', text: "Valkin... you've returned." },
+      { char: 'valkin', text: "Returned? I never left, old fool." },
+      { char: 'valkin', text: "Now face ME." },
+    ]
+  },
+  'frost-valley': {
+    title: 'Frost Valley',
+    lines: [
+      { char: 'elderFrost', text: "Welcome to Polaris, traveler." },
+      { char: 'gary', text: "Fresh face! Grab a hammer!" },
+      { char: 'flora', text: "Frost lilies are blooming early..." },
+      { char: 'gary', text: "Omens? Bah. Hammers fix everything." },
+      { char: 'elderFrost', text: "Something dark moves beyond the valley." },
+    ]
+  },
+  'dark-castle': {
+    title: 'Dark Castle',
+    warning: '⚠ HOSTILE ZONE',
+    lines: [
+      { char: 'shadowWarden', text: "Beyond these gates, light doesn't reach." },
+      { char: 'wanderer', text: "I served him once. Before I understood." },
+      { char: 'wanderer', text: "He doesn't destroy you. He makes you destroy yourself." },
+      { char: 'valkin', text: "Let them come. I enjoy... ambition." },
+      { char: 'valkin', text: "Beg for mercy. I might consider it." },
+    ]
+  },
+  'valkin-monologue': {
+    title: "The Corruptor",
+    warning: '★ THE CORRUPTOR ★',
+    lines: [
+      { char: 'valkin', text: "You think this is a tournament?" },
+      { char: 'valkin', text: "The BOO was never about balance." },
+      { char: 'valkin', text: "It was about CONTROL." },
+      { char: 'valkin', text: "Your grandfather understood. That's why he was... removed." },
+      { char: 'valkin', text: "I am not lost. I am the destination." },
+    ]
+  },
+  'pre-battle': {
+    title: 'Pre-Battle',
+    lines: [
+      { char: 'hugo', text: "You want a fight? LET'S GO!" },
+      { char: 'darkFang', text: "I smell fear on you." },
+      { char: 'vera', text: "The cold doesn't kill you. The silence does." },
+      { char: 'flora', text: "Don't underestimate the little ones." },
+      { char: 'timber', text: "...Ready when you are." },
+      { char: 'hugo', text: "Less talking. MORE PUNCHING!" },
+    ]
+  },
+  'aftermath': {
+    title: 'Aftermath',
+    lines: [
+      { char: 'valkin', text: "Impressive. But this changes nothing." },
+      { char: 'valkin', text: "I will return. I always return." },
+      { char: 'crazyLou', text: "The stars — they're coming back!" },
+      { char: 'elderFrost', text: "Rest now. Stay vigilant." },
+      { char: 'shade', text: "...This was only the beginning." },
+    ]
+  },
+};
+
+// ── State ──
+let currentScene = null;
+let lineIndex = 0;
+let typing = false;
+let typeTimer = null;
+let charIndex = 0;
+const seenChars = new Set(); // track first appearances for glitch
+
+const $ = id => document.getElementById(id);
+
+// ── Stars ──
+(function genStars() {
+  const c = $('stars');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = Math.random()*3+'s';
+    if (Math.random() > 0.75) { s.style.width = s.style.height = '3px'; }
+    c.appendChild(s);
+  }
+})();
+
+// ── Scene buttons ──
+(function buildBtns() {
+  const c = $('sceneSelect');
+  Object.entries(SCENES).forEach(([key, scene]) => {
+    const b = document.createElement('button');
+    b.className = 'scene-btn'; b.textContent = scene.title;
+    b.onclick = () => startScene(key); b.dataset.scene = key;
+    c.appendChild(b);
+  });
+})();
+
+// ── Queue pips ──
+function buildPips(n) {
+  const b = $('queueBar'); b.innerHTML = '';
+  for (let i = 0; i < n; i++) { const p = document.createElement('div'); p.className = 'queue-pip'; b.appendChild(p); }
+}
+function updatePips() {
+  const pips = $('queueBar').children;
+  for (let i = 0; i < pips.length; i++)
+    pips[i].className = 'queue-pip' + (i === lineIndex ? ' active' : i < lineIndex ? ' done' : '');
+}
+
+// ── HP bar color ──
+function hpColor(pct) {
+  return pct > 0.5 ? 'var(--hp-green)' : pct > 0.25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+}
+
+// ── Start scene ──
+function startScene(key) {
+  if (typing) { finishTyping(); return; }
+  const scene = SCENES[key];
+  if (!scene) return;
+  currentScene = scene;
+  lineIndex = 0;
+  seenChars.clear();
+
+  document.querySelectorAll('.scene-btn').forEach(b => b.classList.toggle('active', b.dataset.scene === key));
+  $('idlePrompt').style.display = 'none';
+  buildPips(scene.lines.length);
+
+  if (scene.warning) {
+    showWarning(scene.warning, scene.warning.includes('★'));
+    setTimeout(() => showLine(), 1400);
+  } else {
+    showLine();
+  }
+}
+
+// ── Warning ──
+function showWarning(text, dark) {
+  const b = $('warningBanner');
+  b.textContent = text;
+  b.className = 'warning-banner show';
+  if (dark) { b.style.color = '#aa44ff'; b.style.textShadow = '0 0 16px rgba(160,60,255,0.5)'; playDarkChime(); }
+  else { b.style.color = ''; b.style.textShadow = ''; playAlertChime(); }
+  const f = $('alertFlash'); f.className = 'alert-flash fire';
+  setTimeout(() => f.className = 'alert-flash', 400);
+  setTimeout(() => b.className = 'warning-banner', 1800);
+}
+
+// ── Show line ──
+function showLine() {
+  if (!currentScene || lineIndex >= currentScene.lines.length) { closeComm(); return; }
+
+  const line = currentScene.lines[lineIndex];
+  const ch = CHARACTERS[line.char];
+  if (!ch) return;
+
+  updatePips();
+
+  const cell = $('portraitCell');
+  const img = $('portraitImg');
+  const hp = $('hpBar');
+
+  img.src = ch.art;
+  $('commName').textContent = ch.name;
+  $('commName').style.color = ch.color;
+
+  // HP bar
+  const maxHp = ch.hp || 8;
+  const curHp = line.hp !== undefined ? line.hp : maxHp;
+  const pct = curHp / maxHp;
+  hp.style.height = (pct * 100) + '%';
+  hp.style.background = hpColor(pct);
+
+  // Glitch only on FIRST appearance per scene
+  if (!seenChars.has(line.char)) {
+    seenChars.add(line.char);
+    cell.classList.remove('glitch');
+    void cell.offsetWidth;
+    cell.classList.add('glitch');
+  } else {
+    cell.classList.remove('glitch');
+  }
+
+  // Open
+  $('commBox').classList.add('open');
+
+  // Type
+  $('commDialogue').innerHTML = '';
+  $('commAdvance').style.display = 'none';
+  typing = true;
+  charIndex = 0;
+  typeNext(line.text, ch);
+}
+
+// ── Typewriter ──
+function typeNext(text, ch) {
+  if (charIndex >= text.length) {
+    typing = false;
+    $('commAdvance').style.display = 'block';
+    const c = $('commDialogue').querySelector('.cursor');
+    if (c) c.remove();
+    return;
+  }
+
+  const c = text[charIndex];
+  const dlg = $('commDialogue');
+  const span = dlg.querySelector('.tc') || (() => {
+    const s = document.createElement('span'); s.className = 'tc'; dlg.appendChild(s);
+    const cur = document.createElement('span'); cur.className = 'cursor'; dlg.appendChild(cur);
+    return s;
+  })();
+
+  span.textContent += c;
+  charIndex++;
+
+  if (c !== ' ' && c !== '.' && c !== ',' && c !== '—' && c !== '!') playBlip(ch.blipFreq);
+
+  let delay = ch.blipSpeed;
+  if ('.!?'.includes(c)) delay *= 5;
+  else if (',;'.includes(c)) delay *= 2.5;
+  else if (c === '—') delay *= 3;
+  else if (c === ' ') delay *= 0.4;
+
+  typeTimer = setTimeout(() => typeNext(text, ch), delay);
+}
+
+function finishTyping() {
+  if (!typing || !currentScene) return;
+  clearTimeout(typeTimer);
+  $('commDialogue').innerHTML = `<span class="tc">${currentScene.lines[lineIndex].text}</span>`;
+  typing = false;
+  $('commAdvance').style.display = 'block';
+}
+
+function advanceLine() {
+  if (typing) { finishTyping(); return; }
+  lineIndex++;
+  if (lineIndex >= currentScene.lines.length) closeComm();
+  else showLine();
+}
+
+function closeComm() {
+  $('commBox').classList.remove('open');
+  $('queueBar').innerHTML = '';
+  currentScene = null; lineIndex = 0;
+  document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+}
+
+// ── Input ──
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'Enter') {
+    e.preventDefault();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    currentScene ? advanceLine() : startScene('valkin-arrives');
+  }
+  if (e.code === 'Escape') closeComm();
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('.scene-btn')) return;
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  if (currentScene) advanceLine();
+});
+
+/* ── Public API ── */
+window.StarfoxComm = {
+  CHARACTERS, SCENES,
+  play(lines, opts = {}) {
+    seenChars.clear();
+    if (opts.warning) {
+      showWarning(opts.warning, opts.dark);
+      setTimeout(() => { currentScene = { lines }; lineIndex = 0; $('idlePrompt').style.display = 'none'; buildPips(lines.length); showLine(); }, 1400);
+    } else {
+      currentScene = { lines }; lineIndex = 0; $('idlePrompt').style.display = 'none'; buildPips(lines.length); showLine();
+    }
+  },
+  playOne(charKey, text, opts = {}) { this.play([{ char: charKey, text }], opts); },
+  addCharacter(key, prof) { CHARACTERS[key] = prof; },
+  addScene(key, scene) { SCENES[key] = scene; },
+  close() { closeComm(); }
+};
+</script>
+</body>
+</html>

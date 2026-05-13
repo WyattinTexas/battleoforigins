@@ -747,7 +747,7 @@ function triggerWildEncounter() {
     player: {
       ghosts: playerGhosts,
       activeIdx: 0,
-      resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+      resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     },
     enemy: {
       ghosts: enemyGhosts,
@@ -761,7 +761,7 @@ function triggerWildEncounter() {
     playerDice: [],
     enemyDice: [],
     entryFired: false,
-    resources: { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 },
+    resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 },
     zoneIdx: getCurrentZone(G.x, G.y),
     nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
     enemyUsedResource: false,
@@ -3291,13 +3291,8 @@ function fleeBattle() {
   }
   // Sync team HP and save resources back (use ?? to preserve 0 values)
   syncBattleTeamToGameState();
-  G.iceShards = B.resources?.iceShards ?? G.iceShards;
-  G.sacredFire = B.resources?.sacredFire ?? G.sacredFire;
+  // Combat resources are battle-only — don't persist. Only Healing Seeds carry over.
   G.healingSeeds = B.resources?.healingSeeds ?? G.healingSeeds;
-  G.luckyStones = B.resources?.luckyStones ?? G.luckyStones;
-  G.surge = B.resources?.surge ?? G.surge;
-  G.moonstone = B.resources?.moonstone ?? G.moonstone;
-  G.firefly = B.resources?.firefly ?? G.firefly;
   G.inBattle = false;
   B = null;
   document.getElementById('battleOverlay').classList.remove('active', 'visible');
@@ -3325,13 +3320,8 @@ function endBattle(won) {
   cleanup3dDice('enemy');
 
   // Save resources back (use ?? to preserve 0 values from spent resources)
-  G.iceShards = B.resources?.iceShards ?? G.iceShards;
-  G.sacredFire = B.resources?.sacredFire ?? G.sacredFire;
+  // Combat resources are battle-only — don't persist. Only Healing Seeds carry over.
   G.healingSeeds = B.resources?.healingSeeds ?? G.healingSeeds;
-  G.luckyStones = B.resources?.luckyStones ?? G.luckyStones;
-  G.surge = B.resources?.surge ?? G.surge;
-  G.moonstone = B.resources?.moonstone ?? G.moonstone;
-  G.firefly = B.resources?.firefly ?? G.firefly;
 
   // Sync ALL player team HP back to G.team
   syncBattleTeamToGameState();

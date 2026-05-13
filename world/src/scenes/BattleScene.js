@@ -97,25 +97,14 @@ class BattleScene extends Phaser.Scene {
     this.enemyHPBarBg = this.add.rectangle(eX, eY - 120, 160, 7, 0x333333);
     this.enemyHPBar = this.add.rectangle(eX - 80, eY - 120, 160, 5, 0x44aa44).setOrigin(0, 0.5);
 
-    // ═══════ DICE DISPLAY ═══════
+    // ═══════ SIDELINE GHOSTS (team bench display) ═══════
+    this._sidelineObjs = [];
+    this.renderSideline();
+
+    // ═══════ DICE DISPLAY (DOM-based fake 3D — testroom2 port) ═══════
     this.playerDice = [];
     this.enemyDice = [];
-    const diceY = H * 0.74;
-    for (let i = 0; i < 6; i++) { // support up to 6 dice now
-      const pdBg = this.add.rectangle(pX - 70 + i * 30, diceY, 26, 26, 0x3378cc, i < 3 ? 1 : 0).setStrokeStyle(2, 0x2060a0);
-      const pdTxt = this.add.text(pX - 70 + i * 30, diceY, '', {
-        fontSize: '14px', fontFamily: 'monospace', fontStyle: 'bold', color: '#fff',
-      }).setOrigin(0.5);
-      this.playerDice.push({ bg: pdBg, txt: pdTxt });
-
-      const edBg = this.add.rectangle(eX - 70 + i * 30, diceY, 26, 26, 0xcc4444, i < 3 ? 1 : 0).setStrokeStyle(2, 0xa03030);
-      const edTxt = this.add.text(eX - 70 + i * 30, diceY, '', {
-        fontSize: '14px', fontFamily: 'monospace', fontStyle: 'bold', color: '#fff',
-      }).setOrigin(0.5);
-      this.enemyDice.push({ bg: edBg, txt: edTxt });
-    }
-    this.add.text(pX, diceY - 20, 'PLAYER', { fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: '#3366aa' }).setOrigin(0.5);
-    this.add.text(eX, diceY - 20, 'ENEMY', { fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: '#aa3333' }).setOrigin(0.5);
+    if (typeof BattleDice !== 'undefined') BattleDice.show();
 
     // ═══════ RESOURCE TILES ═══════
     this._resourceBtns = [];
@@ -158,6 +147,79 @@ class BattleScene extends Phaser.Scene {
       // Show entry callouts via log
       [...pCallouts, ...eCallouts].forEach(c => {
         if (c && c.desc) this.showFloatingText(W / 2, H * 0.15, c.name, c.color || '#ffcc00');
+      });
+    }
+  }
+
+  // ═══════ SIDELINE GHOSTS (bench display) ═══════
+
+  renderSideline() {
+    // Clear old
+    this._sidelineObjs.forEach(o => o.destroy());
+    this._sidelineObjs.length = 0;
+
+    const W = this.scale.width, H = this.scale.height;
+    const pTeam = B[this._playerTeam];
+    const eTeam = B[this._enemyTeam];
+
+    // Player sideline — bottom-left area
+    if (pTeam) {
+      const startX = W * 0.08;
+      const sY = H * 0.70;
+      pTeam.ghosts.forEach((g, i) => {
+        if (i === pTeam.activeIdx) return; // skip active ghost
+        const x = startX + (i > pTeam.activeIdx ? i - 1 : i) * 42;
+        const isKO = g.ko || g.hp <= 0;
+
+        // Mini card
+        const bg = this.add.rectangle(x, sY, 36, 44, isKO ? 0x331111 : 0x1a1a3e, isKO ? 0.4 : 0.8)
+          .setStrokeStyle(1, isKO ? 0x662222 : 0x4466aa);
+        const artKey = `card_${g.id}`;
+        let art;
+        if (this.textures.exists(artKey)) {
+          art = this.add.image(x, sY - 4, artKey).setDisplaySize(30, 34);
+          if (isKO) art.setAlpha(0.3).setTint(0x444444);
+        }
+        const name = this.add.text(x, sY + 20, g.name.substring(0, 5), {
+          fontSize: '7px', fontFamily: 'monospace', color: isKO ? '#664444' : '#aabbcc',
+        }).setOrigin(0.5);
+        const hp = this.add.text(x, sY + 28, isKO ? 'KO' : `${g.hp}`, {
+          fontSize: '7px', fontFamily: 'monospace', fontStyle: 'bold',
+          color: isKO ? '#cc4444' : '#44cc44',
+        }).setOrigin(0.5);
+
+        this._sidelineObjs.push(bg, name, hp);
+        if (art) this._sidelineObjs.push(art);
+      });
+    }
+
+    // Enemy sideline — bottom-right area
+    if (eTeam) {
+      const startX = W * 0.82;
+      const sY = H * 0.70;
+      eTeam.ghosts.forEach((g, i) => {
+        if (i === eTeam.activeIdx) return;
+        const x = startX + (i > eTeam.activeIdx ? i - 1 : i) * 42;
+        const isKO = g.ko || g.hp <= 0;
+
+        const bg = this.add.rectangle(x, sY, 36, 44, isKO ? 0x331111 : 0x1a2e1a, isKO ? 0.4 : 0.8)
+          .setStrokeStyle(1, isKO ? 0x662222 : 0x44aa66);
+        const artKey = `card_${g.id}`;
+        let art;
+        if (this.textures.exists(artKey)) {
+          art = this.add.image(x, sY - 4, artKey).setDisplaySize(30, 34);
+          if (isKO) art.setAlpha(0.3).setTint(0x444444);
+        }
+        const name = this.add.text(x, sY + 20, g.name.substring(0, 5), {
+          fontSize: '7px', fontFamily: 'monospace', color: isKO ? '#664444' : '#aabbcc',
+        }).setOrigin(0.5);
+        const hp = this.add.text(x, sY + 28, isKO ? 'KO' : `${g.hp}`, {
+          fontSize: '7px', fontFamily: 'monospace', fontStyle: 'bold',
+          color: isKO ? '#cc4444' : '#44cc44',
+        }).setOrigin(0.5);
+
+        this._sidelineObjs.push(bg, name, hp);
+        if (art) this._sidelineObjs.push(art);
       });
     }
   }
@@ -249,40 +311,75 @@ class BattleScene extends Phaser.Scene {
 
   buildResourceBar() {
     const W = this.scale.width;
-    const resY = this.scale.height * 0.82;
+    const resY = this.scale.height * 0.84;
     const team = B[this._playerTeam];
     if (!team || !team.resources) return;
 
     const defs = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
-    const keys = ['ice', 'fire', 'surge', 'moonstone', 'luckyStone', 'healingSeed', 'burn', 'firefly'];
-    const available = keys.filter(k => (team.resources[k] || 0) > 0);
+    const allKeys = ['ice', 'fire', 'surge', 'moonstone', 'luckyStone', 'healingSeed'];
+    // Only show resources the player actually HAS (combat resources start at 0)
+    const available = allKeys.filter(k => (team.resources[k] || 0) > 0);
     if (available.length === 0) return;
 
-    const startX = W / 2 - (available.length * 54) / 2;
+    const tileW = 56, tileH = 40, gap = 6;
+    const totalW = available.length * (tileW + gap) - gap;
+    const startX = W / 2 - totalW / 2;
+
     available.forEach((key, i) => {
-      const x = startX + i * 54 + 27;
+      const x = startX + i * (tileW + gap) + tileW / 2;
       const count = team.resources[key] || 0;
       const info = defs[key] || { emoji: '?', label: key, color: '#888' };
       const hexColor = parseInt((info.color || '#888888').replace('#', ''), 16);
+      const isEmpty = count === 0;
 
-      const bg = this.add.rectangle(x, resY, 48, 32, hexColor, 0.25)
-        .setStrokeStyle(1, hexColor).setInteractive({ useHandCursor: true });
-      const txt = this.add.text(x, resY - 4, info.emoji || '?', { fontSize: '14px' }).setOrigin(0.5);
-      const countTxt = this.add.text(x, resY + 11, `${count}`, {
-        fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: '#fff',
+      // Styled tile background (testroom2: gradient-like with border glow)
+      const bg = this.add.rectangle(x, resY, tileW, tileH, hexColor, isEmpty ? 0.08 : 0.35)
+        .setStrokeStyle(isEmpty ? 1 : 2, hexColor)
+        .setInteractive({ useHandCursor: !isEmpty });
+
+      // Emoji icon
+      const txt = this.add.text(x, resY - 6, info.emoji || '?', {
+        fontSize: '16px',
+      }).setOrigin(0.5).setAlpha(isEmpty ? 0.3 : 1);
+
+      // Count (glowing for available)
+      const countTxt = this.add.text(x, resY + 10, isEmpty ? '0' : `${count}`, {
+        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold',
+        color: isEmpty ? '#555' : '#fff',
       }).setOrigin(0.5);
 
+      // Label below
+      const labelTxt = this.add.text(x, resY + 22, (info.label || key).toUpperCase(), {
+        fontSize: '6px', fontFamily: 'monospace', fontStyle: 'bold',
+        color: isEmpty ? '#444' : info.color || '#888',
+      }).setOrigin(0.5);
+
+      // Hover effects (testroom2: translateY -2px equivalent)
+      if (!isEmpty) {
+        bg.on('pointerover', () => {
+          bg.setAlpha(1);
+          bg.setFillStyle(hexColor, 0.55);
+          bg.setStrokeStyle(2, 0xd4a040); // gilt border on hover
+        });
+        bg.on('pointerout', () => {
+          bg.setAlpha(1);
+          bg.setFillStyle(hexColor, 0.35);
+          bg.setStrokeStyle(2, hexColor);
+        });
+      }
+
+      // Click handlers
       const committable = ['ice', 'fire', 'surge'];
-      if (committable.includes(key)) {
+      if (committable.includes(key) && !isEmpty) {
         bg.on('pointerdown', () => {
           if (this._rolling) return;
           if (typeof cycleCommit === 'function') {
-            const newCount = cycleCommit(this._playerTeam, key);
+            cycleCommit(this._playerTeam, key);
             this.rebuildResourceBar();
             if (typeof GameAudio !== 'undefined') GameAudio.collect();
           }
         });
-      } else if (key === 'healingSeed') {
+      } else if (key === 'healingSeed' && !isEmpty) {
         bg.on('pointerdown', () => {
           if (this._rolling) return;
           if (typeof spendHealingSeed === 'function') {
@@ -293,14 +390,33 @@ class BattleScene extends Phaser.Scene {
             if (typeof GameAudio !== 'undefined') GameAudio.heal();
           }
         });
+      } else if (key === 'moonstone' && !isEmpty) {
+        bg.on('pointerdown', () => {
+          if (this._rolling) return;
+          if (typeof useMoonstone === 'function') {
+            useMoonstone(this._playerTeam, (msg) => this.logText.setText(msg));
+            this.updateHP();
+            this.rebuildResourceBar();
+            if (typeof GameAudio !== 'undefined') GameAudio.collect();
+          }
+        });
+      } else if (key === 'luckyStone' && !isEmpty) {
+        bg.on('pointerdown', () => {
+          if (this._rolling) return;
+          if (typeof useLuckyStone === 'function') {
+            useLuckyStone(this._playerTeam, (msg) => this.logText.setText(msg));
+            this.rebuildResourceBar();
+            if (typeof GameAudio !== 'undefined') GameAudio.collect();
+          }
+        });
       }
 
-      this._resourceBtns.push({ bg, txt, countTxt });
+      this._resourceBtns.push({ bg, txt, countTxt, labelTxt });
     });
   }
 
   rebuildResourceBar() {
-    this._resourceBtns.forEach(b => { b.bg.destroy(); b.txt.destroy(); if (b.countTxt) b.countTxt.destroy(); });
+    this._resourceBtns.forEach(b => { b.bg.destroy(); b.txt.destroy(); if (b.countTxt) b.countTxt.destroy(); if (b.labelTxt) b.labelTxt.destroy(); });
     this._resourceBtns = [];
     this.buildResourceBar();
   }
@@ -342,10 +458,11 @@ class BattleScene extends Phaser.Scene {
       return;
     }
 
-    // Calculate dice count (all modifiers from card-abilities.js)
+    // Calculate dice count for BOTH sides (abilities can modify dice count)
     const pDiceCount = typeof calculateDiceCount === 'function'
       ? calculateDiceCount(this._playerTeam) : 3;
-    const eDiceCount = 3;
+    const eDiceCount = typeof calculateDiceCount === 'function'
+      ? calculateDiceCount(this._enemyTeam) : 3;
 
     // Roll with cinematic weighting
     const pTeam = B[this._playerTeam];
@@ -370,48 +487,23 @@ class BattleScene extends Phaser.Scene {
     B.lastRollDiceCount[this._playerTeam] = pDiceCount;
     B.lastRollDiceCount[this._enemyTeam] = eDiceCount;
 
-    // ── Dice tumble animation ──
-    const tumbles = 6;
-    const tumbleMs = 60;
-    // Show/hide dice slots based on count
-    for (let i = 0; i < 6; i++) {
-      if (this.playerDice[i]) {
-        this.playerDice[i].bg.setAlpha(i < pDiceCount ? 1 : 0);
-        this.playerDice[i].txt.setAlpha(i < pDiceCount ? 1 : 0);
-      }
-      if (this.enemyDice[i]) {
-        this.enemyDice[i].bg.setAlpha(i < eDiceCount ? 1 : 0);
-        this.enemyDice[i].txt.setAlpha(i < eDiceCount ? 1 : 0);
-      }
-    }
-
-    for (let t = 0; t < tumbles; t++) {
-      this.time.delayedCall(t * tumbleMs, () => {
-        for (let i = 0; i < Math.max(pDiceCount, eDiceCount); i++) {
-          if (i < pDiceCount && this.playerDice[i]) this.playerDice[i].txt.setText(Phaser.Math.Between(1, 6));
-          if (i < eDiceCount && this.enemyDice[i]) this.enemyDice[i].txt.setText(Phaser.Math.Between(1, 6));
-        }
+    // ── Dice tumble animation (DOM-based fake 3D) ──
+    if (typeof BattleDice !== 'undefined') {
+      BattleDice.show();
+      BattleDice.tumbleBoth(pDiceCount, eDiceCount, pDice, eDice, () => {
+        this.resolveDice(pDice, eDice);
       });
+    } else {
+      // Fallback: resolve immediately if DOM dice unavailable
+      this.time.delayedCall(400, () => this.resolveDice(pDice, eDice));
     }
-
-    this.time.delayedCall(tumbles * tumbleMs + 50, () => this.resolveDice(pDice, eDice));
   }
 
   resolveDice(pDice, eDice) {
-    // Show real values with pop animation
-    for (let i = 0; i < 6; i++) {
-      if (this.playerDice[i]) {
-        this.playerDice[i].txt.setText(pDice[i] !== undefined ? pDice[i] : '');
-        if (pDice[i] !== undefined) {
-          this.tweens.add({ targets: [this.playerDice[i].bg, this.playerDice[i].txt], scaleX: 1.3, scaleY: 1.3, duration: 80, yoyo: true });
-        }
-      }
-      if (this.enemyDice[i]) {
-        this.enemyDice[i].txt.setText(eDice[i] !== undefined ? eDice[i] : '');
-        if (eDice[i] !== undefined) {
-          this.tweens.add({ targets: [this.enemyDice[i].bg, this.enemyDice[i].txt], scaleX: 1.3, scaleY: 1.3, duration: 80, yoyo: true, delay: 100 });
-        }
-      }
+    // DOM dice already show final values from tumble — set them explicitly too
+    if (typeof BattleDice !== 'undefined') {
+      BattleDice.setDice('player', pDice);
+      BattleDice.setDice('enemy', eDice);
     }
 
     const pRes = classify(pDice);
@@ -423,6 +515,17 @@ class BattleScene extends Phaser.Scene {
     const hectorActive = (pF && pF.id === 96 && !pF.ko) || (eF && eF.id === 96 && !eF.ko);
 
     const winner = compareRolls(pRes, eRes, pDice, eDice, hectorActive);
+
+    // Highlight winning/losing dice in DOM
+    if (typeof BattleDice !== 'undefined') {
+      const pWin = winner === 'red' || winner === this._playerTeam;
+      const eWin = winner === 'blue' || winner === this._enemyTeam;
+      const pMask = pDice.map(() => pWin);
+      const eMask = eDice.map(() => eWin);
+      BattleDice.highlight(pMask, eMask);
+      BattleDice.setResult('player', describeRoll(pRes), pWin);
+      BattleDice.setResult('enemy', describeRoll(eRes), eWin);
+    }
 
     // Type label for display
     const pLabel = typeof typeLabel === 'function' ? typeLabel(pRes.type) : '';
@@ -452,7 +555,12 @@ class BattleScene extends Phaser.Scene {
         this.cameras.main.shake(80, 0.004);
         this.showFloatingText(this.scale.width * 0.75, this.scale.height * 0.35, `-${finalDmg}`, '#cc2211');
         GameAudio.hit();
-        if (finalDmg >= 4) this.flashScreen();
+        if (finalDmg >= 4) {
+          this.flashScreen();
+          if (typeof BattleCallout !== 'undefined') {
+            BattleCallout.show(`-${finalDmg} DAMAGE`, { type: finalDmg >= 6 ? 'critical' : 'damage', subtitle: this.eg.name });
+          }
+        }
         this.reportRaidDamage(finalDmg, pDice);
 
         // Win-path abilities
@@ -462,19 +570,29 @@ class BattleScene extends Phaser.Scene {
       // Enemy wins
       const dmg = typeof calculateDamage === 'function'
         ? calculateDamage(this._enemyTeam, eRes, eDice) : eRes.damage;
-      const reduction = typeof calculateDamageReduction === 'function'
-        ? calculateDamageReduction(this._playerTeam, eRes) : 0;
-      const finalDmg = Math.max(1, dmg - reduction);
 
-      wpDamage(this.pg, finalDmg);
-      log += ` — ${finalDmg} dmg to ${this.pg.name}!`;
-      if (eLabel) log += ` ${eLabel}`;
-      this.cameras.main.shake(120, 0.006);
-      this.showFloatingText(this.scale.width * 0.25, this.scale.height * 0.35, `-${finalDmg}`, '#cc2211');
-      GameAudio.hurt();
-      if (finalDmg >= 4) this.flashScreen();
+      // Check player dodge (Sylvia)
+      const pDodged = typeof checkSylviaDodge === 'function' && checkSylviaDodge(this._playerTeam);
+      if (pDodged) {
+        log += ' — DODGED!';
+        this.showFloatingText(this.scale.width * 0.25, this.scale.height * 0.35, 'DODGE!', '#44ddff');
+      } else {
+        const reduction = typeof calculateDamageReduction === 'function'
+          ? calculateDamageReduction(this._playerTeam, eRes) : 0;
+        const finalDmg = Math.max(1, dmg - reduction);
 
-      // Loss-path abilities
+        wpDamage(this.pg, finalDmg);
+        log += ` — ${finalDmg} dmg to ${this.pg.name}!`;
+        if (eLabel) log += ` ${eLabel}`;
+        this.cameras.main.shake(120, 0.006);
+        this.showFloatingText(this.scale.width * 0.25, this.scale.height * 0.35, `-${finalDmg}`, '#cc2211');
+        GameAudio.hurt();
+        if (finalDmg >= 4) this.flashScreen();
+      }
+
+      // Enemy win-path abilities
+      if (typeof triggerWinPath === 'function') triggerWinPath(this._enemyTeam, eRes);
+      // Player loss-path abilities
       if (typeof triggerOnLoss === 'function') triggerOnLoss(this._playerTeam);
     } else {
       log += ' — Tie!';
@@ -506,6 +624,9 @@ class BattleScene extends Phaser.Scene {
 
   handleEnemyKO() {
     this.eg.ko = true;
+    if (typeof BattleCallout !== 'undefined') {
+      BattleCallout.show('KO!', { type: 'ko', subtitle: `${this.eg.name} has fallen` });
+    }
     const eTeam = B[this._enemyTeam];
     const eLiving = eTeam.ghosts.filter((g, i) => i !== eTeam.activeIdx && !g.ko && g.hp > 0);
     if (eLiving.length > 0) {
@@ -531,6 +652,9 @@ class BattleScene extends Phaser.Scene {
   checkKOSwap() {
     this.pg.ko = true;
     this.pg.hp = 0;
+    if (typeof BattleCallout !== 'undefined') {
+      BattleCallout.show('KO!', { type: 'ko', subtitle: `${this.pg.name} has fallen` });
+    }
     const pTeam = B[this._playerTeam];
     const living = [];
     pTeam.ghosts.forEach((g, i) => {
@@ -615,24 +739,26 @@ class BattleScene extends Phaser.Scene {
     const ePct = this.eg.maxHp > 0 ? this.eg.hp / this.eg.maxHp : 0;
     this.enemyHPBar.width = Math.max(0, 160 * ePct);
     this.enemyHPBar.setFillStyle(ePct > 0.66 ? 0x44aa44 : ePct > 0.33 ? 0xddaa22 : 0xcc2211);
+
+    // Refresh sideline display
+    this.renderSideline();
   }
 
   // ═══════ END BATTLE ═══════
 
   endBattle(won) {
+    // Hide DOM dice overlay
+    if (typeof BattleDice !== 'undefined') BattleDice.hide();
+
     const W = this.scale.width, H = this.scale.height;
     let leveledUp = false, xpGain = 0, coinChange = 0;
 
-    // Sync resources back to G
+    // Combat resources are battle-only — do NOT sync back to G.
+    // They start at zero each battle and are generated by card abilities.
+    // Only Healing Seeds persist (real overworld item from gardening).
     const pTeam = B ? B[this._playerTeam] : null;
     if (pTeam && pTeam.resources) {
-      G.iceShards = pTeam.resources.ice ?? G.iceShards;
-      G.sacredFire = pTeam.resources.fire ?? G.sacredFire;
       G.healingSeeds = pTeam.resources.healingSeed ?? G.healingSeeds;
-      G.luckyStones = pTeam.resources.luckyStone ?? G.luckyStones;
-      G.surge = pTeam.resources.surge ?? G.surge;
-      G.moonstone = pTeam.resources.moonstone ?? G.moonstone;
-      G.firefly = pTeam.resources.firefly ?? G.firefly;
     }
 
     if (won) {

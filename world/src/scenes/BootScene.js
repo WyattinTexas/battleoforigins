@@ -41,12 +41,74 @@ class BootScene extends Phaser.Scene {
     this.load.spritesheet('npc_hunter', 'assets/characters/NPC_Hunter_idle.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('npc_child', 'assets/characters/NPC_Child.png', { frameWidth: 16, frameHeight: 16 });
 
-    // ── Tilesets (spritesheet: 16x16 per tile) ──
+    // Valkin the Grand — epic boss sprite (256x256 frames, orc mage from ERW)
+    this.load.spritesheet('valkin_walk', 'assets/characters/Valkin_walk.png', { frameWidth: 256, frameHeight: 256 });
+    this.load.spritesheet('valkin_idle', 'assets/characters/Valkin_idle.png', { frameWidth: 256, frameHeight: 256 });
+
+    // ── Tilesets (spritesheet: 16x16 per tile) — legacy Ninja Adventure ──
     this.load.spritesheet('tiles_nature', 'assets/tiles/TilesetNature.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('tiles_water', 'assets/tiles/TilesetWater.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('tiles_field', 'assets/tiles/TilesetField.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('tiles_house', 'assets/tiles/TilesetHouse.png', { frameWidth: 16, frameHeight: 16 });
     this.load.spritesheet('tiles_desert', 'assets/tiles/TilesetDesert.png', { frameWidth: 16, frameHeight: 16 });
+
+    // ── ERW Grass Land 2.0 tilesets (32x32 native) ──
+    this.load.spritesheet('erw_terrain', 'assets/erw/tilesets/terrain-grass.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('erw_wall', 'assets/erw/tilesets/wall1.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('erw_water', 'assets/erw/tilesets/animated-water-tiles-(full-tile).png', { frameWidth: 32, frameHeight: 32 });
+
+    // ── ERW animated props ──
+    this.load.spritesheet('erw_campfire', 'assets/erw/props-animated/campfire1.png', { frameWidth: 160, frameHeight: 160 });
+    this.load.spritesheet('erw_campfire_smoke', 'assets/erw/props-animated/campfire-smoke.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('erw_chest_open', 'assets/erw/props-animated/chest-opening.png', { frameWidth: 192, frameHeight: 192 });
+    this.load.spritesheet('erw_chest_close', 'assets/erw/props-animated/chest-closing.png', { frameWidth: 192, frameHeight: 192 });
+    this.load.spritesheet('erw_butterfly1', 'assets/erw/props-animated/butterfly1.png', { frameWidth: 150, frameHeight: 106 });
+    this.load.spritesheet('erw_butterfly2', 'assets/erw/props-animated/butterfly2.png', { frameWidth: 150, frameHeight: 106 });
+    this.load.spritesheet('erw_particles', 'assets/erw/props-animated/nature-particles.png', { frameWidth: 96, frameHeight: 96 });
+    this.load.spritesheet('erw_shrine_avail', 'assets/erw/props-animated/shrine-buff-available.png', { frameWidth: 295, frameHeight: 311 });
+    this.load.spritesheet('erw_shrine_buff', 'assets/erw/props-animated/shrine-getting-buff.png', { frameWidth: 295, frameHeight: 311 });
+    this.load.spritesheet('erw_flag1', 'assets/erw/props-animated/flag1.png', { frameWidth: 128, frameHeight: 128 });
+    this.load.spritesheet('erw_lamp', 'assets/erw/props-animated/lamp-post-1.png', { frameWidth: 96, frameHeight: 96 });
+    this.load.spritesheet('erw_dummy', 'assets/erw/props-animated/training-dummy-hit1.png', { frameWidth: 128, frameHeight: 128 });
+
+    // ── ERW static props (loaded as images) ──
+    this.load.image('erw_pine', 'assets/erw/props-static/pine-tree.png');
+    this.load.image('erw_props1', 'assets/erw/props-static/atlas-sheet1.png');
+    this.load.image('erw_fortress', 'assets/erw/props-static/fortress-front.png');
+    this.load.image('erw_orc_tents', 'assets/erw/props-static/orc-tents.png');
+    this.load.image('erw_loot', 'assets/erw/props-static/loot-drops.png');
+
+    // ── ERW tree sprites (full multi-tile trees with trunks + canopies) ──
+    this.load.image('erw_tree_green1', 'assets/erw/trees/green1.png');
+    this.load.image('erw_tree_green2', 'assets/erw/trees/green2.png');
+    this.load.image('erw_tree_green3', 'assets/erw/trees/green3.png');
+    this.load.image('erw_tree_green4', 'assets/erw/trees/green4.png');
+    this.load.image('erw_tree_green5', 'assets/erw/trees/green5.png');
+    this.load.image('erw_tree_dead1', 'assets/erw/trees/dead1.png');
+    this.load.image('erw_tree_dead2', 'assets/erw/trees/dead2.png');
+    this.load.image('erw_tree_dead3', 'assets/erw/trees/dead3.png');
+    this.load.image('erw_tree_dead_sm1', 'assets/erw/trees/dead-small1.png');
+    this.load.image('erw_tree_dead_sm2', 'assets/erw/trees/dead-small2.png');
+    this.load.image('erw_tree_palm1', 'assets/erw/trees/palm1.png');
+    this.load.image('erw_tree_palm2', 'assets/erw/trees/palm2.png');
+    this.load.image('erw_tree_palm3', 'assets/erw/trees/palm3.png');
+    this.load.image('erw_tree_pine1', 'assets/erw/trees/pine1.png');
+    this.load.image('erw_tree_pine2', 'assets/erw/trees/pine2.png');
+    this.load.image('erw_tree_pine3', 'assets/erw/trees/pine3.png');
+
+    // ── ERW building sprites ──
+    this.load.image('erw_cabin', 'assets/erw/buildings/cabin.png');
+    this.load.image('erw_tent', 'assets/erw/buildings/tent.png');
+    this.load.image('erw_tent_small', 'assets/erw/buildings/tent-small.png');
+
+    // ── ERW ground scatter (grass tufts + small rocks for Rolling Hills) ──
+    this.load.image('erw_tuft1', 'assets/erw/scatter/tuft1.png');
+    this.load.image('erw_tuft2', 'assets/erw/scatter/tuft2.png');
+    this.load.image('erw_tuft3', 'assets/erw/scatter/tuft3.png');
+    this.load.image('erw_tuft4', 'assets/erw/scatter/tuft4.png');
+    this.load.image('erw_rock1', 'assets/erw/scatter/rock1.png');
+    this.load.image('erw_rock2', 'assets/erw/scatter/rock2.png');
+    this.load.image('erw_rock3', 'assets/erw/scatter/rock3.png');
 
     // ── Card art (load ALL cards so every enemy has art) ──
     for (const card of ALL_CARDS) {
@@ -57,6 +119,9 @@ class BootScene extends Phaser.Scene {
         this.load.image(`card_${card.id}`, artPath);
       }
     }
+
+    // ── Garden plant sprites ──
+    if (typeof loadGardenAssets === 'function') loadGardenAssets(this);
 
     // ── Audio ──
     this.load.audio('music_hub', 'assets/audio/hub.ogg');
@@ -90,6 +155,38 @@ class BootScene extends Phaser.Scene {
     const CREATURE_KEYS = ['bear','dragon','axolot','axolotblue','butterfly','butterflyblue','bluebat','slime','mushroom','bamboo','skull'];
     for (const ck of CREATURE_KEYS) {
       this.createWalkAnims('creature_' + ck);
+    }
+
+    // ── ERW animated prop animations ──
+    if (this.textures.exists('erw_water')) {
+      this.anims.create({ key: 'erw_water_flow', frames: this.anims.generateFrameNumbers('erw_water', { start: 0, end: 7 }), frameRate: 4, repeat: -1 });
+    }
+    if (this.textures.exists('erw_campfire')) {
+      this.anims.create({ key: 'erw_campfire_burn', frames: this.anims.generateFrameNumbers('erw_campfire', { start: 0, end: 7 }), frameRate: 8, repeat: -1 });
+    }
+    if (this.textures.exists('erw_campfire_smoke')) {
+      this.anims.create({ key: 'erw_smoke', frames: this.anims.generateFrameNumbers('erw_campfire_smoke', { start: 0, end: 15 }), frameRate: 6, repeat: -1 });
+    }
+    if (this.textures.exists('erw_butterfly1')) {
+      this.anims.create({ key: 'erw_butterfly1_fly', frames: this.anims.generateFrameNumbers('erw_butterfly1', { start: 0, end: 23 }), frameRate: 10, repeat: -1 });
+    }
+    if (this.textures.exists('erw_butterfly2')) {
+      this.anims.create({ key: 'erw_butterfly2_fly', frames: this.anims.generateFrameNumbers('erw_butterfly2', { start: 0, end: 23 }), frameRate: 10, repeat: -1 });
+    }
+    if (this.textures.exists('erw_particles')) {
+      this.anims.create({ key: 'erw_nature_particles', frames: this.anims.generateFrameNumbers('erw_particles', { start: 0, end: 15 }), frameRate: 6, repeat: -1 });
+    }
+    if (this.textures.exists('erw_chest_open')) {
+      this.anims.create({ key: 'erw_chest_opening', frames: this.anims.generateFrameNumbers('erw_chest_open', { start: 0, end: 8 }), frameRate: 10, repeat: 0 });
+    }
+    if (this.textures.exists('erw_shrine_avail')) {
+      this.anims.create({ key: 'erw_shrine_glow', frames: this.anims.generateFrameNumbers('erw_shrine_avail', { start: 0, end: 10 }), frameRate: 6, repeat: -1 });
+    }
+    if (this.textures.exists('erw_flag1')) {
+      this.anims.create({ key: 'erw_flag_wave', frames: this.anims.generateFrameNumbers('erw_flag1', { start: 0, end: 10 }), frameRate: 8, repeat: -1 });
+    }
+    if (this.textures.exists('erw_lamp')) {
+      this.anims.create({ key: 'erw_lamp_flicker', frames: this.anims.generateFrameNumbers('erw_lamp', { start: 0, end: 11 }), frameRate: 6, repeat: -1 });
     }
 
     // ── Title screen ──

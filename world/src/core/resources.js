@@ -171,3 +171,61 @@ const RESOURCE_DISPLAY = {
   firefly:     { emoji: '✨', label: 'Firefly',      color: '#ffcc44' },
   frostbite:   { emoji: '❄️', label: 'Frostbite',    color: '#88bbdd' },
 };
+
+// ── Moonstone: change one die to a 6 (pre-roll commit, applied after roll) ──
+function useMoonstone(teamName, logFn) {
+  if (!B) return false;
+  const t = B[teamName];
+  if (!t || (t.resources.moonstone || 0) <= 0) return false;
+  // Mark moonstone as committed — applied in smartMoonstoneChange after dice roll
+  if (!B._moonstoneReady) B._moonstoneReady = {};
+  B._moonstoneReady[teamName] = true;
+  t.resources.moonstone--;
+  if (logFn) logFn('Moonstone committed! Lowest die will become a 6.');
+  return true;
+}
+
+// ── Lucky Stone: reroll lowest die (pre-roll commit, applied after roll) ──
+function useLuckyStone(teamName, logFn) {
+  if (!B) return false;
+  const t = B[teamName];
+  if (!t || (t.resources.luckyStone || 0) <= 0) return false;
+  if (!B._luckyStoneReady) B._luckyStoneReady = {};
+  B._luckyStoneReady[teamName] = true;
+  t.resources.luckyStone--;
+  if (logFn) logFn('Lucky Stone committed! Lowest die will be rerolled.');
+  return true;
+}
+
+// ── Apply moonstone after roll: change lowest die to 6 ──
+function smartMoonstoneChange(diceArray) {
+  if (!B || !B._moonstoneReady) return;
+  // Find which team this belongs to by checking both
+  ['red', 'blue'].forEach(team => {
+    if (B._moonstoneReady[team]) {
+      B._moonstoneReady[team] = false;
+      // Change the lowest die to 6
+      let minIdx = 0;
+      for (let i = 1; i < diceArray.length; i++) {
+        if (diceArray[i] < diceArray[minIdx]) minIdx = i;
+      }
+      diceArray[minIdx] = 6;
+    }
+  });
+}
+
+// ── Apply lucky stone after roll: reroll lowest die ──
+function smartLuckyStone(diceArray) {
+  if (!B || !B._luckyStoneReady) return;
+  ['red', 'blue'].forEach(team => {
+    if (B._luckyStoneReady[team]) {
+      B._luckyStoneReady[team] = false;
+      // Reroll the lowest die
+      let minIdx = 0;
+      for (let i = 1; i < diceArray.length; i++) {
+        if (diceArray[i] < diceArray[minIdx]) minIdx = i;
+      }
+      diceArray[minIdx] = Math.ceil(Math.random() * 6);
+    }
+  });
+}
