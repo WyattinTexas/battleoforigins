@@ -922,7 +922,10 @@ class WorldScene extends Phaser.Scene {
     }
 
     // ── BLACKOUT CHECK — all team ghosts KO'd → instant heal + teleport ──
-    if (G.team && G.team.length > 0 && !this._blackingOut) {
+    // Skip while the player is inside a dungeon — DungeonScene's own KO
+    // modal owns failure UX there. Otherwise WorldScene races to teleport
+    // the player to the nearest hub before the modal's leave button runs.
+    if (G.team && G.team.length > 0 && !this._blackingOut && !G.inDungeon) {
       const allKO = G.team.every(g => g.ko || g.hp <= 0);
       if (allKO) {
         this._blackingOut = true;

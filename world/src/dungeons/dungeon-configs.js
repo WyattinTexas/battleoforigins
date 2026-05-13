@@ -29,9 +29,13 @@ const DUNGEONS = {
     goldLossOnFail: 15,
     healBetweenFights: true,   // restore team HP after each non-final battle (testing flag)
     aggroOnContact: true,      // walk into a mob = battle starts
-    bossHpMultiplier: 0.1,     // TEMP for victory-exit testing — revert to 3 after
-    mobHpMultiplier: 0.1,      // TEMP for victory-exit testing — revert to 1 after
+    bossHpMultiplier: 3,       // boss HP = card.maxHp * 3 (matches world boss scaling)
+    mobHpMultiplier: 1,        // common mob HP scaling (1 = card default)
     bossRewardGold: 100,       // gold awarded on final boss defeat
+    // TEMP test flag — when true, walking into a mob instantly defeats
+    // it (no battle). Use to verify victory-exit flow end-to-end.
+    // Revert to false after testing.
+    instaWin: true,
 
     // Overworld tile the player is dropped onto when leaving the dungeon
     // (success or failure). MUST be walkable. The world-gen explicitly

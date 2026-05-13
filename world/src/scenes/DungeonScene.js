@@ -35,6 +35,10 @@ class DungeonScene extends Phaser.Scene {
 
     this.T = 32; // tile size in px
 
+    // Mark the player as inside a dungeon so WorldScene's global BLACKOUT
+    // hub-teleport doesn't fire here. Cleared in _exitDungeon.
+    G.inDungeon = true;
+
     // Parse map and runtime state
     this._parseMap();
     this._state = {
@@ -332,6 +336,14 @@ class DungeonScene extends Phaser.Scene {
       const dy = this.player.y - e.cy;
       const r = e.isBoss ? 30 : 26;
       if (dx * dx + dy * dy < r * r) {
+        // Test mode: skip the battle entirely and instantly defeat the
+        // mob. Useful for verifying victory-exit flow end-to-end without
+        // dice variance. Toggle off in dungeon config for real play.
+        if (this.config.instaWin) {
+          console.log('[Dungeon] instaWin: skipping battle vs', e.name);
+          this._onBattleWin(e);
+          return;
+        }
         this._launchBattle(e);
         return;
       }
@@ -591,6 +603,7 @@ class DungeonScene extends Phaser.Scene {
       G.coins = Math.max(0, (G.coins || 0) - this.config.goldLossOnFail);
     }
     G.inBattle = false;
+    G.inDungeon = false;
     saveGame();
 
     // Restore overworld DOM HUD
