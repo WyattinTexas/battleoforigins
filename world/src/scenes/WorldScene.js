@@ -634,12 +634,25 @@ class WorldScene extends Phaser.Scene {
 
     // ── Wave 3: Building Interactions ──
     this._interactBuildings = [
+      // Frost Valley (Polaris Hub)
       { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1, action: 'tradingPost' },
-      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1, action: 'arena' },
-      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3, action: 'workshop' },
-      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3, action: 'inn' },
-      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5, action: 'cantina' },
+      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1, action: 'arena', roomId: 'frost_arena' },
+      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3, action: 'workshop', roomId: 'frost_workshop' },
+      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3, action: 'inn', roomId: 'frost_inn' },
+      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5, action: 'cantina', roomId: 'frost_cantina' },
       { name: 'Dungeons', x: HUB.x + 3, y: HUB.y + 7, action: 'dungeons' },
+      // Rolling Hills (Meadowbrook)
+      { name: 'Inn', x: HUB_MEADOW.x + 1, y: HUB_MEADOW.y + 1, action: 'inn', roomId: 'meadow_inn' },
+      { name: 'Herbalist', x: HUB_MEADOW.x + 3, y: HUB_MEADOW.y + 1, action: 'shop', roomId: 'meadow_herbalist' },
+      { name: 'Tavern', x: HUB_MEADOW.x + 1, y: HUB_MEADOW.y + 3, action: 'cantina', roomId: 'meadow_tavern' },
+      // Volcanic Isles
+      { name: 'Inn', x: HUB_VOLCANIC.x + 1, y: HUB_VOLCANIC.y + 1, action: 'inn', roomId: 'volcanic_inn' },
+      { name: 'Forge', x: HUB_VOLCANIC.x + 3, y: HUB_VOLCANIC.y + 1, action: 'workshop', roomId: 'volcanic_forge' },
+      { name: 'Crucible', x: HUB_VOLCANIC.x + 1, y: HUB_VOLCANIC.y + 3, action: 'arena', roomId: 'volcanic_arena' },
+      // Dark Castle
+      { name: 'Antechamber', x: HUB_DARK.x + 1, y: HUB_DARK.y + 1, action: 'cantina', roomId: 'dark_throne' },
+      { name: 'Shadow Market', x: HUB_DARK.x + 3, y: HUB_DARK.y + 1, action: 'shop', roomId: 'dark_merchant' },
+      { name: 'Undercrypt', x: HUB_DARK.x + 1, y: HUB_DARK.y + 3, action: 'dungeons', roomId: 'dark_dungeons' },
     ];
 
     // ── Wave 3: Signposts ──
@@ -1411,6 +1424,7 @@ class WorldScene extends Phaser.Scene {
         this.time.delayedCall(300, () => {
           this.scene.launch('BuildingScene', {
             building: bld.action,
+            roomId: bld.roomId || null,
             returnX: this.player.x,
             returnY: this.player.y,
           });

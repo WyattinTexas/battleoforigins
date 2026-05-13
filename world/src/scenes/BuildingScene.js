@@ -87,16 +87,26 @@ class BuildingScene extends Phaser.Scene {
     this.buildingType = data.building;
     this.returnX = data.returnX;
     this.returnY = data.returnY;
+    this.roomId = data.roomId || null;
   }
 
   create() {
-    const layout = BUILDING_LAYOUTS[this.buildingType];
+    // Prefer ROOM_CONFIGS (zone-specific), fall back to legacy BUILDING_LAYOUTS
+    const layout = (this.roomId && typeof ROOM_CONFIGS !== 'undefined' && ROOM_CONFIGS[this.roomId])
+      ? ROOM_CONFIGS[this.roomId]
+      : BUILDING_LAYOUTS[this.buildingType];
     if (!layout) { this.exitBuilding(); return; }
 
     const T = 32;
-    const roomW = 12, roomH = 9;
+    const roomW = (layout.size && layout.size.w) || 12;
+    const roomH = (layout.size && layout.size.h) || 9;
     const W = this.scale.width;
     const H = this.scale.height;
+
+    // Normalize room config (support both legacy BUILDING_LAYOUTS and ROOM_CONFIGS formats)
+    const npcName = npcName || (layout.npc && layout.npc.name) || 'NPC';
+    const npcTint = npcTint || (layout.npc && layout.npc.tint) || 0xffffff;
+    const roomName = layout.name || this.buildingType;
 
     // Center the room in viewport
     const ox = Math.floor((W - roomW * T) / 2);
@@ -160,8 +170,8 @@ class BuildingScene extends Phaser.Scene {
     // ── NPC (behind counter) ──
     const npcPX = ox + (roomW / 2) * T;
     const npcPY = oy + (layout.counterY - 0.2) * T;
-    this.npc = this.add.sprite(npcPX, npcPY, 'npc_knight', 0).setScale(2.5).setTint(layout.npcTint).setDepth(3);
-    this.add.text(npcPX, npcPY - 28, layout.npcName, {
+    this.npc = this.add.sprite(npcPX, npcPY, 'npc_knight', 0).setScale(2.5).setTint(npcTint).setDepth(3);
+    this.add.text(npcPX, npcPY - 28, npcName, {
       fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ff88',
       backgroundColor: '#00000088', padding: { x: 3, y: 1 },
     }).setOrigin(0.5).setDepth(4);
@@ -185,7 +195,7 @@ class BuildingScene extends Phaser.Scene {
     this._interacted = false;
 
     // ── Hint ──
-    this._hintText = this.add.text(ox + (roomW * T) / 2, oy + roomH * T + 14, 'WASD: Move | E: Talk to ' + layout.npcName + ' | Walk to EXIT to leave', {
+    this._hintText = this.add.text(ox + (roomW * T) / 2, oy + roomH * T + 14, 'WASD: Move | E: Talk to ' + npcName + ' | Walk to EXIT to leave', {
       fontSize: '11px', fontFamily: 'monospace', color: '#888',
     }).setOrigin(0.5).setDepth(5);
 
