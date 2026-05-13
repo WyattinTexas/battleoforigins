@@ -565,11 +565,12 @@ class WorldScene extends Phaser.Scene {
     const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
     this.regionText.setText(regionNames[region] || '');
 
-    // Building + NPC interactions — read E once, share across all checks
+    // NPC + Building interactions — read E once, share across all checks
+    // NPCs check FIRST so dialogue takes priority over entering nearby buildings
     this._ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
     this._eConsumed = false;
-    this.checkBuildingProximity();
     this.checkNPCProximity();
+    this.checkBuildingProximity();
 
     // Panel hotkeys
     if (Phaser.Input.Keyboard.JustDown(this.cKey)) {
@@ -3200,7 +3201,7 @@ class WorldScene extends Phaser.Scene {
     }).setScrollFactor(0).setDepth(181);
 
     // Messages area
-    this._chatMessages = [];
+    this._chatMessages = ['Welcome to Battle of Origins!'];
     this._chatMsgTexts = [];
     this._chatMsgY = chatY + 20;
     this._chatMsgX = chatX + 8;
