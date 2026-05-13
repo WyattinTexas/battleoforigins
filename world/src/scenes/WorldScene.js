@@ -225,17 +225,31 @@ class WorldScene extends Phaser.Scene {
     // No physics collider — tile collision handled manually in update()
 
     // ── Camera ──
-    // CRITICAL: Snap camera to player position FIRST, then start smooth follow.
-    // Without this, the camera starts at (0,0) and the slow lerp takes many
-    // frames to reach the player — making the character invisible on load.
     const cam = this.cameras.main;
     cam.setBounds(0, 0, MW * T, MH * T);
     cam.setZoom(1.5);
-    // Initial snap then instant follow — startFollow handles viewport math internally
     cam.setScroll(spawnPX - cam.width / (2 * cam.zoom), spawnPY - cam.height / (2 * cam.zoom));
     cam.startFollow(this.player, true, 1, 1);
 
-    // UI elements use setScrollFactor(0) on the main camera — no separate UI camera needed
+    // ── UI Camera (zoom=1, no scroll) — all HUD elements go here ──
+    // This is the standard Phaser pattern: world camera zooms/scrolls,
+    // UI camera stays fixed at 1:1 pixel mapping to screen edges.
+    this.uiCam = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    this.uiCam.setScroll(0, 0);
+    this.uiCam.setZoom(1);
+    this._uiElements = [];
+
+    // ── DEBUG: UI position test — red bar at screen bottom, green at canvas/zoom bottom ──
+    const testW = this.scale.width;
+    const testH = this.scale.height;
+    const testZoom = cam.zoom;
+    // Test 1: raw canvas coords
+    this.add.rectangle(testW / 2, testH - 20, 200, 10, 0xff0000).setScrollFactor(0).setDepth(999);
+    // Test 2: canvas / zoom
+    this.add.rectangle(testW / (2 * testZoom), testH / testZoom - 20, 200, 10, 0x00ff00).setScrollFactor(0).setDepth(999);
+    // Test 3: fixed small values
+    this.add.rectangle(200, 50, 200, 10, 0x0000ff).setScrollFactor(0).setDepth(999);
+    console.log('[UI DEBUG] canvas:', testW, 'x', testH, 'zoom:', testZoom, 'canvas/zoom:', testW/testZoom, 'x', testH/testZoom);
 
     // ── NPCs (positions from npcs.js NPCS + HOSTILE_NPCS data) ──
     this.npcSprites = [];
