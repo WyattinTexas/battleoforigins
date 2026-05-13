@@ -25,62 +25,55 @@ class WorldScene extends Phaser.Scene {
     function hexToNum(hex) { return parseInt(hex.replace('#', ''), 16); }
 
     // ── ERW terrain tile mapping (32x32, 55 cols in terrain-grass.png) ──
-    // Solid fill frame groups from the tsx probability definitions
+    // ONLY used for Rolling Hills (grass region y>=45) and sand/path where appropriate.
+    // Frost Valley, Volcanic Isles, Dark Castle keep their flat colors — ERW is a grass pack.
+    // Use small consistent frame sets (3-4 frames) to avoid patchwork look.
     const ERW_TERRAIN = {
-      // Main dense grass fills (rows 7-8) — lush green
-      grass:      [416, 417, 418, 419, 420, 421, 422, 423, 424, 425,
-                   471, 472, 473, 474, 475, 476, 477, 478, 479, 480],
-      // Extra shade grass (rows 11-12) — darker green, good for frost/shaded areas
-      darkGrass:  [648, 649, 650, 651, 652, 653, 654, 655, 656, 657],
-      // Dirt/path fills (rows 20-21)
-      dirt:       [1131, 1132, 1133, 1134, 1135, 1136, 1137, 1138, 1139, 1140, 1141, 1142,
-                   1186, 1187, 1188, 1189, 1190, 1191, 1192, 1193, 1194, 1195, 1196, 1197],
-      // Stone floor fills (rows 42-43) — plaza / town ground
-      stone:      [2335, 2336, 2337, 2338, 2339, 2340, 2341, 2342, 2343, 2344, 2345, 2346,
-                   2390, 2391, 2392, 2393, 2394, 2395, 2396, 2397, 2398, 2399, 2400, 2401],
-      // Gravel fills (rows 44-48)
-      gravel:     [2445, 2446, 2447, 2448, 2449, 2450, 2451, 2452, 2453, 2454, 2455, 2456],
-      // Sand fills (rows 48-52)
-      sand:       [2628, 2629, 2630, 2631, 2632, 2633, 2634, 2635, 2636, 2637, 2638, 2639,
-                   2683, 2684, 2685, 2686, 2687, 2688, 2689, 2690, 2691, 2692, 2693, 2694],
+      // Dense grass — 4 visually similar frames for uniform ground
+      grass:      [416, 417, 471, 472],
+      // Lighter grass variant for hills
+      hillGrass:  [418, 419, 473, 474],
+      // Dirt path — consistent brown fills
+      dirt:       [1131, 1132, 1186, 1187],
+      // Stone floor — plaza / town center
+      stone:      [2335, 2336, 2390, 2391],
+      // Sand — beach areas
+      sand:       [2628, 2629, 2683, 2684],
     };
 
-    // Map world tile types to ERW terrain groups
-    const TILE_TO_ERW = {
-      0:  'darkGrass',  // snow → dark shade grass (frosty feel)
-      2:  'dirt',       // path
-      4:  'gravel',     // ice → gravel (light stone)
-      6:  'darkGrass',  // encounter zone
-      9:  'grass',      // grass (Rolling Hills)
-      10: 'grass',      // flowers (base is grass)
-      11: 'grass',      // rolling hill
-      14: 'gravel',     // volcanic rock → gravel
-      17: 'dirt',       // ash ground → dirt
-      18: 'dirt',       // magma crystal ground
-      19: 'stone',      // plaza
-      20: 'sand',       // sand
-      22: 'gravel',     // dark stone
-      24: 'stone',      // dark path → stone
-      26: 'stone',      // castle floor
-      27: 'gravel',     // dungeons
-    };
-
+    // Only map tile types that make sense for ERW grass pack
+    // Region-aware: check if tile is in Rolling Hills (y >= 45) or a beach/sand zone
     const hasERW = this.textures.exists('erw_terrain');
 
-    // Draw entire map — ERW terrain tiles where available, flat color fallback
+    // Draw entire map
     const mapGfx = this.add.graphics();
     for (let y = 0; y < MH; y++) {
       for (let x = 0; x < MW; x++) {
         const tileType = worldMap[y] ? worldMap[y][x] : 0;
-        const erwGroup = TILE_TO_ERW[tileType];
 
-        if (hasERW && erwGroup) {
-          // Use ERW terrain tile — deterministic pseudo-random frame per position
+        // Determine if this tile should use ERW terrain
+        let erwGroup = null;
+        if (hasERW) {
+          const isRollingHills = y >= 45;  // Rolling Hills is the southern half
+          const isBeach = tileType === 20; // sand is sand everywhere
+
+          if (isRollingHills) {
+            // Rolling Hills — this is where ERW grass belongs
+            if (tileType === 9 || tileType === 10) erwGroup = 'grass';
+            else if (tileType === 11) erwGroup = 'hillGrass';
+            else if (tileType === 2) erwGroup = 'dirt';
+            else if (tileType === 19) erwGroup = 'stone';
+          }
+          // Sand tiles anywhere
+          if (isBeach) erwGroup = 'sand';
+        }
+
+        if (erwGroup) {
           const frames = ERW_TERRAIN[erwGroup];
-          const frame = frames[(x * 7 + y * 13 + x * y) % frames.length];
+          const frame = frames[(x * 3 + y * 5) % frames.length];
           this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', frame).setDepth(0);
         } else {
-          // Fallback: flat color for unmapped tiles (water, lava, mountains, trees, buildings)
+          // Flat color — Frost Valley, Volcanic, Dark Castle, water, mountains, etc.
           const colorHex = TILE_COLORS[tileType] || '#d8e8f0';
           const color = hexToNum(colorHex);
           mapGfx.fillStyle(color, 1);
@@ -93,14 +86,14 @@ class WorldScene extends Phaser.Scene {
     // ERW terrain handles ground; these overlay objects on top
     // Frame index = row * COLS + col  (Nature=24cols, House=33cols, Desert=20cols)
     const TILE_SPRITES = {
-      10: { key: 'tiles_nature', frames: [156, 157, 158, 159, 160], depth: 1 }, // flowers — colorful blooms (nature row 6, cols 12-16)
-      1:  { key: 'tiles_nature', frames: [6, 7, 8], depth: 2 },                 // frost trees — snowy crown tops (nature row 0, cols 6-8)
-      13: { key: 'tiles_nature', frames: [3, 4, 21, 22], depth: 2 },            // warm trees — green crown tops (nature row 0)
-      21: { key: 'tiles_desert', frames: [0, 1, 2, 20], depth: 2 },             // palm trees — tropical green tops (desert row 0)
-      25: { key: 'tiles_nature', frames: [0, 1, 2], depth: 2 },                 // dark/dead trees — dark crown tops (nature row 0, cols 0-2)
-      5:  { key: 'tiles_house', frames: [12, 13, 45, 46], depth: 2 },           // buildings — house fronts with details
-      8:  { key: 'tiles_house', frames: [16, 17, 49, 50], depth: 2 },           // workshop — stone/gray building parts
-      12: { key: 'tiles_house', frames: [6, 7, 39, 40], depth: 2 },             // cantina — warm building fronts
+      10: { key: 'tiles_nature', frames: [156, 157, 158, 159, 160], depth: 1 }, // flowers — colorful blooms (row 6)
+      1:  { key: 'tiles_nature', frames: [30, 31, 32], depth: 2 },              // frost trees — snowy crowns (row 1, cols 6-8)
+      13: { key: 'tiles_nature', frames: [44, 45, 46, 47], depth: 2 },          // warm trees — green crowns (row 1, cols 20-23)
+      21: { key: 'tiles_desert', frames: [70, 71, 90, 91], depth: 2 },          // palm trees — fronds (rows 3-4)
+      25: { key: 'tiles_nature', frames: [24, 25, 120, 121], depth: 2 },        // dark/dead trees (row 1 + row 5)
+      5:  { key: 'tiles_house', frames: [12, 13, 14], depth: 2 },               // buildings — house fronts (row 0)
+      8:  { key: 'tiles_house', frames: [16, 17, 18], depth: 2 },               // workshop — stone buildings (row 0)
+      12: { key: 'tiles_house', frames: [45, 46, 47], depth: 2 },               // cantina — warm fronts (row 1)
     };
     for (let y = 0; y < MH; y++) {
       for (let x = 0; x < MW; x++) {
@@ -138,13 +131,13 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Butterflies in grass/flower areas
+    // Butterflies in Rolling Hills grass/flower areas ONLY (y >= 45)
     if (this.textures.exists('erw_butterfly1')) {
       for (let i = 0; i < 12; i++) {
         let bx, by, attempts = 0;
         do {
           bx = 5 + Math.floor(Math.random() * (MW - 10));
-          by = 5 + Math.floor(Math.random() * (MH - 10));
+          by = 46 + Math.floor(Math.random() * (MH - 50)); // Only Rolling Hills (y >= 45)
           attempts++;
         } while (attempts < 50 && worldMap[by]?.[bx] !== 9 && worldMap[by]?.[bx] !== 10 && worldMap[by]?.[bx] !== 11);
 
@@ -166,13 +159,13 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Nature particles floating in grassy areas
+    // Nature particles floating in Rolling Hills grassy areas ONLY
     if (this.textures.exists('erw_particles')) {
       for (let i = 0; i < 8; i++) {
         let px, py, attempts = 0;
         do {
           px = 5 + Math.floor(Math.random() * (MW - 10));
-          py = 5 + Math.floor(Math.random() * (MH - 10));
+          py = 46 + Math.floor(Math.random() * (MH - 50)); // Only Rolling Hills
           attempts++;
         } while (attempts < 50 && worldMap[py]?.[px] !== 9 && worldMap[py]?.[px] !== 10);
 
@@ -3406,6 +3399,9 @@ class WorldScene extends Phaser.Scene {
     this._chatInputHint = this.add.text(chatX + 8, chatY + chatH - 18, 'Press Enter to chat...', {
       fontSize: '10px', fontFamily: 'monospace', color: '#556677',
     }).setScrollFactor(0).setDepth(181);
+
+    // Render the initial welcome message
+    this.refreshChatDisplay();
 
     // Input state
     this._chatOpen = false;
