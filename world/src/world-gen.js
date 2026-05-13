@@ -64,6 +64,12 @@ function generateWorld() {
   for (let y = 3; y < 42; y++) {
     for (let x = 3; x < 56; x++) {
       if (worldMap[y][x] !== 0) continue;
+      // Keep south road corridor clear — diagonal from hub (x~17) to passage (x~29)
+      // Width of 4 tiles on each side of the road center
+      const roadCenterX = 17 + ((y - 31) / 12) * 12;
+      if (y >= 28 && Math.abs(x - roadCenterX) < 5) continue;
+      // Also keep zone passage wide near border
+      if (y >= 38 && x >= 24 && x <= 35) continue;
       const density = forestNoise(x, y, 42);
       // Dense groves where noise > 0.55, sparse edges 0.45-0.55
       if (density > 0.55) {
@@ -130,6 +136,20 @@ function generateWorld() {
     }
   }
 
+  // ── South road from Polaris Hub to Rolling Hills passage ──
+  // Carve a clear 2-wide path from hub south exit (x:16-19, y:31) down to mountain gap (x:28-31, y:43)
+  for (let y = 31; y <= 43; y++) {
+    // Gradual diagonal from hub (x~17) to passage (x~29)
+    const progress = (y - 31) / 12; // 0 to 1
+    const px = Math.floor(17 + progress * 12); // x: 17 → 29
+    for (let dx = -1; dx <= 2; dx++) {
+      const tx = px + dx;
+      if (tx >= 2 && tx < WORLD_W - 2) {
+        if (worldMap[y][tx] === 0 || worldMap[y][tx] === 1) worldMap[y][tx] = 2;
+      }
+    }
+  }
+
   // Mountain divider between Frost Valley and Rolling Hills (y: 43-44)
   for (let x = 0; x < WORLD_W; x++) { worldMap[43][x] = 7; worldMap[44][x] = 7; }
 
@@ -193,16 +213,18 @@ function generateWorld() {
     }
   }
 
-  // Warm trees — noise-based organic groves
-  for (let y = 46; y < 68; y++) {
+  // Warm trees — noise-based organic groves (start y=49 to keep zone entrance clear)
+  for (let y = 49; y < 68; y++) {
     for (let x = 3; x < WORLD_W - 3; x++) {
       if (worldMap[y][x] !== 9) continue;
+      // Skip near the passage (x: 26-33) to keep zone entrance open
+      if (y < 52 && x >= 26 && x <= 33) continue;
       const density = forestNoise(x, y, 77); // different seed than frost
-      if (density > 0.58) {
+      if (density > 0.65) { // raised from 0.58 — thinner forest
         worldMap[y][x] = 13;
-      } else if (density > 0.48) {
-        const edgeChance = (density - 0.48) / 0.1;
-        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.5) {
+      } else if (density > 0.55) { // raised from 0.48
+        const edgeChance = (density - 0.55) / 0.1;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.4) {
           worldMap[y][x] = 13;
         }
       }
@@ -484,14 +506,9 @@ function generateWorld() {
   worldMap[vhY+1][vhX+4] = 5; // outpost
   worldMap[vhY+3][vhX+2] = 5; // tavern
 
-  // Encounter zones (all of them)
-  for (const zone of ENCOUNTER_ZONES) {
-    for (let y = zone.y; y < zone.y + zone.h && y < WORLD_H - 2; y++) {
-      for (let x = zone.x; x < zone.x + zone.w && x < WORLD_W - 2; x++) {
-        if (worldMap[y][x] === 0 || worldMap[y][x] === 9 || worldMap[y][x] === 17 || worldMap[y][x] === 20 || worldMap[y][x] === 22) worldMap[y][x] = 6;
-      }
-    }
-  }
+  // Encounter zones — no longer painted as different-colored floors.
+  // NPCs already wander the world; these micro-areas aren't needed visually.
+  // Zone data still exists in ENCOUNTER_ZONES for world boss spawning logic.
 
   // Clear trees from paths and buildings
   for (let y = 0; y < WORLD_H; y++) for (let x = 0; x < WORLD_W; x++) {
