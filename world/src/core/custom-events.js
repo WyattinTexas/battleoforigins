@@ -149,8 +149,10 @@ function spawnValkinEvent(scene) {
     notify('⚠ VALKIN THE GRAND HAS APPEARED! ⚠');
   }
 
-  // Spawn Valkin NPC in the hub area
-  const hubX = 55, hubY = 30; // Near Polaris Hub
+  // Spawn Valkin near the player (3 tiles away, random direction)
+  const angle = Math.random() * Math.PI * 2;
+  const hubX = Math.floor(scene.player.x / T) + Math.round(Math.cos(angle) * 3);
+  const hubY = Math.floor(scene.player.y / T) + Math.round(Math.sin(angle) * 3);
   const valkinSprite = scene.physics.add.sprite(hubX * T, hubY * T, 'npc_elder');
   valkinSprite.setDepth(10);
   valkinSprite.setTint(0xcc66ff);
