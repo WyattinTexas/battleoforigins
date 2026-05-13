@@ -807,8 +807,8 @@ class WorldScene extends Phaser.Scene {
   // ═══════ CRAZY LOU — Valkin Raid Trigger ═══════
 
   showZaraMenu() {
-    // Check cooldown (5 minutes)
-    const cooldownMs = 5 * 60 * 1000;
+    // Check cooldown (30 seconds for testing, raise later)
+    const cooldownMs = 30 * 1000;
     const now = Date.now();
     const onCooldown = G.lastValkinSummon && (now - G.lastValkinSummon < cooldownMs);
     const cooldownLeft = onCooldown ? Math.ceil((cooldownMs - (now - G.lastValkinSummon)) / 1000) : 0;
@@ -863,11 +863,13 @@ class WorldScene extends Phaser.Scene {
   }
 
   showNotification(text) {
-    const notif = this.add.text(640, 80, text, {
-      fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
-      backgroundColor: '#000000aa', padding: { x: 12, y: 6 },
+    const zoom = this.cameras.main.zoom || 1;
+    const cx = (this.scale.width / zoom) / 2;
+    const notif = this.add.text(cx, 60, text, {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+      backgroundColor: '#000000aa', padding: { x: 10, y: 5 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(300);
-    this.tweens.add({ targets: notif, alpha: 0, y: 40, duration: 2000, delay: 1500, onComplete: () => notif.destroy() });
+    this.tweens.add({ targets: notif, alpha: 0, y: 30, duration: 2000, delay: 1500, onComplete: () => notif.destroy() });
   }
 
   // ═══════ WAVE 3: BUILDING INTERACTIONS ═══════
@@ -1987,25 +1989,26 @@ class WorldScene extends Phaser.Scene {
   // ═══════ HUD ═══════
 
   buildHUD() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const zoom = this.cameras.main.zoom || 1;
+    const W = this.scale.width / zoom;
+    const H = this.scale.height / zoom;
 
     // Top-left: player info
     this.hudPlayerText = this.add.text(10, 8, '', {
-      fontSize: '13px', fontFamily: 'monospace', color: '#ffffff',
-      backgroundColor: '#000000aa', padding: { x: 8, y: 4 },
+      fontSize: '11px', fontFamily: 'monospace', color: '#ffffff',
+      backgroundColor: '#000000aa', padding: { x: 6, y: 3 },
     }).setScrollFactor(0).setDepth(200);
 
     // Top-left below: active ghost + HP
-    this.hudTeamText = this.add.text(10, 36, '', {
-      fontSize: '12px', fontFamily: 'monospace', color: '#88ff88',
-      backgroundColor: '#000000aa', padding: { x: 8, y: 3 },
+    this.hudTeamText = this.add.text(10, 28, '', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#88ff88',
+      backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
     }).setScrollFactor(0).setDepth(200);
 
     // Top-right: time of day
     this.hudTimeText = this.add.text(W - 10, 8, '', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#aaaacc',
-      backgroundColor: '#000000aa', padding: { x: 6, y: 3 },
+      fontSize: '10px', fontFamily: 'monospace', color: '#aaaacc',
+      backgroundColor: '#000000aa', padding: { x: 5, y: 2 },
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
 
     // ── Minimap (bottom-right, zoom-corrected) ──

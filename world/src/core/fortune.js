@@ -24,11 +24,11 @@ function canGiveFortune() {
 // ── Cooldown ───────────────────────────────────────────
 function isFortuneReady() {
   if (!canGiveFortune()) return false;
-  return Date.now() - (G.fortuneCooldown || 0) >= 30000;
+  return Date.now() - (G.fortuneCooldown || 0) >= 5000;
 }
 
 function getFortuneCooldownSec() {
-  const remaining = 30000 - (Date.now() - (G.fortuneCooldown || 0));
+  const remaining = 5000 - (Date.now() - (G.fortuneCooldown || 0));
   return Math.max(0, Math.ceil(remaining / 1000));
 }
 
