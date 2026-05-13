@@ -1,767 +1,477 @@
 // ═══════════════════════════════════════════════════════════════
-// BATTLE SCENE — 100% Phaser-Native Rendering
-// No DOM overlays. All rendering via Phaser sprites, text, tweens.
-// Logic layer untouched: battle-engine, dice-engine, card-abilities,
-// willpower, resources all remain pure functions.
+// BATTLE SCENE — Testroom-quality layout (v88)
+// Phaser-native + 3D dice DOM overlay.
+// Matches the testroom visual: large active cards, sideline stacks,
+// team-colored roll buttons, willpower+resource bar, narrative status.
 // ═══════════════════════════════════════════════════════════════
 
-// ── Layout constants ──────────────────────────────────────────
-const BL = {
-  W: 1280, H: 720,
-  // Column centers
-  PX: 210,   // Player column center
-  EX: 1070,  // Enemy column center
-  CX: 640,   // Center column
-
-  // Vertical positions
-  SIDE_Y: 75,
-  FIGHT_Y: 290,
-  WP_Y: 480,
-  DICE_Y: 240,
-  RESULT_Y: 350,
-  BTN_Y: 430,
-  RES_Y: 610,
-  LOG_X: 160, LOG_Y: 640,
-
-  // Sizes
-  CARD_W: 190, CARD_H: 250,
-  SIDE_W: 100, SIDE_H: 120,
-  DIE: 44, DIE_GAP: 8,
-  BTN_W: 110, BTN_H: 38,
-};
-
-// ── Color palette (testroom2 theatre) ─────────────────────────
+// ── Colors ────────────────────────────────────────────────────
 const BC = {
-  BG1: 0x0a0612, BG2: 0x14101e,
-  GOLD: '#d4a040', GOLD_HEX: 0xd4a040,
-  RED: '#e94560', RED_HEX: 0xe94560,
-  BLUE: '#4cc9f0', BLUE_HEX: 0x4cc9f0,
-  TEXT: '#f4ecd8', TEXT_DIM: '#6a6056',
-  HP_GREEN: '#27ae60', HP_YELLOW: '#f1c40f', HP_RED: '#e74c3c',
-  SURFACE: 0x14101c, BORDER: 0x2a2230,
+  BG: 0x0e1528,
+  RED: 0xe94560, BLUE: 0x4cc9f0,
+  RED_S: '#e94560', BLUE_S: '#4cc9f0',
+  GOLD: '#d4a040', GOLD_H: 0xd4a040,
+  TEXT: '#f0e8d4', DIM: '#6a6a80', DARK: '#1a1a2e',
+  HP_G: '#27ae60', HP_Y: '#f1c40f', HP_R: '#e74c3c',
+  SURFACE: 0x161c2e, CARD_BG: 0x1a2036,
   RARITY: { common: 0x8b95a5, uncommon: 0x2ecc71, rare: 0x3498db, 'ghost-rare': 0x9b59b6, legendary: 0xf39c12 },
-  RARITY_STR: { common: '#8b95a5', uncommon: '#2ecc71', rare: '#3498db', 'ghost-rare': '#9b59b6', legendary: '#f39c12' },
+  RARITY_S: { common: '#8b95a5', uncommon: '#2ecc71', rare: '#3498db', 'ghost-rare': '#9b59b6', legendary: '#f39c12' },
 };
 
-// ── Text style presets ────────────────────────────────────────
-const TS = {
-  name:     { fontFamily: 'Cinzel, Georgia, serif', fontSize: '16px', color: BC.TEXT, align: 'center' },
-  nameSm:   { fontFamily: 'Cinzel, Georgia, serif', fontSize: '11px', color: BC.TEXT, align: 'center' },
-  hp:       { fontFamily: 'Courier New, monospace', fontSize: '13px', color: BC.HP_GREEN, align: 'center' },
-  hpSm:     { fontFamily: 'Courier New, monospace', fontSize: '10px', color: BC.HP_GREEN, align: 'center' },
-  ability:  { fontFamily: 'Georgia, serif', fontSize: '11px', color: BC.GOLD, align: 'center', wordWrap: { width: 170 } },
-  abilDesc: { fontFamily: 'Georgia, serif', fontSize: '9px', color: '#a09686', align: 'center', wordWrap: { width: 170 } },
-  dice:     { fontFamily: 'Courier New, monospace', fontSize: '13px', color: BC.TEXT, align: 'center' },
-  result:   { fontFamily: 'Cinzel, Georgia, serif', fontSize: '15px', color: BC.GOLD, align: 'center' },
-  btn:      { fontFamily: 'Cinzel, Georgia, serif', fontSize: '14px', color: '#fff', align: 'center' },
-  log:      { fontFamily: 'Courier New, monospace', fontSize: '10px', color: '#a09686', wordWrap: { width: 280 } },
-  logTitle: { fontFamily: 'Cinzel, Georgia, serif', fontSize: '9px', color: BC.GOLD, align: 'center', letterSpacing: 4 },
-  callout:  { fontFamily: 'Cinzel, Georgia, serif', fontSize: '48px', color: '#ffd700', align: 'center', stroke: '#000', strokeThickness: 4 },
-  callSub:  { fontFamily: 'Georgia, serif', fontSize: '16px', color: BC.TEXT, align: 'center' },
-  vs:       { fontFamily: 'Cinzel, Georgia, serif', fontSize: '22px', color: BC.GOLD, align: 'center' },
-  res:      { fontFamily: 'Courier New, monospace', fontSize: '11px', color: BC.TEXT, align: 'center' },
-  resIcon:  { fontFamily: 'sans-serif', fontSize: '18px', align: 'center' },
-  ko:       { fontFamily: 'Cinzel, Georgia, serif', fontSize: '14px', color: '#ff5544', align: 'center' },
-  wpCard:   { fontFamily: 'sans-serif', fontSize: '16px', align: 'center' },
-  wpLabel:  { fontFamily: 'Courier New, monospace', fontSize: '9px', color: BC.TEXT, align: 'center' },
-};
-
-// ── Helper: art path for a ghost ──────────────────────────────
-function _artPath(ghost) {
+function _artUrl(ghost) {
   let url = ghost.art || '';
-  if (!url) {
-    const slug = (ghost.name || 'unknown').toLowerCase().replace(/\s+/g, '_');
-    url = `../testroom/art/originals/${slug}.png`;
-  }
-  // Resolve relative ../testroom/ paths to absolute for Phaser loader
-  if (url.startsWith('../testroom/')) {
-    // Works from both localhost and GitHub Pages
-    url = 'https://drbango.com/testroom/' + url.slice('../testroom/'.length);
-  }
+  if (!url) { const s = (ghost.name||'unknown').toLowerCase().replace(/\s+/g,'_'); url = `../testroom/art/originals/${s}.png`; }
+  if (url.startsWith('../testroom/')) url = 'https://drbango.com/testroom/' + url.slice('../testroom/'.length);
   return url;
 }
-
-function _hpColor(hp, max) {
-  const pct = hp / max;
-  if (pct > 0.5) return BC.HP_GREEN;
-  if (pct > 0.25) return BC.HP_YELLOW;
-  return BC.HP_RED;
-}
-
-function _hpHex(hp, max) {
-  const pct = hp / max;
-  if (pct > 0.5) return 0x27ae60;
-  if (pct > 0.25) return 0xf1c40f;
-  return 0xe74c3c;
-}
-
-function _rarityHex(r) { return BC.RARITY[(r || 'common').toLowerCase()] || BC.RARITY.common; }
-function _rarityStr(r) { return BC.RARITY_STR[(r || 'common').toLowerCase()] || BC.RARITY_STR.common; }
-
-// ── Pip positions for dice (3x3 grid within die) ──────────────
-const PIP_POS = {
-  1: [[0.5, 0.5]],
-  2: [[0.2, 0.2], [0.8, 0.8]],
-  3: [[0.2, 0.2], [0.5, 0.5], [0.8, 0.8]],
-  4: [[0.2, 0.2], [0.8, 0.2], [0.2, 0.8], [0.8, 0.8]],
-  5: [[0.2, 0.2], [0.8, 0.2], [0.5, 0.5], [0.2, 0.8], [0.8, 0.8]],
-  6: [[0.2, 0.2], [0.8, 0.2], [0.2, 0.5], [0.8, 0.5], [0.2, 0.8], [0.8, 0.8]],
-};
+function _hpCol(hp,mx) { const p=hp/mx; return p>0.5?BC.HP_G:p>0.25?BC.HP_Y:BC.HP_R; }
+function _hpHex(hp,mx) { const p=hp/mx; return p>0.5?0x27ae60:p>0.25?0xf1c40f:0xe74c3c; }
+function _rarH(r) { return BC.RARITY[(r||'common').toLowerCase()]||BC.RARITY.common; }
+function _rarS(r) { return BC.RARITY_S[(r||'common').toLowerCase()]||BC.RARITY_S.common; }
 
 // ═══════════════════════════════════════════════════════════════
-//  THE SCENE
-// ═══════════════════════════════════════════════════════════════
-
 class BattleScene extends Phaser.Scene {
   constructor() { super('BattleScene'); }
-
-  init(data) {
-    this.battleData = data || {};
-  }
+  init(data) { this.battleData = data || {}; }
 
   create() {
-    // Validate battle state
     if (!B) { this._exit(false); return; }
-
-    // Apply buff/fortune effects
     if (typeof applyBuffsToBattle === 'function') applyBuffsToBattle();
     if (typeof applyFortuneToBattle === 'function') applyFortuneToBattle();
 
-    // Team references
-    this._pt = 'red';
-    this._et = 'blue';
-    const pTeam = B[this._pt];
-    const eTeam = B[this._et];
-    if (!pTeam || !eTeam) { this._exit(false); return; }
+    this._pt = 'red'; this._et = 'blue';
+    const pT = B[this._pt], eT = B[this._et];
+    if (!pT || !eT) { this._exit(false); return; }
 
-    this.pg = activeGhost(pTeam);
-    this.eg = activeGhost(eTeam);
-    if (!this.pg || !this.eg) { this._exit(false); return; }
-
-    B.battleStarted = true;
-    this.roundNum = 0;
-    this._rolling = false;
-    this._raidId = this.battleData.raidId || null;
-
-    // Hide world HUD during battle
+    // Hide world HUD
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.style.display = 'none';
 
-    // Enrich ghosts with card data
-    const enrichGhost = (g) => {
-      if (typeof ALL_CARDS !== 'undefined') {
-        const card = ALL_CARDS.find(c => c.id === g.id);
-        if (card) {
-          if (!g.art) g.art = card.art;
-          if (!g.abilityDesc && card.desc) g.abilityDesc = card.desc;
-          if (!g.ability && card.ability) g.ability = card.ability;
-          if (!g.rarity && card.rarity) g.rarity = card.rarity;
-        }
-      }
-      return g;
-    };
-    pTeam.ghosts.forEach(enrichGhost);
-    eTeam.ghosts.forEach(enrichGhost);
+    // Enrich ghosts
+    const enrich = g => { if (typeof ALL_CARDS!=='undefined') { const c=ALL_CARDS.find(x=>x.id===g.id); if(c){if(!g.art)g.art=c.art;if(!g.abilityDesc&&c.desc)g.abilityDesc=c.desc;if(!g.ability&&c.ability)g.ability=c.ability;if(!g.rarity&&c.rarity)g.rarity=c.rarity;}} return g; };
+    pT.ghosts.forEach(enrich); eT.ghosts.forEach(enrich);
 
-    // Log state
+    this.pg = activeGhost(pT); this.eg = activeGhost(eT);
+    if (!this.pg || !this.eg) { this._exit(false); return; }
+
+    B.battleStarted = true; this.roundNum = 0; this._rolling = false;
+    this._raidId = this.battleData.raidId || null;
     this._logEntries = [];
 
-    // Load card art dynamically, then build stage
     this._loadArt(() => this._buildStage());
   }
 
-  // ── Dynamic art loading ────────────────────────────────────
-  _loadArt(onComplete) {
-    const allGhosts = [...B[this._pt].ghosts, ...B[this._et].ghosts];
-    let toLoad = 0;
-    allGhosts.forEach(g => {
-      const key = 'ghost_' + g.id;
-      if (!this.textures.exists(key)) {
-        const url = _artPath(g);
-        if (url) { this.load.image(key, url); toLoad++; }
-      }
-    });
-    if (toLoad > 0) {
-      this.load.once('complete', onComplete);
-      this.load.on('loaderror', (file) => {
-        // Silently skip failed loads — we'll show placeholder
-      });
-      this.load.start();
-    } else {
-      onComplete();
-    }
+  _loadArt(cb) {
+    const all = [...B[this._pt].ghosts, ...B[this._et].ghosts];
+    let n = 0;
+    all.forEach(g => { const k='ghost_'+g.id; if(!this.textures.exists(k)){const u=_artUrl(g);if(u){this.load.image(k,u);n++;}} });
+    if (n > 0) { this.load.on('loaderror',()=>{}); this.load.once('complete',cb); this.load.start(); }
+    else cb();
   }
 
   // ═══════════════════════════════════════════════════════════
-  //  BUILD THE STAGE
+  //  BUILD THE STAGE — Testroom layout
   // ═══════════════════════════════════════════════════════════
-
   _buildStage() {
-    // ── Responsive: read actual canvas dimensions ──
     const W = this.cameras.main.width;
     const H = this.cameras.main.height;
-    // Override layout constants for this battle based on actual size
-    this._W = W;
-    this._H = H;
-    this._PX = Math.round(W * 0.17);
-    this._EX = Math.round(W * 0.83);
-    this._CX = Math.round(W * 0.5);
-    this._FIGHT_Y = Math.round(H * 0.40);
-    this._SIDE_Y = Math.round(H * 0.11);
-    this._WP_Y = Math.round(H * 0.68);
-    this._RESULT_Y = Math.round(H * 0.50);
-    this._BTN_Y = Math.round(H * 0.60);
-    this._RES_Y = Math.round(H * 0.85);
-    this._LOG_X = Math.round(W * 0.13);
-    this._LOG_Y = Math.round(H * 0.90);
+    this._W = W; this._H = H;
 
-    // ── Background ──
+    // Background
     const bg = this.add.graphics();
-    bg.fillGradientStyle(BC.BG1, BC.BG1, BC.BG2, BC.BG2, 1);
+    bg.fillStyle(BC.BG, 1);
     bg.fillRect(0, 0, W, H);
+    // Subtle radial glow behind each fighter
+    const glow = this.add.graphics();
+    glow.fillStyle(BC.RED, 0.06);
+    glow.fillCircle(W * 0.30, H * 0.40, 200);
+    glow.fillStyle(BC.BLUE, 0.06);
+    glow.fillCircle(W * 0.70, H * 0.40, 200);
 
-    // Subtle vignette overlay
-    const vig = this.add.graphics();
-    vig.fillStyle(0x000000, 0.3);
-    vig.fillRect(0, 0, W, 40);
-    vig.fillRect(0, H - 40, W, 40);
+    // ── Active fighters (large cards) ──
+    this._pActive = this._buildActiveCard(this.pg, 'red', W * 0.28, H * 0.38);
+    this._eActive = this._buildActiveCard(this.eg, 'blue', W * 0.70, H * 0.38);
 
-    // Gold divider lines
-    const lx1 = Math.round(W * 0.32), lx2 = Math.round(W * 0.68);
-    const lines = this.add.graphics();
-    lines.lineStyle(1, BC.GOLD_HEX, 0.3);
-    lines.lineBetween(lx1, 30, lx1, H - 100);
-    lines.lineBetween(lx2, 30, lx2, H - 100);
-    lines.lineBetween(30, H - 100, W - 30, H - 100);
+    // ── Sideline stacks ──
+    this._pSideline = this._buildSidelineStack('red', W * 0.07, H * 0.15);
+    this._eSideline = this._buildSidelineStack('blue', W * 0.93, H * 0.15);
 
-    // VS text
-    this.add.text(this._CX, Math.round(H * 0.06), 'VS', TS.vs).setOrigin(0.5);
+    // ── Dice area (3D DOM overlay) ──
+    if (typeof Dice3D !== 'undefined') Dice3D.init();
 
-    // ── Build elements ──
-    this._pCard = this._buildFighterCard(this.pg, 'player', this._PX, this._FIGHT_Y);
-    this._eCard = this._buildFighterCard(this.eg, 'enemy', this._EX, this._FIGHT_Y);
-    this._pSideline = this._buildSidelineRow('player', this._PX, this._SIDE_Y);
-    this._eSideline = this._buildSidelineRow('enemy', this._EX, this._SIDE_Y);
+    // ── Willpower + Resources ──
+    this._pWPArea = this._buildWPArea('red', W * 0.18, H * 0.82);
+    this._eWPArea = this._buildWPArea('blue', W * 0.82, H * 0.82);
 
-    this._buildDiceArea();
-    this._buildButtons();
-    this._buildWillpowerDisplays();
-    this._buildResourceBar();
-    this._buildBattleLog();
+    // ── Roll buttons ──
+    this._redBtn = this._buildRollBtn(W * 0.15, H * 0.93, 'RED ROLL', BC.RED, () => this.doRound());
+    this._blueBtn = this._buildRollBtn(W * 0.85, H * 0.93, 'BLUE ROLL', BC.BLUE, null); // enemy auto-rolls
+
+    // ── Status bar (narrative text at bottom center) ──
+    this._statusBar = this.add.text(W * 0.5, H * 0.97, '', {
+      fontFamily: 'Georgia, serif', fontSize: '13px', color: BC.GOLD,
+      align: 'center', backgroundColor: '#0e152888', padding: { x: 12, y: 4 },
+    }).setOrigin(0.5).setDepth(100);
+
+    // ── Close button (top right) ──
+    const closeBtn = this.add.text(W - 20, 10, '✕', {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#666',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setDepth(100);
+    closeBtn.on('pointerdown', () => this._exit(false));
 
     // Fire entry effects
     if (typeof triggerEntry === 'function') {
       const pC = triggerEntry(B[this._pt], this._pt);
       const eC = triggerEntry(B[this._et], this._et);
-      [...(pC || []), ...(eC || [])].forEach(c => {
-        if (c && c.desc) this._addLog(c.desc, 'ability');
-      });
+      [...(pC||[]),...(eC||[])].forEach(c => { if(c&&c.desc) this._addLog(c.desc,'ability'); });
     }
 
-    // Opening log
-    const header = this.battleData.trainerName
-      ? `${this.battleData.trainerName} challenges you!`
-      : `Wild ${this.eg.name} appears!`;
-    this._addLog(header, 'system');
+    const header = this.battleData.trainerName ? `${this.battleData.trainerName} challenges you!` : `Wild ${this.eg.name} appears!`;
+    this._setStatus(header);
 
-    // Fade in
-    this.cameras.main.fadeIn(300, 10, 6, 18);
+    this.cameras.main.fadeIn(300, 14, 21, 40);
   }
 
-  // ── Fighter Card ───────────────────────────────────────────
-  _buildFighterCard(ghost, side, cx, cy) {
-    const container = this.add.container(cx, cy);
-    const w = BL.CARD_W, h = BL.CARD_H;
-    const rarHex = _rarityHex(ghost.rarity);
-    const teamHex = side === 'player' ? BC.RED_HEX : BC.BLUE_HEX;
+  // ── ACTIVE FIGHTER CARD (large) ─────────────────────────
+  _buildActiveCard(ghost, team, cx, cy) {
+    const c = this.add.container(cx, cy);
+    const isRed = team === 'red';
+    const tCol = isRed ? BC.RED : BC.BLUE;
+    const tStr = isRed ? BC.RED_S : BC.BLUE_S;
+
+    // Card dimensions (responsive)
+    const cw = Math.min(this._W * 0.22, 280);
+    const ch = cw * 1.35;
 
     // Card background
-    const cardBg = this.add.graphics();
-    cardBg.fillStyle(BC.SURFACE, 0.9);
-    cardBg.fillRoundedRect(-w/2, -h/2, w, h, 8);
-    cardBg.lineStyle(2, teamHex, 0.8);
-    cardBg.strokeRoundedRect(-w/2, -h/2, w, h, 8);
-    container.add(cardBg);
+    const bg = this.add.graphics();
+    bg.fillStyle(BC.CARD_BG, 0.95);
+    bg.fillRoundedRect(-cw/2, -ch/2, cw, ch, 10);
+    bg.lineStyle(2, tCol, 0.9);
+    bg.strokeRoundedRect(-cw/2, -ch/2, cw, ch, 10);
+    c.add(bg);
 
-    // Rarity accent line at top
-    const rarLine = this.add.graphics();
-    rarLine.fillStyle(rarHex, 1);
-    rarLine.fillRect(-w/2 + 4, -h/2 + 2, w - 8, 3);
-    container.add(rarLine);
+    // Name at top
+    c.add(this.add.text(0, -ch/2 + 16, ghost.name, {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '17px', color: BC.TEXT, fontStyle: 'bold',
+    }).setOrigin(0.5));
 
-    // Art image
+    // Art (fills most of the card)
+    const artH = ch * 0.55;
+    const artY = -ch/2 + 38 + artH/2;
     const artKey = 'ghost_' + ghost.id;
-    const artSize = 140;
     if (this.textures.exists(artKey)) {
-      const art = this.add.image(0, -h/2 + 12 + artSize/2, artKey);
-      art.setDisplaySize(artSize, artSize);
-      container.add(art);
+      const art = this.add.image(0, artY, artKey);
+      art.setDisplaySize(cw - 16, artH);
+      c.add(art);
     } else {
-      // Placeholder
       const ph = this.add.graphics();
-      ph.fillStyle(rarHex, 0.2);
-      ph.fillRect(-artSize/2, -h/2 + 12, artSize, artSize);
-      container.add(ph);
-      const phText = this.add.text(0, -h/2 + 12 + artSize/2, ghost.name.substring(0, 6).toUpperCase(),
-        { fontFamily: 'Cinzel, serif', fontSize: '18px', color: _rarityStr(ghost.rarity) }).setOrigin(0.5);
-      container.add(phText);
+      ph.fillStyle(_rarH(ghost.rarity), 0.15);
+      ph.fillRect(-(cw-16)/2, artY - artH/2, cw-16, artH);
+      c.add(ph);
+      c.add(this.add.text(0, artY, ghost.name.substring(0,8).toUpperCase(), {
+        fontFamily: 'Cinzel, serif', fontSize: '22px', color: _rarS(ghost.rarity),
+      }).setOrigin(0.5));
     }
 
-    // Rarity badge
-    const rarBadge = this.add.text(-w/2 + 12, -h/2 + 16, (ghost.rarity || 'common').toUpperCase(),
-      { fontFamily: 'Courier New, monospace', fontSize: '8px', color: _rarityStr(ghost.rarity),
-        backgroundColor: '#0a0612cc', padding: { x: 3, y: 1 } }).setOrigin(0, 0);
-    container.add(rarBadge);
+    // Ability badge
+    const badgeY = artY + artH/2 + 18;
+    const badgeBg = this.add.graphics();
+    badgeBg.fillStyle(tCol, 0.9);
+    badgeBg.fillRoundedRect(-50, badgeY - 10, 100, 20, 4);
+    c.add(badgeBg);
+    c.add(this.add.text(0, badgeY, (ghost.ability || '').toUpperCase(), {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: '#fff', fontStyle: 'bold',
+    }).setOrigin(0.5));
 
-    // Name
-    const nameText = this.add.text(0, 38, ghost.name, TS.name).setOrigin(0.5);
-    container.add(nameText);
+    // Ability description
+    c.add(this.add.text(0, badgeY + 22, ghost.abilityDesc || '', {
+      fontFamily: 'Georgia, serif', fontSize: '10px', color: '#aab0c0',
+      align: 'center', wordWrap: { width: cw - 24 }, lineSpacing: 2,
+    }).setOrigin(0.5, 0));
 
-    // HP bar background
-    const hpBarW = w - 30, hpBarH = 10, hpBarY = 58;
+    // HP bar at bottom
+    const hpY = ch/2 - 20;
+    const hpW = cw - 30;
     const hpBg = this.add.graphics();
-    hpBg.fillStyle(0x1a1a1a, 1);
-    hpBg.fillRoundedRect(-hpBarW/2, hpBarY, hpBarW, hpBarH, 4);
-    container.add(hpBg);
-
-    // HP bar fill
-    const pct = Math.max(0, ghost.hp / ghost.maxHp);
+    hpBg.fillStyle(0x0a0a14, 1);
+    hpBg.fillRoundedRect(-hpW/2, hpY - 4, hpW, 8, 3);
+    c.add(hpBg);
+    const pct = Math.max(0, ghost.hp / (ghost.maxHp || 1));
     const hpFill = this.add.graphics();
     hpFill.fillStyle(_hpHex(ghost.hp, ghost.maxHp), 1);
-    hpFill.fillRoundedRect(-hpBarW/2, hpBarY, hpBarW * pct, hpBarH, 4);
-    container.add(hpFill);
+    hpFill.fillRoundedRect(-hpW/2, hpY - 4, hpW * pct, 8, 3);
+    c.add(hpFill);
 
-    // HP text
-    const hpText = this.add.text(0, hpBarY + hpBarH + 6,
-      `${ghost.hp} / ${ghost.maxHp}`,
-      { ...TS.hp, color: _hpColor(ghost.hp, ghost.maxHp) }).setOrigin(0.5);
-    container.add(hpText);
+    // HP badge (bottom right of card)
+    c.add(this.add.text(cw/2 - 8, hpY - 14, `♥${ghost.hp}`, {
+      fontFamily: 'Courier New, monospace', fontSize: '11px', color: _hpCol(ghost.hp, ghost.maxHp),
+      backgroundColor: '#0a0a14cc', padding: { x: 3, y: 1 },
+    }).setOrigin(1, 0.5));
 
-    // Ability
-    const abilText = this.add.text(0, 90, ghost.ability || '',
-      TS.ability).setOrigin(0.5);
-    container.add(abilText);
-
-    const descText = this.add.text(0, 108, ghost.abilityDesc || '',
-      TS.abilDesc).setOrigin(0.5);
-    container.add(descText);
-
-    // Store refs for updates
-    container._refs = { hpFill, hpText, hpBg, nameText, abilText, descText, rarBadge, hpBarW, hpBarH, hpBarY };
-    return container;
+    c._refs = { hpFill, hpW, hpY, ghost };
+    return c;
   }
 
-  // ── Update a fighter card from ghost state ─────────────────
-  _updateFighterCard(container, ghost) {
-    if (!container || !container._refs) return;
-    const r = container._refs;
+  _updateActiveCard(c, ghost) {
+    if (!c || !c._refs) return;
+    const r = c._refs;
     const pct = Math.max(0, ghost.hp / (ghost.maxHp || 1));
-
-    // Animate HP bar
     r.hpFill.clear();
     r.hpFill.fillStyle(_hpHex(ghost.hp, ghost.maxHp), 1);
-    r.hpFill.fillRoundedRect(-r.hpBarW/2, r.hpBarY, r.hpBarW * pct, r.hpBarH, 4);
-
-    r.hpText.setText(`${Math.max(0, ghost.hp)} / ${ghost.maxHp}`);
-    r.hpText.setColor(_hpColor(ghost.hp, ghost.maxHp));
-    r.nameText.setText(ghost.name);
-    r.abilText.setText(ghost.ability || '');
-    r.descText.setText(ghost.abilityDesc || '');
+    r.hpFill.fillRoundedRect(-r.hpW/2, r.hpY - 4, r.hpW * pct, 8, 3);
   }
 
-  // ── Sideline Row ───────────────────────────────────────────
-  _buildSidelineRow(side, cx, cy) {
-    const teamKey = side === 'player' ? this._pt : this._et;
-    const team = B[teamKey];
-    const container = this.add.container(cx, cy);
-
-    const bench = team.ghosts.filter((_, i) => i !== team.activeIdx);
-    const startX = -(bench.length - 1) * (BL.SIDE_W + 10) / 2;
+  // ── SIDELINE STACK (vertical, 2 cards) ──────────────────
+  _buildSidelineStack(team, cx, topY) {
+    const tKey = team === 'red' ? this._pt : this._et;
+    const t = B[tKey];
+    const c = this.add.container(cx, topY);
+    const bench = t.ghosts.filter((_, i) => i !== t.activeIdx);
+    const cw = Math.min(this._W * 0.12, 150);
+    const ch = cw * 1.55;
+    const gap = 12;
 
     bench.forEach((g, i) => {
-      const sx = startX + i * (BL.SIDE_W + 10);
-      const card = this._buildSidelineCard(g, side, sx, 0);
-      container.add(card);
+      const y = i * (ch + gap);
+      const card = this._buildSidelineCard(g, team, 0, y, cw, ch);
+      c.add(card);
     });
-
-    container._side = side;
-    return container;
+    c._team = team;
+    return c;
   }
 
-  _buildSidelineCard(ghost, side, x, y) {
-    const container = this.add.container(x, y);
-    const w = BL.SIDE_W, h = BL.SIDE_H;
-    const teamHex = side === 'player' ? BC.RED_HEX : BC.BLUE_HEX;
+  _buildSidelineCard(ghost, team, x, y, cw, ch) {
+    const c = this.add.container(x, y);
+    const tCol = team === 'red' ? BC.RED : BC.BLUE;
     const isKO = ghost.ko || ghost.hp <= 0;
 
     // Background
     const bg = this.add.graphics();
-    bg.fillStyle(BC.SURFACE, isKO ? 0.4 : 0.85);
-    bg.fillRoundedRect(-w/2, -h/2, w, h, 6);
-    bg.lineStyle(1, isKO ? 0x333333 : teamHex, 0.6);
-    bg.strokeRoundedRect(-w/2, -h/2, w, h, 6);
-    container.add(bg);
+    bg.fillStyle(BC.CARD_BG, isKO ? 0.4 : 0.85);
+    bg.fillRoundedRect(-cw/2, 0, cw, ch, 6);
+    bg.lineStyle(1, isKO ? 0x333344 : tCol, 0.5);
+    bg.strokeRoundedRect(-cw/2, 0, cw, ch, 6);
+    c.add(bg);
 
-    // Rarity dot
-    const rarDot = this.add.graphics();
-    rarDot.fillStyle(_rarityHex(ghost.rarity), 1);
-    rarDot.fillCircle(-w/2 + 10, -h/2 + 10, 4);
-    container.add(rarDot);
-
-    // Art (maintain aspect ratio, crop to fit)
+    // Art
+    const artH = ch * 0.45;
     const artKey = 'ghost_' + ghost.id;
-    const artSize = w - 14;
     if (this.textures.exists(artKey)) {
-      const art = this.add.image(0, -14, artKey);
-      // Scale to fill width while keeping square aspect
-      art.setDisplaySize(artSize, artSize);
-      if (isKO) art.setTint(0x333333);
-      container.add(art);
+      const art = this.add.image(0, artH/2 + 4, artKey);
+      art.setDisplaySize(cw - 8, artH);
+      if (isKO) art.setTint(0x333344);
+      c.add(art);
     }
 
     // Name
-    const name = this.add.text(0, 25, ghost.name, TS.nameSm).setOrigin(0.5);
-    if (isKO) name.setAlpha(0.4);
-    container.add(name);
+    c.add(this.add.text(0, artH + 10, ghost.name, {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: isKO ? '#555' : BC.TEXT,
+    }).setOrigin(0.5));
 
-    // HP pill
-    const hpStr = isKO ? 'KO' : `♥ ${ghost.hp}/${ghost.maxHp}`;
-    const hpCol = isKO ? BC.HP_RED : _hpColor(ghost.hp, ghost.maxHp);
-    const hp = this.add.text(0, 42, hpStr, { ...TS.hpSm, color: hpCol }).setOrigin(0.5);
-    container.add(hp);
+    // Ability badge
+    const abilY = artH + 24;
+    const abBg = this.add.graphics();
+    abBg.fillStyle(tCol, isKO ? 0.3 : 0.7);
+    abBg.fillRoundedRect(-cw/2 + 6, abilY - 6, cw - 12, 14, 3);
+    c.add(abBg);
+    c.add(this.add.text(0, abilY + 1, (ghost.ability || '').toUpperCase(), {
+      fontFamily: 'Cinzel, serif', fontSize: '8px', color: '#fff', fontStyle: 'bold',
+    }).setOrigin(0.5));
 
-    if (isKO) container.setAlpha(0.5);
+    // Ability desc
+    c.add(this.add.text(0, abilY + 16, ghost.abilityDesc || '', {
+      fontFamily: 'Georgia, serif', fontSize: '8px', color: '#7a7a90',
+      wordWrap: { width: cw - 14 }, align: 'center', lineSpacing: 1,
+    }).setOrigin(0.5, 0));
 
-    return container;
+    // HP badge (bottom right)
+    const hpStr = isKO ? 'KO' : `♥${ghost.hp}`;
+    c.add(this.add.text(cw/2 - 6, ch - 8, hpStr, {
+      fontFamily: 'Courier New, monospace', fontSize: '10px',
+      color: isKO ? BC.HP_R : _hpCol(ghost.hp, ghost.maxHp),
+      backgroundColor: '#0a0a14cc', padding: { x: 3, y: 1 },
+    }).setOrigin(1, 1));
+
+    if (isKO) c.setAlpha(0.5);
+    return c;
   }
 
-  // ── Rebuild sideline (after swap) ──────────────────────────
-  _rebuildSideline(side) {
-    const old = side === 'player' ? this._pSideline : this._eSideline;
+  _rebuildSideline(team) {
+    const old = team === 'red' ? this._pSideline : this._eSideline;
     if (old) old.destroy();
-    const cx = side === 'player' ? (this._PX||BL.PX) : (this._EX||BL.EX);
-    const newRow = this._buildSidelineRow(side, cx, (this._SIDE_Y||BL.SIDE_Y));
-    if (side === 'player') this._pSideline = newRow;
-    else this._eSideline = newRow;
+    const cx = team === 'red' ? this._W * 0.07 : this._W * 0.93;
+    const s = this._buildSidelineStack(team, cx, this._H * 0.15);
+    if (team === 'red') this._pSideline = s; else this._eSideline = s;
   }
 
-  // ── Dice Area (3D DOM overlay + Phaser result text) ─────
-  _buildDiceArea() {
-    // Initialize 3D dice system
-    if (typeof Dice3D !== 'undefined') Dice3D.init();
+  // ── WILLPOWER + RESOURCES AREA ──────────────────────────
+  _buildWPArea(team, cx, cy) {
+    const c = this.add.container(cx, cy);
+    const tKey = team === 'red' ? this._pt : this._et;
+    const t = B[tKey];
+    const ghost = activeGhost(t);
+    if (!ghost) return c;
 
-    // Result texts (Phaser, below the 3D arena)
-    this._pResultText = this.add.text((this._CX||BL.CX) - 120, (this._RESULT_Y||BL.RESULT_Y), '', TS.result).setOrigin(0.5);
-    this._eResultText = this.add.text((this._CX||BL.CX) + 120, (this._RESULT_Y||BL.RESULT_Y), '', TS.result).setOrigin(0.5);
-  }
-
-  // ── Show dice (3D physics roll → settle to values) ─────────
-  _showDice(side, values, isWinner) {
-    // 3D dice handle their own display after reveal
-    // Just update highlights when called with final winner state
-    if (typeof Dice3D !== 'undefined' && isWinner !== false) {
-      const team = side === 'player' ? 'red' : 'blue';
-      if (isWinner) {
-        const res = typeof classify === 'function' ? classify(values) : null;
-        if (res) Dice3D.highlightWin(team, res);
-      }
+    // Willpower card icon
+    const topCard = ghost.willpower && ghost.willpower.length > 0 ? (typeof wpCardById === 'function' ? wpCardById(ghost.willpower[0]) : null) : null;
+    const wpIcon = this.add.graphics();
+    wpIcon.fillStyle(0x1a2040, 0.9);
+    wpIcon.fillRoundedRect(-22, -28, 44, 56, 6);
+    wpIcon.lineStyle(1, BC.GOLD_H, 0.6);
+    wpIcon.strokeRoundedRect(-22, -28, 44, 56, 6);
+    c.add(wpIcon);
+    c.add(this.add.text(0, -4, topCard ? topCard.emoji : '♥', {
+      fontFamily: 'sans-serif', fontSize: '22px',
+    }).setOrigin(0.5));
+    if (topCard) {
+      c.add(this.add.text(0, 18, topCard.name.toUpperCase(), {
+        fontFamily: 'Courier New, monospace', fontSize: '6px', color: BC.GOLD,
+      }).setOrigin(0.5));
     }
-  }
 
-  // ── Dice tumble → reveal animation ─────────────────────────
-  _tumbleDice(pValues, eValues, callback) {
-    if (typeof Dice3D !== 'undefined') {
-      // Clear previous dice
-      Dice3D.clear('red');
-      Dice3D.clear('blue');
+    // WP count
+    c.add(this.add.text(40, -8, `${ghost.willpower ? ghost.willpower.length : ghost.hp}`, {
+      fontFamily: 'Cinzel, serif', fontSize: '20px', color: BC.TEXT, fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+    c.add(this.add.text(40, 8, 'WILLPOWER', {
+      fontFamily: 'Courier New, monospace', fontSize: '8px', color: BC.DIM,
+    }).setOrigin(0, 0.5));
+    c.add(this.add.text(40, 20, `cards: ${t.wpDeck ? t.wpDeck.length : 0} · discard: ${t.wpDiscard ? t.wpDiscard.length : 0}`, {
+      fontFamily: 'Courier New, monospace', fontSize: '7px', color: '#4a4a60',
+    }).setOrigin(0, 0.5));
 
-      // Launch 3D physics roll
-      Dice3D.showRolling('red', pValues.length);
-      Dice3D.showRolling('blue', eValues.length);
-
-      // After physics play (800ms), reveal to final values
-      this.time.delayedCall(800, () => {
-        let revealed = 0;
-        const checkDone = () => { revealed++; if (revealed >= 2 && callback) callback(); };
-        Dice3D.revealDice('red', pValues, checkDone);
-        Dice3D.revealDice('blue', eValues, checkDone);
-      });
-    } else {
-      // Fallback: immediate callback
-      if (callback) this.time.delayedCall(500, callback);
-    }
-  }
-
-  // ── Show roll result text ──────────────────────────────────
-  _showRollResult(side, text, isWinner) {
-    const txt = side === 'player' ? this._pResultText : this._eResultText;
-    txt.setText(isWinner ? text + ' \u2605' : text);
-    txt.setColor(isWinner ? '#ffd700' : '#6a6056');
-
-    txt.setScale(0.5);
-    this.tweens.add({
-      targets: txt,
-      scaleX: 1, scaleY: 1,
-      duration: 300,
-      ease: 'Back.easeOut'
+    // Resources below
+    const res = t.resources || {};
+    const RDISPLAY = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
+    let rx = -20;
+    Object.entries(RDISPLAY).forEach(([key, cfg]) => {
+      const count = res[key] || 0;
+      if (count <= 0) return;
+      c.add(this.add.text(rx, 38, `${cfg.emoji}${count}`, {
+        fontFamily: 'sans-serif', fontSize: '13px', color: cfg.color || BC.TEXT,
+        backgroundColor: '#0a0a14aa', padding: { x: 3, y: 1 },
+      }).setOrigin(0, 0.5));
+      rx += 40;
     });
-  }
 
-  // ── Buttons ────────────────────────────────────────────────
-  _buildButtons() {
-    // Fight button
-    this._fightBtn = this._makeButton((this._CX||BL.CX) - 60, (this._BTN_Y||BL.BTN_Y), 'FIGHT', BC.RED_HEX, () => this.doRound());
-    // Run button
-    this._runBtn = this._makeButton((this._CX||BL.CX) + 60, (this._BTN_Y||BL.BTN_Y), 'RUN', 0x444444, () => this._exit(false));
-  }
-
-  _makeButton(x, y, label, color, onClick) {
-    const container = this.add.container(x, y);
-
-    const bg = this.add.graphics();
-    bg.fillStyle(color, 0.9);
-    bg.fillRoundedRect(-BL.BTN_W/2, -BL.BTN_H/2, BL.BTN_W, BL.BTN_H, 6);
-    container.add(bg);
-
-    const text = this.add.text(0, 0, label, TS.btn).setOrigin(0.5);
-    container.add(text);
-
-    // Hit area
-    const hitZone = this.add.zone(0, 0, BL.BTN_W, BL.BTN_H).setOrigin(0.5);
-    hitZone.setInteractive({ useHandCursor: true });
-    hitZone.on('pointerdown', onClick);
-    hitZone.on('pointerover', () => container.setScale(1.05));
-    hitZone.on('pointerout', () => container.setScale(1));
-    container.add(hitZone);
-
-    container._bg = bg;
-    container._text = text;
-    container._zone = hitZone;
-    container._color = color;
-    return container;
-  }
-
-  _setFightEnabled(enabled) {
-    if (!this._fightBtn) return;
-    this._fightBtn.setAlpha(enabled ? 1 : 0.4);
-    this._fightBtn._zone.input.enabled = enabled;
-  }
-
-  // ── Willpower Displays ─────────────────────────────────────
-  _buildWillpowerDisplays() {
-    this._pWP = this._buildWPStack('player', (this._PX||BL.PX), (this._WP_Y||BL.WP_Y));
-    this._eWP = this._buildWPStack('enemy', (this._EX||BL.EX), (this._WP_Y||BL.WP_Y));
-  }
-
-  _buildWPStack(side, cx, cy) {
-    const container = this.add.container(cx, cy);
-    const teamKey = side === 'player' ? this._pt : this._et;
-    const team = B[teamKey];
-    const ghost = activeGhost(team);
-    if (!ghost || !ghost.willpower) return container;
-
-    // Stack visual: show up to 6 cards offset
-    const maxShow = Math.min(ghost.willpower.length, 6);
-    for (let i = 0; i < maxShow; i++) {
-      const cardId = ghost.willpower[i];
-      const wpCard = typeof wpCardById === 'function' ? wpCardById(cardId) : null;
-      const isTop = (i === 0);
-
-      const cw = 32, ch = 40;
-      const ox = i * 3, oy = i * -3;
-
-      const cardGfx = this.add.graphics();
-      cardGfx.fillStyle(isTop ? 0x2a1828 : 0x1a1420, 0.9);
-      cardGfx.fillRoundedRect(-cw/2 + ox, -ch/2 + oy, cw, ch, 4);
-      cardGfx.lineStyle(1, isTop ? BC.GOLD_HEX : 0x333333, 0.8);
-      cardGfx.strokeRoundedRect(-cw/2 + ox, -ch/2 + oy, cw, ch, 4);
-      container.add(cardGfx);
-
-      // Card icon
-      const emoji = wpCard ? wpCard.emoji : '♥';
-      const icon = this.add.text(ox, oy, emoji, TS.wpCard).setOrigin(0.5);
-      if (!isTop) icon.setAlpha(0.4);
-      container.add(icon);
+    // Click to activate willpower (player only)
+    if (team === 'red') {
+      wpIcon.setInteractive(new Phaser.Geom.Rectangle(-22, -28, 44, 56), Phaser.Geom.Rectangle.Contains);
+      wpIcon.on('pointerdown', () => this._activateWillpower());
     }
 
-    // Count label
-    const label = this.add.text(0, 30, `WP: ${ghost.willpower.length}`, TS.wpLabel).setOrigin(0.5);
-    container.add(label);
+    return c;
+  }
 
-    // Clickable top card for activation (player only)
-    if (side === 'player' && ghost.willpower.length > 0) {
-      const hitZone = this.add.zone(0, 0, 40, 48).setOrigin(0.5);
-      hitZone.setInteractive({ useHandCursor: true });
-      hitZone.on('pointerdown', () => this._activateWillpower());
-      container.add(hitZone);
-    }
-
-    container._side = side;
-    return container;
+  _rebuildWP() {
+    if (this._pWPArea) this._pWPArea.destroy();
+    if (this._eWPArea) this._eWPArea.destroy();
+    this._pWPArea = this._buildWPArea('red', this._W * 0.18, this._H * 0.82);
+    this._eWPArea = this._buildWPArea('blue', this._W * 0.82, this._H * 0.82);
   }
 
   _activateWillpower() {
     if (this._rolling) return;
     if (typeof activateWillpower !== 'function') return;
-
     const card = activateWillpower(this._pt, this._pt, (msg) => this._addLog(msg, 'ability'));
     if (card) {
-      this._showCallout(`${card.emoji} ${card.name}`, 'ability', card.desc, 1200);
+      this._setStatus(`${this.pg.name} activated ${card.emoji} ${card.name}!`);
       if (typeof GameAudio !== 'undefined') GameAudio.collect();
       this._rebuildWP();
       this.syncUI();
     }
   }
 
-  _rebuildWP() {
-    if (this._pWP) this._pWP.destroy();
-    if (this._eWP) this._eWP.destroy();
-    this._pWP = this._buildWPStack('player', (this._PX||BL.PX), (this._WP_Y||BL.WP_Y));
-    this._eWP = this._buildWPStack('enemy', (this._EX||BL.EX), (this._WP_Y||BL.WP_Y));
-  }
+  // ── ROLL BUTTON ─────────────────────────────────────────
+  _buildRollBtn(cx, cy, label, color, onClick) {
+    const c = this.add.container(cx, cy);
+    const w = Math.min(this._W * 0.14, 180);
+    const h = 38;
 
-  // ── Resource Bar ───────────────────────────────────────────
-  _buildResourceBar() {
-    if (this._resContainer) this._resContainer.destroy();
-    this._resContainer = this.add.container((this._CX||BL.CX), (this._RES_Y||BL.RES_Y));
-
-    const team = B[this._pt];
-    if (!team || !team.resources) return;
-
-    const DISPLAY = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
-    const entries = Object.entries(DISPLAY).filter(([key]) => (team.resources[key] || 0) > 0);
-
-    const tileW = 56, tileH = 44, gap = 6;
-    const totalW = entries.length * (tileW + gap) - gap;
-    const startX = -totalW / 2;
-
-    entries.forEach(([key, cfg], i) => {
-      const x = startX + i * (tileW + gap);
-      const count = team.resources[key] || 0;
-
-      const bg = this.add.graphics();
-      bg.fillStyle(0x1c1626, 0.85);
-      bg.fillRoundedRect(x, -tileH/2, tileW, tileH, 6);
-      bg.lineStyle(1, 0xffffff, 0.06);
-      bg.strokeRoundedRect(x, -tileH/2, tileW, tileH, 6);
-      this._resContainer.add(bg);
-
-      const icon = this.add.text(x + tileW/2, -8, cfg.emoji, TS.resIcon).setOrigin(0.5);
-      this._resContainer.add(icon);
-
-      const countText = this.add.text(x + tileW/2, 12, `${count}`, TS.res).setOrigin(0.5);
-      this._resContainer.add(countText);
-    });
-  }
-
-  // ── Battle Log ─────────────────────────────────────────────
-  _buildBattleLog() {
-    this._logContainer = this.add.container((this._LOG_X||BL.LOG_X), (this._LOG_Y||BL.LOG_Y));
-
-    // Background
     const bg = this.add.graphics();
-    bg.fillStyle(0x140e1c, 0.9);
-    bg.fillRoundedRect(-140, -50, 280, 100, 6);
-    bg.lineStyle(1, BC.GOLD_HEX, 0.3);
-    bg.strokeRoundedRect(-140, -50, 280, 100, 6);
-    this._logContainer.add(bg);
+    bg.fillStyle(color, 0.85);
+    bg.fillRoundedRect(-w/2, -h/2, w, h, 6);
+    c.add(bg);
 
-    // Title
-    const title = this.add.text(0, -40, 'BATTLE LOG', TS.logTitle).setOrigin(0.5);
-    this._logContainer.add(title);
+    c.add(this.add.text(0, 0, label, {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '14px', color: '#fff', fontStyle: 'bold',
+    }).setOrigin(0.5));
 
-    // Text area (last 5 entries)
-    this._logText = this.add.text(0, 8, '', { ...TS.log, lineSpacing: 4 }).setOrigin(0.5);
-    this._logContainer.add(this._logText);
-  }
-
-  _addLog(text, type) {
-    this._logEntries.push({ text, type });
-    // Show last 5
-    const recent = this._logEntries.slice(-5);
-    const display = recent.map(e => e.text).join('\n');
-    if (this._logText) this._logText.setText(display);
-  }
-
-  // ── Callout Banner ─────────────────────────────────────────
-  _showCallout(text, type, subtitle, duration) {
-    duration = duration || 2000;
-
-    const callout = this.add.container((this._CX||BL.CX), (this._H||BL.H) / 2);
-    callout.setDepth(1000);
-
-    // Backdrop
-    const backdrop = this.add.graphics();
-    backdrop.fillStyle(0x000000, 0.6);
-    backdrop.fillRect(-(this._W||BL.W)/2, -60, (this._W||BL.W), 120);
-    callout.add(backdrop);
-
-    // Gold border lines
-    const lines = this.add.graphics();
-    lines.fillStyle(BC.GOLD_HEX, 0.8);
-    lines.fillRect(-200, -52, 400, 2);
-    lines.fillRect(-200, 50, 400, 2);
-    callout.add(lines);
-
-    // Main text
-    const style = { ...TS.callout };
-    if (type === 'ko') style.color = '#ff3333';
-    if (type === 'heal') style.color = '#4ade80';
-    if (type === 'damage') style.color = '#e94560';
-    const mainText = this.add.text(0, -10, text, style).setOrigin(0.5);
-    callout.add(mainText);
-
-    // Subtitle
-    if (subtitle) {
-      const sub = this.add.text(0, 30, subtitle, TS.callSub).setOrigin(0.5);
-      sub.setAlpha(0);
-      this.tweens.add({ targets: sub, alpha: 1, y: 25, duration: 300, delay: 200 });
-      callout.add(sub);
+    if (onClick) {
+      const zone = this.add.zone(0, 0, w, h).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      zone.on('pointerdown', onClick);
+      zone.on('pointerover', () => c.setScale(1.05));
+      zone.on('pointerout', () => c.setScale(1));
+      c.add(zone);
+      c._zone = zone;
     }
 
-    // Drop-in animation
-    callout.setScale(0.3);
-    callout.setAlpha(0);
-    this.tweens.add({
-      targets: callout,
-      scaleX: 1, scaleY: 1, alpha: 1,
-      duration: 400,
-      ease: 'Back.easeOut',
-    });
+    c._bg = bg; c._color = color;
+    return c;
+  }
 
-    // Exit after duration
-    this.time.delayedCall(duration, () => {
-      this.tweens.add({
-        targets: callout,
-        alpha: 0, scaleY: 0.5,
-        duration: 300,
-        onComplete: () => callout.destroy()
+  _setFightEnabled(en) {
+    if (this._redBtn) { this._redBtn.setAlpha(en ? 1 : 0.3); if (this._redBtn._zone) this._redBtn._zone.input.enabled = en; }
+  }
+
+  // ── STATUS BAR ──────────────────────────────────────────
+  _setStatus(text) { if (this._statusBar) this._statusBar.setText(text); }
+
+  // ── DICE (3D DOM) ───────────────────────────────────────
+  _buildDiceArea() {} // handled by Dice3D DOM overlay
+
+  _showDice(side, values, isWinner) {
+    if (typeof Dice3D !== 'undefined' && isWinner !== false) {
+      const team = side === 'player' ? 'red' : 'blue';
+      if (isWinner) { const res = typeof classify === 'function' ? classify(values) : null; if (res) Dice3D.highlightWin(team, res); }
+    }
+  }
+
+  _tumbleDice(pV, eV, cb) {
+    if (typeof Dice3D !== 'undefined') {
+      Dice3D.clear('red'); Dice3D.clear('blue');
+      Dice3D.showRolling('red', pV.length);
+      Dice3D.showRolling('blue', eV.length);
+      this.time.delayedCall(800, () => {
+        let done = 0;
+        const check = () => { done++; if (done >= 2 && cb) cb(); };
+        Dice3D.revealDice('red', pV, check);
+        Dice3D.revealDice('blue', eV, check);
       });
-    });
-
-    return callout;
+    } else { if (cb) this.time.delayedCall(500, cb); }
   }
 
-  // ── Floating damage text ───────────────────────────────────
+  // ── CALLOUT ─────────────────────────────────────────────
+  _showCallout(text, type, subtitle, dur) {
+    dur = dur || 2000;
+    const c = this.add.container(this._W/2, this._H/2).setDepth(1000);
+    const bd = this.add.graphics();
+    bd.fillStyle(0x000000, 0.6);
+    bd.fillRect(-this._W/2, -50, this._W, 100);
+    c.add(bd);
+    const style = { fontFamily: 'Cinzel, Georgia, serif', fontSize: '44px', color: '#ffd700', stroke: '#000', strokeThickness: 4, align: 'center' };
+    if (type==='ko') style.color = '#ff3333';
+    if (type==='damage') style.color = '#e94560';
+    if (type==='heal') style.color = '#4ade80';
+    c.add(this.add.text(0, -8, text, style).setOrigin(0.5));
+    if (subtitle) { const s = this.add.text(0, 28, subtitle, { fontFamily: 'Georgia, serif', fontSize: '14px', color: BC.TEXT }).setOrigin(0.5); s.setAlpha(0); this.tweens.add({ targets: s, alpha: 1, duration: 300, delay: 200 }); c.add(s); }
+    c.setScale(0.3).setAlpha(0);
+    this.tweens.add({ targets: c, scaleX: 1, scaleY: 1, alpha: 1, duration: 350, ease: 'Back.easeOut' });
+    this.time.delayedCall(dur, () => { this.tweens.add({ targets: c, alpha: 0, scaleY: 0.5, duration: 250, onComplete: () => c.destroy() }); });
+  }
+
   _showFloat(x, y, text, color) {
-    const ft = this.add.text(x, y, text, {
-      fontFamily: 'Cinzel, Georgia, serif', fontSize: '28px',
-      color: color || '#e94560', stroke: '#000', strokeThickness: 3
-    }).setOrigin(0.5).setDepth(500);
-
-    this.tweens.add({
-      targets: ft,
-      y: y - 50, alpha: 0, scaleX: 1.3, scaleY: 1.3,
-      duration: 1000,
-      ease: 'Cubic.easeOut',
-      onComplete: () => ft.destroy()
-    });
+    const t = this.add.text(x, y, text, { fontFamily: 'Cinzel, serif', fontSize: '26px', color: color||'#e94560', stroke: '#000', strokeThickness: 3 }).setOrigin(0.5).setDepth(500);
+    this.tweens.add({ targets: t, y: y-50, alpha: 0, scaleX: 1.3, scaleY: 1.3, duration: 900, ease: 'Cubic.easeOut', onComplete: () => t.destroy() });
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  COMBAT ROUND (logic preserved from original)
-  // ═══════════════════════════════════════════════════════════
+  // ── LOG ──────────────────────────────────────────────────
+  _addLog(text) { this._logEntries.push(text); }
 
+  // ═══════════════════════════════════════════════════════
+  //  COMBAT ROUND
+  // ═══════════════════════════════════════════════════════
   doRound() {
     if (!B || !this.pg || !this.eg) return;
     if (this.pg.hp <= 0 || this.eg.hp <= 0) return;
@@ -771,40 +481,28 @@ class BattleScene extends Phaser.Scene {
     this._setFightEnabled(false);
     if (typeof GameAudio !== 'undefined') GameAudio.dice();
 
-    // Pre-roll abilities
     if (typeof triggerPreRoll === 'function') {
-      triggerPreRoll(this._pt, (msg) => this._addLog(msg, 'ability'));
-      triggerPreRoll(this._et, (msg) => this._addLog(msg, 'ability'));
-      this.pg = activeGhost(B[this._pt]);
-      this.eg = activeGhost(B[this._et]);
+      triggerPreRoll(this._pt, (msg) => this._addLog(msg));
+      triggerPreRoll(this._et, (msg) => this._addLog(msg));
+      this.pg = activeGhost(B[this._pt]); this.eg = activeGhost(B[this._et]);
       this.syncUI();
     }
 
-    // Pre-roll KO check
     if (this.pg.hp <= 0 || this.pg.ko) { this._rolling = false; this.time.delayedCall(600, () => this.checkKOSwap()); return; }
     if (this.eg.hp <= 0 || this.eg.ko) { this._rolling = false; this.time.delayedCall(600, () => this.handleEnemyKO()); return; }
 
-    // Dice count
-    const pDiceCount = typeof calculateDiceCount === 'function' ? calculateDiceCount(this._pt) : 3;
-    const eDiceCount = typeof calculateDiceCount === 'function' ? calculateDiceCount(this._et) : 3;
+    const pDC = typeof calculateDiceCount === 'function' ? calculateDiceCount(this._pt) : 3;
+    const eDC = typeof calculateDiceCount === 'function' ? calculateDiceCount(this._et) : 3;
+    const pDice = weightedRoll(B[this._pt], pDC);
+    const eDice = weightedRoll(B[this._et], eDC);
 
-    // Roll
-    const pDice = weightedRoll(B[this._pt], pDiceCount);
-    const eDice = weightedRoll(B[this._et], eDiceCount);
-
-    // Moonstone / Lucky Stone
-    if (B._moonstoneReady && B._moonstoneReady[this._pt]) {
-      if (typeof smartMoonstoneChange === 'function') smartMoonstoneChange(pDice);
-    }
-    if (B._luckyStoneReady && B._luckyStoneReady[this._pt]) {
-      if (typeof smartLuckyStone === 'function') smartLuckyStone(pDice);
-    }
+    if (B._moonstoneReady && B._moonstoneReady[this._pt] && typeof smartMoonstoneChange === 'function') smartMoonstoneChange(pDice);
+    if (B._luckyStoneReady && B._luckyStoneReady[this._pt] && typeof smartLuckyStone === 'function') smartLuckyStone(pDice);
 
     if (!B.lastRollDiceCount) B.lastRollDiceCount = {};
-    B.lastRollDiceCount[this._pt] = pDiceCount;
-    B.lastRollDiceCount[this._et] = eDiceCount;
+    B.lastRollDiceCount[this._pt] = pDC; B.lastRollDiceCount[this._et] = eDC;
 
-    // Tumble animation then resolve
+    this._setStatus('Rolling...');
     this._tumbleDice(pDice, eDice, () => {
       this._showDice('player', pDice, false);
       this._showDice('enemy', eDice, false);
@@ -812,165 +510,115 @@ class BattleScene extends Phaser.Scene {
     });
   }
 
-  // ── RESOLVE DICE ───────────────────────────────────────────
   resolveDice(pDice, eDice) {
-    const pRes = classify(pDice);
-    const eRes = classify(eDice);
+    const pRes = classify(pDice), eRes = classify(eDice);
+    const pF = activeGhost(B[this._pt]), eF = activeGhost(B[this._et]);
+    const hectorActive = (pF&&pF.id===96&&!pF.ko)||(eF&&eF.id===96&&!eF.ko);
+    const rawW = compareRolls(pRes, eRes, pDice, eDice, hectorActive);
+    let winner = rawW;
+    if (rawW==='a') winner='red'; else if (rawW==='b') winner='blue'; else if (rawW==='tie') winner=null;
 
-    const pF = activeGhost(B[this._pt]);
-    const eF = activeGhost(B[this._et]);
-    const hectorActive = (pF && pF.id === 96 && !pF.ko) || (eF && eF.id === 96 && !eF.ko);
-    const rawWinner = compareRolls(pRes, eRes, pDice, eDice, hectorActive);
+    const pWin = winner==='red'||winner===this._pt;
+    const eWin = winner==='blue'||winner===this._et;
 
-    // Normalize: battle.js returns 'a'/'b'/'tie', dice-engine returns 'red'/'blue'/null
-    let winner = rawWinner;
-    if (rawWinner === 'a') winner = 'red';
-    else if (rawWinner === 'b') winner = 'blue';
-    else if (rawWinner === 'tie') winner = null;
-
-    const pWin = winner === 'red' || winner === this._pt;
-    const eWin = winner === 'blue' || winner === this._et;
-
-    // Roll announcements
     if (typeof RollAnnouncer !== 'undefined') {
-      const pAnn = RollAnnouncer.announce(pRes, pWin, 'red');
-      const eAnn = RollAnnouncer.announce(eRes, eWin, 'blue');
-
+      const pA = RollAnnouncer.announce(pRes, pWin, 'red');
+      const eA = RollAnnouncer.announce(eRes, eWin, 'blue');
       this._showDice('player', pDice, pWin);
       this._showDice('enemy', eDice, eWin);
-      // Dim the loser's dice
-      if (typeof Dice3D !== 'undefined') {
-        if (pWin) Dice3D.highlightLose('blue');
-        else if (eWin) Dice3D.highlightLose('red');
-      }
-      this._showRollResult('player', RollAnnouncer.formatResult(pRes), pWin);
-      this._showRollResult('enemy', RollAnnouncer.formatResult(eRes), eWin);
-
-      if (pAnn.shake && pWin) this.cameras.main.shake(pAnn.shake.duration, pAnn.shake.intensity);
-      if (eAnn.shake && eWin) this.cameras.main.shake(eAnn.shake.duration, eAnn.shake.intensity);
+      if (typeof Dice3D !== 'undefined') { if (pWin) Dice3D.highlightLose('blue'); else if (eWin) Dice3D.highlightLose('red'); }
+      if (pA.shake && pWin) this.cameras.main.shake(pA.shake.duration, pA.shake.intensity);
+      if (eA.shake && eWin) this.cameras.main.shake(eA.shake.duration, eA.shake.intensity);
     }
 
-    const logText = `R${this.roundNum}: ${describeRoll(pRes)} vs ${describeRoll(eRes)}`;
+    const rollDesc = `${describeRoll(pRes)} vs ${describeRoll(eRes)}`;
 
     if (pWin) {
       const dmg = typeof calculateDamage === 'function' ? calculateDamage(this._pt, pRes, pDice) : pRes.damage;
       const dodged = typeof checkSylviaDodge === 'function' && checkSylviaDodge(this._et);
-
       if (dodged) {
-        this._addLog(logText + ' — DODGED!', 'dodge');
-        this._showFloat((this._EX||BL.EX), (this._FIGHT_Y||BL.FIGHT_Y) - 50, 'DODGE!', '#44ddff');
+        this._setStatus(`${this.eg.name} dodged! ${rollDesc}`);
+        this._showFloat(this._W*0.70, this._H*0.30, 'DODGE!', '#44ddff');
       } else {
-        const reduction = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._et, pRes) : 0;
-        const finalDmg = Math.max(1, dmg - reduction);
-
-        wpDamage(this.eg, finalDmg);
+        const red = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._et, pRes) : 0;
+        const fd = Math.max(1, dmg - red);
+        wpDamage(this.eg, fd);
         if (this.eg.ko) this.eg.killedBy = this.pg.id;
-
-        this._addLog(`${logText} — ${finalDmg} dmg to ${this.eg.name}!`, 'damage');
+        this._setStatus(`${this.pg.name} deals ${fd} damage! ${rollDesc}`);
         if (typeof GameAudio !== 'undefined') GameAudio.hit();
-
-        // Damage float + camera shake for big hits
-        this._showFloat((this._EX||BL.EX), (this._FIGHT_Y||BL.FIGHT_Y) - 60, `-${finalDmg}`, finalDmg >= 4 ? '#ff3333' : '#e94560');
-        if (finalDmg >= 4) this.cameras.main.shake(200, 0.01);
-
-        if (finalDmg >= 4) {
-          this._showCallout(`-${finalDmg} DAMAGE`, finalDmg >= 6 ? 'damage' : 'damage', '', 1000);
-        }
-
-        this.reportRaidDamage(finalDmg, pDice);
+        this._showFloat(this._W*0.70, this._H*0.30, `-${fd}`, fd>=4?'#ff3333':'#e94560');
+        if (fd >= 4) this.cameras.main.shake(200, 0.01);
+        this.reportRaidDamage(fd, pDice);
         if (typeof triggerWinPath === 'function') triggerWinPath(this._pt, pRes);
       }
     } else if (eWin) {
       const dmg = typeof calculateDamage === 'function' ? calculateDamage(this._et, eRes, eDice) : eRes.damage;
       const pDodged = typeof checkSylviaDodge === 'function' && checkSylviaDodge(this._pt);
-
       if (pDodged) {
-        this._addLog(logText + ' — DODGED!', 'dodge');
-        this._showFloat((this._PX||BL.PX), (this._FIGHT_Y||BL.FIGHT_Y) - 50, 'DODGE!', '#44ddff');
+        this._setStatus(`${this.pg.name} dodged! ${rollDesc}`);
+        this._showFloat(this._W*0.28, this._H*0.30, 'DODGE!', '#44ddff');
       } else {
-        const reduction = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._pt, eRes) : 0;
-        const finalDmg = Math.max(1, dmg - reduction);
-
-        wpDamage(this.pg, finalDmg);
-        this._addLog(`${logText} — ${finalDmg} dmg to ${this.pg.name}!`, 'damage');
+        const red = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._pt, eRes) : 0;
+        const fd = Math.max(1, dmg - red);
+        wpDamage(this.pg, fd);
+        this._setStatus(`${this.eg.name} deals ${fd} damage! ${rollDesc}`);
         if (typeof GameAudio !== 'undefined') GameAudio.hurt();
-        this._showFloat((this._PX||BL.PX), (this._FIGHT_Y||BL.FIGHT_Y) - 60, `-${finalDmg}`, '#e94560');
-        if (finalDmg >= 4) this.cameras.main.shake(150, 0.008);
+        this._showFloat(this._W*0.28, this._H*0.30, `-${fd}`, '#e94560');
+        if (fd >= 4) this.cameras.main.shake(150, 0.008);
       }
-
       if (typeof triggerWinPath === 'function') triggerWinPath(this._et, eRes);
       if (typeof triggerOnLoss === 'function') triggerOnLoss(this._pt);
     } else {
-      this._addLog(logText + ' — Tie!', 'system');
+      this._setStatus(`Tie! ${rollDesc}`);
     }
 
-    // Sync UI
     this.syncUI();
-
-    // Reset round
     if (typeof resetRoundFlags === 'function') resetRoundFlags();
     this._rolling = false;
     this._setFightEnabled(true);
+    this.pg = activeGhost(B[this._pt]); this.eg = activeGhost(B[this._et]);
 
-    // Refresh active refs
-    this.pg = activeGhost(B[this._pt]);
-    this.eg = activeGhost(B[this._et]);
-
-    // KO check
-    if (this.eg && (this.eg.hp <= 0 || this.eg.ko)) {
-      this._setFightEnabled(false);
-      this.time.delayedCall(600, () => this.handleEnemyKO());
-    } else if (this.pg && (this.pg.hp <= 0 || this.pg.ko)) {
-      this._setFightEnabled(false);
-      this.time.delayedCall(600, () => this.checkKOSwap());
-    }
+    if (this.eg && (this.eg.hp<=0||this.eg.ko)) { this._setFightEnabled(false); this.time.delayedCall(600, () => this.handleEnemyKO()); }
+    else if (this.pg && (this.pg.hp<=0||this.pg.ko)) { this._setFightEnabled(false); this.time.delayedCall(600, () => this.checkKOSwap()); }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  //  SYNC UI STATE
-  // ═══════════════════════════════════════════════════════════
-
+  // ═══════════════════════════════════════════════════════
+  //  SYNC UI
+  // ═══════════════════════════════════════════════════════
   syncUI() {
-    this.pg = activeGhost(B[this._pt]);
-    this.eg = activeGhost(B[this._et]);
-    this._updateFighterCard(this._pCard, this.pg);
-    this._updateFighterCard(this._eCard, this.eg);
-    this._rebuildSideline('player');
-    this._rebuildSideline('enemy');
+    this.pg = activeGhost(B[this._pt]); this.eg = activeGhost(B[this._et]);
+    this._updateActiveCard(this._pActive, this.pg);
+    this._updateActiveCard(this._eActive, this.eg);
+    this._rebuildSideline('red');
+    this._rebuildSideline('blue');
     this._rebuildWP();
-    this._buildResourceBar();
   }
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
   //  KO HANDLING
-  // ═══════════════════════════════════════════════════════════
-
+  // ═══════════════════════════════════════════════════════
   handleEnemyKO() {
     this.eg.ko = true;
     this._showCallout('KO!', 'ko', `${this.eg.name} has fallen!`, 1500);
-    this._addLog(`${this.eg.name} has fallen!`, 'ko');
+    this._setStatus(`${this.eg.name} has been defeated!`);
     if (typeof GameAudio !== 'undefined') GameAudio.hit();
 
-    const eTeam = B[this._et];
-    const eLiving = eTeam.ghosts.filter((g, i) => i !== eTeam.activeIdx && !g.ko && g.hp > 0);
-    if (eLiving.length > 0) {
-      const nextIdx = typeof smartPickSwap === 'function'
-        ? smartPickSwap(this._et) : eTeam.ghosts.indexOf(eLiving[0]);
-      if (nextIdx >= 0) {
+    const eT = B[this._et];
+    const alive = eT.ghosts.filter((g,i) => i!==eT.activeIdx && !g.ko && g.hp>0);
+    if (alive.length > 0) {
+      const ni = typeof smartPickSwap === 'function' ? smartPickSwap(this._et) : eT.ghosts.indexOf(alive[0]);
+      if (ni >= 0) {
         this.time.delayedCall(1600, () => {
-          if (typeof performKOSwap === 'function') {
-            performKOSwap(this._et, nextIdx, (msg) => this._addLog(msg, 'system'));
-          } else {
-            eTeam.activeIdx = nextIdx;
-          }
-          this.eg = activeGhost(eTeam);
-          if (typeof triggerEntry === 'function') triggerEntry(eTeam, this._et);
-
-          // Rebuild enemy card with new active ghost
-          if (this._eCard) this._eCard.destroy();
-          this._eCard = this._buildFighterCard(this.eg, 'enemy', (this._EX||BL.EX), (this._FIGHT_Y||BL.FIGHT_Y));
+          if (typeof performKOSwap === 'function') performKOSwap(this._et, ni, (m) => this._addLog(m));
+          else eT.activeIdx = ni;
+          this.eg = activeGhost(eT);
+          if (typeof triggerEntry === 'function') triggerEntry(eT, this._et);
+          // Rebuild enemy card
+          if (this._eActive) this._eActive.destroy();
+          this._eActive = this._buildActiveCard(this.eg, 'blue', this._W*0.70, this._H*0.38);
           this.syncUI();
           this._setFightEnabled(true);
+          this._setStatus(`${this.eg.name} enters the battle!`);
         });
       }
     } else {
@@ -979,262 +627,137 @@ class BattleScene extends Phaser.Scene {
   }
 
   checkKOSwap() {
-    this.pg.ko = true;
-    this.pg.hp = 0;
+    this.pg.ko = true; this.pg.hp = 0;
     this._showCallout('KO!', 'ko', `${this.pg.name} has fallen!`, 1500);
-    this._addLog(`${this.pg.name} has fallen!`, 'ko');
 
-    const pTeam = B[this._pt];
+    const pT = B[this._pt];
     const living = [];
-    pTeam.ghosts.forEach((g, i) => {
-      if (!g.ko && g.hp > 0 && i !== pTeam.activeIdx) living.push({ ghost: g, idx: i });
-    });
-    if (living.length === 0) {
-      this.time.delayedCall(1600, () => this._exit(false));
-      return;
-    }
+    pT.ghosts.forEach((g,i) => { if(!g.ko&&g.hp>0&&i!==pT.activeIdx) living.push({ghost:g,idx:i}); });
+    if (living.length === 0) { this.time.delayedCall(1600, () => this._exit(false)); return; }
     this.time.delayedCall(1600, () => this._showKOPicker(living));
   }
 
-  // ── KO Swap Picker (Phaser-native modal) ───────────────────
   _showKOPicker(living) {
-    const overlay = this.add.container((this._CX||BL.CX), (this._H||BL.H) / 2).setDepth(2000);
+    const o = this.add.container(this._W/2, this._H/2).setDepth(2000);
+    const bd = this.add.graphics();
+    bd.fillStyle(0x000000, 0.85);
+    bd.fillRect(-this._W/2, -this._H/2, this._W, this._H);
+    o.add(bd);
 
-    // Darken backdrop
-    const backdrop = this.add.graphics();
-    backdrop.fillStyle(0x000000, 0.82);
-    backdrop.fillRect(-(this._W||BL.W)/2, -(this._H||BL.H)/2, (this._W||BL.W), (this._H||BL.H));
-    overlay.add(backdrop);
+    o.add(this.add.text(0, -this._H*0.35, 'YOUR SPIRITKIN HAS FALLEN', {
+      fontFamily: 'Cinzel, serif', fontSize: '16px', color: '#ff5544', letterSpacing: 2,
+    }).setOrigin(0.5));
+    o.add(this.add.text(0, -this._H*0.30, 'Choose a replacement', {
+      fontFamily: 'Georgia, serif', fontSize: '14px', color: '#bbb',
+    }).setOrigin(0.5));
 
-    // Title
-    const title = this.add.text(0, -180, 'YOUR SPIRITKIN HAS FALLEN', {
-      fontFamily: 'Courier New, monospace', fontSize: '14px',
-      color: '#ff5544', letterSpacing: 2
-    }).setOrigin(0.5);
-    overlay.add(title);
-
-    const sub = this.add.text(0, -155, 'Choose a replacement', {
-      fontFamily: 'Georgia, serif', fontSize: '16px', color: '#bbb'
-    }).setOrigin(0.5);
-    overlay.add(sub);
-
-    // Cards
-    const cardW = 160, cardH = 200, gap = 20;
-    const totalW = living.length * (cardW + gap) - gap;
-    const startX = -totalW / 2 + cardW / 2;
+    const cw = 170, ch = 240, gap = 20;
+    const totalW = living.length*(cw+gap)-gap;
+    const startX = -totalW/2+cw/2;
 
     living.forEach((entry, i) => {
       const g = entry.ghost;
-      const cx = startX + i * (cardW + gap);
-      const card = this.add.container(cx, 30);
+      const card = this.add.container(startX+i*(cw+gap), 20);
 
-      // Card bg
-      const rarHex = _rarityHex(g.rarity);
       const cbg = this.add.graphics();
-      cbg.fillStyle(0x1a1a2e, 1);
-      cbg.fillRoundedRect(-cardW/2, -cardH/2, cardW, cardH, 8);
-      cbg.lineStyle(2, rarHex, 0.8);
-      cbg.strokeRoundedRect(-cardW/2, -cardH/2, cardW, cardH, 8);
+      cbg.fillStyle(BC.CARD_BG, 1);
+      cbg.fillRoundedRect(-cw/2, -ch/2, cw, ch, 8);
+      cbg.lineStyle(2, _rarH(g.rarity), 0.8);
+      cbg.strokeRoundedRect(-cw/2, -ch/2, cw, ch, 8);
       card.add(cbg);
 
-      // Rarity bar
-      const rBar = this.add.graphics();
-      rBar.fillStyle(rarHex, 1);
-      rBar.fillRect(-cardW/2 + 2, -cardH/2 + 2, cardW - 4, 3);
-      card.add(rBar);
+      const ak = 'ghost_'+g.id;
+      if (this.textures.exists(ak)) { const a=this.add.image(0,-30,ak); a.setDisplaySize(cw-16,110); card.add(a); }
+      card.add(this.add.text(0, 40, g.name, { fontFamily: 'Cinzel, serif', fontSize: '12px', color: '#fff' }).setOrigin(0.5));
+      card.add(this.add.text(0, 58, `♥ ${g.hp}/${g.maxHp}`, { fontFamily: 'Courier New, monospace', fontSize: '11px', color: _hpCol(g.hp,g.maxHp) }).setOrigin(0.5));
+      if (g.ability) card.add(this.add.text(0, 76, g.ability, { fontFamily: 'Georgia, serif', fontSize: '10px', color: BC.GOLD }).setOrigin(0.5));
 
-      // Art
-      const artKey = 'ghost_' + g.id;
-      if (this.textures.exists(artKey)) {
-        const art = this.add.image(0, -30, artKey);
-        art.setDisplaySize(cardW - 20, 100);
-        card.add(art);
-      }
+      const z = this.add.zone(0, 0, cw, ch).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      z.on('pointerover', () => card.setScale(1.06));
+      z.on('pointerout', () => card.setScale(1));
+      z.on('pointerdown', () => { this.tweens.add({ targets: card, scaleX: 1.1, scaleY: 1.1, duration: 120, yoyo: true, onComplete: () => { o.destroy(); this._doKOSwap(entry); } }); });
+      card.add(z);
 
-      // Name
-      card.add(this.add.text(0, 38, g.name, { fontFamily: 'Courier New, monospace', fontSize: '11px', color: '#fff' }).setOrigin(0.5));
-
-      // HP bar
-      const hpPct = g.maxHp > 0 ? g.hp / g.maxHp : 0;
-      const hpBarW = cardW - 30;
-      const hpBg = this.add.graphics();
-      hpBg.fillStyle(0x1a1a1a, 1);
-      hpBg.fillRoundedRect(-hpBarW/2, 55, hpBarW, 8, 3);
-      card.add(hpBg);
-      const hpFill = this.add.graphics();
-      hpFill.fillStyle(_hpHex(g.hp, g.maxHp), 1);
-      hpFill.fillRoundedRect(-hpBarW/2, 55, hpBarW * hpPct, 8, 3);
-      card.add(hpFill);
-
-      // HP text
-      card.add(this.add.text(0, 72, `WP ${g.hp} / ${g.maxHp}`, { fontFamily: 'Georgia, serif', fontSize: '11px', color: '#aaa' }).setOrigin(0.5));
-
-      // Ability
-      if (g.ability) {
-        card.add(this.add.text(0, 88, g.ability, { fontFamily: 'Georgia, serif', fontSize: '10px', color: BC.GOLD }).setOrigin(0.5));
-      }
-
-      // Interactive
-      const hitZone = this.add.zone(0, 0, cardW, cardH).setOrigin(0.5);
-      hitZone.setInteractive({ useHandCursor: true });
-      hitZone.on('pointerover', () => {
-        card.setScale(1.05);
-        cbg.clear();
-        cbg.fillStyle(0x1a1a2e, 1);
-        cbg.fillRoundedRect(-cardW/2, -cardH/2, cardW, cardH, 8);
-        cbg.lineStyle(3, BC.GOLD_HEX, 1);
-        cbg.strokeRoundedRect(-cardW/2, -cardH/2, cardW, cardH, 8);
-      });
-      hitZone.on('pointerout', () => {
-        card.setScale(1);
-        cbg.clear();
-        cbg.fillStyle(0x1a1a2e, 1);
-        cbg.fillRoundedRect(-cardW/2, -cardH/2, cardW, cardH, 8);
-        cbg.lineStyle(2, rarHex, 0.8);
-        cbg.strokeRoundedRect(-cardW/2, -cardH/2, cardW, cardH, 8);
-      });
-      hitZone.on('pointerdown', () => {
-        // Pulse then close
-        this.tweens.add({
-          targets: card, scaleX: 1.1, scaleY: 1.1,
-          duration: 150, yoyo: true,
-          onComplete: () => {
-            overlay.destroy();
-            this._doKOSwap(entry);
-          }
-        });
-      });
-      card.add(hitZone);
-
-      // Slide-in animation
-      card.setAlpha(0);
-      card.y += 30;
-      this.tweens.add({
-        targets: card, alpha: 1, y: 30 - 30,
-        duration: 300, delay: i * 80, ease: 'Cubic.easeOut'
-      });
-
-      overlay.add(card);
+      card.setAlpha(0); card.y += 30;
+      this.tweens.add({ targets: card, alpha: 1, y: 20, duration: 300, delay: i*80, ease: 'Cubic.easeOut' });
+      o.add(card);
     });
-
-    this._koOverlay = overlay;
   }
 
   _doKOSwap(entry) {
-    if (typeof performKOSwap === 'function') {
-      performKOSwap(this._pt, entry.idx, (msg) => this._addLog(msg, 'system'));
-    } else {
-      B[this._pt].activeIdx = entry.idx;
-    }
+    if (typeof performKOSwap === 'function') performKOSwap(this._pt, entry.idx, (m) => this._addLog(m));
+    else B[this._pt].activeIdx = entry.idx;
     this.pg = activeGhost(B[this._pt]);
     if (typeof triggerEntry === 'function') triggerEntry(B[this._pt], this._pt);
-
-    // Rebuild player card
-    if (this._pCard) this._pCard.destroy();
-    this._pCard = this._buildFighterCard(this.pg, 'player', (this._PX||BL.PX), (this._FIGHT_Y||BL.FIGHT_Y));
+    if (this._pActive) this._pActive.destroy();
+    this._pActive = this._buildActiveCard(this.pg, 'red', this._W*0.28, this._H*0.38);
     this.syncUI();
     this._rolling = false;
     this._setFightEnabled(true);
+    this._setStatus(`${this.pg.name} enters the battle!`);
   }
 
-  // ═══════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
   //  END BATTLE
-  // ═══════════════════════════════════════════════════════════
-
+  // ═══════════════════════════════════════════════════════
   _exit(won) {
-    // Clean up 3D dice overlay
     if (typeof Dice3D !== 'undefined') Dice3D.destroy();
-    // Restore world HUD
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.style.display = '';
 
     let leveledUp = false, xpGain = 0, coinChange = 0;
-
-    // Persist healing seeds
-    const pTeam = B ? B[this._pt] : null;
-    if (pTeam && pTeam.resources) {
-      G.healingSeeds = pTeam.resources.healingSeed ?? G.healingSeeds;
-    }
+    const pT = B ? B[this._pt] : null;
+    if (pT && pT.resources) G.healingSeeds = pT.resources.healingSeed ?? G.healingSeeds;
 
     if (won) {
-      if (!G.rep) G.rep = { battlesWon: 0, craftsCompleted: 0, itemsSold: 0, essencesCollected: 0, raresFound: 0 };
+      if (!G.rep) G.rep = { battlesWon:0, craftsCompleted:0, itemsSold:0, essencesCollected:0, raresFound:0 };
       G.rep.battlesWon++;
-      coinChange = 1 + Math.floor(Math.random() * 3);
+      coinChange = 1+Math.floor(Math.random()*3);
       G.coins += coinChange;
-      const rarityXP = { common: 1, uncommon: 2, rare: 3, 'ghost-rare': 4, legendary: 5 };
-      xpGain = rarityXP[this.eg?.rarity] || 1;
+      const rXP = { common:1, uncommon:2, rare:3, 'ghost-rare':4, legendary:5 };
+      xpGain = rXP[this.eg?.rarity]||1;
       if (this.battleData.blackRider) xpGain += 5;
       if (this.battleData.worldBoss) { xpGain += 10; coinChange += 100; }
       G.xp += xpGain;
-      const xpNeeded = G.level * 3;
-      if (G.xp >= xpNeeded) {
-        G.level++; G.xp -= xpNeeded; leveledUp = true;
-        for (const ghost of G.team) { ghost.hp = ghost.maxHp; ghost.ko = false; }
-      }
+      const need = G.level*3;
+      if (G.xp >= need) { G.level++; G.xp -= need; leveledUp = true; for (const g of G.team) { g.hp=g.maxHp; g.ko=false; } }
       if (typeof checkAndNotifyTitles === 'function') checkAndNotifyTitles();
       if (typeof addProfessionXP === 'function') addProfessionXP('combat', 10);
       if (B?.isHostileNPC && typeof markHostileNPCDefeated === 'function') markHostileNPCDefeated(B.isHostileNPC);
-      if (this.battleData.worldBoss) G.worldBossesDefeated = (G.worldBossesDefeated || 0) + 1;
+      if (this.battleData.worldBoss) G.worldBossesDefeated = (G.worldBossesDefeated||0)+1;
     } else {
-      const penalty = Math.min(G.coins, 2 + Math.floor(Math.random() * 3));
-      if (penalty > 0) { G.coins -= penalty; coinChange = -penalty; }
+      const pen = Math.min(G.coins, 2+Math.floor(Math.random()*3));
+      if (pen > 0) { G.coins -= pen; coinChange = -pen; }
     }
 
-    // Sync HP back
-    if (pTeam) {
-      pTeam.ghosts.forEach((ghost, i) => {
-        if (G.team[i]) { G.team[i].hp = ghost.hp; G.team[i].ko = ghost.ko; }
-      });
-    }
-
-    G.inBattle = false;
-    B = null;
-    if (G.activeBuffs) {
-      G.activeBuffs.forEach(b => { if (b.fights > 0) b.fights--; });
-      G.activeBuffs = G.activeBuffs.filter(b => b.fights > 0);
-    }
+    if (pT) pT.ghosts.forEach((g,i) => { if(G.team[i]){G.team[i].hp=g.hp;G.team[i].ko=g.ko;} });
+    G.inBattle = false; B = null;
+    if (G.activeBuffs) { G.activeBuffs.forEach(b=>{if(b.fights>0)b.fights--;}); G.activeBuffs=G.activeBuffs.filter(b=>b.fights>0); }
     saveGame();
 
-    // Victory/Defeat callout then return to world
-    const text = won ? 'VICTORY!' : 'DEFEAT';
-    const type = won ? 'ability' : 'ko';
-    let subtitle = '';
-    if (won) {
-      subtitle = `+${xpGain} XP  +${coinChange} Gold`;
-      if (leveledUp) subtitle += `  LEVEL ${G.level}!`;
-    } else if (coinChange < 0) {
-      subtitle = `${coinChange} Gold`;
-    }
+    const text = won?'VICTORY!':'DEFEAT';
+    const type = won?'ability':'ko';
+    let sub = '';
+    if (won) { sub = `+${xpGain} XP  +${coinChange} Gold`; if (leveledUp) sub += `  LEVEL ${G.level}!`; }
+    else if (coinChange < 0) sub = `${coinChange} Gold`;
 
-    this._showCallout(text, type, subtitle, 2500);
-
+    this._showCallout(text, type, sub, 2500);
     this.time.delayedCall(2800, () => {
-      if (typeof GameAudio !== 'undefined') { won ? GameAudio.victory() : GameAudio.defeat(); }
-      this.cameras.main.fadeOut(300, 0, 0, 0, (cam, progress) => {
-        if (progress >= 1) {
-          this.scene.stop();
-          this.scene.resume('WorldScene');
-          const ws = this.scene.get('WorldScene');
-          if (ws && ws.cameras) ws.cameras.main.fadeIn(300);
-        }
+      if (typeof GameAudio !== 'undefined') { won?GameAudio.victory():GameAudio.defeat(); }
+      this.cameras.main.fadeOut(300, 0, 0, 0, (cam, p) => {
+        if (p >= 1) { this.scene.stop(); this.scene.resume('WorldScene'); const ws=this.scene.get('WorldScene'); if(ws&&ws.cameras) ws.cameras.main.fadeIn(300); }
       });
     });
   }
 
-  // ── Raid damage reporting ──────────────────────────────────
-  reportRaidDamage(dmg, dice) {
-    if (!this._raidId || typeof RaidManager === 'undefined') return;
-    RaidManager.reportDamage(this._raidId, dmg, dice);
-  }
-
-  // ── Legacy stubs (in case anything external calls these) ───
+  reportRaidDamage(dmg, dice) { if (!this._raidId || typeof RaidManager === 'undefined') return; RaidManager.reportDamage(this._raidId, dmg, dice); }
   endBattle(won) { this._exit(won); }
   updateHP() { this.syncUI(); }
   refreshWillpowerStacks() { this._rebuildWP(); }
   renderSideline() { this.syncUI(); }
-  buildResourceBar() { this._buildResourceBar(); }
-  rebuildResourceBar() { this._buildResourceBar(); }
-  showFloatingText(x, y, t, c) { this._showFloat(x, y, t, c); }
+  buildResourceBar() { this._rebuildWP(); }
+  rebuildResourceBar() { this._rebuildWP(); }
+  showFloatingText(x,y,t,c) { this._showFloat(x,y,t,c); }
   flashScreen() { this.cameras.main.flash(200); }
   buildRaidPartyStrip() {}
   showRaidFeedEntry() {}
