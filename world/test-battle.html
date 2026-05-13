@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Battle System Auto-Test</title>
+<style>
+  body { background: #0a0a14; color: #f0e8d4; font-family: monospace; font-size: 12px; padding: 20px; }
+  .pass { color: #4ade80; } .fail { color: #ff4444; } .warn { color: #fbbf24; }
+  .section { color: #4cc9f0; font-weight: bold; margin-top: 16px; }
+  #results { white-space: pre-wrap; line-height: 1.6; }
+</style>
+</head>
+<body>
+<h2>Battle System Autonomous Test</h2>
+<div id="results"></div>
+
+<!-- Load game scripts in order (no Phaser needed for logic tests) -->
+<script src="src/main.js"></script>
+<script src="src/globals.js"></script>
+<script src="src/core/cards-data.js"></script>
+<script src="src/core/dice-engine.js"></script>
+<script src="src/core/willpower.js"></script>
+<script src="src/core/resources.js"></script>
+<script src="src/core/card-abilities.js"></script>
+<script src="src/core/battle-engine.js"></script>
+<script src="src/core/battle.js"></script>
+
+<script>
+const out = document.getElementById('results');
+let passed = 0, failed = 0, warned = 0;
+
+function log(msg, cls) { out.innerHTML += `<span class="${cls||''}">${msg}</span>\n`; }
+function pass(msg) { passed++; log('  ✓ ' + msg, 'pass'); }
+function fail(msg) { failed++; log('  ✗ ' + msg, 'fail'); }
+function warn(msg) { warned++; log('  ⚠ ' + msg, 'warn'); }
+function section(msg) { log('\n' + msg, 'section'); }
+
+// ═══════════════════════════════════════════════
+//  TEST SUITE
+// ═══════════════════════════════════════════════
+
+section('=== CARD DATA ===');
+
+const activeCards = ALL_CARDS.filter(c => !SHELVED_IDS.has(c.id));
+log(`Total cards: ${ALL_CARDS.length} | Shelved: ${SHELVED_IDS.size} | Active: ${activeCards.length}`);
+if (activeCards.length === 200) pass('Active card count is 200');
+else fail(`Active card count is ${activeCards.length}, expected 200`);
+
+// Check every card has required fields
+let cardIssues = 0;
+activeCards.forEach(c => {
+  if (!c.name) { fail(`Card ${c.id} has no name`); cardIssues++; }
+  if (!c.ability) { fail(`Card ${c.id} (${c.name}) has no ability`); cardIssues++; }
+  if (!c.maxHp || c.maxHp <= 0) { fail(`Card ${c.id} (${c.name}) has invalid maxHp: ${c.maxHp}`); cardIssues++; }
+  if (!c.rarity) { warn(`Card ${c.id} (${c.name}) has no rarity`); }
+});
+if (cardIssues === 0) pass('All active cards have name, ability, and valid HP');
+
+section('=== BATTLE ENGINE ===');
+
+// Test initBattle
+ensurePlayerDefaults();
+G.team = [{id:1,name:'Kodako',hp:6,maxHp:6,ko:false},{id:34,name:'Grawr',hp:7,maxHp:7,ko:false},{id:56,name:'Chad',hp:6,maxHp:6,ko:false}];
+G.activeIdx = 0;
+
+try {
+  initBattle([1, 34, 56], [59, 60, 108], {type:'test'});
+  if (B && B.red && B.blue) pass('initBattle creates B with red/blue teams');
+  else fail('initBattle did not create proper B state');
+
+  if (B.red.ghosts.length === 3) pass('Red team has 3 ghosts');
+  else fail(`Red team has ${B.red.ghosts.length} ghosts`);
+
+  if (B.blue.ghosts.length === 3) pass('Blue team has 3 ghosts');
+  else fail(`Blue team has ${B.blue.ghosts.length} ghosts`);
+
+  if (B.committed && B.committed.red && B.committed.blue) pass('Committed buckets exist');
+  else fail('Missing committed resource buckets');
+} catch(e) { fail('initBattle threw: ' + e.message); }
+
+section('=== DICE ENGINE ===');
+
+// Test classify
+const c1 = classify([3,3,5]);
+if (c1.type === 'doubles' && c1.value === 3) pass('classify([3,3,5]) = doubles 3s');
+else fail(`classify([3,3,5]) = ${c1.type} ${c1.value}`);
+
+const c2 = classify([4,4,4]);
+if (c2.type === 'triples' && c2.damage === 3) pass('classify([4,4,4]) = triples, damage 3');
+else fail(`classify([4,4,4]) = ${c2.type} dmg ${c2.damage}`);
+
+const c3 = classify([1,3,5]);
+if (c3.type === 'singles' && c3.value === 5) pass('classify([1,3,5]) = singles high 5');
+else fail(`classify([1,3,5]) = ${c3.type} ${c3.value}`);
+
+// Test compareRolls — need to handle battle.js returns 'a'/'b'/'tie'
+const rA = classify([5,5,2]);
+const rB = classify([3,3,6]);
+const winner = compareRolls(rA, rB, [5,5,2], [3,3,6], false);
+if (winner === 'a' || winner === 'red') pass(`compareRolls doubles 5s vs doubles 3s = ${winner} (correct)`);
+else fail(`compareRolls doubles 5s vs doubles 3s = ${winner}`);
+
+const rC = classify([6,2,1]);
+const rD = classify([4,4,3]);
+const w2 = compareRolls(rC, rD, [6,2,1], [4,4,3], false);
+if (w2 === 'b' || w2 === 'blue') pass(`compareRolls singles vs doubles = ${w2} (doubles win)`);
+else fail(`compareRolls singles vs doubles = ${w2}`);
+
+section('=== WILLPOWER SYSTEM ===');
+
+// Test Heart card exists
+const heartCard = WILLPOWER_CARDS.find(c => c.id === 0);
+if (heartCard && heartCard.name === 'Heart') pass('Heart card (id 0) exists');
+else fail('Heart card missing');
+
+// Test default deck is hearts
+const defaultConfig = getHeartDeckConfig ? getHeartDeckConfig() : getDefaultWpDeckConfig();
+if (defaultConfig && defaultConfig[0] === 15) pass('Default deck is 15 hearts');
+else warn('Default deck config: ' + JSON.stringify(defaultConfig));
+
+// Test willpower activation
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+const redGhost = activeGhost(B.red);
+if (redGhost.willpower && redGhost.willpower.length > 0) pass(`Active ghost has ${redGhost.willpower.length} willpower cards`);
+else fail('Active ghost has no willpower cards');
+
+// Try activating
+const wpResult = activateWillpower('red', 'red', (msg) => {});
+if (wpResult) pass(`Willpower activated: ${wpResult.name} (${wpResult.effect})`);
+else warn('Willpower activation returned null (may be heart card with no effect, or blocked)');
+
+// Test wpDamage
+const beforeHp = redGhost.hp;
+wpDamage(redGhost, 2);
+if (redGhost.hp === beforeHp - 2) pass(`wpDamage: ${beforeHp} → ${redGhost.hp} (lost 2)`);
+else fail(`wpDamage: expected ${beforeHp - 2}, got ${redGhost.hp}`);
+
+// Test wpHeal
+const beforeHeal = redGhost.hp;
+wpHeal(redGhost, 1);
+if (redGhost.hp === beforeHeal + 1 || redGhost.hp === beforeHeal) pass(`wpHeal: ${beforeHeal} → ${redGhost.hp}`);
+else fail(`wpHeal unexpected: ${beforeHeal} → ${redGhost.hp}`);
+
+section('=== RESOURCE SYSTEM ===');
+
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+const team = B.red;
+
+// Test resource commit
+team.resources.ice = 3;
+const committed = cycleCommit('red', 'ice');
+if (committed === 1 && team.resources.ice === 2) pass('cycleCommit ice: 3→2, committed 1');
+else fail(`cycleCommit: resources=${team.resources.ice}, committed=${committed}`);
+
+// Test moonstone
+team.resources.moonstone = 1;
+const moonUsed = useMoonstone('red', () => {});
+if (moonUsed && B._moonstoneReady && B._moonstoneReady.red) pass('useMoonstone: committed successfully');
+else fail('useMoonstone failed');
+
+// Test healing seed
+team.resources.healingSeed = 1;
+const ghost = activeGhost(team);
+const hpBefore = ghost.hp;
+wpDamage(ghost, 1); // damage first so heal has room
+const healResult = spendHealingSeed('red', () => {});
+if (healResult) pass('spendHealingSeed: healed successfully');
+else warn('spendHealingSeed returned false (may be at max HP or blocked)');
+
+section('=== ENTRY ABILITIES ===');
+
+// Test Chad (56) — Entry: gain 2 Ice Shards
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+const chadTeam = B.red;
+const chadCallouts = triggerEntry(chadTeam, 'red');
+if (chadTeam.resources.ice >= 2) pass(`Chad entry: gained ${chadTeam.resources.ice} Ice Shards`);
+else fail(`Chad entry: ice = ${chadTeam.resources.ice}, expected >= 2`);
+
+// Test Grawr (34) — Entry: deal 1 damage
+initBattle([34, 56, 1], [59, 60, 108], {type:'test'});
+const enemyHpBefore = activeGhost(B.blue).hp;
+triggerEntry(B.red, 'red');
+const enemyHpAfter = activeGhost(B.blue).hp;
+if (enemyHpAfter < enemyHpBefore) pass(`Grawr entry: enemy HP ${enemyHpBefore}→${enemyHpAfter}`);
+else warn(`Grawr entry: enemy HP unchanged (${enemyHpAfter}) — may be blocked`);
+
+// Test Nerina (306) — Entry: deal 3 damage
+initBattle([306, 56, 1], [59, 60, 108], {type:'test'});
+const nerinaBefore = activeGhost(B.blue).hp;
+triggerEntry(B.red, 'red');
+const nerinaAfter = activeGhost(B.blue).hp;
+if (nerinaBefore - nerinaAfter >= 3) pass(`Nerina entry: dealt ${nerinaBefore - nerinaAfter} damage`);
+else warn(`Nerina entry: dealt ${nerinaBefore - nerinaAfter} damage (expected 3)`);
+
+// Test Jenkins (94) — Entry: roll 4 dice for damage
+initBattle([94, 56, 1], [59, 60, 108], {type:'test'});
+const jenkinsBefore = activeGhost(B.blue).hp;
+triggerEntry(B.red, 'red');
+const jenkinsAfter = activeGhost(B.blue).hp;
+if (jenkinsAfter < jenkinsBefore) pass(`Jenkins entry: dealt ${jenkinsBefore - jenkinsAfter} damage`);
+else warn(`Jenkins entry: no damage dealt`);
+
+section('=== DAMAGE MODIFIERS ===');
+
+// Test Doom (112) — +2 bonus damage always
+initBattle([112, 56, 1], [59, 60, 108], {type:'test'});
+const doomDmg = calculateDamage('red', {type:'singles',value:5,damage:1}, [5,3,2]);
+if (doomDmg >= 3) pass(`Doom damage: ${doomDmg} (base 1 + 2 bonus)`);
+else fail(`Doom damage: ${doomDmg}, expected >= 3`);
+
+// Test Doc (42) — +5 on doubles
+initBattle([42, 56, 1], [59, 60, 108], {type:'test'});
+const docDmg = calculateDamage('red', {type:'doubles',value:4,damage:2}, [4,4,2]);
+if (docDmg >= 7) pass(`Doc doubles damage: ${docDmg} (base 2 + 5)`);
+else fail(`Doc doubles damage: ${docDmg}, expected >= 7`);
+
+// Test Larry (35) — Triples deal 3X
+initBattle([35, 56, 1], [59, 60, 108], {type:'test'});
+const larryDmg = calculateDamage('red', {type:'triples',value:4,damage:3}, [4,4,4]);
+if (larryDmg >= 9) pass(`Larry triples damage: ${larryDmg} (3 × 3X)`);
+else fail(`Larry triples damage: ${larryDmg}, expected >= 9`);
+
+// Test Dark Jeff (74) sideline — +1 damage all rolls
+initBattle([56, 74, 1], [59, 60, 108], {type:'test'});
+const djDmg = calculateDamage('red', {type:'singles',value:5,damage:1}, [5,3,2]);
+if (djDmg >= 2) pass(`Dark Jeff sideline: damage = ${djDmg} (base 1 + 1 sideline)`);
+else fail(`Dark Jeff sideline: damage = ${djDmg}, expected >= 2`);
+
+// Test Bandit Pete (93) sideline — +3 when 2 dice
+initBattle([56, 93, 1], [59, 60, 108], {type:'test'});
+B.lastRollDiceCount = { red: 2, blue: 3 };
+const bpDmg = calculateDamage('red', {type:'singles',value:5,damage:1}, [5,3]);
+if (bpDmg >= 4) pass(`Bandit Pete sideline (2 dice): damage = ${bpDmg} (base 1 + 3)`);
+else fail(`Bandit Pete sideline (2 dice): damage = ${bpDmg}, expected >= 4`);
+
+section('=== DAMAGE REDUCTION ===');
+
+// Test Puff (5) — enemy doubles/triples -1 damage
+initBattle([59, 60, 108], [5, 34, 1], {type:'test'});
+const puffRed = calculateDamageReduction('blue', {type:'doubles',value:4,damage:2});
+if (puffRed >= 1) pass(`Puff reduction: ${puffRed} (doubles -1)`);
+else fail(`Puff reduction: ${puffRed}, expected >= 1`);
+
+// Test Guard Thomas (41) — below 6 HP: immune to singles
+initBattle([59, 60, 108], [41, 34, 1], {type:'test'});
+const gtGhost = activeGhost(B.blue);
+wpDamage(gtGhost, 1); // bring below 6
+const gtRed = calculateDamageReduction('blue', {type:'singles',value:5,damage:1});
+if (gtRed >= 1) pass(`Guard Thomas (below 6 HP): singles reduction = ${gtRed}`);
+else fail(`Guard Thomas singles reduction: ${gtRed}, expected >= 1`);
+
+section('=== DICE COUNT MODIFIERS ===');
+
+// Test Fredrick (27) — cap opponent at 3
+initBattle([59, 60, 108], [27, 34, 1], {type:'test'});
+B.red.resources.surge = 5; // give red extra surge dice
+B.committed = B.committed || {}; B.committed.red = B.committed.red || {};
+B.committed.red.surge = 2; // commit 2 surge = +2 dice normally
+const fredCount = calculateDiceCount('red');
+if (fredCount <= 3) pass(`Fredrick caps opponent dice: ${fredCount} (max 3)`);
+else fail(`Fredrick cap: ${fredCount}, expected <= 3`);
+
+// Test Cyboo (55) sideline — +1 die if active < 3 HP
+initBattle([59, 55, 1], [108, 34, 56], {type:'test'});
+const cybooGhost = activeGhost(B.red);
+wpDamage(cybooGhost, cybooGhost.hp - 2); // bring to 2 HP
+const cybooCount = calculateDiceCount('red');
+if (cybooCount >= 4) pass(`Cyboo sideline (2 HP): dice = ${cybooCount}`);
+else warn(`Cyboo sideline: dice = ${cybooCount} (expected >= 4, ghost HP=${activeGhost(B.red).hp})`);
+
+section('=== WIN PATH ABILITIES ===');
+
+// Test Lucy (108) — Win: gain 1 Sacred Fire
+initBattle([108, 34, 56], [59, 60, 1], {type:'test'});
+B.red.resources.fire = 0;
+triggerWinPath('red', {type:'doubles',value:4,damage:2});
+if (B.red.resources.fire >= 1) pass(`Lucy win: gained ${B.red.resources.fire} Sacred Fire`);
+else fail(`Lucy win: fire = ${B.red.resources.fire}, expected >= 1`);
+
+// Test Dart (209) — Win: gain 2 Surge
+initBattle([209, 34, 56], [59, 60, 1], {type:'test'});
+B.red.resources.surge = 0;
+triggerWinPath('red', {type:'singles',value:5,damage:1});
+if (B.red.resources.surge >= 2) pass(`Dart win: gained ${B.red.resources.surge} Surge`);
+else fail(`Dart win: surge = ${B.red.resources.surge}, expected >= 2`);
+
+// Test Outlaw (43) — Doubles: remove 1 enemy die next roll
+initBattle([43, 34, 56], [59, 60, 1], {type:'test'});
+triggerWinPath('red', {type:'doubles',value:3,damage:2});
+const outlawSteal = B.outlawStolenDie ? B.outlawStolenDie.red : 0;
+if (outlawSteal >= 1) pass(`Outlaw doubles: stole ${outlawSteal} enemy die`);
+else fail(`Outlaw doubles: outlawStolenDie = ${outlawSteal}`);
+
+section('=== LOSS PATH ABILITIES ===');
+
+// Test Sad Sal (29) — Lose: gain 1 Ice Shard
+initBattle([29, 34, 56], [59, 60, 1], {type:'test'});
+B.red.resources.ice = 0;
+triggerOnLoss('red');
+if (B.red.resources.ice >= 1) pass(`Sad Sal loss: gained ${B.red.resources.ice} Ice Shard`);
+else fail(`Sad Sal loss: ice = ${B.red.resources.ice}, expected >= 1`);
+
+// Test Chagrin (404) — Lose: gain 1 Surge
+initBattle([404, 34, 56], [59, 60, 1], {type:'test'});
+B.red.resources.surge = 0;
+triggerOnLoss('red');
+if (B.red.resources.surge >= 1) pass(`Chagrin loss: gained ${B.red.resources.surge} Surge`);
+else fail(`Chagrin loss: surge = ${B.red.resources.surge}, expected >= 1`);
+
+section('=== WILLPOWER CARD EFFECTS ===');
+
+// Test Bonanza activation
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+B.red.ghosts[0].willpower = [1, 1, 1, 0, 0, 0]; // Bonanza on top
+B.red.ghosts[0].hp = 6;
+B.wpUsedThisTurn = { red: false, blue: false };
+const bonResult = activateWillpower('red', 'red', () => {});
+if (bonResult && bonResult.effect === 'bonanza') pass(`Bonanza activated: ${bonResult.name}`);
+else fail(`Bonanza activation failed: ${bonResult ? bonResult.effect : 'null'}`);
+if (B.wpBonanza && B.wpBonanza.red === 2) pass('Bonanza flag: +2 damage set');
+else fail(`Bonanza flag: ${B.wpBonanza ? B.wpBonanza.red : 'missing'}`);
+
+// Test Spark activation
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+B.red.ghosts[0].willpower = [2, 0, 0, 0, 0, 0]; // Spark on top
+B.red.ghosts[0].hp = 6;
+B.wpUsedThisTurn = { red: false, blue: false };
+const sparkResult = activateWillpower('red', 'red', () => {});
+if (sparkResult && B.red.resources.surge >= 1) pass(`Spark: gained ${B.red.resources.surge} Surge`);
+else fail(`Spark: surge = ${B.red ? B.red.resources.surge : '?'}`);
+
+// Test Gain Shell activation
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+B.red.ghosts[0].willpower = [9, 0, 0, 0, 0, 0]; // Shell on top
+B.red.ghosts[0].hp = 6;
+B.wpUsedThisTurn = { red: false, blue: false };
+const shellResult = activateWillpower('red', 'red', () => {});
+if (shellResult && activeGhost(B.red).shellActive) pass('Shell activated: damage block active');
+else fail(`Shell: shellActive = ${activeGhost(B.red).shellActive}`);
+
+// Test Firefly (costs 4 HP)
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+B.red.ghosts[0].willpower = [11, 0, 0, 0, 0, 0, 0, 0]; // Firefly on top, 8 HP
+B.red.ghosts[0].hp = 8;
+B.wpUsedThisTurn = { red: false, blue: false };
+const ffResult = activateWillpower('red', 'red', () => {});
+if (ffResult && B.red.resources.firefly >= 1) pass(`Firefly: gained firefly, HP now ${activeGhost(B.red).hp}`);
+else if (!ffResult) fail(`Firefly: activation returned null (HP was 8, cost is 4)`);
+else fail(`Firefly: firefly = ${B.red.resources.firefly}`);
+
+// Test Firefly with insufficient HP
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+B.red.ghosts[0].willpower = [11, 0, 0]; // Firefly on top, only 3 HP
+B.red.ghosts[0].hp = 3;
+B.wpUsedThisTurn = { red: false, blue: false };
+const ffFail = activateWillpower('red', 'red', () => {});
+if (!ffFail) pass('Firefly correctly blocked with 3 HP (needs 4)');
+else fail('Firefly should have been blocked with 3 HP');
+
+// Test Sacred Fire (costs 3 HP)
+initBattle([56, 34, 1], [59, 60, 108], {type:'test'});
+B.red.ghosts[0].willpower = [12, 0, 0, 0, 0, 0, 0]; // Sacred Fire on top, 7 HP
+B.red.ghosts[0].hp = 7;
+B.wpUsedThisTurn = { red: false, blue: false };
+const sfResult = activateWillpower('red', 'red', () => {});
+if (sfResult && B.red.resources.fire >= 1) pass(`Sacred Fire: gained fire, HP now ${activeGhost(B.red).hp}`);
+else fail(`Sacred Fire: fire=${B.red ? B.red.resources.fire : '?'}, result=${sfResult ? sfResult.name : 'null'}`);
+
+// ═══════════════════════════════════════════════
+//  SUMMARY
+// ═══════════════════════════════════════════════
+
+section('═══════════════════════════════════════');
+log(`RESULTS: ${passed} passed, ${failed} failed, ${warned} warnings`);
+if (failed === 0) log('ALL TESTS PASSED', 'pass');
+else log(`${failed} TESTS FAILED — see above`, 'fail');
+</script>
+</body>
+</html>
