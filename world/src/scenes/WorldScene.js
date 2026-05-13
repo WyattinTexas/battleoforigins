@@ -45,29 +45,45 @@ class WorldScene extends Phaser.Scene {
     };
 
     const hasERW = this.textures.exists('erw_terrain');
+    const hasERWWater = this.textures.exists('erw_water') && this.anims.exists('erw_water_flow');
 
     // Draw entire map
     const mapGfx = this.add.graphics();
+    this._erwWaterSprites = [];
+
     for (let y = 0; y < MH; y++) {
       for (let x = 0; x < MW; x++) {
         const tileType = worldMap[y] ? worldMap[y][x] : 0;
 
-        // Determine if this tile should use ERW terrain (region-aware)
+        // ── Animated water tiles (type 3 = water, anywhere) ──
+        if (hasERWWater && tileType === 3) {
+          const waterSprite = this.add.sprite(x * T + T / 2, y * T + T / 2, 'erw_water', 0)
+            .setDepth(0).play('erw_water_flow');
+          // Stagger animation start so not all tiles sync — looks more natural
+          waterSprite.anims.setProgress((x * 0.12 + y * 0.07) % 1);
+          this._erwWaterSprites.push(waterSprite);
+          continue;
+        }
+
+        // ── ERW terrain (region-aware) ──
         let erwGroup = null;
         if (hasERW) {
           const region = getCurrentRegion(x, y);
 
           if (region === 'rolling_hills') {
-            // Rolling Hills — lush grass everywhere, stone for plazas
+            // Rolling Hills — lush grass everywhere
             if (tileType === 9 || tileType === 10 || tileType === 2) erwGroup = 'grass';
             else if (tileType === 11) erwGroup = 'hillGrass';
-            else if (tileType === 19) erwGroup = 'hillGrass'; // plazas get darker grass
+            else if (tileType === 19) erwGroup = 'hillGrass';
+            else if (tileType === 4) erwGroup = 'sand'; // ice near water = sandy shore
           } else if (region === 'volcanic_isles') {
             // Volcanic Isles — sandy paradise with lava rivers
-            // Sand for ground tiles, lava/water keep flat colors
             if (tileType === 14 || tileType === 17 || tileType === 18) erwGroup = 'sand';
             else if (tileType === 20) erwGroup = 'sand';
-            else if (tileType === 2) erwGroup = 'sand'; // paths are sandy too
+            else if (tileType === 2) erwGroup = 'sand';
+          } else if (region === 'frost_valley') {
+            // Frost Valley — ice tiles near the frozen lake become sandy shore
+            if (tileType === 4) erwGroup = 'sand';
           }
           // Sand tiles (beaches) anywhere
           if (tileType === 20) erwGroup = 'sand';
@@ -78,7 +94,7 @@ class WorldScene extends Phaser.Scene {
           const frame = frames[(x * 3 + y * 5) % frames.length];
           this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', frame).setDepth(0);
         } else {
-          // Flat color — Frost Valley snow, Dark Castle, water, lava, mountains, etc.
+          // Flat color — snow, lava, mountains, trees, buildings, etc.
           const colorHex = TILE_COLORS[tileType] || '#d8e8f0';
           const color = hexToNum(colorHex);
           mapGfx.fillStyle(color, 1);
@@ -465,6 +481,11 @@ class WorldScene extends Phaser.Scene {
 
     // Notify callback for globals
     _notifyCallback = (text) => this.showNotification(text);
+
+    // ── DOM HUD (always anchored to screen edges) ──
+    this._buildDomActionBar();
+    this._updateDomHUD();
+    this._domHudTimer = this.time.addEvent({ delay: 500, callback: () => this._updateDomHUD(), loop: true });
     console.log('[WorldScene] create: HUD + UI done');
 
     // Panel manager for inventory/team overlays
@@ -3030,7 +3051,10 @@ class WorldScene extends Phaser.Scene {
 
     // ── Chat system ──
     this.buildChatBox();
-    GameChat.init((msg) => this.onChatMessage(msg));
+    GameChat.init((msg) => {
+      this.onChatMessage(msg);
+      this._addDomChatMessage(`${msg.name}: ${msg.text}`);
+    });
     const chatRegion = getCurrentRegion(G.x, G.y) || 'frost_valley';
     GameChat.listenToRegion(chatRegion);
     this._chatRegion = chatRegion;
@@ -4024,5 +4048,77 @@ class WorldScene extends Phaser.Scene {
     this.input.on('pointermove', moveHandler);
     this.input.on('pointerdown', clickHandler);
     this.input.keyboard.on('keydown-ESC', escHandler);
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  DOM-BASED HUD — bypasses all Phaser zoom issues
+  // ══════════════════════════════════════════════════════
+
+  _buildDomActionBar() {
+    const bar = document.getElementById('hud-action-bar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    const actions = [
+      { id: 'fortune', icon: '★', name: 'Fortune', color: '#44bbff', check: () => typeof canGiveFortune === 'function' && canGiveFortune(), action: () => this._useFortuneFromBar() },
+      { id: 'build', icon: '⚒', name: 'Build', color: '#dd9933', check: () => typeof isApprentice === 'function' && isApprentice('artisan'), action: () => this._showBuildMenu() },
+      { id: 'garden', icon: '❀', name: 'Garden', color: '#66cc66', check: () => typeof isApprentice === 'function' && isApprentice('cultivator'), action: () => this._placementMode && this._placementMode('garden') },
+      { id: 'dna', icon: '⚗', name: 'DNA', color: '#aa55ff', check: () => typeof isApprentice === 'function' && isApprentice('scientist'), action: () => {} },
+      { id: 'recruit', icon: '♥', name: 'Recruit', color: '#44dd66', check: () => typeof isApprentice === 'function' && isApprentice('trainer'), action: () => {} },
+    ];
+
+    actions.filter(a => a.check()).forEach(a => {
+      const btn = document.createElement('div');
+      btn.className = 'action-btn';
+      btn.style.borderColor = a.color;
+      btn.innerHTML = `<span class="icon">${a.icon}</span><span class="label" style="color:${a.color}">${a.name}</span><span class="status" id="dom-status-${a.id}"></span>`;
+      btn.addEventListener('click', () => { if (!G.inBattle) a.action(); });
+      bar.appendChild(btn);
+    });
+  }
+
+  _updateDomHUD() {
+    // Player info
+    const el = document.getElementById('hud-player-info');
+    if (el) el.textContent = `${G.name} | LV ${G.level} (${G.xp}/${G.level*3} XP) | ${G.coins} Gold`;
+
+    // Team info
+    const team = document.getElementById('hud-team-info');
+    if (team && G.team && G.team[G.activeIdx]) {
+      const g = G.team[G.activeIdx];
+      team.textContent = `${g.name} HP ${g.hp}/${g.maxHp}`;
+    }
+
+    // Time
+    const time = document.getElementById('hud-time');
+    if (time && typeof getTimeOfDay === 'function') time.textContent = getTimeOfDay();
+
+    // Region
+    const region = document.getElementById('hud-top-right');
+    if (region && typeof getCurrentRegion === 'function') {
+      const r = getCurrentRegion(G.x, G.y);
+      const names = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
+      if (time) time.textContent = (names[r] || '') + '  ' + (time.textContent || '');
+    }
+
+    // Fortune status
+    const fs = document.getElementById('dom-status-fortune');
+    if (fs) {
+      if (typeof hasActiveFortune === 'function' && hasActiveFortune()) fs.textContent = 'ACTIVE';
+      else if (typeof isFortuneReady === 'function' && !isFortuneReady()) fs.textContent = getFortuneCooldownSec() + 's';
+      else fs.textContent = 'READY';
+    }
+  }
+
+  _addDomChatMessage(text) {
+    const el = document.getElementById('hud-chat-messages');
+    if (!el) return;
+    const line = document.createElement('div');
+    line.textContent = text;
+    line.style.marginBottom = '1px';
+    el.appendChild(line);
+    // Keep max 8 messages
+    while (el.children.length > 8) el.removeChild(el.firstChild);
+    el.scrollTop = el.scrollHeight;
   }
 }

@@ -7,11 +7,47 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0a0a0f; overflow: hidden; }
-  #game-container { width: 100vw; height: 100vh; }
+  #game-container { width: 100vw; height: 100vh; position: relative; }
+
+  /* ── DOM HUD OVERLAY — always anchored to screen edges ── */
+  #hud-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 10; font-family: monospace; }
+  #hud-overlay * { pointer-events: auto; }
+  #hud-top { position: absolute; top: 6px; left: 8px; }
+  #hud-top-right { position: absolute; top: 6px; right: 8px; }
+  #hud-action-bar { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
+  .action-btn { width: 52px; height: 52px; background: #1a1a2eee; border: 2px solid #44bbff; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+  .action-btn:hover { background: #333366; border-color: #ffffff; }
+  .action-btn .icon { font-size: 20px; line-height: 1; }
+  .action-btn .label { font-size: 8px; font-weight: bold; margin-top: 2px; }
+  .action-btn .status { font-size: 7px; color: #888; }
+  #hud-chat { position: absolute; bottom: 70px; left: 8px; width: 260px; max-height: 120px; background: #0a0a1acc; border: 1px solid #334466; border-radius: 4px; padding: 4px 6px; font-size: 10px; color: #aabbcc; overflow-y: auto; }
+  #hud-chat .chat-header { color: #88aacc; font-weight: bold; margin-bottom: 2px; }
+  #hud-chat .chat-input { color: #556677; margin-top: 4px; }
+  #hud-minimap { position: absolute; bottom: 70px; right: 8px; width: 90px; height: 65px; background: #000000aa; border: 1px solid #444466; }
+  .hud-info { background: #000000aa; color: #fff; padding: 2px 6px; font-size: 11px; display: inline-block; margin-bottom: 2px; }
+  .hud-team { background: #000000aa; color: #88ff88; padding: 2px 6px; font-size: 10px; display: inline-block; }
 </style>
 </head>
 <body>
-<div id="game-container"></div>
+<div id="game-container">
+  <!-- DOM HUD — always anchored to actual screen edges -->
+  <div id="hud-overlay">
+    <div id="hud-top">
+      <div id="hud-player-info" class="hud-info"></div><br>
+      <div id="hud-team-info" class="hud-team"></div>
+    </div>
+    <div id="hud-top-right">
+      <div id="hud-time" class="hud-info" style="color:#aac;font-size:10px;"></div>
+    </div>
+    <div id="hud-chat">
+      <div class="chat-header">Chat</div>
+      <div id="hud-chat-messages">Welcome to Battle of Origins!</div>
+      <div class="chat-input" id="hud-chat-input">Press Enter to chat...</div>
+    </div>
+    <div id="hud-action-bar"></div>
+    <div id="hud-minimap"><canvas id="minimap-canvas" width="90" height="65"></canvas></div>
+  </div>
+</div>
 
 <!-- Firebase SDK (Realtime Database) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
