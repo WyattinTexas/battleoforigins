@@ -8,7 +8,7 @@ const config = {
   width: 1280,
   height: 720,
   pixelArt: true,
-  transparent: true,
+  // transparent: true, // DISABLED — breaks Phaser 4 scene loading. Battle transparency handled by overlay rect.
   physics: {
     default: 'arcade',
     arcade: {
