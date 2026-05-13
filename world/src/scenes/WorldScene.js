@@ -2254,17 +2254,16 @@ class WorldScene extends Phaser.Scene {
   spawnBlackRiders() {
     if (!this.player) return;
 
-    // 8 unique Dark Riders — each has a name and specific team
-    // All labeled "Dark Rider" in the overworld, but their real name shows in battle
+    // 8 unique Dark Riders — labeled "Dark Rider" on map (except Lucy), real name in battle
     const DARK_RIDERS = [
-      { name: 'Lucy',              team: [108],       tint: 0x4444aa },
-      { name: 'Dark Jeff',         team: [314, 7],    tint: 0x446644 },
+      { name: 'Lucy',              team: [108],       tint: 0x4444aa, mapName: 'Lucy', sprite: 'creature_dragon' },
+      { name: 'Dark Jeff',         team: [74],        tint: 0x446644 },
       { name: 'Outlaw & Pete',     team: [209, 311],  tint: 0x886644 },
       { name: 'Shade',             team: [111, 205],  tint: 0x442266 },
-      { name: 'Dark Fang',         team: [202],       tint: 0x664422 },
-      { name: 'The Exile',         team: [47, 101],   tint: 0x444444 },
-      { name: 'Bigsby',            team: [424, 34],   tint: 0x662244 },
-      { name: 'Night Master',      team: [306, 98, 94], tint: 0x220044 },
+      { name: 'Tyler',             team: [105],       tint: 0x664422 },
+      { name: 'Doc',               team: [42, 100],   tint: 0x444444 },
+      { name: 'Harvey',            team: [448, 424],  tint: 0x662244 },
+      { name: 'Redd',              team: [98],        tint: 0x220044 },
     ];
 
     const count = Phaser.Math.Between(2, 3);
@@ -2283,8 +2282,9 @@ class WorldScene extends Phaser.Scene {
 
       // Pick a random rider identity
       const rider = DARK_RIDERS[Math.floor(Math.random() * DARK_RIDERS.length)];
+      const spriteKey = rider.sprite || 'creature_skull';
 
-      const sprite = this.enemies.create(rx, ry, 'creature_skull', 0).setScale(2.5);
+      const sprite = this.enemies.create(rx, ry, spriteKey, 0).setScale(2.5);
       sprite.setTint(rider.tint);
       sprite.setDepth(9);
       sprite._isBlackRider = true;
@@ -2295,7 +2295,9 @@ class WorldScene extends Phaser.Scene {
       const leadCard = ALL_CARDS.find(c => c.id === rider.team[0]);
       sprite.cardData = leadCard || ALL_CARDS.find(c => c.rarity === 'rare');
 
-      const label = this.add.text(rx, ry - 40, 'Dark Rider', {
+      // Lucy shows her name on the map; others say "Dark Rider"
+      const mapLabel = rider.mapName || 'Dark Rider';
+      const label = this.add.text(rx, ry - 40, mapLabel, {
         fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#aa44cc',
         backgroundColor: '#00000088', padding: { x: 3, y: 1 },
       }).setOrigin(0.5).setDepth(11);
