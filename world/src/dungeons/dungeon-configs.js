@@ -105,14 +105,27 @@ const DUNGEONS = {
 
     // ── Tile palette (colors for the ice-cavern theme) ───────
     palette: {
-      floor: 0xb8d4e6,       // icy floor
-      floorAccent: 0x9bbed4, // subtle variation (used as random speckle)
-      wall:  0x3a4a60,       // dark frosted stone
+      floor: 0xb8d4e6,       // icy floor (fallback if floor sprites fail to load)
+      floorAccent: 0x9bbed4,
+      wall:  0x3a4a60,
       doorClosed: 0x5a6878,
       doorOpen: 0xb8d4e6,
       stairs: 0xddeeff,
       stairsEdge: 0x88aacc,
-      bg: 0x1a2230,          // camera background outside map
+      bg: 0x080c14,          // very dark camera background outside map
+    },
+
+    // ── Lighting / vignette ──────────────────────────────────
+    // All values here are tunable. Set `enabled: false` to disable
+    // the whole effect at once. Other knobs let you shift intensity
+    // without removing it. Per-dungeon, so you can tune each one.
+    lighting: {
+      enabled: true,
+      vignetteAlpha: 0.85,    // 0..1 — how dark the corners get
+      ambientTint: 0x081428,  // hex — global blue ambient cast on the dungeon
+      ambientTintAlpha: 0.18, // 0..1 — strength of the cast
+      torchLightRadius: 80,   // px — size of warm halo per torch
+      torchLightAlpha: 0.42,  // 0..1 — strength of torch halos
     },
   },
 };

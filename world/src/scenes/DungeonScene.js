@@ -56,6 +56,7 @@ class DungeonScene extends Phaser.Scene {
     this._spawnPlayer();
     this._setupInput();
     this._setupHUD();
+    this._buildLighting();
     this._setupResumeHandler();
 
     // Hide overworld DOM HUD (chat input etc.)
@@ -95,17 +96,25 @@ class DungeonScene extends Phaser.Scene {
   _buildMap() {
     const T = this.T;
     const p = this.config.palette;
-    const g = this.add.graphics();
+    // Graphics object for wall edge highlights/shadows drawn over sprites.
+    const g = this.add.graphics().setDepth(2);
     this._mapGfx = g;
 
-    // Floors first (so wall features draw on top)
+    // ── Floors ─ flagstone sprite tiles, chosen deterministically.
+    // We draw floors under door tiles too so the open-door state
+    // reveals a real floor instead of a black hole.
     for (let y = 0; y < this.mapH; y++) {
       for (let x = 0; x < this.mapW; x++) {
-        if (this.grid[y][x] === D_TILE.WALL || this.grid[y][x] === D_TILE.DOOR_CLOSED) continue;
+        const t = this.grid[y][x];
+        if (t === D_TILE.WALL) continue;
         this._drawFloorTile(g, x, y);
       }
     }
-    // Walls on top so any inner-edge features overlap onto floor visually
+
+    // ── Walls ─ dark rock sprite + code-drawn highlight on the
+    // edge facing the room. Light comes "from above", so every
+    // wall's TOP edge gets the lit strip and bottom gets a shadow
+    // strip that bleeds into the floor below.
     for (let y = 0; y < this.mapH; y++) {
       for (let x = 0; x < this.mapW; x++) {
         if (this.grid[y][x] === D_TILE.WALL) this._drawWallTile(g, x, y);
@@ -163,197 +172,106 @@ class DungeonScene extends Phaser.Scene {
   }
 
   // ───────────────────────────────────────────────────────────
-  //  FLOOR — 6 deterministic variants (plain / cracked / sparkle
-  //  / frosted patch / ice shards / deep ice). Plus hanging
-  //  icicle decoration if the tile above is a wall.
+  //  FLOOR — placed as one of 5 hand-designed flagstone sprites,
+  //  chosen deterministically per tile so the dungeon looks the
+  //  same every load. Falls back to flat fill if textures missing.
   // ───────────────────────────────────────────────────────────
   _drawFloorTile(g, x, y) {
     const T = this.T;
-    const p = this.config.palette;
     const tx = x * T, ty = y * T;
     const h = this._tileHash(x, y);
-    // Base fill
-    g.fillStyle(p.floor, 1);
-    g.fillRect(tx, ty, T, T);
-
-    // Pick a variant
-    const r = (h & 0xff) / 0xff; // 0..1
-    if (r < 0.60) {
-      // Plain (~60%) — leave alone or add 1-2 micro-pixels
-      if ((h >> 8) & 1) {
-        g.fillStyle(p.floorAccent, 0.5);
-        g.fillRect(tx + 8 + ((h >> 9) & 0xf), ty + 8 + ((h >> 13) & 0xf), 1, 1);
-      }
-    } else if (r < 0.75) {
-      // Cracked ice — thin dark hairline crack
-      g.lineStyle(1, 0x6a88a0, 0.75);
-      const x0 = tx + 4 + ((h >> 4) & 0xf);
-      const y0 = ty + 6 + ((h >> 8) & 0xf);
-      g.beginPath();
-      g.moveTo(x0, y0);
-      g.lineTo(x0 + 6 + ((h >> 12) & 7), y0 + 8 + ((h >> 16) & 7));
-      g.lineTo(x0 + 12 + ((h >> 20) & 7), y0 + 4);
-      g.strokePath();
-      g.lineStyle();
-    } else if (r < 0.85) {
-      // Frost sparkle — small white star
-      const sx = tx + 6 + ((h >> 4) & 0x13);
-      const sy = ty + 6 + ((h >> 12) & 0x13);
-      g.fillStyle(0xeaf3ff, 0.95);
-      g.fillRect(sx, sy, 1, 1);
-      g.fillStyle(0xc8e0f0, 0.7);
-      g.fillRect(sx - 1, sy, 1, 1);
-      g.fillRect(sx + 1, sy, 1, 1);
-      g.fillRect(sx, sy - 1, 1, 1);
-      g.fillRect(sx, sy + 1, 1, 1);
-    } else if (r < 0.93) {
-      // Frosted patch — light circular wash
-      g.fillStyle(0xd0e4f0, 0.45);
-      const cxp = tx + 8 + ((h >> 4) & 0xf);
-      const cyp = ty + 8 + ((h >> 12) & 0xf);
-      g.fillCircle(cxp, cyp, 6);
-      g.fillStyle(0xeaf3ff, 0.35);
-      g.fillCircle(cxp, cyp, 3);
-    } else if (r < 0.98) {
-      // Small ice shard cluster — 2 tiny triangular shards
-      g.fillStyle(0xb0d0e4, 0.95);
-      const ax = tx + 4 + ((h >> 4) & 0xf);
-      const ay = ty + 18 + ((h >> 8) & 7);
-      g.fillTriangle(ax, ay, ax + 2, ay - 4, ax + 4, ay);
-      g.fillTriangle(ax + 8, ay + 2, ax + 9, ay - 2, ax + 11, ay + 2);
-      g.fillStyle(0xeaf3ff, 0.9);
-      g.fillRect(ax + 1, ay - 1, 1, 1);
+    const variant = 1 + (h % 5);
+    const key = `d_floor_${variant}`;
+    if (this.textures.exists(key)) {
+      this.add.image(tx, ty, key).setOrigin(0, 0).setDepth(0);
     } else {
-      // Deep ice patch — slightly darker with a bright highlight
-      g.fillStyle(0x88aac8, 0.55);
-      const dx = tx + 6;
-      const dy = ty + 8 + ((h >> 4) & 7);
-      g.fillRect(dx, dy, 20, 14);
-      g.fillStyle(0xeaf3ff, 0.6);
-      g.fillRect(dx + 2, dy + 2, 6, 1);
-    }
-
-    // Hanging icicles if the tile above is a wall — decorative,
-    // drawn at the top of THIS floor tile so they look like they
-    // dangle from the cavern ceiling into the room.
-    if (y > 0 && this.grid[y - 1][x] === D_TILE.WALL) {
-      const numIcicles = 1 + (h & 1) + ((h >> 2) & 1); // 1..3
-      for (let i = 0; i < numIcicles; i++) {
-        const ix = tx + 4 + ((h >> (i * 4 + 4)) & 0x17);
-        const iyTop = ty;
-        const len = 3 + ((h >> (i * 5 + 8)) & 5); // 3..8 px
-        // Icicle body — tapered triangle
-        g.fillStyle(0xa8c8dc, 1);
-        g.fillTriangle(ix, iyTop, ix + 3, iyTop, ix + 1, iyTop + len);
-        // Tip highlight
-        g.fillStyle(0xeaf3ff, 0.95);
-        g.fillRect(ix + 1, iyTop, 1, Math.max(1, len - 2));
-      }
+      g.fillStyle(this.config.palette.floor, 1);
+      g.fillRect(tx, ty, T, T);
     }
   }
 
   // ───────────────────────────────────────────────────────────
-  //  WALL — base color + frost veins + jagged inner edges +
-  //  icicles on the BOTTOM of top-walls (where they hang into
-  //  rooms in adjacent floor tiles, see floor drawing).
+  //  WALL — base rock sprite + code-drawn top highlight + bottom
+  //  shadow strip on whichever edge faces the room (light from
+  //  above). No more per-tile noise.
   // ───────────────────────────────────────────────────────────
   _drawWallTile(g, x, y) {
     const T = this.T;
     const tx = x * T, ty = y * T;
-    const h = this._tileHash(x, y);
 
-    // Base — slightly darker than the config wall color for moody feel
-    const BASE = 0x2a3848;
-    const DARK = 0x1a2230;
-    const LIGHT = 0x4a5868;
-    const FROST = 0x6a88a0;
-
-    g.fillStyle(BASE, 1);
-    g.fillRect(tx, ty, T, T);
-
-    // Subtle base variation — three irregular blotches per tile
-    for (let i = 0; i < 3; i++) {
-      const bx = tx + 4 + ((h >> (i * 6)) & 0x17);
-      const by = ty + 4 + ((h >> (i * 6 + 3)) & 0x17);
-      const sz = 2 + ((h >> (i * 5 + 9)) & 3);
-      g.fillStyle((i & 1) ? DARK : LIGHT, 0.5);
-      g.fillRect(bx, by, sz, sz);
+    if (this.textures.exists('d_wall_body')) {
+      this.add.image(tx, ty, 'd_wall_body').setOrigin(0, 0).setDepth(1);
+    } else {
+      g.fillStyle(0x2a3848, 1);
+      g.fillRect(tx, ty, T, T);
     }
 
-    // Frost vein (a few light hairlines)
-    if (((h >> 16) & 3) !== 0) {
-      g.lineStyle(1, FROST, 0.55);
-      const vx = tx + 6 + ((h >> 4) & 0xf);
-      const vy = ty + 6 + ((h >> 8) & 0xf);
-      g.beginPath();
-      g.moveTo(vx, vy);
-      g.lineTo(vx + 4 + ((h >> 12) & 7), vy + 8 + ((h >> 16) & 7));
-      g.lineTo(vx + 8, vy + 12);
-      g.strokePath();
-      g.lineStyle();
-    }
-
-    // Inner-edge jagged accent toward whichever neighbor is floor.
-    // 2-3 small bumps on the inside edge so walls don't read as squares.
     const isFloor = (nx, ny) => {
       if (nx < 0 || ny < 0 || nx >= this.mapW || ny >= this.mapH) return false;
       const t = this.grid[ny][nx];
-      return t === D_TILE.FLOOR || t === D_TILE.DOOR_OPEN || t === D_TILE.STAIRS;
+      return t === D_TILE.FLOOR || t === D_TILE.DOOR_OPEN || t === D_TILE.DOOR_CLOSED || t === D_TILE.STAIRS;
     };
-    const inS = isFloor(x, y + 1);   // wall above a floor (top wall of room)
+    const inS = isFloor(x, y + 1);
     const inN = isFloor(x, y - 1);
     const inE = isFloor(x + 1, y);
     const inW = isFloor(x - 1, y);
 
-    const drawJag = (px, py, vertical) => {
-      g.fillStyle(LIGHT, 0.7);
-      if (vertical) {
-        g.fillRect(px, py,     1, 2);
-        g.fillRect(px, py + 6, 1, 3);
-        g.fillRect(px, py + 14,1, 2);
-        g.fillRect(px, py + 22,1, 3);
-      } else {
-        g.fillRect(px,      py, 2, 1);
-        g.fillRect(px + 6,  py, 3, 1);
-        g.fillRect(px + 14, py, 2, 1);
-        g.fillRect(px + 22, py, 3, 1);
-      }
-    };
-    if (inS) drawJag(tx, ty + T - 1, false);     // highlight on bottom edge (looking down into room)
-    if (inN) drawJag(tx, ty,         false);     // top edge
-    if (inE) drawJag(tx + T - 1, ty, true);      // right edge
-    if (inW) drawJag(tx,         ty, true);      // left edge
-
-    // Icicles on top walls (south neighbor is floor): hang short
-    // crystals just at the bottom of the wall tile. The floor tile
-    // below ALSO draws taller icicles into the room — these are the
-    // "stumps" attached to the wall.
+    // Top highlight (lit edge) — always at the TOP of the tile if a
+    // floor is anywhere adjacent. Reads as "light from above hits
+    // the top of the rock formation."
+    if (inS || inE || inW) {
+      g.fillStyle(0x7a94ac, 0.8);
+      g.fillRect(tx, ty, T, 2);
+      g.fillStyle(0xa0b8c8, 0.55);
+      g.fillRect(tx, ty + 2, T, 1);
+    }
+    // Bottom shadow (the wall's front face throws shadow onto floor).
+    // Drawn into the wall tile's lower 3 pixels so it looks like the
+    // shadow extends to where wall meets floor.
     if (inS) {
-      const count = 2 + ((h >> 10) & 1);
-      for (let i = 0; i < count; i++) {
-        const ix = tx + 4 + ((h >> (i * 4 + 14)) & 0x17);
-        g.fillStyle(0x9bb8d0, 1);
-        g.fillTriangle(ix, ty + T - 4, ix + 3, ty + T - 4, ix + 1, ty + T);
-      }
+      g.fillStyle(0x0a1018, 0.85);
+      g.fillRect(tx, ty + T - 3, T, 3);
+      g.fillStyle(0x14202c, 0.65);
+      g.fillRect(tx, ty + T - 5, T, 2);
+    }
+    // Side shadows for left/right edges of walls touching rooms
+    if (inE) {
+      g.fillStyle(0x14202c, 0.55);
+      g.fillRect(tx + T - 2, ty, 2, T);
+    }
+    if (inW) {
+      g.fillStyle(0x14202c, 0.55);
+      g.fillRect(tx, ty, 2, T);
     }
   }
 
   // ───────────────────────────────────────────────────────────
-  //  DOOR FRAME — drawn directly into the map graphics behind
-  //  the wooden door halves. Looks like a stone arch.
+  //  DOOR FRAME — stone arch around the doorway. Only the FRAME
+  //  edges are drawn; the center is intentionally left clear so
+  //  the floor sprite below shows through. When the door opens,
+  //  the wood halves slide aside and the floor is visible — looks
+  //  like a real passageway, not a black hole.
   // ───────────────────────────────────────────────────────────
   _drawDoorFrame(g, x, y) {
     const T = this.T;
     const tx = x * T, ty = y * T;
-    const FRAME       = 0x6a5848;
-    const FRAME_LIGHT = 0x8a7060;
-    const FRAME_DARK  = 0x3a2828;
-    // Outer frame (wider, slightly proud of the tile)
-    g.fillStyle(FRAME_DARK, 1); g.fillRect(tx,     ty + 2, T, T - 4);
-    g.fillStyle(FRAME, 1);      g.fillRect(tx + 1, ty + 3, T - 2, T - 6);
+    const FRAME       = 0x5a4838;
+    const FRAME_LIGHT = 0x7a6048;
+    const FRAME_DARK  = 0x2a1c12;
+    // Top rail (lintel)
+    g.fillStyle(FRAME_DARK, 1); g.fillRect(tx,     ty + 2, T, 5);
+    g.fillStyle(FRAME, 1);      g.fillRect(tx + 1, ty + 3, T - 2, 3);
     g.fillStyle(FRAME_LIGHT, 1);g.fillRect(tx + 2, ty + 3, T - 4, 1);
-    // Inner cavity (where the door wood sits)
-    g.fillStyle(0x14101a, 1);   g.fillRect(tx + 3, ty + 5, T - 6, T - 10);
+    // Bottom rail (sill)
+    g.fillStyle(FRAME_DARK, 1); g.fillRect(tx,     ty + T - 5, T, 4);
+    g.fillStyle(FRAME, 1);      g.fillRect(tx + 1, ty + T - 4, T - 2, 2);
+    // Left jamb
+    g.fillStyle(FRAME_DARK, 1); g.fillRect(tx,     ty + 7, 3, T - 14);
+    g.fillStyle(FRAME, 1);      g.fillRect(tx + 1, ty + 7, 1, T - 14);
+    // Right jamb
+    g.fillStyle(FRAME_DARK, 1); g.fillRect(tx + T - 3, ty + 7, 3, T - 14);
+    g.fillStyle(FRAME, 1);      g.fillRect(tx + T - 2, ty + 7, 1, T - 14);
+    // Center deliberately left clear — floor sprite below shows through.
   }
 
   // ───────────────────────────────────────────────────────────
@@ -371,32 +289,86 @@ class DungeonScene extends Phaser.Scene {
   }
 
   _drawWallTorch(px, py) {
-    const bracket = this.add.graphics().setDepth(2);
-    bracket.fillStyle(0x3a2818, 1);
-    bracket.fillRect(px - 1, py - 1, 2, 6);
-    bracket.fillStyle(0x6a5040, 1);
-    bracket.fillRect(px,     py - 1, 1, 4);
+    const L = this.config.lighting || {};
+    const haloR = L.torchLightRadius || 80;
+    const haloA = L.torchLightAlpha || 0.42;
 
-    // Flame body — flicker via redraw
-    const flame = this.add.graphics().setDepth(3);
+    // Iron bracket — bigger, more visible
+    const bracket = this.add.graphics().setDepth(6);
+    bracket.fillStyle(0x1a1218, 1);
+    bracket.fillRect(px - 2, py + 2, 4, 8);          // back plate
+    bracket.fillStyle(0x3a2818, 1);
+    bracket.fillRect(px - 1, py - 1, 3, 10);         // pole
+    bracket.fillStyle(0x6a5040, 1);
+    bracket.fillRect(px,     py - 1, 1, 8);
+    // Torch holder cup
+    bracket.fillStyle(0x2a1818, 1);
+    bracket.fillRect(px - 3, py - 4, 7, 3);
+    bracket.fillStyle(0x4a3020, 1);
+    bracket.fillRect(px - 2, py - 4, 5, 1);
+
+    // Flame — larger, three-color tiered with bigger flicker
+    const flame = this.add.graphics().setDepth(7);
     const drawFlame = (big) => {
       flame.clear();
-      flame.fillStyle(0xff7733, 0.95); flame.fillCircle(px + 0.5, py - 4, big ? 3.5 : 3);
-      flame.fillStyle(0xffcc44, 1);    flame.fillCircle(px + 0.5, py - 4, big ? 2.2 : 1.8);
-      flame.fillStyle(0xffee99, 1);    flame.fillCircle(px + 0.5, py - 4, 1);
+      const fx = px + 0.5, fy = py - 8;
+      // Outer orange
+      flame.fillStyle(0xff6622, 0.95);
+      flame.fillCircle(fx, fy, big ? 6 : 5);
+      // Middle yellow
+      flame.fillStyle(0xffaa33, 1);
+      flame.fillCircle(fx, fy - 1, big ? 4 : 3);
+      // Inner bright
+      flame.fillStyle(0xffdd66, 1);
+      flame.fillCircle(fx, fy - 1, big ? 2.5 : 2);
+      // White core
+      flame.fillStyle(0xfff2c0, 1);
+      flame.fillCircle(fx, fy - 1, 1);
     };
     drawFlame(true);
 
-    // Soft warm halo (light pool)
-    const halo = this.add.circle(px, py - 4, 22, 0xff9944, 0.18).setDepth(1);
+    // Light halo — soft warm pool. Sits ABOVE the vignette so it
+    // visibly punches through the darkness.
+    const halo = this.add.circle(px, py - 8, haloR, 0xff9944, haloA).setDepth(20);
+    // Inner brighter core
+    const haloCore = this.add.circle(px, py - 8, haloR * 0.45, 0xffcc66, haloA * 0.55).setDepth(20);
 
     let big = true;
     this.time.addEvent({
-      delay: 180, loop: true,
+      delay: 160, loop: true,
       callback: () => { big = !big; drawFlame(big); },
     });
-    this.tweens.add({ targets: halo, alpha: 0.08, scaleX: 1.15, scaleY: 1.15,
-      duration: 380, yoyo: true, repeat: -1 });
+    this.tweens.add({ targets: [halo, haloCore], alpha: '-=0.15', scaleX: 1.1, scaleY: 1.1,
+      duration: 350, yoyo: true, repeat: -1 });
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  LIGHTING / VIGNETTE — toggle and tune via config.lighting.
+  //  Set enabled:false to disable the whole effect.
+  // ───────────────────────────────────────────────────────────
+  _buildLighting() {
+    const L = this.config.lighting;
+    if (!L || !L.enabled) return;
+    const cam = this.cameras.main;
+
+    // Ambient blue cast — slight world-wide tint making things feel cold
+    if (L.ambientTintAlpha > 0 && L.ambientTint != null) {
+      const tint = this.add.rectangle(
+        cam.width / 2, cam.height / 2, cam.width, cam.height,
+        L.ambientTint, L.ambientTintAlpha
+      ).setScrollFactor(0).setDepth(15);
+      this._lightingTint = tint;
+    }
+
+    // Vignette overlay — darker at corners, transparent center.
+    if (L.vignetteAlpha > 0 && this.textures.exists('d_vignette')) {
+      const vig = this.add.image(cam.width / 2, cam.height / 2, 'd_vignette')
+        .setScrollFactor(0)
+        .setDepth(18)
+        .setAlpha(L.vignetteAlpha);
+      vig.setDisplaySize(cam.width, cam.height);
+      this._lightingVignette = vig;
+    }
   }
 
   // ═══════════════════════════════════════════════════════════

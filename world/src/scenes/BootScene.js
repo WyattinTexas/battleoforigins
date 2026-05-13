@@ -59,6 +59,13 @@ class BootScene extends Phaser.Scene {
     this.load.image('door_l', 'assets/tiles/door_l.png');
     this.load.image('door_r', 'assets/tiles/door_r.png');
 
+    // Dungeon tile + lighting assets (icy flagstone + rock walls + vignette)
+    for (let i = 1; i <= 5; i++) {
+      this.load.image(`d_floor_${i}`, `assets/tiles/floor_${i}.png`);
+    }
+    this.load.image('d_wall_body', 'assets/tiles/wall_body.png');
+    this.load.image('d_vignette', 'assets/tiles/vignette.png');
+
     // ── ERW Grass Land 2.0 tilesets (32x32 native) ──
     this.load.spritesheet('erw_terrain', 'assets/erw/tilesets/terrain-grass.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('erw_wall', 'assets/erw/tilesets/wall1.png', { frameWidth: 32, frameHeight: 32 });
@@ -262,7 +269,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v87', {
+    this.add.text(width / 2, height * 0.34, 'v88', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 
