@@ -1593,7 +1593,8 @@ class WorldScene extends Phaser.Scene {
     const ex = px + Math.cos(angle) * dist;
     const ey = py + Math.sin(angle) * dist;
 
-    const wildCard = ALL_CARDS[Math.floor(Math.random() * ALL_CARDS.length)];
+    const activeCards = typeof getActiveCards === 'function' ? getActiveCards() : ALL_CARDS.filter(c => !SHELVED_IDS || !SHELVED_IDS.has(c.id));
+    const wildCard = activeCards[Math.floor(Math.random() * activeCards.length)];
     const creatureKeys = ['creature_bear','creature_dragon','creature_axolot','creature_axolotblue','creature_butterfly','creature_butterflyblue','creature_bluebat','creature_slime','creature_mushroom','creature_bamboo'];
     const creatureKey = creatureKeys[Math.floor(Math.random() * creatureKeys.length)];
     const enemy = this.enemies.create(ex, ey, creatureKey, 0).setScale(1.8);

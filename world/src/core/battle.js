@@ -19,7 +19,7 @@ function getWildEncounter() {
     : inRollingHills
     ? ['Rolling Hills', 'Set 1']
     : ['Frost Valley', 'Set 1'];
-  const fvCards = ALL_CARDS.filter(c => regionSets.includes(c.set) && c.rarity !== 'legendary');
+  const fvCards = ALL_CARDS.filter(c => regionSets.includes(c.set) && c.rarity !== 'legendary' && (!SHELVED_IDS || !SHELVED_IDS.has(c.id)));
   const weights = { common: 50, uncommon: 25, rare: 10, 'ghost-rare': 3 };
 
   // Scout discipline finds rarer
