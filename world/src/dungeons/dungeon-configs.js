@@ -32,10 +32,9 @@ const DUNGEONS = {
     bossHpMultiplier: 3,       // boss HP = card.maxHp * 3 (matches world boss scaling)
     mobHpMultiplier: 1,        // common mob HP scaling (1 = card default)
     bossRewardGold: 100,       // gold awarded on final boss defeat
-    // TEMP test flag — when true, walking into a mob instantly defeats
-    // it (no battle). Use to verify victory-exit flow end-to-end.
-    // Revert to false after testing.
-    instaWin: true,
+    // Test flag — when true, walking into a mob instantly defeats it
+    // (no battle). Useful for verifying victory-exit flow end-to-end.
+    instaWin: false,
 
     // Overworld tile the player is dropped onto when leaving the dungeon
     // (success or failure). MUST be walkable. The world-gen explicitly
