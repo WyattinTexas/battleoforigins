@@ -113,6 +113,32 @@
     return 'running';
   });
 
+  // ── waitForInteract: blocks until player presses E near this NPC ──
+  registerAction('waitForInteract', function (inst, scene, action, state) {
+    if (!inst.sprite || !scene.player) return 'running';
+    const dist = Phaser.Math.Distance.Between(inst.sprite.x, inst.sprite.y, scene.player.x, scene.player.y);
+    const range = (action.range || 80);
+    // Show [E] hint when close
+    if (dist < range && !inst._interactHint) {
+      inst._interactHint = scene.add.text(inst.sprite.x, inst.sprite.y + 24, '[E]', {
+        fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffffff',
+        backgroundColor: '#000000aa', padding: { x: 3, y: 1 },
+      }).setOrigin(0.5).setDepth(12);
+    } else if (dist >= range && inst._interactHint) {
+      inst._interactHint.destroy(); inst._interactHint = null;
+    }
+    // Check E press while in range
+    if (dist < range && scene.input && scene.input.keyboard) {
+      if (!state._eKey) state._eKey = scene.input.keyboard.addKey('E');
+      if (Phaser.Input.Keyboard.JustDown(state._eKey)) {
+        if (inst._interactHint) { inst._interactHint.destroy(); inst._interactHint = null; }
+        if (state._eKey) { scene.input.keyboard.removeKey(state._eKey.keyCode); state._eKey = null; }
+        return 'done';
+      }
+    }
+    return 'running';
+  });
+
   // ── freezePlayer: lock player movement until unfreezePlayer ──
   registerAction('freezePlayer', function (inst, scene, action) {
     if (scene.player) {

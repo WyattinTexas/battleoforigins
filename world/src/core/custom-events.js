@@ -153,6 +153,7 @@ const FV_HERMIT_WREN_SCRIPT = {
     {
       id: 'greet',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'fv_hermit_wren_met', gotoPhase: 'already_met' },
         { type: 'comm', speaker: 'Hermit Wren', text: 'Well now. A traveler in the valley. Rare sight these days.', color: '#aaddff', duration: 3500 },
         { type: 'wait', ms: 3800 },
@@ -167,6 +168,7 @@ const FV_HERMIT_WREN_SCRIPT = {
     {
       id: 'already_met',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Hermit Wren', text: 'Still here? Good. The valley needs watchful eyes.', color: '#aaddff', duration: 3000 },
         { type: 'endEvent' },
       ],
@@ -316,6 +318,7 @@ const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
     {
       id: 'discover',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'fv_frozen_chest_opened', gotoPhase: 'empty' },
         { type: 'comm', speaker: 'Narrator', text: 'A chest encased in frost. The ice cracks as you approach.', color: '#ccddff', duration: 3500 },
         { type: 'wait', ms: 3800 },
@@ -328,6 +331,7 @@ const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
     {
       id: 'empty',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Narrator', text: 'The chest is empty. You already claimed its contents.', color: '#999999', duration: 2500 },
         { type: 'endEvent' },
       ],
@@ -357,6 +361,7 @@ const FV_MERCHANT_PEDDLER_SCRIPT = {
     {
       id: 'greet',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Frosty Peddler', text: 'Brr! Cold day for business. But I have wares worth the chill.', color: '#ddeeff', duration: 3500 },
         { type: 'wait', ms: 3800 },
         { type: 'comm', speaker: 'Frosty Peddler', text: 'Here, a warming charm. Should keep you steady in battle.', color: '#ddeeff', duration: 3000 },
@@ -397,6 +402,7 @@ const RH_FARMER_TOMAS_SCRIPT = {
     {
       id: 'greet',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'rh_farmer_tomas_met', gotoPhase: 'return_visit' },
         { type: 'comm', speaker: 'Farmer Tomas', text: 'Welcome to the Hills! Finest soil in the whole realm.', color: '#bbdd88', duration: 3500 },
         { type: 'wait', ms: 3800 },
@@ -409,6 +415,7 @@ const RH_FARMER_TOMAS_SCRIPT = {
     {
       id: 'return_visit',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Farmer Tomas', text: 'Back again? The harvest has been good this season.', color: '#bbdd88', duration: 3000 },
         { type: 'endEvent' },
       ],
@@ -559,6 +566,7 @@ const RH_TREASURE_MOSSY_STASH_SCRIPT = {
     {
       id: 'discover',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'rh_mossy_stash_opened', gotoPhase: 'empty' },
         { type: 'comm', speaker: 'Narrator', text: 'A mound of moss hides something beneath. You dig carefully.', color: '#aaddaa', duration: 3500 },
         { type: 'wait', ms: 3800 },
@@ -571,6 +579,7 @@ const RH_TREASURE_MOSSY_STASH_SCRIPT = {
     {
       id: 'empty',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Narrator', text: 'Just moss now. Nothing left to find.', color: '#999999', duration: 2500 },
         { type: 'endEvent' },
       ],
@@ -607,6 +616,7 @@ const VI_EMBER_SCOUT_SCRIPT = {
     {
       id: 'greet',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'vi_kael_met', gotoPhase: 'return_visit' },
         { type: 'comm', speaker: 'Kael', text: 'The ground is hot here. Watch where you step.', color: '#ffaa44', duration: 3500 },
         { type: 'wait', ms: 3800 },
@@ -619,6 +629,7 @@ const VI_EMBER_SCOUT_SCRIPT = {
     {
       id: 'return_visit',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Kael', text: 'Still standing? The isles have not broken you yet.', color: '#ffaa44', duration: 3000 },
         { type: 'endEvent' },
       ],
@@ -769,6 +780,7 @@ const VI_MERCHANT_NIMA_SCRIPT = {
     {
       id: 'greet',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Nima', text: 'Walk the ash long enough and it becomes home. I have gifts for the bold.', color: '#ffcc88', duration: 3500 },
         { type: 'wait', ms: 3800 },
         { type: 'comm', speaker: 'Nima', text: 'This salve will harden your skin against the heat.', color: '#ffcc88', duration: 3000 },
@@ -930,6 +942,7 @@ const DC_TREASURE_RELIQUARY_SCRIPT = {
     {
       id: 'discover',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'dc_reliquary_opened', gotoPhase: 'empty' },
         { type: 'comm', speaker: 'Narrator', text: 'An ancient reliquary pulses with dark energy. You pry it open.', color: '#bb88dd', duration: 3500 },
         { type: 'wait', ms: 3800 },
@@ -942,6 +955,7 @@ const DC_TREASURE_RELIQUARY_SCRIPT = {
     {
       id: 'empty',
       actions: [
+        { type: 'waitForInteract' },
         { type: 'comm', speaker: 'Narrator', text: 'The reliquary is hollow. Its power was already claimed.', color: '#999999', duration: 2500 },
         { type: 'endEvent' },
       ],
