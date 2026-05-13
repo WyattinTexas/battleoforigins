@@ -82,22 +82,14 @@ const VALKIN_EVENT = {
           "This land bows to ME now.",
           "Kill-takular!",
         ];
-        return {
-          chat: true, // post to world chat
-          face: true,
-          text: specials[Math.floor((count / 5 - 1) % specials.length)],
-          color: '#cc66ff',
-          announce: true, // big announcement in center of screen
-        };
+        const line = specials[Math.floor((count / 5 - 1) % specials.length)];
+        valkinChat(line);
+        return { face: true, text: line, color: '#cc66ff', announce: true };
       }
 
       // Normal kill line
-      return {
-        chat: true,
-        face: false,
-        text: "Kill Count " + count,
-        color: '#cc66ff',
-      };
+      valkinChat("Kill Count " + count);
+      return { face: false, text: "Kill Count " + count, color: '#cc66ff' };
     },
 
     // Reset on new event
@@ -114,6 +106,32 @@ const VALKIN_EVENT = {
   ],
 };
 
+// ── Send chat as Valkin (uses his name, not the player's) ──
+function valkinChat(text) {
+  if (typeof db === 'undefined' || db._stub) {
+    // Offline: inject directly into WorldScene chat if available
+    if (typeof GameChat !== 'undefined' && GameChat._onMessage) {
+      GameChat._onMessage({ name: 'Valkin the Grand', text: text, level: 99, ts: Date.now() });
+    }
+    return;
+  }
+  // Online: push to Firebase with Valkin's name
+  try {
+    const region = GameChat._currentRegion || 'frost_valley';
+    db.ref('chat/' + region).push({
+      name: 'Valkin the Grand',
+      text: text.slice(0, 200),
+      level: 99,
+      ts: firebase.database.ServerValue.TIMESTAMP,
+    });
+  } catch(e) {
+    // Fallback: inject locally
+    if (typeof GameChat !== 'undefined' && GameChat._onMessage) {
+      GameChat._onMessage({ name: 'Valkin the Grand', text: text, level: 99, ts: Date.now() });
+    }
+  }
+}
+
 // ── Spawn Valkin Event ─────────────────────────────────
 // Call this to start the Valkin world event
 function spawnValkinEvent(scene) {
@@ -125,10 +143,8 @@ function spawnValkinEvent(scene) {
   event.battleDialogue._said10hp = false;
   event.battleDialogue._saidLowHp = false;
 
-  // Announce in world chat
-  if (typeof GameChat !== 'undefined' && GameChat.send) {
-    GameChat.send('[EVENT] Valkin the Grand has appeared! Seek shelter or stand and fight!', 'system');
-  }
+  // Announce in world chat as Valkin
+  valkinChat('I have arrived. Tremble before Valkin the Grand!');
   if (typeof notify === 'function') {
     notify('⚠ VALKIN THE GRAND HAS APPEARED! ⚠');
   }
@@ -258,9 +274,7 @@ function updateValkinHunt(scene) {
   if (Date.now() - v.lastAmbient > 30000) {
     v.lastAmbient = Date.now();
     const line = v.event.ambientLines[Math.floor(Math.random() * v.event.ambientLines.length)];
-    if (typeof GameChat !== 'undefined' && GameChat.send) {
-      GameChat.send('[Valkin] ' + line, 'system');
-    }
+    valkinChat(line);
   }
 }
 
