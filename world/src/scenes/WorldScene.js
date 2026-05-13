@@ -804,13 +804,6 @@ class WorldScene extends Phaser.Scene {
   // ═══════ CRAZY LOU — Valkin Raid Trigger ═══════
 
   showZaraMenu() {
-    const louLines = [
-      'Something wicked stirs beyond the rift. I can feel it in my bones.',
-      'You want a real fight? I know how to call one.',
-      'Most folks run from what I can summon. You don\'t look like most folks.',
-    ];
-    const line = louLines[Math.floor(Math.random() * louLines.length)];
-
     // Check cooldown (5 minutes)
     const cooldownMs = 5 * 60 * 1000;
     const now = Date.now();
@@ -822,16 +815,9 @@ class WorldScene extends Phaser.Scene {
       return;
     }
 
-    this.comm.showChoice('Crazy Lou', line, [
-      {
-        label: '⚔ Summon Valkin the Grand',
-        callback: () => this.triggerZaraValkinRaid(),
-      },
-      {
-        label: 'Just passing through.',
-        callback: () => {},
-      },
-    ]);
+    // Auto-trigger Valkin — no choice needed
+    this.comm.show('Crazy Lou', 'He comes. Prepare yourself.', { color: '#ff8844', duration: 2500 });
+    this.time.delayedCall(1500, () => this.triggerZaraValkinRaid());
   }
 
   triggerZaraValkinRaid() {
@@ -2019,9 +2005,11 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#000000aa', padding: { x: 6, y: 3 },
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
 
-    // ── Minimap (bottom-right) ──
+    // ── Minimap (bottom-right, zoom-corrected) ──
     const mmW = 160, mmH = 120;
-    this.minimapBg = this.add.rectangle(W - mmW/2 - 8, H - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
+    const camZoom = this.cameras.main.zoom || 1;
+    const vW = W / camZoom, vH = H / camZoom;
+    this.minimapBg = this.add.rectangle(vW - mmW/2 - 8, vH - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
       .setStrokeStyle(1, 0x444466).setScrollFactor(0).setDepth(200);
 
     // Minimap graphics
@@ -2035,8 +2023,9 @@ class WorldScene extends Phaser.Scene {
   }
 
   drawMinimap() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const camZoom = this.cameras.main.zoom || 1;
+    const W = this.scale.width / camZoom;
+    const H = this.scale.height / camZoom;
     const mmW = 160, mmH = 120;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
