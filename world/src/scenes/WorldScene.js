@@ -180,10 +180,9 @@ class WorldScene extends Phaser.Scene {
     this._structureSprites = [];
     this._renderStructures();
 
-    // ── Dialogue box (zoom-corrected) ──
-    const dlgZoom = this.cameras.main.zoom || 1;
-    const dlgW = this.scale.width / dlgZoom;
-    const dlgH = this.scale.height / dlgZoom;
+    // ── Dialogue box (scrollFactor 0 — raw canvas coords) ──
+    const dlgW = this.scale.width;
+    const dlgH = this.scale.height;
     this.dialogueContainer = this.add.container(0, 0).setDepth(300).setScrollFactor(0);
     this.dialogueBg = this.add.rectangle(dlgW / 2, dlgH - 60, dlgW - 40, 60, 0x111128, 0.92)
       .setStrokeStyle(2, 0x4444aa);
@@ -327,8 +326,8 @@ class WorldScene extends Phaser.Scene {
 
     // ── Resize handler — reposition HUD on window resize ──
     this.scale.on('resize', () => {
-      const z = this.cameras.main.zoom || 1.5;
-      this._repositionHUD(this.scale.width / z, this.scale.height / z);
+      // Raw canvas dimensions for scrollFactor(0) UI
+      this._repositionHUD(this.scale.width, this.scale.height);
     });
 
     // ── Region text ──
@@ -886,8 +885,7 @@ class WorldScene extends Phaser.Scene {
   }
 
   showNotification(text) {
-    const zoom = this.cameras.main.zoom || 1;
-    const cx = (this.scale.width / zoom) / 2;
+    const cx = this.scale.width / 2;
     const notif = this.add.text(cx, 60, text, {
       fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
       backgroundColor: '#000000aa', padding: { x: 10, y: 5 },
@@ -2017,9 +2015,9 @@ class WorldScene extends Phaser.Scene {
   // ═══════ HUD ═══════
 
   buildHUD() {
-    const zoom = this.cameras.main.zoom || 1;
-    const W = this.scale.width / zoom;
-    const H = this.scale.height / zoom;
+    // scrollFactor(0) — use raw canvas dimensions
+    const W = this.scale.width;
+    const H = this.scale.height;
 
     // Top-left: player info
     this.hudPlayerText = this.add.text(10, 8, '', {
@@ -2039,10 +2037,9 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#000000aa', padding: { x: 5, y: 2 },
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
 
-    // ── Minimap (bottom-right, zoom-corrected) ──
+    // ── Minimap (bottom-right) ──
     const mmW = 90, mmH = 65;
-    const camZoom = this.cameras.main.zoom || 1;
-    const vW = W / camZoom, vH = H / camZoom;
+    const vW = W, vH = H; // raw canvas for scrollFactor(0)
     this.minimapBg = this.add.rectangle(vW - mmW/2 - 8, vH - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
       .setStrokeStyle(1, 0x444466).setScrollFactor(0).setDepth(200);
 
@@ -2057,9 +2054,8 @@ class WorldScene extends Phaser.Scene {
   }
 
   drawMinimap() {
-    const camZoom = this.cameras.main.zoom || 1;
-    const W = this.scale.width / camZoom;
-    const H = this.scale.height / camZoom;
+    const W = this.scale.width;
+    const H = this.scale.height;
     const mmW = 90, mmH = 65;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
@@ -3245,9 +3241,9 @@ class WorldScene extends Phaser.Scene {
   // ═══════ CHAT SYSTEM ═══════
 
   buildChatBox() {
-    const zoom = this.cameras.main.zoom || 1;
-    const W = this.scale.width / zoom;
-    const H = this.scale.height / zoom;
+    // scrollFactor(0) — use raw canvas dimensions
+    const W = this.scale.width;
+    const H = this.scale.height;
     const chatW = Math.min(260, W * 0.4);
     const chatH = 100;
     // Position above the action bar, left-aligned but with generous padding
@@ -3367,6 +3363,7 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _repositionHUD(W, H) {
+    // W, H are raw canvas dimensions (not zoom-divided)
     const btnSize = Math.min(40, Math.floor(W / 14));
     const gap = 4;
     const barBottomPad = 4;
@@ -3428,9 +3425,9 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _buildActionBar() {
-    const zoom = this.cameras.main.zoom || 1.5;
-    const W = this.scale.width / zoom;
-    const H = this.scale.height / zoom;
+    // scrollFactor(0) elements use RAW canvas coords, NOT divided by zoom
+    const W = this.scale.width;
+    const H = this.scale.height;
     // Scale button size based on viewport — smaller on small screens
     const btnSize = Math.min(40, Math.floor(W / 14));
     const gap = 4;
