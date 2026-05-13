@@ -409,18 +409,22 @@ class WorldScene extends Phaser.Scene {
       loop: true,
     });
 
-    // ── Live multiplayer presence (every 3s, only on movement — cost-efficient) ──
+    // ── Live multiplayer presence (500ms, low threshold — feels alive) ──
+    // Firebase Realtime DB handles this fine even on free tier.
+    // At ~2 writes/sec with a few players, we're well under the 100 simultaneous
+    // connections and 10GB/month transfer limits of the Spark plan.
     this._lastPresenceX = G.x;
     this._lastPresenceY = G.y;
     this._presenceTimer = this.time.addEvent({
-      delay: 3000,
+      delay: 500,
       callback: () => {
-        // Only send if player moved >1 tile
-        if (Math.abs(G.x - this._lastPresenceX) > 1 || Math.abs(G.y - this._lastPresenceY) > 1) {
+        // Send if player moved at all (0.3 tile threshold for sub-tile smoothness)
+        if (Math.abs(G.x - this._lastPresenceX) > 0.3 || Math.abs(G.y - this._lastPresenceY) > 0.3) {
           this._lastPresenceX = G.x;
           this._lastPresenceY = G.y;
           MultiplayerPresence.updatePresence({
             name: G.name, x: G.x, y: G.y, spriteKey: G.spriteKey,
+            level: G.level, activeName: G.team[G.activeIdx]?.name,
           });
         }
       },
@@ -2909,20 +2913,20 @@ class WorldScene extends Phaser.Scene {
       const targetX = (data.x || 0) * T;
       const targetY = (data.y || 0) * T;
 
-      // Smooth movement — tween matches update interval for fluid motion
+      // Smooth movement — fast tween (400ms) matches 500ms update interval
       if (entry.sprite && entry.sprite.active) {
         this.tweens.killTweensOf(entry.sprite);
         this.tweens.add({
           targets: entry.sprite,
           x: targetX, y: targetY,
-          duration: 1200, ease: 'Power2',
+          duration: 400, ease: 'Power2',
         });
         if (entry.label && entry.label.active) {
           this.tweens.killTweensOf(entry.label);
           this.tweens.add({
             targets: entry.label,
             x: targetX, y: targetY - 36,
-            duration: 1200, ease: 'Power2',
+            duration: 400, ease: 'Power2',
           });
           // Update name in case it changed
           const dn = data.name || 'Unknown';
