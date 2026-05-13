@@ -24,7 +24,7 @@ class WorldScene extends Phaser.Scene {
 
     // ── Render the world map ──
     // Build the impassable lookup set once
-    this._impassableSet = new Set([1, 3, 7, 13, 15, 16, 21, 23, 25]);
+    this._impassableSet = new Set([1, 3, 7, 13, 15, 16, 21, 23, 25, 28]);
     this._tileSize = T;
 
     // Convert hex color string to Phaser number
@@ -602,6 +602,31 @@ class WorldScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(6);
     }
 
+    // ── Frost Dungeon entrance (top of Frost Valley) ──
+    // Tiles 28 form a 3x3 patch centered at (38, 3); sprite is rendered at 96x96 over it.
+    const fdCenterX = 38 * T + T / 2;
+    const fdCenterY = 3 * T + T / 2;
+    if (this.textures.exists('frost_dungeon')) {
+      this.add.image(fdCenterX, fdCenterY, 'frost_dungeon')
+        .setDisplaySize(96, 96).setDepth(5);
+    } else {
+      // Fallback if asset failed to load
+      this.add.rectangle(fdCenterX, fdCenterY, 96, 96, 0x88bbdd, 0.9)
+        .setStrokeStyle(2, 0xccddff).setDepth(5);
+    }
+    // Soft icy glow underneath
+    const fdGlow = this.add.circle(fdCenterX, fdCenterY, 64, 0x88ccff, 0.18).setDepth(4);
+    this.tweens.add({
+      targets: fdGlow, scaleX: 1.2, scaleY: 1.2, alpha: 0.08,
+      duration: 1800, yoyo: true, repeat: -1,
+    });
+    // Label above
+    this.add.text(fdCenterX, fdCenterY - 60, 'FROST DUNGEON', {
+      fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#bfe4ff',
+      backgroundColor: '#00000099', padding: { x: 4, y: 2 },
+    }).setOrigin(0.5).setDepth(7);
+    this._frostDungeon = { x: fdCenterX, y: fdCenterY };
+
     // ── Wave 3: Building Interactions ──
     this._interactBuildings = [
       { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1, action: 'tradingPost' },
@@ -1037,6 +1062,7 @@ class WorldScene extends Phaser.Scene {
     this._eConsumed = false;
     this.checkNPCProximity();
     this.checkBuildingProximity();
+    this.checkFrostDungeonProximity();
 
     // Panel hotkeys
     if (Phaser.Input.Keyboard.JustDown(this.cKey)) {
@@ -1387,6 +1413,33 @@ class WorldScene extends Phaser.Scene {
         });
       }
       return;
+    }
+  }
+
+  checkFrostDungeonProximity() {
+    if (!this._frostDungeon || !this.player) return;
+    const dist = Phaser.Math.Distance.Between(
+      this.player.x, this.player.y, this._frostDungeon.x, this._frostDungeon.y
+    );
+    if (dist < 80) {
+      if (!this._frostDungeonHint) {
+        this._frostDungeonHint = this.add.text(
+          this._frostDungeon.x, this._frostDungeon.y + 64, '[E] Enter',
+          {
+            fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#bfe4ff',
+            backgroundColor: '#000000aa', padding: { x: 4, y: 2 },
+          }
+        ).setOrigin(0.5).setDepth(12);
+      }
+      if (Phaser.Input.Keyboard.JustDown(this.eKey) && !this._eConsumed && !this.panels.isOpen()) {
+        if (!this.comm || !this.comm.isActive) {
+          this._eConsumed = true;
+          this.showNotification('The Frost Dungeon entrance hums with cold... (entry coming soon)');
+        }
+      }
+    } else if (this._frostDungeonHint) {
+      this._frostDungeonHint.destroy();
+      this._frostDungeonHint = null;
     }
   }
 

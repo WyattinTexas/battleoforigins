@@ -41,7 +41,7 @@ const ENCOUNTER_ZONES = [
   { name: 'Throne Approach', x: 100, y: 28, w: 6, h: 6 },
 ];
 // 0=snow, 1=tree, 2=path, 3=water, 4=ice, 5=building, 6=encounter_zone, 7=mountain, 8=craft_building, 9=grass, 10=flowers, 11=rolling_hill, 12=cantina, 13=warm_tree, 19=plaza, 20=sand, 21=palm_tree
-// 22=dark_stone, 23=dark_wall, 24=dark_path, 25=dark_tree, 26=castle_floor, 27=dungeons
+// 22=dark_stone, 23=dark_wall, 24=dark_path, 25=dark_tree, 26=castle_floor, 27=dungeons, 28=frost_dungeon
 let worldMap = [];
 
 function generateWorld() {
@@ -172,6 +172,19 @@ function generateWorld() {
   // Clear path to dungeons
   worldMap[hubY+6][hubX+3] = 2; worldMap[hubY+6][hubX+4] = 2;
   worldMap[hubY+7][hubX+2] = 2; worldMap[hubY+7][hubX+5] = 2;
+
+  // Frost Dungeon entrance — top edge of Frost Valley (3x3 patch)
+  // Center tile (FROST_DUNGEON.x, FROST_DUNGEON.y) — must match WorldScene render position
+  const fdx = 38, fdy = 3;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      worldMap[fdy + dy][fdx + dx] = 28;
+    }
+  }
+  // Clear approach from the south
+  worldMap[fdy + 2][fdx] = 2;
+  worldMap[fdy + 2][fdx - 1] = 0;
+  worldMap[fdy + 2][fdx + 1] = 0;
 
   // ═══ FROST VALLEY — Enhanced ice and tree clusters ═══
   // More ice tiles around frozen lake
@@ -556,7 +569,7 @@ function generateWorld() {
 
   // Clear trees from paths and buildings
   for (let y = 0; y < WORLD_H; y++) for (let x = 0; x < WORLD_W; x++) {
-    if (worldMap[y][x] === 2 || worldMap[y][x] === 5 || worldMap[y][x] === 8 || worldMap[y][x] === 12 || worldMap[y][x] === 19 || worldMap[y][x] === 27) {
+    if (worldMap[y][x] === 2 || worldMap[y][x] === 5 || worldMap[y][x] === 8 || worldMap[y][x] === 12 || worldMap[y][x] === 19 || worldMap[y][x] === 27 || worldMap[y][x] === 28) {
       // Clear adjacent trees for breathing room (frost, warm, palm, dark)
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
         const ny = y+dy, nx = x+dx;
@@ -599,4 +612,5 @@ const TILE_COLORS = {
   25: '#2a1a2a', // dark_tree (dead/twisted, impassable)
   26: '#3a2a3a', // castle_floor (grand interior)
   27: '#2a1a2a', // dungeons (dark stone entrance)
+  28: '#aac8e8', // frost_dungeon (icy plaza beneath the dungeon sprite)
 };
