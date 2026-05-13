@@ -1174,19 +1174,12 @@ class WorldScene extends Phaser.Scene {
       ko: false, ability: cardData.ability, abilityDesc: cardData.desc, rarity: cardData.rarity,
       usedOncePerGame: false, entryFired: false }];
 
-    const _resources = { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 };
-    B = {
-      round: 1,
-      player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
-      enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
-      enemyCard: cardData, zoneIdx: getCurrentZone(G.x, G.y), phase: 'ready', log: [], playerDice: [], enemyDice: [],
-      nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
-      resources: { ..._resources },
-      entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
-      koSwapTeam: null, committed: {},
-    };
-
-    if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+    // Use new battle engine factory
+    const playerIds = playerGhosts.map(g => g.id);
+    const enemyIds = enemyGhosts.map(g => g.id);
+    if (typeof initBattle === 'function') {
+      initBattle(playerIds, enemyIds, { type: isBlackRider ? 'blackrider' : 'wild' });
+    }
 
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.time.delayedCall(300, () => {
@@ -1226,20 +1219,12 @@ class WorldScene extends Phaser.Scene {
 
       if (enemyGhosts.length === 0) { G.inBattle = false; return; }
 
-      const _tRes = { iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0, healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0, surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0 };
-      B = {
-        round: 1,
-        player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._tRes } },
-        enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
-        enemyCard: getCard(trainerData.team[0]), phase: 'ready', log: [],
-        playerDice: [], enemyDice: [], isHostileNPC: trainerData.id,
-        nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
-        resources: { ..._tRes },
-        entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
-        koSwapTeam: null, committed: {},
-      };
-
-      if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+      // Use new battle engine factory
+      const playerIds = playerGhosts.map(g => g.id);
+      const enemyIds = enemyGhosts.map(g => g.id);
+      if (typeof initBattle === 'function') {
+        initBattle(playerIds, enemyIds, { type: 'trainer', isHostileNPC: trainerData.id });
+      }
 
       this.cameras.main.fadeOut(300);
       this.time.delayedCall(300, () => {
@@ -1890,25 +1875,12 @@ class WorldScene extends Phaser.Scene {
 
     if (enemyGhosts.length === 0) { G.inBattle = false; return; }
 
-    const _resources = {
-      iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0,
-      healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0,
-      surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0,
-    };
-    B = {
-      round: 1,
-      player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
-      enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
-      enemyCard: typeof getCard === 'function' ? getCard(arenaTeamIds[0]) : null,
-      phase: 'ready', log: [], playerDice: [], enemyDice: [],
-      isArena: true, // flag so BattleScene can award arena rewards on win
-      nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
-      resources: { ..._resources },
-      entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
-      koSwapTeam: null, committed: {},
-    };
-
-    if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+    // Use new battle engine factory
+    const playerIds = playerGhosts.map(g => g.id);
+    const enemyIds = enemyGhosts.map(g => g.id);
+    if (typeof initBattle === 'function') {
+      initBattle(playerIds, enemyIds, { type: 'arena', isArena: true });
+    }
 
     this.cameras.main.fadeOut(300, 0, 0, 0);
     this.time.delayedCall(300, () => {
@@ -2430,24 +2402,12 @@ class WorldScene extends Phaser.Scene {
 
     if (bossTeam.length === 0) { G.inBattle = false; return; }
 
-    const _resources = {
-      iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0,
-      healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0,
-      surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0,
-    };
-    B = {
-      round: 1,
-      player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
-      enemy: { ghosts: bossTeam, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
-      enemyCard: getCard(bossTeam[0].id),
-      phase: 'ready', log: [], playerDice: [], enemyDice: [],
-      nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
-      resources: { ..._resources },
-      entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
-      koSwapTeam: null, committed: {},
-    };
-
-    if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+    // Use new battle engine factory
+    const playerIds = playerGhosts.map(g => g.id);
+    const bossIds = bossTeam.map(g => g.id);
+    if (typeof initBattle === 'function') {
+      initBattle(playerIds, bossIds, { type: 'worldboss', worldBoss: true });
+    }
 
     // Create raid if in a party (co-op boss fight)
     let raidId = null;
@@ -2497,24 +2457,12 @@ class WorldScene extends Phaser.Scene {
 
         if (bossCards.length === 0) { G.inBattle = false; return; }
 
-        const _resources = {
-          iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0,
-          healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0,
-          surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0,
-        };
-        B = {
-          round: 1,
-          player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
-          enemy: { ghosts: bossCards, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
-          enemyCard: typeof getCard === 'function' ? getCard(bossCards[0].id) : null,
-          phase: 'ready', log: [], playerDice: [], enemyDice: [],
-          nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
-          resources: { ..._resources },
-          entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
-          koSwapTeam: null, committed: {},
-        };
-
-        if (typeof applyAccessoryBattleEffects === 'function') applyAccessoryBattleEffects();
+        // Use new battle engine factory
+        const playerIds = playerGhosts.map(g => g.id);
+        const bossCardIds = bossCards.map(g => g.id);
+        if (typeof initBattle === 'function') {
+          initBattle(playerIds, bossCardIds, { type: 'raid', worldBoss: true, raidId: invite.raidId });
+        }
 
         // Join the raid
         RaidManager.listenToRaid(invite.raidId);

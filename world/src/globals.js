@@ -472,6 +472,10 @@ function ensurePlayerDefaults() {
   if (G.darkRiderUnlocked === undefined) G.darkRiderUnlocked = false;
   if (G.elderUnlocked === undefined) G.elderUnlocked = false;
   if (G.activeAmendment === undefined) G.activeAmendment = null; // Elder Council amendment id
+  // Wave 8: Willpower deck config (testroom2 battle engine)
+  if (!G.wpDeckConfig) {
+    G.wpDeckConfig = typeof getDefaultWpDeckConfig === 'function' ? getDefaultWpDeckConfig() : {};
+  }
 }
 
 // ── Profession mastery levels (based on profession XP thresholds) ──

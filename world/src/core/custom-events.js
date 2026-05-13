@@ -214,25 +214,13 @@ function triggerValkinBattle(scene) {
   });
 
   const playerGhosts = buildPlayerBattleTeam();
-  const _resources = {
-    iceShards: G.iceShards || 0, sacredFire: G.sacredFire || 0,
-    healingSeeds: G.healingSeeds || 0, luckyStones: G.luckyStones || 0,
-    surge: G.surge || 0, moonstone: G.moonstone || 0, firefly: G.firefly || 0,
-  };
 
-  B = {
-    round: 1,
-    player: { ghosts: playerGhosts, activeIdx: 0, resources: { ..._resources } },
-    enemy: { ghosts: enemyGhosts, activeIdx: 0, resources: { iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0, surge: 0, moonstone: 0, firefly: 0 } },
-    enemyCard: ALL_CARDS.find(c => c.id === 62), // Start with Raditz
-    phase: 'ready', log: [], playerDice: [], enemyDice: [],
-    nextRoundMods: { playerExtraDice: 0, enemyExtraDice: 0, playerMaxDice: 99, enemyMaxDice: 99 },
-    resources: { ..._resources },
-    entryFired: false, enemyUsedResource: false, damageTakenThisRound: 0,
-    koSwapTeam: null, committed: {},
-    _valkinEvent: true,
-    _valkinDialogue: event.battleDialogue,
-  };
+  // Use new battle engine factory
+  const playerIds = playerGhosts.map(g => g.id);
+  const enemyIds = enemyGhosts.map(g => g.id);
+  if (typeof initBattle === 'function') {
+    initBattle(playerIds, enemyIds, { type: 'valkin', isValkinEvent: true });
+  }
 
   // Show entry dialogue
   const entryLine = event.battleDialogue.onBossEntry();
