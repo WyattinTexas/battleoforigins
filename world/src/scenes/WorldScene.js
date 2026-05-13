@@ -306,7 +306,7 @@ class WorldScene extends Phaser.Scene {
     this.bKey = this.input.keyboard.addKey('B');
 
     // ── HUD ──
-    this.buildHUD();
+    // this.buildHUD(); // DISABLED — DOM #hud-overlay handles all HUD elements
 
     // ── HUD positioning: divide canvas size by zoom to get visible area ──
     const zoom = cam.zoom || 1.5;
@@ -459,8 +459,8 @@ class WorldScene extends Phaser.Scene {
       this._menuBtns.push({ bg, label });
     });
 
-    // ── Class Action Bar (bottom center) ──
-    this._buildActionBar();
+    // ── Class Action Bar — DOM-based now, skip Phaser version ──
+    // this._buildActionBar(); // DISABLED — DOM #hud-action-bar handles this
 
     // ── Controls hint ──
     this._controlsHint = this.add.text(6, hudH - 14, 'WASD: Move | E: Interact', {
@@ -776,10 +776,11 @@ class WorldScene extends Phaser.Scene {
       this._showBuildMenu();
     }
 
-    // Tick buffs + update HUDs
+    // Tick buffs
     if (typeof tickBuffs === 'function') tickBuffs();
-    this._updateBuffHUD();
-    this._updateActionBar();
+    // Phaser HUD updates — only if Phaser HUD exists (may be DOM-only now)
+    if (this._actionButtons && this._actionButtons.length > 0) this._updateActionBar();
+    if (this._buffHudText) this._updateBuffHUD();
 
     // Valkin event hunt AI
     if (this._valkinEvent && this._valkinEvent.active && typeof updateValkinHunt === 'function') {
@@ -2407,7 +2408,7 @@ class WorldScene extends Phaser.Scene {
       { name: 'Dark Rider Shade',  team: [111, 205],  tint: 0x442266 },
       { name: 'Dark Rider Tyler',  team: [105],       tint: 0x664422 },
       { name: 'Dark Rider Doc',    team: [42, 100],   tint: 0x444444 },
-      { name: 'Dark Rider Harvey', team: [448, 424],  tint: 0x662244 },
+      { name: 'Dark Rider Harvey', team: [448, 424],  tint: 0x662244, sprite: 'creature_mushroom' },
       { name: 'Dark Rider Redd',   team: [98],        tint: 0x220044 },
     ];
 
@@ -3050,7 +3051,7 @@ class WorldScene extends Phaser.Scene {
     this.updatePartySidebar();
 
     // ── Chat system ──
-    this.buildChatBox();
+    // this.buildChatBox(); // DISABLED — DOM #hud-chat handles this
     GameChat.init((msg) => {
       this.onChatMessage(msg);
       this._addDomChatMessage(`${msg.name}: ${msg.text}`);
