@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battle of Origins — NPC Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a12; color: #ddd; font-family: 'Segoe UI', system-ui, sans-serif; padding: 20px; }
+  h1 { text-align: center; color: #ff8844; font-size: 1.6rem; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: #888; font-size: 0.85rem; margin-bottom: 20px; }
+
+  .tabs { display: flex; gap: 4px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab { padding: 8px 16px; border-radius: 6px 6px 0 0; border: 1px solid #333; border-bottom: none;
+    background: #151520; color: #888; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+  .tab:hover { color: #ddd; background: #1a1a2a; }
+  .tab.active { background: #1a1a30; color: #fff; border-color: #444; }
+  .tab .count { background: #333; color: #aaa; border-radius: 10px; padding: 1px 6px; font-size: 0.7rem; margin-left: 4px; }
+  .tab.active .count { background: #ff8844; color: #000; }
+
+  .npc-list { max-width: 900px; margin: 0 auto; }
+
+  .npc-card { background: #13131f; border: 1px solid #2a2a3a; border-radius: 10px; margin-bottom: 12px;
+    overflow: hidden; transition: border-color 0.2s; }
+  .npc-card:hover { border-color: #444; }
+  .npc-card.modified { border-color: #ff8844; }
+
+  .npc-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; user-select: none; }
+  .npc-header:hover { background: #1a1a28; }
+  .zone-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
+  .zone-frost { background: #1a2a44; color: #88bbff; }
+  .zone-rolling { background: #1a2a1a; color: #88cc66; }
+  .zone-volcanic { background: #2a1a0a; color: #ff8844; }
+  .zone-dark { background: #1a0a2a; color: #aa88cc; }
+  .zone-neutral { background: #1a1a1a; color: #999; }
+
+  .type-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+  .type-hostile { background: #441111; color: #ff6666; }
+  .type-ambush { background: #332200; color: #ffaa44; }
+  .type-boss { background: #220022; color: #ff44ff; }
+  .type-miniboss { background: #220033; color: #cc88ff; }
+  .type-friendly { background: #112211; color: #66cc66; }
+  .type-merchant { background: #002233; color: #44cccc; }
+  .type-treasure { background: #222200; color: #cccc44; }
+
+  .npc-name-display { font-size: 1.1rem; font-weight: 600; flex: 1; }
+  .npc-chevron { color: #555; font-size: 1.2rem; transition: transform 0.2s; }
+  .npc-card.open .npc-chevron { transform: rotate(90deg); }
+
+  .npc-body { display: none; padding: 0 16px 16px; }
+  .npc-card.open .npc-body { display: block; }
+
+  .field-group { margin-bottom: 12px; }
+  .field-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .field-input { width: 100%; background: #0d0d18; border: 1px solid #2a2a3a; border-radius: 6px;
+    color: #eee; padding: 8px 10px; font-size: 0.9rem; font-family: inherit; resize: vertical; }
+  .field-input:focus { outline: none; border-color: #ff8844; }
+  textarea.field-input { min-height: 60px; }
+  .field-hint { font-size: 0.7rem; color: #555; margin-top: 2px; }
+
+  .dialogue-list { display: flex; flex-direction: column; gap: 6px; }
+  .dialogue-row { display: flex; gap: 6px; align-items: flex-start; }
+  .dialogue-row textarea { flex: 1; min-height: 40px; }
+  .dialogue-row .remove-btn { background: #331111; border: 1px solid #441111; color: #ff6666;
+    border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+  .dialogue-row .remove-btn:hover { background: #441111; }
+  .add-dialogue-btn { background: #111122; border: 1px solid #2a2a4a; color: #88aaff;
+    border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; margin-top: 6px; }
+  .add-dialogue-btn:hover { background: #1a1a33; }
+
+  .phase-section { background: #0d0d16; border: 1px solid #222; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+  .phase-title { font-size: 0.8rem; color: #ff8844; font-weight: 600; margin-bottom: 6px; }
+  .comm-row { margin-bottom: 8px; }
+  .comm-speaker { font-size: 0.75rem; color: #888; }
+
+  .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #0d0d18; border-top: 1px solid #333;
+    padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+  .changes-count { color: #ff8844; font-weight: 600; }
+  .export-btn { background: #ff8844; color: #000; border: none; border-radius: 6px;
+    padding: 10px 24px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+  .export-btn:hover { background: #ffaa66; }
+  .export-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+  .reset-btn { background: #331111; color: #ff6666; border: 1px solid #441111; border-radius: 6px;
+    padding: 10px 16px; font-size: 0.85rem; cursor: pointer; }
+  .reset-btn:hover { background: #441111; }
+
+  .spacer { height: 70px; }
+
+  .export-modal { display: none; position: fixed; inset: 0; background: #000000cc; z-index: 200;
+    justify-content: center; align-items: center; }
+  .export-modal.active { display: flex; }
+  .export-content { background: #13131f; border: 1px solid #444; border-radius: 10px; padding: 20px;
+    max-width: 800px; width: 90%; max-height: 80vh; display: flex; flex-direction: column; }
+  .export-content h2 { color: #ff8844; margin-bottom: 12px; font-size: 1.2rem; }
+  .export-text { flex: 1; background: #0a0a12; border: 1px solid #333; border-radius: 6px; color: #ccc;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem; padding: 12px; overflow: auto;
+    white-space: pre-wrap; min-height: 300px; }
+  .export-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+  .export-actions button { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+  .copy-btn { background: #ff8844; color: #000; border: none; font-weight: 600; }
+  .close-btn { background: #222; color: #ddd; border: 1px solid #444; }
+
+  .search-bar { max-width: 900px; margin: 0 auto 16px; }
+  .search-input { width: 100%; background: #0d0d18; border: 1px solid #2a2a3a; border-radius: 8px;
+    color: #eee; padding: 10px 14px; font-size: 0.9rem; }
+  .search-input:focus { outline: none; border-color: #ff8844; }
+  .search-input::placeholder { color: #444; }
+</style>
+</head>
+<body>
+
+<h1>NPC Editor</h1>
+<p class="subtitle">Battle of Origins Online — Edit trainer names, dialogue, and comm lines</p>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="search-bar">
+  <input type="text" class="search-input" id="searchInput" placeholder="Search NPCs by name, zone, or type...">
+</div>
+
+<div class="npc-list" id="npcList"></div>
+<div class="spacer"></div>
+
+<div class="bottom-bar">
+  <div><span class="changes-count" id="changesCount">0 changes</span></div>
+  <div style="display:flex;gap:8px;">
+    <button class="reset-btn" onclick="resetAll()">Reset All</button>
+    <button class="export-btn" id="exportBtn" onclick="exportChanges()" disabled>Export Changes</button>
+  </div>
+</div>
+
+<div class="export-modal" id="exportModal">
+  <div class="export-content">
+    <h2>Exported Changes</h2>
+    <div class="export-text" id="exportText"></div>
+    <div class="export-actions">
+      <button class="close-btn" onclick="document.getElementById('exportModal').classList.remove('active')">Close</button>
+      <button class="copy-btn" onclick="copyExport()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  NPC DATA — pulled from npcs.js + custom-events.js
+// ══════════════════════════════════════════
+
+const NPCS = [
+  // ─── HOSTILE (npcs.js HOSTILE_NPCS) ───
+  { source: 'npcs.js', variable: 'HOSTILE_NPCS[0]', id: 'brawler_jax',
+    name: 'Brawler Jax', zone: 'frost_valley', type: 'hostile',
+    fields: {
+      challenge: "Hey! You think you can just walk through MY territory?",
+      defeated: "Alright, alright. You're pretty good. Name's Jax.",
+      dialogue: [
+        "I used to think I was the toughest in Frost Valley. Then you showed up.",
+        "Watch out near the frozen lake — the ice spirits are no joke."
+      ],
+    }
+  },
+  { source: 'npcs.js', variable: 'HOSTILE_NPCS[1]', id: 'ice_queen',
+    name: 'Ice Queen Vera', zone: 'frost_valley', type: 'hostile',
+    fields: {
+      challenge: "You dare enter MY domain? Prepare yourself!",
+      defeated: "Hmph. You have skill. I'll remember that.",
+      dialogue: [
+        "The Crystal Glade is sacred. I protect it.",
+        "Frost essences are the purest — don't waste them on bad schematics."
+      ],
+    }
+  },
+  { source: 'npcs.js', variable: 'HOSTILE_NPCS[2]', id: 'bandit_marcus',
+    name: 'Bandit Marcus', zone: 'rolling_hills', type: 'hostile',
+    fields: {
+      challenge: "Hand over your coins or fight for 'em!",
+      defeated: "Fine, you win. I was going straight anyway...",
+      dialogue: [
+        "I used to rob travelers on this path. Now I just give directions.",
+        "Meadowbrook has better prices than Polaris. Just saying."
+      ],
+    }
+  },
+  { source: 'npcs.js', variable: 'HOSTILE_NPCS[3]', id: 'lava_raider',
+    name: 'Lava Raider Kira', zone: 'volcanic_isles', type: 'hostile',
+    fields: {
+      challenge: "Fresh meat from the cold lands! Let's see what you've got!",
+      defeated: "Ha! Not bad for a snowbird. Welcome to the Isles.",
+      dialogue: [
+        "The lava rivers carry Volcanic Glass. Worth more than gold.",
+        "Nerina swims deep. I've seen her shadow. Beautiful and terrifying."
+      ],
+    }
+  },
+  { source: 'npcs.js', variable: 'HOSTILE_NPCS[4]', id: 'shadow_knight',
+    name: 'Shadow Knight Vex', zone: 'dark_castle', type: 'hostile',
+    fields: {
+      challenge: "None shall pass without proving their worth to the Dark Castle.",
+      defeated: "You've earned passage. But Valkin's castle... be ready.",
+      dialogue: [
+        "I guard this passage. The weak don't survive what's inside.",
+        "The Cursed Scholar knows more than he lets on. Press him."
+      ],
+    }
+  },
+  { source: 'npcs.js', variable: 'HOSTILE_NPCS[5]', id: 'the_exile',
+    name: 'The Exile', zone: 'neutral', type: 'hostile',
+    fields: {
+      challenge: "...",
+      defeated: "You see beyond strength. That is rare.",
+      dialogue: [
+        "I was once Valkin's lieutenant. I left when I saw what the curse did to Leon.",
+        "The Mask of Destiny... I've seen it work. Once. A long time ago."
+      ],
+    }
+  },
+
+  // ─── EVENT TRAINERS (custom-events.js) ───
+  { source: 'custom-events.js', variable: 'VALKIN_SCRIPT', id: 'valkin_the_grand',
+    name: 'Valkin the Grand', zone: 'frost_valley', type: 'boss',
+    subtitle: '★ The Corruptor ★',
+    fields: {
+      comms: [
+        { speaker: 'Crazy Lou', text: 'He comes. Prepare yourself.', phase: 'approaching' },
+        { speaker: 'Valkin', text: 'I declare war on the intruders!', phase: 'declaring' },
+        { speaker: 'Valkin', text: 'Now... who wants to go first?', phase: 'declaring' },
+        { speaker: 'Valkin', text: 'Now we settle this!', phase: 'confrontation' },
+        { speaker: 'Valkin', text: 'Kill-takular!', phase: 'hunting (on multi-kill)' },
+      ],
+      onExpire: 'This land bores me. I will return.',
+    }
+  },
+  { source: 'custom-events.js', variable: 'FV_WILD_AMBUSH_SCRIPT', id: 'fv_wild_ambush',
+    name: 'Frost Prowler', zone: 'frost_valley', type: 'ambush',
+    fields: {
+      comms: [
+        { speaker: 'Frost Prowler', text: 'Fresh tracks in the snow...', phase: 'hunting' },
+        { speaker: 'Frost Prowler', text: "You won't escape the cold!", phase: 'confrontation' },
+      ],
+    }
+  },
+  { source: 'custom-events.js', variable: 'FV_MINIBOSS_GLACIUS_SCRIPT', id: 'fv_miniboss_glacius',
+    name: 'Glacius', zone: 'frost_valley', type: 'miniboss',
+    subtitle: '★ The Frozen Warden ★',
+    fields: {
+      comms: [
+        { speaker: 'Glacius', text: 'You dare walk these frozen grounds without permission?', phase: 'intro' },
+        { speaker: 'Glacius', text: 'The valley answers to me. Prove your worth or leave.', phase: 'intro' },
+        { speaker: 'Glacius', text: "You won't escape the cold!", phase: 'confrontation' },
+        { speaker: 'Glacius', text: 'You have earned passage. The valley remembers strength.', phase: 'defeated' },
+      ],
+      onExpire: 'The cold claims all eventually.',
+    }
+  },
+  { source: 'custom-events.js', variable: 'FV_MERCHANT_PEDDLER_SCRIPT', id: 'fv_merchant_peddler',
+    name: 'Frosty Peddler', zone: 'frost_valley', type: 'merchant',
+    fields: {
+      comms: [
+        { speaker: 'Frosty Peddler', text: 'Brr! Cold day for business. But I have wares worth the chill.', phase: 'greet' },
+        { speaker: 'Frosty Peddler', text: 'Here, a warming charm. Should keep you steady in battle.', phase: 'greet' },
+      ],
+    }
+  },
+  { source: 'custom-events.js', variable: 'FV_HERMIT_WREN_SCRIPT', id: 'fv_hermit_wren',
+    name: 'Hermit Wren', zone: 'frost_valley', type: 'friendly',
+    fields: {
+      comms: [
+        { speaker: 'Hermit Wren', text: 'Well now. A traveler in the valley. Rare sight these days.', phase: 'greet' },
+        { speaker: 'Hermit Wren', text: 'The frost spirits here are gentle, mostly. Stick near the hub and you will be fine.', phase: 'greet' },
+        { speaker: 'Hermit Wren', text: 'Take these coins. Buy yourself something warm.', phase: 'greet' },
+        { speaker: 'Hermit Wren', text: 'Still here? Good. The valley needs watchful eyes.', phase: 'return' },
+      ],
+    }
+  },
+
+  // Rolling Hills events
+  { source: 'custom-events.js', variable: 'RH_FARMER_TOMAS_SCRIPT', id: 'rh_farmer_tomas',
+    name: 'Farmer Tomas', zone: 'rolling_hills', type: 'friendly',
+    fields: {
+      comms: [
+        { speaker: 'Farmer Tomas', text: 'Welcome to the Hills! Finest soil in the whole realm.', phase: 'greet' },
+        { speaker: 'Farmer Tomas', text: 'The spirits around here are mostly friendly. Mostly.', phase: 'greet' },
+        { speaker: 'Farmer Tomas', text: 'Back again? The harvest has been good this season.', phase: 'return' },
+      ],
+    }
+  },
+  { source: 'custom-events.js', variable: 'RH_WILD_AMBUSH_SCRIPT', id: 'rh_wild_ambush',
+    name: 'Meadow Stalker', zone: 'rolling_hills', type: 'ambush',
+    fields: {
+      comms: [
+        { speaker: 'Meadow Stalker', text: 'The tall grass hides many things.', phase: 'hunting' },
+        { speaker: 'Meadow Stalker', text: "You shouldn't have wandered here!", phase: 'confrontation' },
+      ],
+    }
+  },
+  { source: 'custom-events.js', variable: 'RH_MINIBOSS_BRIAR_SCRIPT', id: 'rh_miniboss_briar',
+    name: 'Thornmother Briar', zone: 'rolling_hills', type: 'miniboss',
+    fields: {
+      comms: [
+        { speaker: 'Thornmother Briar', text: 'The roots remember every footstep. You are not welcome here.', phase: 'intro' },
+        { speaker: 'Thornmother Briar', text: 'Nature does not forgive trespassers.', phase: 'intro' },
+        { speaker: 'Thornmother Briar', text: "You shouldn't have wandered here!", phase: 'confrontation' },
+        { speaker: 'Thornmother Briar', text: 'The hills accept you. Walk gently.', phase: 'defeated' },
+      ],
+      onExpire: 'The roots reclaim what is theirs.',
+    }
+  },
+
+  // Volcanic Isles events
+  { source: 'custom-events.js', variable: 'VI_EMBER_SCOUT_SCRIPT', id: 'vi_ember_scout_kael',
+    name: 'Ember Scout Kael', zone: 'volcanic_isles', type: 'friendly',
+    fields: {
+      comms: [
+        { speaker: 'Kael', text: 'The ground is hot here. Watch where you step.', phase: 'greet' },
+        { speaker: 'Kael', text: 'Spirits on these isles burn with real fire. Respect them or suffer.', phase: 'greet' },
+        { speaker: 'Kael', text: 'Still standing? The isles have not broken you yet.', phase: 'return' },
+      ],
+    }
+  },
+  { source: 'custom-events.js', variable: 'VI_WILD_AMBUSH_SCRIPT', id: 'vi_wild_ambush',
+    name: 'Lava Lurker', zone: 'volcanic_isles', type: 'ambush',
+    fields: {
+      comms: [
+        { speaker: 'Lava Lurker', text: 'The magma called. You answered.', phase: 'hunting' },
+        { speaker: 'Lava Lurker', text: 'The heat claims another!', phase: 'confrontation' },
+      ],
+    }
+  },
+  { source: 'custom-events.js', variable: 'VI_MINIBOSS_PYRAX_SCRIPT', id: 'vi_miniboss_pyrax',
+    name: 'Pyrax', zone: 'volcanic_isles', type: 'miniboss',
+    subtitle: '★ Molten King ★',
+    fields: {
+      comms: [
+        { speaker: 'Pyrax', text: 'You feel that heat? That is me deciding how to end you.', phase: 'intro' },
+        { speaker: 'Pyrax', text: 'The volcano does not negotiate. Neither do I.', phase: 'intro' },
+        { speaker: 'Pyrax', text: 'The heat claims another!', phase: 'confrontation' },
+        { speaker: 'Pyrax', text: 'The flame bows to your strength. For now.', phase: 'defeated' },
+      ],
+      onExpire: 'The eruption can wait. But not forever.',
+    }
+  },
+  { source: 'custom-events.js', variable: 'VI_MERCHANT_NIMA_SCRIPT', id: 'vi_merchant_nima',
+    name: 'Ashwalker Nima', zone: 'volcanic_isles', type: 'merchant',
+    fields: {
+      comms: [],  // Nima's dialogue is in her script
+    }
+  },
+
+  // Dark Castle events
+  { source: 'custom-events.js', variable: 'DC_WILD_AMBUSH_SCRIPT', id: 'dc_wild_ambush',
+    name: 'Shadow Revenant', zone: 'dark_castle', type: 'ambush',
+    fields: {
+      comms: [
+        { speaker: 'Shadow Revenant', text: 'You should not have come here.', phase: 'hunting' },
+        { speaker: 'Shadow Revenant', text: 'You trespass in shadow...', phase: 'confrontation' },
+      ],
+    }
+  },
+  { source: 'custom-events.js', variable: 'DC_MINIBOSS_MALACHAR_SCRIPT', id: 'dc_miniboss_malachar',
+    name: 'Dreadlord Malachar', zone: 'dark_castle', type: 'miniboss',
+    subtitle: '★ Lord of Shadows ★',
+    fields: {
+      comms: [
+        { speaker: 'Malachar', text: 'The shadows have eyes. They have been watching you.', phase: 'intro' },
+        { speaker: 'Malachar', text: 'You are nothing but a flicker in the dark. I will snuff you out.', phase: 'intro' },
+        { speaker: 'Malachar', text: 'You trespass in shadow...', phase: 'confrontation' },
+        { speaker: 'Malachar', text: 'Impossible. The darkness itself bows to you.', phase: 'defeated' },
+      ],
+      onExpire: 'Darkness is patient. I will return.',
+    }
+  },
+];
+
+// Deep clone for reset
+const ORIGINAL = JSON.parse(JSON.stringify(NPCS));
+
+const ZONE_LABELS = {
+  frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills',
+  volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle', neutral: 'Neutral'
+};
+const TYPE_LABELS = {
+  hostile: 'Trainer', ambush: 'Wild Ambush', boss: 'Boss',
+  miniboss: 'Mini-Boss', friendly: 'Friendly', merchant: 'Merchant', treasure: 'Treasure'
+};
+
+let activeTab = 'all';
+let searchQuery = '';
+
+function getChanges() {
+  const changes = [];
+  for (let i = 0; i < NPCS.length; i++) {
+    if (JSON.stringify(NPCS[i]) !== JSON.stringify(ORIGINAL[i])) {
+      changes.push({ npc: NPCS[i], original: ORIGINAL[i] });
+    }
+  }
+  return changes;
+}
+
+function updateChangesCount() {
+  const changes = getChanges();
+  const count = changes.length;
+  document.getElementById('changesCount').textContent = `${count} change${count !== 1 ? 's' : ''}`;
+  document.getElementById('exportBtn').disabled = count === 0;
+  // Mark modified cards
+  document.querySelectorAll('.npc-card').forEach(card => {
+    const idx = parseInt(card.dataset.index);
+    card.classList.toggle('modified', JSON.stringify(NPCS[idx]) !== JSON.stringify(ORIGINAL[idx]));
+  });
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('tabs');
+  const zones = [
+    { key: 'all', label: 'All' },
+    { key: 'frost_valley', label: 'Frost Valley' },
+    { key: 'rolling_hills', label: 'Rolling Hills' },
+    { key: 'volcanic_isles', label: 'Volcanic Isles' },
+    { key: 'dark_castle', label: 'Dark Castle' },
+  ];
+  tabs.innerHTML = zones.map(z => {
+    const count = z.key === 'all' ? NPCS.length : NPCS.filter(n => n.zone === z.key).length;
+    return `<div class="tab ${activeTab === z.key ? 'active' : ''}" onclick="setTab('${z.key}')">${z.label}<span class="count">${count}</span></div>`;
+  }).join('');
+}
+
+function setTab(key) {
+  activeTab = key;
+  renderTabs();
+  renderList();
+}
+
+function getFilteredNPCs() {
+  return NPCS.map((n, i) => ({ ...n, _idx: i })).filter(n => {
+    if (activeTab !== 'all' && n.zone !== activeTab) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return n.name.toLowerCase().includes(q) ||
+        (ZONE_LABELS[n.zone] || '').toLowerCase().includes(q) ||
+        (TYPE_LABELS[n.type] || '').toLowerCase().includes(q) ||
+        n.id.toLowerCase().includes(q);
+    }
+    return true;
+  });
+}
+
+function renderList() {
+  const list = document.getElementById('npcList');
+  const filtered = getFilteredNPCs();
+
+  list.innerHTML = filtered.map(npc => {
+    const isModified = JSON.stringify(NPCS[npc._idx]) !== JSON.stringify(ORIGINAL[npc._idx]);
+    return `
+      <div class="npc-card ${isModified ? 'modified' : ''}" data-index="${npc._idx}" id="card-${npc._idx}">
+        <div class="npc-header" onclick="toggleCard(${npc._idx})">
+          <span class="zone-badge zone-${npc.zone}">${ZONE_LABELS[npc.zone]}</span>
+          <span class="type-badge type-${npc.type}">${TYPE_LABELS[npc.type]}</span>
+          <span class="npc-name-display">${npc.name}${npc.subtitle ? ` <span style="color:#666;font-size:0.8rem">${npc.subtitle}</span>` : ''}</span>
+          <span style="color:#555;font-size:0.7rem">${npc.source}</span>
+          <span class="npc-chevron">&#9654;</span>
+        </div>
+        <div class="npc-body">
+          ${renderNPCFields(npc)}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderNPCFields(npc) {
+  const idx = npc._idx;
+  let html = '';
+
+  // Name
+  html += `<div class="field-group">
+    <div class="field-label">Name</div>
+    <input class="field-input" value="${esc(npc.name)}" onchange="updateField(${idx}, 'name', this.value)">
+    <div class="field-hint">Changes the display name everywhere it appears</div>
+  </div>`;
+
+  // Subtitle (if applicable)
+  if (npc.subtitle !== undefined) {
+    html += `<div class="field-group">
+      <div class="field-label">Subtitle / Title</div>
+      <input class="field-input" value="${esc(npc.subtitle || '')}" onchange="updateField(${idx}, 'subtitle', this.value)">
+    </div>`;
+  }
+
+  // Hostile NPC fields
+  if (npc.fields.challenge !== undefined) {
+    html += `<div class="field-group">
+      <div class="field-label">Challenge Line (pre-battle)</div>
+      <textarea class="field-input" onchange="updateNestedField(${idx}, 'challenge', this.value)">${esc(npc.fields.challenge)}</textarea>
+    </div>`;
+    html += `<div class="field-group">
+      <div class="field-label">Defeated Line (post-battle)</div>
+      <textarea class="field-input" onchange="updateNestedField(${idx}, 'defeated', this.value)">${esc(npc.fields.defeated)}</textarea>
+    </div>`;
+  }
+
+  // Dialogue array (hostile NPCs)
+  if (npc.fields.dialogue) {
+    html += `<div class="field-group">
+      <div class="field-label">Casual Dialogue Lines</div>
+      <div class="dialogue-list" id="dialogue-${idx}">
+        ${npc.fields.dialogue.map((line, li) => `
+          <div class="dialogue-row">
+            <textarea class="field-input" onchange="updateDialogue(${idx}, ${li}, this.value)">${esc(line)}</textarea>
+            <button class="remove-btn" onclick="removeDialogue(${idx}, ${li})">X</button>
+          </div>
+        `).join('')}
+      </div>
+      <button class="add-dialogue-btn" onclick="addDialogue(${idx})">+ Add Dialogue Line</button>
+    </div>`;
+  }
+
+  // Comm lines (event NPCs)
+  if (npc.fields.comms) {
+    html += `<div class="field-group">
+      <div class="field-label">Comm / Dialogue Lines</div>
+      ${npc.fields.comms.map((comm, ci) => `
+        <div class="phase-section">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+            <span class="comm-speaker">${comm.speaker} — <em>${comm.phase}</em></span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <input class="field-input" style="width:140px;flex:none;" value="${esc(comm.speaker)}"
+              onchange="updateComm(${idx}, ${ci}, 'speaker', this.value)" placeholder="Speaker">
+            <textarea class="field-input" style="min-height:36px;"
+              onchange="updateComm(${idx}, ${ci}, 'text', this.value)">${esc(comm.text)}</textarea>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  // Expire line
+  if (npc.fields.onExpire !== undefined) {
+    html += `<div class="field-group">
+      <div class="field-label">On Expire Line</div>
+      <textarea class="field-input" onchange="updateNestedField(${idx}, 'onExpire', this.value)">${esc(npc.fields.onExpire)}</textarea>
+    </div>`;
+  }
+
+  return html;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toggleCard(idx) {
+  const card = document.getElementById(`card-${idx}`);
+  card.classList.toggle('open');
+}
+
+function updateField(idx, key, value) {
+  NPCS[idx][key] = value;
+  updateChangesCount();
+}
+
+function updateNestedField(idx, key, value) {
+  NPCS[idx].fields[key] = value;
+  updateChangesCount();
+}
+
+function updateDialogue(idx, lineIdx, value) {
+  NPCS[idx].fields.dialogue[lineIdx] = value;
+  updateChangesCount();
+}
+
+function removeDialogue(idx, lineIdx) {
+  NPCS[idx].fields.dialogue.splice(lineIdx, 1);
+  renderList();
+  updateChangesCount();
+}
+
+function addDialogue(idx) {
+  NPCS[idx].fields.dialogue.push('New dialogue line...');
+  renderList();
+  // Re-open the card
+  document.getElementById(`card-${idx}`).classList.add('open');
+  updateChangesCount();
+}
+
+function updateComm(idx, commIdx, key, value) {
+  NPCS[idx].fields.comms[commIdx][key] = value;
+  updateChangesCount();
+}
+
+function resetAll() {
+  for (let i = 0; i < NPCS.length; i++) {
+    NPCS[i] = JSON.parse(JSON.stringify(ORIGINAL[i]));
+  }
+  renderList();
+  updateChangesCount();
+}
+
+function exportChanges() {
+  const changes = getChanges();
+  if (changes.length === 0) return;
+
+  let output = '// ══════════════════════════════════════\n';
+  output += '//  NPC CHANGES — Generated by NPC Editor\n';
+  output += `//  ${new Date().toLocaleString()}\n`;
+  output += '// ══════════════════════════════════════\n\n';
+
+  for (const { npc, original } of changes) {
+    output += `// ── ${npc.source} → ${npc.variable} ──\n`;
+
+    if (npc.name !== original.name) {
+      output += `//  NAME: "${original.name}" → "${npc.name}"\n`;
+    }
+    if (npc.subtitle !== original.subtitle) {
+      output += `//  SUBTITLE: "${original.subtitle}" → "${npc.subtitle}"\n`;
+    }
+
+    // Hostile NPC specific fields
+    if (npc.fields.challenge !== undefined && npc.fields.challenge !== original.fields.challenge) {
+      output += `//  CHALLENGE: "${original.fields.challenge}"\n`;
+      output += `//        →  : "${npc.fields.challenge}"\n`;
+    }
+    if (npc.fields.defeated !== undefined && npc.fields.defeated !== original.fields.defeated) {
+      output += `//  DEFEATED: "${original.fields.defeated}"\n`;
+      output += `//       →  : "${npc.fields.defeated}"\n`;
+    }
+    if (npc.fields.dialogue && JSON.stringify(npc.fields.dialogue) !== JSON.stringify(original.fields.dialogue)) {
+      output += `//  DIALOGUE:\n`;
+      npc.fields.dialogue.forEach((line, i) => {
+        const orig = original.fields.dialogue[i];
+        if (line !== orig) {
+          output += `//    [${i}] "${orig || '(new)'}" → "${line}"\n`;
+        }
+      });
+      if (npc.fields.dialogue.length !== original.fields.dialogue.length) {
+        output += `//    (count: ${original.fields.dialogue.length} → ${npc.fields.dialogue.length})\n`;
+      }
+    }
+
+    // Comm changes
+    if (npc.fields.comms && JSON.stringify(npc.fields.comms) !== JSON.stringify(original.fields.comms)) {
+      output += `//  COMMS:\n`;
+      npc.fields.comms.forEach((comm, i) => {
+        const orig = original.fields.comms[i];
+        if (!orig || comm.speaker !== orig.speaker || comm.text !== orig.text) {
+          output += `//    [${comm.phase}] ${orig ? `"${orig.speaker}: ${orig.text}"` : '(new)'}\n`;
+          output += `//         → "${comm.speaker}: ${comm.text}"\n`;
+        }
+      });
+    }
+
+    if (npc.fields.onExpire !== undefined && npc.fields.onExpire !== original.fields.onExpire) {
+      output += `//  ON EXPIRE: "${original.fields.onExpire}" → "${npc.fields.onExpire}"\n`;
+    }
+
+    output += '\n';
+  }
+
+  output += '\n// ══════════════════════════════════════\n';
+  output += '//  INSTRUCTIONS: Give this to Claude and say\n';
+  output += '//  "Apply these NPC changes to the source files"\n';
+  output += '// ══════════════════════════════════════\n';
+
+  document.getElementById('exportText').textContent = output;
+  document.getElementById('exportModal').classList.add('active');
+}
+
+function copyExport() {
+  const text = document.getElementById('exportText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy to Clipboard', 1500);
+  });
+}
+
+// Search
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  searchQuery = e.target.value;
+  renderList();
+});
+
+// Init
+renderTabs();
+renderList();
+updateChangesCount();
+</script>
+</body>
+</html>

@@ -33,16 +33,41 @@ class WorldScene extends Phaser.Scene {
     // ── ERW terrain tile mapping (32x32, 55 cols in terrain-grass.png) ──
     // Region-aware: each region gets the tiles that fit its biome.
     // Use small consistent frame sets (3-4 frames) to avoid patchwork look.
+    // ERW_TERRAIN: { group: { frames: [...], tileset: 'texture_key' } }
+    // Each group specifies its own tileset so we can mix Grass Land, Highlands, Volcano, Crypt.
     const ERW_TERRAIN = {
-      // Dense grass — lush green for Rolling Hills ground
-      grass:      [1735, 1680, 1625, 1511],
-      // Lighter grass variant for hills/meadows
-      hillGrass:  [247, 336, 302, 248],
-      // Sand — warm yellow for beaches + Volcanic Isles ground
-      sand:       [3317, 3314, 3315, 3320],
+      // Dense grass — lush green for Rolling Hills ground (Grass Land 2.0)
+      grass:        { frames: [1735, 1680, 1625, 1511], tileset: 'erw_terrain' },
+      // Lighter grass variant for hills/meadows (Grass Land 2.0)
+      hillGrass:    { frames: [247, 336, 302, 248], tileset: 'erw_terrain' },
+      // Sand — warm yellow for beaches + shores (Grass Land 2.0)
+      sand:         { frames: [3317, 3314, 3315, 3320], tileset: 'erw_terrain' },
+      // Snow ground — icy white/blue for Frost Valley (Highlands V1.4.1)
+      snow:         { frames: [1825, 362, 374, 402], tileset: 'erw_highlands' },
+      // Volcanic rock — dark charred stone for Volcanic Isles (Volcano V1.6)
+      volcanicRock: { frames: [195, 209, 1409, 1090], tileset: 'erw_volcano' },
+      // Crypt floor — deep dark teal for Dark Castle ground (Crypt V1.6)
+      cryptFloor:   { frames: [217, 268, 219, 218], tileset: 'erw_crypt' },  // brightest purple-gray stone
+      // Crypt stone — lighter purple-gray for Dark Castle walls (Crypt V1.6)
+      cryptStone:   { frames: [320, 122, 271, 321], tileset: 'erw_crypt' },  // slightly different shade for walls
+      // Crypt path — lighter cobblestone for Dark Castle walkways (Crypt V1.6)
+      cryptPath:    { frames: [316, 272, 322, 221], tileset: 'erw_crypt' },  // lighter path variant
+      // Dark Castle ground — grass tiles with dark purple tint (visible, not black void)
+      darkGround:   { frames: [247, 336, 302, 248], tileset: 'erw_terrain', tint: 0x442255 },
+      castleFloor:  { frames: [1735, 1680, 1625, 1511], tileset: 'erw_terrain', tint: 0x553366 },
+      darkPath:     { frames: [1735, 1680, 1625, 1511], tileset: 'erw_terrain', tint: 0x665577 },
+      darkWall:     { frames: [247, 336, 302, 248], tileset: 'erw_terrain', tint: 0x332244 },
+      // Frost dirt path — brown dirt visible against snow (Highlands V1.4.1)
+      frostPath:    { frames: [2063, 2005, 2065, 2064], tileset: 'erw_highlands' },
+      // Dirt path — warm brown for Rolling Hills paths (Grass Land 2.0)
+      dirt:         { frames: [2611, 2659, 2664, 2670], tileset: 'erw_terrain' },
     };
 
     const hasERW = this.textures.exists('erw_terrain');
+    const hasERWHighlands = this.textures.exists('erw_highlands');
+    const hasERWVolcano = this.textures.exists('erw_volcano');
+    const hasERWLava = this.textures.exists('erw_lava') && this.anims.exists('erw_lava_flow');
+    const hasERWCrypt = this.textures.exists('erw_crypt');
     const hasERWWater = this.textures.exists('erw_water') && this.anims.exists('erw_water_flow');
     const hasERWTrees = this.textures.exists('erw_tree_green1');
 
@@ -64,52 +89,82 @@ class WorldScene extends Phaser.Scene {
           continue;
         }
 
-        // ── ERW terrain (region-aware) ──
-        let erwGroup = null;
-        if (hasERW) {
-          const region = getCurrentRegion(x, y);
-
-          if (region === 'rolling_hills') {
-            // Rolling Hills — lush grass everywhere
-            if (tileType === 9 || tileType === 10 || tileType === 2) erwGroup = 'grass';
-            else if (tileType === 11) erwGroup = 'hillGrass';
-            else if (tileType === 19) erwGroup = 'hillGrass';
-            else if (tileType === 4) erwGroup = 'sand'; // ice near water = sandy shore
-          } else if (region === 'volcanic_isles') {
-            // Volcanic Isles — sandy paradise with lava rivers
-            if (tileType === 14 || tileType === 17 || tileType === 18) erwGroup = 'sand';
-            else if (tileType === 20) erwGroup = 'sand';
-            else if (tileType === 2) erwGroup = 'sand';
-          }
-          // Frost Valley stays as flat snow — no ERW override
-          // Sand tiles (beaches) anywhere
-          if (tileType === 20) erwGroup = 'sand';
+        // ── Animated lava tiles (type 15 = lava, Volcanic Isles) ──
+        if (hasERWLava && tileType === 15) {
+          // Ambient orange glow UNDER lava (depth -1)
+          this.add.circle(x * T + T / 2, y * T + T / 2, 36, 0xff4400, 0.2).setDepth(-1); this.add.circle(x * T + T / 2, y * T + T / 2, 20, 0xffaa00, 0.15).setDepth(-1);
+          const lavaSprite = this.add.sprite(x * T + T / 2, y * T + T / 2, 'erw_lava', 0)
+            .setDepth(0).play('erw_lava_flow');
+          lavaSprite.anims.setProgress((x * 0.15 + y * 0.09) % 1);
+          continue;
         }
 
+        // ── ERW terrain (region-aware) ──
+        let erwGroup = null;
+        const region = getCurrentRegion(x, y);
+
+        if (region === 'rolling_hills' && hasERW) {
+          // Rolling Hills — lush grass with visible dirt paths
+          if (tileType === 9 || tileType === 10) erwGroup = 'grass';
+          else if (tileType === 2) erwGroup = 'dirt'; // brown dirt paths visible on green
+          else if (tileType === 11) erwGroup = 'hillGrass';
+          else if (tileType === 19) erwGroup = 'hillGrass';
+          else if (tileType === 4) erwGroup = 'sand'; // ice near water = sandy shore
+        } else if (region === 'frost_valley' && hasERWHighlands) {
+          // Frost Valley — snow terrain from Highlands pack
+          if (tileType === 0 || tileType === 6 || tileType === 19) erwGroup = 'snow';
+          else if (tileType === 2) erwGroup = 'frostPath'; // dirt paths visible on snow
+          else if (tileType === 4) erwGroup = 'sand'; // beach around lake stays sandy
+        } else if (region === 'volcanic_isles') {
+          // Volcanic Isles — sandy tropical paradise with lava rivers
+          // Volcano pack is too dark for outdoor ground — use ERW sand for ALL ground tiles
+          if (hasERW && (tileType === 14 || tileType === 17 || tileType === 18 || tileType === 2 || tileType === 20)) erwGroup = 'sand';
+          else if (hasERW && tileType === 16) erwGroup = 'sand'; // obsidian → sand too
+        } else if (region === 'dark_castle') {
+          // Dark Castle — use ERW grass terrain with dark purple tint for visible ground
+          // Crypt tiles were too dark (brightness ~62) — invisible. Using tinted grass instead.
+          if (hasERW && (tileType === 22 || tileType === 25 || tileType === 27)) erwGroup = 'darkGround';
+          else if (hasERW && tileType === 26) erwGroup = 'castleFloor';
+          else if (hasERW && tileType === 24) erwGroup = 'darkPath';
+          else if (hasERW && tileType === 23) erwGroup = 'darkWall';
+        }
+        // Sand tiles (beaches) anywhere
+        if (!erwGroup && hasERW && tileType === 20) erwGroup = 'sand';
+
         if (erwGroup) {
-          const frames = ERW_TERRAIN[erwGroup];
-          const frame = frames[(x * 3 + y * 5) % frames.length];
-          this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', frame).setDepth(0);
+          const grp = ERW_TERRAIN[erwGroup];
+          const frame = grp.frames[(x * 3 + y * 5) % grp.frames.length];
+          const tileset = grp.tileset;
+          if (this.textures.exists(tileset)) {
+            const tileImg = this.add.image(x * T + T / 2, y * T + T / 2, tileset, frame).setDepth(0);
+            if (grp.tint) tileImg.setTint(grp.tint);
+          } else {
+            // Fallback to flat color if tileset didn't load
+            const colorHex = TILE_COLORS[tileType] || '#d8e8f0';
+            mapGfx.fillStyle(hexToNum(colorHex), 1);
+            mapGfx.fillRect(x * T, y * T, T, T);
+          }
         } else {
           // Tree tiles (1, 13, 21, 25) — if ERW trees are loaded, draw region ground
           // instead of the tree's flat color so the sprite sits on natural terrain
           const isTreeTile = (tileType === 1 || tileType === 13 || tileType === 21 || tileType === 25);
           if (hasERWTrees && isTreeTile) {
-            const region = getCurrentRegion(x, y);
-            if (region === 'rolling_hills') {
-              // Draw grass under the tree
+            // Draw region-appropriate ground UNDER tree sprites
+            if (region === 'rolling_hills' && hasERW) {
               const gf = ERW_TERRAIN.grass;
-              this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', gf[(x * 3 + y * 5) % gf.length]).setDepth(0);
-            } else if (region === 'volcanic_isles') {
+              this.add.image(x * T + T / 2, y * T + T / 2, gf.tileset, gf.frames[(x * 3 + y * 5) % gf.frames.length]).setDepth(0);
+            } else if (region === 'volcanic_isles' && hasERW) {
               const sf = ERW_TERRAIN.sand;
-              this.add.image(x * T + T / 2, y * T + T / 2, 'erw_terrain', sf[(x * 3 + y * 5) % sf.length]).setDepth(0);
-            } else if (region === 'dark_castle') {
-              // Dark Castle — flat dark ground
-              mapGfx.fillStyle(hexToNum('#1a1020'), 1);
-              mapGfx.fillRect(x * T, y * T, T, T);
+              this.add.image(x * T + T / 2, y * T + T / 2, sf.tileset, sf.frames[(x * 3 + y * 5) % sf.frames.length]).setDepth(0);
+            } else if (region === 'dark_castle' && hasERW) {
+              const dg = ERW_TERRAIN.darkGround;
+              this.add.image(x * T + T / 2, y * T + T / 2, dg.tileset, dg.frames[(x * 3 + y * 5) % dg.frames.length]).setDepth(0).setTint(dg.tint);
+            } else if (region === 'frost_valley' && hasERWHighlands) {
+              const sf = ERW_TERRAIN.snow;
+              this.add.image(x * T + T / 2, y * T + T / 2, sf.tileset, sf.frames[(x * 3 + y * 5) % sf.frames.length]).setDepth(0);
             } else {
-              // Frost Valley + others — flat snow/default ground under trees
-              const gc = region === 'frost_valley' ? '#d8e8f0' : (TILE_COLORS[tileType] || '#d8e8f0');
+              // Fallback — flat color
+              const gc = TILE_COLORS[tileType] || '#d8e8f0';
               mapGfx.fillStyle(hexToNum(gc), 1);
               mapGfx.fillRect(x * T, y * T, T, T);
             }
@@ -130,7 +185,8 @@ class WorldScene extends Phaser.Scene {
 
     // ERW tree keys by region/biome
     const ERW_TREES = {
-      frost:    ['erw_tree_pine1', 'erw_tree_pine2', 'erw_tree_pine3'],
+      frost:    ['erw_tree_snow_big', 'erw_tree_snow_med', 'erw_tree_snow_sm'],
+      frostBare:['erw_tree_pine1', 'erw_tree_pine2', 'erw_tree_pine3'],  // non-snow pines (kept as fallback)
       green:    ['erw_tree_green1', 'erw_tree_green2', 'erw_tree_green3', 'erw_tree_green4', 'erw_tree_green5'],
       palm:     ['erw_tree_palm1', 'erw_tree_palm2', 'erw_tree_palm3'],
       dead:     ['erw_tree_dead1', 'erw_tree_dead2', 'erw_tree_dead3'],
@@ -162,8 +218,8 @@ class WorldScene extends Phaser.Scene {
           const sizeVar = 0.85 + ((x * 31 + y * 17) % 7) / 20; // 0.85, 0.90, 0.95, 1.0, 1.05, 1.10, 1.15
 
           if (tileType === 1) {
-            // Frost trees → pine trees (BIGGER: 0.55-0.73 base)
-            treeKeys = ERW_TREES.frost;
+            // Frost trees → snow-covered pines (Highlands), fallback to bare pines
+            treeKeys = this.textures.exists('erw_tree_snow_big') ? ERW_TREES.frost : ERW_TREES.frostBare;
             treeScale = 0.6 * sizeVar;
           } else if (tileType === 13) {
             // Warm trees → big green trees (BIGGER: 0.48-0.63 base)
@@ -174,9 +230,10 @@ class WorldScene extends Phaser.Scene {
             treeKeys = ERW_TREES.palm;
             treeScale = 0.6 * sizeVar;
           } else if (tileType === 25) {
-            // Dark/dead trees
-            treeKeys = region === 'dark_castle' ? ERW_TREES.dead : ERW_TREES.deadSmall;
-            treeScale = (region === 'dark_castle' ? 0.5 : 0.6) * sizeVar;
+            // Dark/dead trees — skip in dark_castle (crypt props handle atmosphere)
+            if (region === 'dark_castle') { continue; }
+            treeKeys = ERW_TREES.deadSmall;
+            treeScale = 0.6 * sizeVar;
           }
 
           if (treeKeys) {
@@ -200,7 +257,15 @@ class WorldScene extends Phaser.Scene {
           continue;
         }
 
-        // Flower tiles (type 10) — no stamp overlay, ERW grass terrain handles the ground
+        // Flower tiles (type 10) — ERW flower sprites in Rolling Hills
+        if (tileType === 10 && getCurrentRegion(x, y) === 'rolling_hills') {
+          const flowerKeys = ['erw_flower1', 'erw_flower2', 'erw_flower3', 'erw_flower4'];
+          const fKey = flowerKeys[(x * 7 + y * 13) % flowerKeys.length];
+          if (this.textures.exists(fKey)) {
+            this.add.image(x * T + T / 2, y * T + T / 2, fKey)
+              .setScale(0.9).setDepth(1).setAlpha(0.9);
+          }
+        }
 
         // ── Building overlays — ERW sprites only, NO stamp fallback ──
         if (tileType === 5 || tileType === 8 || tileType === 12) {
@@ -217,6 +282,46 @@ class WorldScene extends Phaser.Scene {
             }
           }
           // No fallback — stamps are dead
+        }
+      }
+    }
+
+    // ── Grand Castle — single massive castle sprite placed on the castle area ──
+    if (this.textures.exists('grand_castle')) {
+      // Castle area in world-gen: (96,8)-(107,17), center at ~(101.5, 12.5)
+      const castleCX = 101.5 * T;
+      const castleCY = 12.5 * T;
+      // Shadow under the castle
+      this.add.ellipse(castleCX, castleCY + 60, 400, 80, 0x000000, 0.25).setDepth(1);
+      // The grand castle sprite — tinted dark purple to match Dark Castle mood
+      this.add.image(castleCX, castleCY, 'grand_castle')
+        .setScale(1.2).setDepth(2).setTint(0x8877aa);
+    }
+
+    // ── Dark Castle — torches only (statues/bones/banners REMOVED — offensive or unrecognizable) ──
+    const hasCryptTorch = this.textures.exists('crypt_torch') && this.anims.exists('crypt_torch_burn');
+    if (hasCryptTorch) {
+      const _placedCrypt = new Set();
+
+      for (let y = 0; y < MH; y++) {
+        for (let x = 0; x < MW; x++) {
+          const tileType = worldMap[y] ? worldMap[y][x] : 0;
+          if (getCurrentRegion(x, y) !== 'dark_castle') continue;
+
+          const cx = x * T + T / 2;
+          const cy = y * T + T / 2;
+          const propHash = (x * 11 + y * 23) % 100;
+          const clusterKey = Math.floor(x / 4) + ',' + Math.floor(y / 4);
+
+          // Torches along paths and walls — warm light in the darkness
+          if ((tileType === 23 || tileType === 24) && propHash < 15 && !_placedCrypt.has(clusterKey)) {
+            _placedCrypt.add(clusterKey);
+            const torch = this.add.sprite(cx, cy - 8, 'crypt_torch', 0)
+              .setScale(0.5).setDepth(3).play('crypt_torch_burn');
+            torch.anims.setProgress((x * 0.2 + y * 0.1) % 1);
+            // Warm glow circle under torch
+            this.add.circle(cx, cy, 20, 0xff8844, 0.12).setDepth(0.5);
+          }
         }
       }
     }
@@ -541,6 +646,11 @@ class WorldScene extends Phaser.Scene {
     // ── Wave 3: Region transition tracking ──
     this._lastRegion = getCurrentRegion(G.x, G.y);
 
+    // Spawn zone events for starting region on load
+    if (typeof spawnZoneEvents === 'function') {
+      this.time.delayedCall(2000, () => spawnZoneEvents(this._lastRegion, this));
+    }
+
     // ── Encounter zone labels ──
     for (const zone of ENCOUNTER_ZONES) {
       this.add.text((zone.x + zone.w/2) * T, zone.y * T - 8, zone.name, {
@@ -760,6 +870,53 @@ class WorldScene extends Phaser.Scene {
     if (G.inBattle) return;
     if (!this._updateLogged) { this._updateLogged = true; console.log('[WorldScene] update() running, player:', this.player?.x, this.player?.y); }
 
+    // Frozen by event (chase→talk→battle flow)
+    if (this.player && this.player._eventFrozen) {
+      this.player.setVelocity(0, 0);
+      return;
+    }
+
+    // ── BLACKOUT CHECK — all team ghosts KO'd → instant heal + teleport ──
+    if (G.team && G.team.length > 0 && !this._blackingOut) {
+      const allKO = G.team.every(g => g.ko || g.hp <= 0);
+      if (allKO) {
+        this._blackingOut = true;
+        console.log('[WorldScene] BLACKOUT — all team KO, healing + teleporting');
+
+        // Gold penalty
+        const penalty = Math.min(G.coins, 5 + G.level * 2);
+        if (penalty > 0) G.coins -= penalty;
+
+        // Heal team to half HP immediately
+        G.team.forEach(g => {
+          g.ko = false;
+          g.hp = Math.max(1, Math.ceil((g.maxHp || 6) / 2));
+        });
+
+        // Teleport to nearest hub
+        const px = G.x || 15, py = G.y || 20;
+        const hubs = [
+          { name: 'Frost Valley', x: HUB.x, y: HUB.y },
+          { name: 'Rolling Hills', x: (typeof HUB_MEADOW !== 'undefined' ? HUB_MEADOW.x : 28), y: (typeof HUB_MEADOW !== 'undefined' ? HUB_MEADOW.y : 52) },
+          { name: 'Volcanic Isles', x: (typeof HUB_VOLCANIC !== 'undefined' ? HUB_VOLCANIC.x : 68), y: (typeof HUB_VOLCANIC !== 'undefined' ? HUB_VOLCANIC.y : 28) },
+          { name: 'Dark Castle', x: (typeof HUB_DARK !== 'undefined' ? HUB_DARK.x : 92), y: (typeof HUB_DARK !== 'undefined' ? HUB_DARK.y : 15) },
+        ];
+        let nearest = hubs[0], bestDist = Infinity;
+        hubs.forEach(h => { const d = Math.abs(h.x - px) + Math.abs(h.y - py); if (d < bestDist) { bestDist = d; nearest = h; } });
+
+        G.x = nearest.x; G.y = nearest.y;
+        if (this.player) this.player.setPosition(nearest.x * 32, nearest.y * 32);
+
+        saveGame();
+        this._blackingOut = false;
+
+        if (typeof this.showNotification === 'function') {
+          this.showNotification(`Team fainted! Woke up in ${nearest.name}. -${penalty} gold.`);
+        }
+        // Don't return — let the player move normally this frame
+      }
+    }
+
     // Don't process movement/hotkeys while typing in chat
     if (this._chatOpen) {
       this.player.setVelocity(0, 0);
@@ -848,13 +1005,22 @@ class WorldScene extends Phaser.Scene {
     G.x = this.player.x / 32;
     G.y = this.player.y / 32;
 
-    // Day/night cycle
-    this.updateDayNight();
+    // Throttle counter — skip expensive updates on most frames
+    if (!this._tickCount) this._tickCount = 0;
+    this._tickCount++;
+    const slowTick = (this._tickCount % 10 === 0); // every 10 frames (~6x/sec)
+    const medTick = (this._tickCount % 4 === 0);   // every 4 frames (~15x/sec)
 
-    // Region detection
-    const region = getCurrentRegion(G.x, G.y);
-    const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
-    this.regionText.setText(regionNames[region] || '');
+    // Day/night cycle (slow — visual only)
+    if (slowTick) this.updateDayNight();
+
+    // Region detection (medium — needed for chat/spawns)
+    const region = medTick ? getCurrentRegion(G.x, G.y) : (this._lastRegion || 'frost_valley');
+    if (medTick) {
+      this._lastRegion = region;
+      const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
+      this.regionText.setText(regionNames[region] || '');
+    }
 
     // NPC + Building interactions — read E once, share across all checks
     // NPCs check FIRST so dialogue takes priority over entering nearby buildings
@@ -894,32 +1060,34 @@ class WorldScene extends Phaser.Scene {
       this._showBuildMenu();
     }
 
-    // Tick buffs
-    if (typeof tickBuffs === 'function') tickBuffs();
-    // Garden growth + rendering (every frame for visuals, tick handles timing internally)
-    if (typeof tickGarden === 'function') tickGarden();
-    if (typeof renderGardenPlants === 'function') renderGardenPlants(this);
-    // Phaser HUD updates — only if Phaser HUD exists (may be DOM-only now)
-    if (this._actionButtons && this._actionButtons.length > 0) this._updateActionBar();
-    if (this._buffHudText) this._updateBuffHUD();
+    // Tick buffs (slow — timer-based internally)
+    if (slowTick && typeof tickBuffs === 'function') tickBuffs();
+    // Garden growth + rendering (slow — visual)
+    if (slowTick && typeof tickGarden === 'function') tickGarden();
+    if (slowTick && typeof renderGardenPlants === 'function') renderGardenPlants(this);
+    // Phaser HUD updates (slow — text rendering is expensive)
+    if (slowTick) {
+      if (this._actionButtons && this._actionButtons.length > 0) this._updateActionBar();
+      if (this._buffHudText) this._updateBuffHUD();
+    }
 
-    // Event engine — drives all scripted events (Valkin, future bosses, NPCs, etc.)
+    // Event engine — drives all scripted events (every frame for responsive chase/collision)
     if (typeof EventEngine !== 'undefined') EventEngine.update(this);
 
-    // Structure proximity interactions
-    this._checkStructureProximity();
+    // Structure proximity interactions (medium)
+    if (medTick) this._checkStructureProximity();
 
-    // Wave 3: Signpost interactions (E key near signposts)
-    this.checkSignpostProximity();
+    // Wave 3: Signpost interactions (E key near signposts) — only when E pressed
+    if (this._ePressed) this.checkSignpostProximity();
 
-    // Wave 3: Lore tablet collection (walk over)
-    this.checkLoreTablets();
+    // Wave 3: Lore tablet collection (medium — walk over)
+    if (medTick) this.checkLoreTablets();
 
-    // Wave 3: Region transition banners + exploration XP
-    this.checkRegionTransition(region);
+    // Wave 3: Region transition banners + exploration XP (medium)
+    if (medTick) this.checkRegionTransition(region);
 
-    // Switch chat region if needed
-    if (this.updateChatRegion) this.updateChatRegion();
+    // Switch chat region if needed (slow)
+    if (slowTick && this.updateChatRegion) this.updateChatRegion();
 
     // Dynamic encounter rate — faster spawns inside encounter zones
     const zoneIdx = getCurrentZone(G.x, G.y);
@@ -933,28 +1101,29 @@ class WorldScene extends Phaser.Scene {
       this._spawnTimer = this.time.addEvent({ delay: 4000, callback: this.spawnEnemy, callbackScope: this, loop: true });
     }
 
-    // Wave 5: Black Riders — night-only dangerous enemies
-    this.updateBlackRiders();
+    // Wave 5: Black Riders — night-only dangerous enemies (slow)
+    if (slowTick) this.updateBlackRiders();
 
-    // Wave 5: World Boss proximity check
-    this.checkWorldBossProximity();
+    // Wave 5: World Boss proximity check (medium)
+    if (medTick) this.checkWorldBossProximity();
 
     // Wave 5: Help panel hotkey
     if (Phaser.Input.Keyboard.JustDown(this.hKey)) {
       this.showHelpPanel();
     }
 
-    // Wave 5: Daily challenge check
-    this.updateDailyChallenge();
+    // Wave 5: Daily challenge check (slow)
+    if (slowTick) this.updateDailyChallenge();
 
-    // Cultivator: Spirit pet follower + Nature's Calm heal
-    this.updateSpiritPet();
-    this.updateNaturesCalmHeal();
+    // Cultivator: Spirit pet follower (medium) + Nature's Calm heal (slow)
+    if (medTick) this.updateSpiritPet();
+    if (slowTick) this.updateNaturesCalmHeal();
 
-    // Wave 6: Tutorial progression checks
-    this.updateTutorial(vx, vy);
+    // Wave 6: Tutorial progression checks (slow)
+    if (slowTick) this.updateTutorial(vx, vy);
 
-    this.updateHUD();
+    // HUD text updates (slow — setText is expensive)
+    if (slowTick) this.updateHUD();
     } catch (e) { console.error('[WorldScene] update error:', e); }
   }
 
@@ -1374,6 +1543,11 @@ class WorldScene extends Phaser.Scene {
     // Trigger Valkin event when entering Dark Castle (once per session)
     if (currentRegion === 'dark_castle' && !isFirstSet && !this._valkinEvent && typeof spawnValkinEvent === 'function') {
       this.time.delayedCall(3000, () => spawnValkinEvent(this));
+    }
+
+    // Spawn zone events (NPC talks, ambushes, mini-bosses, treasures, merchants)
+    if (typeof spawnZoneEvents === 'function') {
+      this.time.delayedCall(1500, () => spawnZoneEvents(currentRegion, this));
     }
 
     // Large banner text — fade in, hold, fade out
@@ -3176,9 +3350,10 @@ class WorldScene extends Phaser.Scene {
 
     console.log('[WorldScene] Multiplayer presence initialized');
 
-    // Listen for incoming buffs, party requests, and raid invites
+    // Listen for incoming buffs, party requests, raid invites, and PvP challenges
     this.checkIncomingBuffs();
     this.setupRaidInviteListener();
+    if (typeof PvPManager !== 'undefined') PvPManager.listenForChallenges(this);
 
     // Build party sidebar (will show if G.party has members)
     this.buildPartySidebar();
@@ -3313,6 +3488,24 @@ class WorldScene extends Phaser.Scene {
       }
       y += 46;
 
+      // Challenge to Battle (PvP)
+      if (!G.inBattle && G.team.length > 0) {
+        const pvpBg = this.add.rectangle(w / 2, y + 16, w - 40, 36, 0x882222, 0.9)
+          .setStrokeStyle(1, 0xe94560).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+        container.add(pvpBg);
+        container.add(this.add.text(w / 2, y + 16, '\u2694 Challenge to Battle', {
+          fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ff8888',
+        }).setOrigin(0.5).setScrollFactor(0));
+        pvpBg.on('pointerdown', () => {
+          if (typeof PvPManager !== 'undefined') {
+            PvPManager.sendChallenge(data.playerId || pid, name, 'pvp');
+            this.showNotification(`Battle challenge sent to ${name}!`);
+          }
+          this.panels.close();
+        });
+        y += 46;
+      }
+
       // Inspect — show their active spiritkin
       container.add(this.add.text(w / 2, y, 'Active Spiritkin:', {
         fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffdd44',
@@ -3321,7 +3514,7 @@ class WorldScene extends Phaser.Scene {
       container.add(this.add.text(w / 2, y, data.activeName || 'Unknown', {
         fontSize: '12px', fontFamily: 'monospace', color: '#cccccc',
       }).setOrigin(0.5).setScrollFactor(0));
-    }, { width: 320, height: 140 });
+    }, { width: 320, height: 190 });
   }
 
   sendPartyRequest(pid, data) {

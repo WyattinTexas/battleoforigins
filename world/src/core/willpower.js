@@ -6,6 +6,7 @@
 // ══════════════════════════════════════════════════════════
 
 const WILLPOWER_CARDS = [
+  { id: 0,  name: 'Heart',            color: 'red',    emoji: '♥',  effect: 'heart',          desc: 'Basic willpower — no effect' },
   { id: 1,  name: 'Bonanza',          color: 'red',    emoji: '💥', effect: 'bonanza',        desc: '+2 damage to wins' },
   { id: 2,  name: 'Spark',            color: 'red',    emoji: '⚡', effect: 'spark',          desc: 'Gain +1 Surge' },
   { id: 3,  name: 'Ignite',           color: 'red',    emoji: '🔥', effect: 'ignite',         desc: 'Gain 1 Burn' },
@@ -42,13 +43,17 @@ function buildTeamWillpowerDeck(config) {
   return deck;
 }
 
-// Default deck config for new players (balanced mix)
+// Heart-only deck for brand-new players (15 basic hearts, no effects)
+function getHeartDeckConfig() {
+  return { 0: 15 };
+}
+
+// Default deck config — returns saved config if it exists, otherwise heart deck
 function getDefaultWpDeckConfig() {
-  const config = {};
-  WILLPOWER_CARDS.forEach((c, i) => {
-    config[c.id] = i < 3 ? 2 : 1; // 2 copies of first 3, 1 copy of rest
-  });
-  return config;
+  if (typeof G !== 'undefined' && G.wpDeckConfig && Object.keys(G.wpDeckConfig).length > 0) {
+    return G.wpDeckConfig;
+  }
+  return getHeartDeckConfig();
 }
 
 // Get total cards in a deck config
@@ -172,6 +177,9 @@ function applyWillpowerEffect(t, teamName, card) {
   const oppTeamName = teamName === 'red' ? 'blue' : (teamName === 'player' ? 'enemy' : 'red');
 
   switch (card.effect) {
+    case 'heart':
+      // Basic willpower card — no effect, just HP
+      break;
     case 'bonanza':
       if (!B.wpBonanza) B.wpBonanza = {};
       B.wpBonanza[teamName] = 2;
@@ -228,4 +236,15 @@ function applyWillpowerEffect(t, teamName, card) {
       t.resources.fire = (t.resources.fire || 0) + 1;
       break;
   }
+}
+
+// ── Willpower Card Drops (progression system) ──────
+
+// Award a willpower card to the player's collection
+// Called by trainers, events, rare encounters, etc.
+function awardWillpowerCard(cardId) {
+  if (!G.willpowerCollection) G.willpowerCollection = [];
+  G.willpowerCollection.push(cardId);
+  if (typeof saveGame === 'function') saveGame();
+  return wpCardById(cardId);
 }

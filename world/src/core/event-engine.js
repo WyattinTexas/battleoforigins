@@ -47,13 +47,84 @@
   //  BUILT-IN ACTION EXECUTORS
   // ══════════════════════════════════════════
 
-  // ── comm: scene.comm.show() ──
+  // ── comm: scene.comm.show() — fire-and-forget ──
   registerAction('comm', function (inst, scene, action, state) {
     if (scene && scene.comm) {
       scene.comm.show(action.speaker || inst.script.name, action.text, {
         color: action.color, duration: action.duration || 3000,
       });
     }
+    return 'done';
+  });
+
+  // ── blockingComm: shows dialogue, waits for E key or click to dismiss ──
+  registerAction('blockingComm', function (inst, scene, action, state) {
+    if (!state._started) {
+      state._started = true;
+      state._done = false;
+      state._minTime = Date.now() + 500; // prevent instant dismiss from same click
+      console.log('[EventEngine] blockingComm started:', action.text);
+      // Freeze player
+      if (scene.player && scene.player.setVelocity) scene.player.setVelocity(0, 0);
+      if (scene.player) scene.player._eventFrozen = true;
+      // Show comm
+      if (scene && scene.comm) {
+        scene.comm.show(action.speaker || inst.script.name, action.text, {
+          color: action.color, duration: 999999,
+        });
+      }
+      // Use Phaser's input system (works even when canvas captures events)
+      if (scene && scene.input) {
+        scene.input.on('pointerdown', function _bcClick() {
+          if (Date.now() < state._minTime) return; // ignore clicks in first 500ms
+          state._done = true;
+          scene.input.off('pointerdown', _bcClick);
+        });
+      }
+      // Also listen for keyboard via Phaser
+      if (scene && scene.input && scene.input.keyboard) {
+        var eKey = scene.input.keyboard.addKey('E');
+        var spaceKey = scene.input.keyboard.addKey('SPACE');
+        state._phaserKeys = [eKey, spaceKey];
+      }
+    }
+    // Check Phaser keys
+    if (state._phaserKeys && Date.now() >= state._minTime) {
+      state._phaserKeys.forEach(function (k) {
+        if (k && Phaser.Input.Keyboard.JustDown(k)) state._done = true;
+      });
+    }
+    if (state._done) {
+      console.log('[EventEngine] blockingComm dismissed');
+      // Clear Phaser key listeners
+      if (state._phaserKeys) {
+        state._phaserKeys.forEach(function (k) {
+          if (k && scene.input && scene.input.keyboard) scene.input.keyboard.removeKey(k.keyCode);
+        });
+      }
+      // Clear comm
+      if (scene && scene.comm && scene.comm.hide) scene.comm.hide();
+      // Unfreeze player (battle action will re-freeze if needed)
+      if (scene.player) scene.player._eventFrozen = false;
+      return 'done';
+    }
+    // Keep player frozen while waiting
+    if (scene.player && scene.player.setVelocity) scene.player.setVelocity(0, 0);
+    return 'running';
+  });
+
+  // ── freezePlayer: lock player movement until unfreezePlayer ──
+  registerAction('freezePlayer', function (inst, scene, action) {
+    if (scene.player) {
+      if (scene.player.setVelocity) scene.player.setVelocity(0, 0);
+      scene.player._eventFrozen = true;
+    }
+    return 'done';
+  });
+
+  // ── unfreezePlayer: restore movement ──
+  registerAction('unfreezePlayer', function (inst, scene, action) {
+    if (scene.player) scene.player._eventFrozen = false;
     return 'done';
   });
 
@@ -216,8 +287,11 @@
 
   // ── battle: trigger BattleScene ──
   registerAction('battle', function (inst, scene, action, state) {
+    console.log('[EventEngine] battle action fired, G.inBattle:', G.inBattle, 'team:', G.team?.length);
     if (G.inBattle) return 'done';
     G.inBattle = true;
+    // Unfreeze player (battle scene takes over)
+    if (scene.player) scene.player._eventFrozen = false;
 
     if (scene.player && scene.player.setVelocity) scene.player.setVelocity(0, 0);
     inst.paused = true;
@@ -490,8 +564,16 @@
         scene.player.x, scene.player.y
       );
       if (dist < (trigger.radius || 40)) {
-        if (trigger.type === 'battle') {
-          // Execute battle action
+        // Prevent double-triggering
+        if (inst._collisionFired) return;
+        inst._collisionFired = true;
+
+        if (trigger.phase) {
+          // Transition to a named phase (freeze→talk→battle flow)
+          console.log('[EventEngine] Collision! Jumping to phase:', trigger.phase, 'for', inst.script.id);
+          _jumpToPhase(inst, trigger.phase);
+        } else if (trigger.type === 'battle') {
+          // Direct battle
           var executor = _executors['battle'];
           if (executor) executor(inst, scene, {}, {});
         } else if (trigger.type === 'dialogue') {

@@ -32,8 +32,10 @@ const ENCOUNTER_ZONES = [
   { name: 'Permafrost Depths', x: 48, y: 28, w: 6, h: 6 },
   { name: 'Sunlit Meadow', x: 12, y: 52, w: 8, h: 6 },
   { name: 'Bramble Thicket', x: 35, y: 55, w: 7, h: 5 },
-  { name: 'Magma Pools', x: 68, y: 10, w: 7, h: 5 },
-  { name: 'Obsidian Fields', x: 78, y: 25, w: 8, h: 6 },
+  { name: 'Magma Pools', x: 68, y: 15, w: 7, h: 5 },
+  { name: 'Obsidian Fields', x: 75, y: 40, w: 8, h: 6 },
+  { name: 'Lava Shores', x: 62, y: 55, w: 7, h: 5 },
+  { name: 'Ember Reef', x: 76, y: 60, w: 6, h: 5 },
   // Dark Castle
   { name: 'Shadow Realm', x: 93, y: 8, w: 7, h: 5 },
   { name: 'Throne Approach', x: 100, y: 28, w: 6, h: 6 },
@@ -60,10 +62,15 @@ function generateWorld() {
   for (let y = 19; y < 23; y++) for (let x = 36; x < 44; x++) worldMap[y][x] = 3; // water center
 
   // Frost Valley trees — noise-based organic forests
+  // Sparse scattered pine groves with open snowy meadows between them
   const treePositions = [];
   for (let y = 3; y < 42; y++) {
-    for (let x = 3; x < 56; x++) {
+    for (let x = 3; x < 53; x++) {
       if (worldMap[y][x] !== 0) continue;
+      // Hub area exclusion — keep Polaris town completely open
+      if (x >= 12 && x <= 28 && y >= 16 && y <= 32) continue;
+      // Frozen lake exclusion — let the lake and its shores be visible
+      if (x >= 33 && x <= 46 && y >= 16 && y <= 25) continue;
       // Keep south road corridor clear — diagonal from hub (x~17) to passage (x~29)
       // Width of 4 tiles on each side of the road center
       const roadCenterX = 17 + ((y - 31) / 12) * 12;
@@ -71,13 +78,13 @@ function generateWorld() {
       // Also keep zone passage wide near border
       if (y >= 38 && x >= 24 && x <= 35) continue;
       const density = forestNoise(x, y, 42);
-      // Dense groves where noise > 0.55, sparse edges 0.45-0.55
-      if (density > 0.55) {
+      // Thinned out — open explorable valley with small pine clusters
+      if (density > 0.82) {
         worldMap[y][x] = 1; treePositions.push({x, y});
-      } else if (density > 0.45) {
-        // Soft edge: scatter probability falls off
-        const edgeChance = (density - 0.45) / 0.1;
-        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.6) {
+      } else if (density > 0.74) {
+        // Soft edge: very sparse scatter
+        const edgeChance = (density - 0.74) / 0.08;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.2) {
           worldMap[y][x] = 1; treePositions.push({x, y});
         }
       }
@@ -151,7 +158,8 @@ function generateWorld() {
   }
 
   // Mountain divider between Frost Valley and Rolling Hills (y: 43-44)
-  for (let x = 0; x < WORLD_W; x++) { worldMap[43][x] = 7; worldMap[44][x] = 7; }
+  // Only runs west half (x:0-55) — east of x:55 is Volcanic Isles continuing south
+  for (let x = 0; x <= 55; x++) { worldMap[43][x] = 7; worldMap[44][x] = 7; }
 
   // Cantina/Frozen Mug building (hub area)
   worldMap[hubY+5][hubX+3] = 12; worldMap[hubY+5][hubX+4] = 12;
@@ -177,7 +185,7 @@ function generateWorld() {
   // Path from hub south
   for (let y = 12; y < 22; y++) { if (worldMap[y][20] === 0) worldMap[y][20] = 2; }
 
-  // ═══ ROLLING HILLS ZONE (y: 45 to 68) ═══
+  // ═══ ROLLING HILLS ZONE (y: 45 to 75, x: 2 to 54 — west half only) ═══
 
   // First, open a passage through the southern border mountains (around x: 28-31, y: 43-44)
   for (let x = 28; x <= 31; x++) {
@@ -185,46 +193,47 @@ function generateWorld() {
     worldMap[44][x] = 2;
   }
 
-  // Fill Rolling Hills base with grass
-  for (let y = 45; y < 68; y++) {
-    for (let x = 2; x < WORLD_W - 2; x++) {
+  // Fill Rolling Hills base with grass (WEST HALF ONLY — east is Volcanic Isles)
+  for (let y = 45; y < 76; y++) {
+    for (let x = 2; x < 55; x++) {
       worldMap[y][x] = 9; // grass
     }
   }
 
-  // Border mountains for new southern edge
-  for (let x = 0; x < WORLD_W; x++) { worldMap[68][x] = 7; worldMap[69][x] = 7; }
+  // Border mountains for Rolling Hills southern edge (west half only)
+  for (let x = 0; x <= 55; x++) { worldMap[76][x] = 7; worldMap[77][x] = 7; }
 
   // Rolling hills terrain features
   // Scattered flower patches
-  for (let i = 0; i < 40; i++) {
-    const fx = 4 + Math.floor(Math.random() * (WORLD_W - 8));
-    const fy = 46 + Math.floor(Math.random() * 20);
-    if (fy < 68 && worldMap[fy][fx] === 9) worldMap[fy][fx] = 10;
+  for (let i = 0; i < 50; i++) {
+    const fx = 4 + Math.floor(Math.random() * 48); // x:4-51
+    const fy = 46 + Math.floor(Math.random() * 28);
+    if (fy < 76 && fx < 54 && worldMap[fy][fx] === 9) worldMap[fy][fx] = 10;
   }
 
   // Rolling hill mounds
-  for (let i = 0; i < 15; i++) {
-    const hx = 5 + Math.floor(Math.random() * (WORLD_W - 10));
-    const hy = 47 + Math.floor(Math.random() * 18);
-    if (hy < 67 && worldMap[hy][hx] === 9) {
+  for (let i = 0; i < 18; i++) {
+    const hx = 5 + Math.floor(Math.random() * 45); // x:5-49
+    const hy = 47 + Math.floor(Math.random() * 26);
+    if (hy < 75 && hx < 53 && worldMap[hy][hx] === 9) {
       worldMap[hy][hx] = 11;
-      if (hx+1 < WORLD_W - 2 && worldMap[hy][hx+1] === 9) worldMap[hy][hx+1] = 11;
+      if (hx+1 < 54 && worldMap[hy][hx+1] === 9) worldMap[hy][hx+1] = 11;
     }
   }
 
   // Warm trees — noise-based organic groves (start y=49 to keep zone entrance clear)
-  for (let y = 49; y < 68; y++) {
-    for (let x = 3; x < WORLD_W - 3; x++) {
+  for (let y = 49; y < 76; y++) {
+    for (let x = 3; x < 54; x++) {
       if (worldMap[y][x] !== 9) continue;
       // Skip near the passage (x: 26-33) to keep zone entrance open
       if (y < 52 && x >= 26 && x <= 33) continue;
       const density = forestNoise(x, y, 77); // different seed than frost
-      if (density > 0.65) { // raised from 0.58 — thinner forest
+      // Thinned — open meadows with scattered groves
+      if (density > 0.78) {
         worldMap[y][x] = 13;
-      } else if (density > 0.55) { // raised from 0.48
-        const edgeChance = (density - 0.55) / 0.1;
-        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.4) {
+      } else if (density > 0.70) {
+        const edgeChance = (density - 0.70) / 0.08;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.25) {
           worldMap[y][x] = 13;
         }
       }
@@ -232,31 +241,31 @@ function generateWorld() {
   }
 
   // Path continuing south into Rolling Hills
-  for (let y = 44; y < 65; y++) {
+  for (let y = 44; y < 72; y++) {
     const px = 29 + Math.floor(Math.sin(y * 0.25) * 2);
-    if (worldMap[y][px] !== 7) worldMap[y][px] = 2;
-    if (px+1 < WORLD_W && worldMap[y][px+1] !== 7) worldMap[y][px+1] = 2;
+    if (px < 54 && worldMap[y][px] !== 7) worldMap[y][px] = 2;
+    if (px+1 < 54 && worldMap[y][px+1] !== 7) worldMap[y][px+1] = 2;
   }
 
   // More flower clusters in Rolling Hills
-  for (let i = 0; i < 35; i++) {
-    const fx = 4 + Math.floor(Math.random() * (WORLD_W - 8));
-    const fy = 46 + Math.floor(Math.random() * 20);
-    if (fy < 68 && worldMap[fy][fx] === 9) worldMap[fy][fx] = 10;
+  for (let i = 0; i < 40; i++) {
+    const fx = 4 + Math.floor(Math.random() * 48);
+    const fy = 46 + Math.floor(Math.random() * 28);
+    if (fy < 76 && fx < 54 && worldMap[fy][fx] === 9) worldMap[fy][fx] = 10;
   }
 
   // Meadowbrook pond/lake (3x4 water tiles)
-  for (let y = 50; y < 54; y++) for (let x = 45; x < 48; x++) {
-    if (y < 68) worldMap[y][x] = 3;
+  for (let y = 50; y < 54; y++) for (let x = 42; x < 45; x++) {
+    if (y < 76) worldMap[y][x] = 3;
   }
   // Ice edges around pond
-  worldMap[49][45] = 4; worldMap[49][46] = 4; worldMap[49][47] = 4;
-  worldMap[54][45] = 4; worldMap[54][46] = 4; worldMap[54][47] = 4;
+  worldMap[49][42] = 4; worldMap[49][43] = 4; worldMap[49][44] = 4;
+  worldMap[54][42] = 4; worldMap[54][43] = 4; worldMap[54][44] = 4;
 
   // Rolling Hills settlement — expanded "Meadowbrook" (5 buildings)
   const rhSettleX = 24, rhSettleY = 58;
   for (let y = rhSettleY - 1; y < rhSettleY + 5; y++) for (let x = rhSettleX - 2; x < rhSettleX + 7; x++) {
-    if (y >= 45 && y < 68 && x >= 2 && x < WORLD_W - 2) worldMap[y][x] = 2;
+    if (y >= 45 && y < 76 && x >= 2 && x < 54) worldMap[y][x] = 2;
   }
   worldMap[rhSettleY+1][rhSettleX+1] = 5; // inn
   worldMap[rhSettleY+1][rhSettleX+3] = 5; // seed shop
@@ -264,104 +273,156 @@ function generateWorld() {
   worldMap[rhSettleY+3][rhSettleX+1] = 5; // herbalist
   worldMap[rhSettleY+3][rhSettleX+3] = 5; // greenhouse
 
-  // ═══ VOLCANIC ISLES — Tropical Paradise with Volcanoes (x: 62 to 88, y: 3 to 42) ═══
+  // ═══ VOLCANIC ISLES — HUGE Tropical Island (x: 56 to 87, y: 3 to 75) ═══
 
-  // Mountain wall on east side of Frost Valley (x:58-61)
-  for (let y = 2; y < 43; y++) {
-    for (let x = 58; x < 62; x++) {
+  // Mountain wall on west side of Volcanic Isles (x:53-55) — borders Frost Valley north, Rolling Hills south
+  for (let y = 2; y < 76; y++) {
+    for (let x = 53; x <= 55; x++) {
       if (x < WORLD_W) worldMap[y][x] = 7;
     }
   }
 
-  // Fill Volcanic Isles with ash ground (interior land)
-  for (let y = 3; y < 42; y++) {
-    for (let x = 62; x < 88; x++) {
+  // Fill Volcanic Isles with ash ground (big rectangular interior)
+  for (let y = 3; y < 75; y++) {
+    for (let x = 56; x < 88; x++) {
       if (x < WORLD_W - 2 && y < WORLD_H - 2) worldMap[y][x] = 17; // ash_ground
     }
   }
 
-  // Blue ocean water around the edges — making these ISLANDS
+  // ── Ocean water border (2-3 tiles wide on all edges) ──
   // Top water strip (y:3-5)
-  for (let x = 62; x < 88; x++) {
-    if (x < WORLD_W - 2) {
-      worldMap[3][x] = 3; worldMap[4][x] = 3;
-    }
+  for (let x = 56; x < 88; x++) {
+    worldMap[3][x] = 3; worldMap[4][x] = 3; worldMap[5][x] = 3;
   }
-  // Bottom water strip (y:38-41)
-  for (let x = 62; x < 88; x++) {
-    if (x < WORLD_W - 2) {
-      worldMap[38][x] = 3; worldMap[39][x] = 3;
-      worldMap[40][x] = 3; worldMap[41][x] = 3;
-    }
+  // Bottom water strip (y:72-74)
+  for (let x = 56; x < 88; x++) {
+    worldMap[72][x] = 3; worldMap[73][x] = 3; worldMap[74][x] = 3;
   }
   // Right water strip (x:85-87)
-  for (let y = 3; y < 42; y++) {
-    worldMap[y][85] = 3; worldMap[y][86] = 3;
-    if (87 < WORLD_W - 2) worldMap[y][87] = 3;
+  for (let y = 3; y < 75; y++) {
+    worldMap[y][85] = 3; worldMap[y][86] = 3; worldMap[y][87] = 3;
   }
-  // Left water (x:62-63) — partial, leave passage area dry
-  for (let y = 3; y < 42; y++) {
-    if (y < 19 || y > 23) { // leave passage clear
-      worldMap[y][62] = 3; worldMap[y][63] = 3;
+  // Left water (x:56-57) — partial, leave passage area at y:19-23 dry
+  for (let y = 3; y < 75; y++) {
+    if (y < 19 || y > 23) {
+      worldMap[y][56] = 3; worldMap[y][57] = 3;
     }
   }
 
-  // Sand beaches between water and land (1-2 tiles wide)
-  // Top beach
-  for (let x = 64; x < 85; x++) {
-    if (x < WORLD_W - 2) {
-      worldMap[5][x] = 20; worldMap[6][x] = 20;
-    }
-  }
-  // Bottom beach
-  for (let x = 64; x < 85; x++) {
-    if (x < WORLD_W - 2) {
-      worldMap[36][x] = 20; worldMap[37][x] = 20;
-    }
-  }
-  // Right beach
-  for (let y = 5; y < 38; y++) {
-    worldMap[y][83] = 20; worldMap[y][84] = 20;
-  }
-  // Left beach (where no water passage)
-  for (let y = 5; y < 19; y++) { worldMap[y][64] = 20; }
-  for (let y = 24; y < 38; y++) { worldMap[y][64] = 20; }
+  // ── Sand beaches (2 tiles wide between water and land) ──
+  // Top beach (y:6-7)
+  for (let x = 58; x < 85; x++) { worldMap[6][x] = 20; worldMap[7][x] = 20; }
+  // Bottom beach (y:70-71)
+  for (let x = 58; x < 85; x++) { worldMap[70][x] = 20; worldMap[71][x] = 20; }
+  // Right beach (x:83-84)
+  for (let y = 6; y < 71; y++) { worldMap[y][83] = 20; worldMap[y][84] = 20; }
+  // Left beach (x:58-59, skip passage at y:19-23)
+  for (let y = 6; y < 19; y++) { worldMap[y][58] = 20; worldMap[y][59] = 20; }
+  for (let y = 24; y < 71; y++) { worldMap[y][58] = 20; worldMap[y][59] = 20; }
 
-  // Palm trees on beaches and near water
-  const palmPositions = [
-    {x:65,y:5},{x:67,y:6},{x:70,y:5},{x:73,y:6},{x:76,y:5},{x:79,y:6},{x:82,y:5},
-    {x:65,y:37},{x:68,y:36},{x:71,y:37},{x:74,y:36},{x:77,y:37},{x:80,y:36},{x:83,y:37},
-    {x:83,y:8},{x:84,y:12},{x:83,y:16},{x:84,y:20},{x:83,y:24},{x:84,y:28},{x:83,y:32},
-    {x:64,y:8},{x:64,y:14},{x:64,y:26},{x:64,y:32},
-    // Scattered interior palms
-    {x:68,y:10},{x:72,y:12},{x:78,y:8},{x:80,y:18},{x:70,y:30},{x:76,y:34},
+  // ── VOLCANO LANDMARK — 5x5 lava core at center (~x:72, y:30) ──
+  // Outer volcanic_rock ring (7x7)
+  for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+    const vx = 72 + dx, vy = 30 + dy;
+    if (vx >= 60 && vx < 84 && vy >= 8 && vy < 70) worldMap[vy][vx] = 14; // volcanic_rock
+  }
+  // Obsidian ring (6x6 inside)
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    const vx = 72 + dx, vy = 30 + dy;
+    worldMap[vy][vx] = 16; // obsidian
+  }
+  // Lava core (3x3 center)
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    worldMap[30 + dy][72 + dx] = 15; // lava
+  }
+  // Extra lava at dead center
+  worldMap[30][72] = 15;
+
+  // ── Lava rivers flowing FROM the volcano in 4 directions ──
+  // River NORTH: volcano (y:27) up to y:10
+  for (let y = 10; y < 27; y++) {
+    const lx = 72 + Math.floor(Math.sin(y * 0.5) * 2);
+    if (lx >= 60 && lx < 84) { worldMap[y][lx] = 15; if (lx+1 < 84) worldMap[y][lx+1] = 15; }
+  }
+  // River SOUTH: volcano (y:33) down to y:60
+  for (let y = 33; y < 60; y++) {
+    const lx = 72 + Math.floor(Math.sin(y * 0.4) * 2);
+    if (lx >= 60 && lx < 84) { worldMap[y][lx] = 15; }
+  }
+  // River EAST: volcano (x:75) right to x:82
+  for (let x = 75; x < 82; x++) {
+    const ly = 30 + Math.floor(Math.sin(x * 0.6) * 2);
+    if (ly >= 8 && ly < 70) { worldMap[ly][x] = 15; }
+  }
+  // River WEST: volcano (x:69) left to x:61
+  for (let x = 61; x < 69; x++) {
+    const ly = 30 + Math.floor(Math.sin(x * 0.5) * 2);
+    if (ly >= 8 && ly < 70) { worldMap[ly][x] = 15; }
+  }
+
+  // ── Blue lagoons (6 scattered through the island, 3x3 to 5x5) ──
+  const lagoons = [
+    {x:64,y:14,w:4,h:4}, {x:78,y:12,w:3,h:3}, {x:66,y:45,w:5,h:4},
+    {x:79,y:50,w:3,h:3}, {x:62,y:62,w:4,h:3}, {x:76,y:64,w:4,h:4},
   ];
-  for (const pp of palmPositions) {
-    if (pp.x >= 64 && pp.x < 85 && pp.y >= 5 && pp.y < 38) {
-      const t = worldMap[pp.y][pp.x];
-      if (t === 17 || t === 20) worldMap[pp.y][pp.x] = 21;
+  for (const lag of lagoons) {
+    // Water fill
+    for (let dy = 0; dy < lag.h; dy++) for (let dx = 0; dx < lag.w; dx++) {
+      const ly = lag.y + dy, lx = lag.x + dx;
+      if (ly >= 8 && ly < 70 && lx >= 60 && lx < 84) worldMap[ly][lx] = 3;
+    }
+    // Sand border around lagoon
+    for (let dy = -1; dy <= lag.h; dy++) for (let dx = -1; dx <= lag.w; dx++) {
+      const ly = lag.y + dy, lx = lag.x + dx;
+      if (ly >= 8 && ly < 70 && lx >= 60 && lx < 84 && worldMap[ly][lx] === 17) worldMap[ly][lx] = 20;
     }
   }
 
-  // Blue lagoons (3x3 water pools) scattered through islands
-  const lagoons = [{x:69,y:12},{x:78,y:28},{x:73,y:32}];
-  for (const lag of lagoons) {
-    for (let dy = 0; dy < 3; dy++) for (let dx = 0; dx < 3; dx++) {
-      const ly = lag.y + dy, lx = lag.x + dx;
-      if (ly >= 5 && ly < 38 && lx >= 64 && lx < 85) worldMap[ly][lx] = 3;
-    }
-    // Sand around lagoons
-    for (let dy = -1; dy <= 3; dy++) for (let dx = -1; dx <= 3; dx++) {
-      const ly = lag.y + dy, lx = lag.x + dx;
-      if (ly >= 5 && ly < 38 && lx >= 64 && lx < 85 && worldMap[ly][lx] === 17) worldMap[ly][lx] = 20;
+  // ── Palm trees — noise-based organic groves along beaches and near lagoons ──
+  for (let y = 6; y < 71; y++) {
+    for (let x = 58; x < 84; x++) {
+      const t = worldMap[y][x];
+      if (t !== 20 && t !== 17) continue; // only on sand or ash
+      const density = forestNoise(x, y, 55); // unique seed for volcanic palms
+      // Thinned — scattered palms, not a wall
+      if (density > 0.78) {
+        worldMap[y][x] = 21; // palm_tree
+      } else if (density > 0.72 && t === 20) {
+        const edgeChance = (density - 0.72) / 0.06;
+        if (_hash(x * 7, y * 11) / 0x7fffffff < edgeChance * 0.2) {
+          worldMap[y][x] = 21;
+        }
+      }
     }
   }
 
   // Mountain wall between Volcanic Isles and Dark Castle (x:88-90)
+  // Full height — separates volcanic ocean from dark castle region
   for (let y = 0; y < WORLD_H; y++) {
     worldMap[y][88] = 7;
     worldMap[y][89] = 7;
     worldMap[y][90] = 7;
+  }
+
+  // ── Obsidian formations scattered across the big island ──
+  const obsidianClusters = [
+    {x:68,y:16}, {x:72,y:9}, {x:80,y:13}, {x:81,y:30}, {x:70,y:40},
+    {x:76,y:18}, {x:80,y:22}, {x:69,y:50}, {x:77,y:55}, {x:64,y:35},
+    {x:75,y:42}, {x:82,y:60}, {x:66,y:58}, {x:71,y:65}, {x:78,y:38},
+  ];
+  for (const oc of obsidianClusters) {
+    if (oc.x >= 60 && oc.x < 84 && oc.y >= 8 && oc.y < 70) {
+      if (worldMap[oc.y][oc.x] === 17) worldMap[oc.y][oc.x] = 16;
+      if (oc.x+1 < 84 && worldMap[oc.y][oc.x+1] === 17) worldMap[oc.y][oc.x+1] = 16;
+      if (oc.y+1 < 70 && worldMap[oc.y+1][oc.x] === 17) worldMap[oc.y+1][oc.x] = 16;
+    }
+  }
+
+  // ── Magma crystal nodes scattered across island ──
+  for (let i = 0; i < 45; i++) {
+    const mx = 60 + Math.floor(Math.random() * 23);
+    const my = 8 + Math.floor(Math.random() * 60);
+    if (mx < 84 && my < 70 && worldMap[my][mx] === 17) worldMap[my][mx] = 18;
   }
 
   // ═══════ DARK CASTLE REGION (x:90-108, y:2-40) ═══════
@@ -396,11 +457,12 @@ function generateWorld() {
     for (let x = 92; x < 107; x++) {
       if (worldMap[y][x] !== 22) continue;
       const density = forestNoise(x, y, 131); // unique seed
-      if (density > 0.52) {
+      // Thinned — eerie scattered dead trees, not a wall
+      if (density > 0.72) {
         dcTreePositions.push({x, y});
-      } else if (density > 0.42) {
-        const edgeChance = (density - 0.42) / 0.1;
-        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.5) {
+      } else if (density > 0.64) {
+        const edgeChance = (density - 0.64) / 0.08;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.3) {
           dcTreePositions.push({x, y});
         }
       }
@@ -436,75 +498,57 @@ function generateWorld() {
     worldMap[y][108] = 7; worldMap[y][109] = 7;
   }
 
-  // Carve passage from Frost Valley into Volcanic Isles (y:20-22, x:58-63)
+  // Carve passage from Frost Valley into Volcanic Isles (y:20-22, x:53-59)
   for (let y = 20; y <= 22; y++) {
-    for (let x = 58; x <= 65; x++) {
-      worldMap[y][x] = 2; // path
+    for (let x = 53; x <= 59; x++) {
+      worldMap[y][x] = 2; // path through mountain wall
     }
   }
 
-  // Lava rivers — flowing THROUGH the tropical paradise (contrast!)
-  // River 1: flows from top-left to bottom-right
-  for (let i = 0; i < 25; i++) {
-    const lx = 66 + Math.floor(Math.sin(i * 0.4) * 2) + Math.floor(i * 0.4);
-    const ly = 8 + i;
-    if (lx >= 65 && lx < 84 && ly >= 7 && ly < 36) {
-      if (worldMap[ly][lx] !== 3) worldMap[ly][lx] = 15;
-      if (lx+1 < 84 && worldMap[ly][lx+1] !== 3) worldMap[ly][lx+1] = 15;
-    }
-  }
-  // River 2: horizontal lava flow
-  for (let x = 70; x < 83; x++) {
-    const ly = 22 + Math.floor(Math.sin(x * 0.5) * 2);
-    if (ly >= 7 && ly < 36 && x < 84 && worldMap[ly][x] !== 3) { worldMap[ly][x] = 15; }
-  }
-  // River 3: short vertical flow
-  for (let y = 28; y < 35; y++) {
-    const lx = 74 + Math.floor(Math.sin(y * 0.6) * 2);
-    if (lx >= 65 && lx < 84 && worldMap[y][lx] !== 3) { worldMap[y][lx] = 15; }
-  }
-
-  // Obsidian formations (dramatic dark crystals amid tropical greenery)
-  const obsidianClusters = [
-    {x:68, y:16}, {x:72, y:9}, {x:80, y:13}, {x:81, y:30}, {x:70, y:33},
-    {x:76, y:18}, {x:80, y:20}, {x:69, y:26}, {x:77, y:34},
-  ];
-  for (const oc of obsidianClusters) {
-    if (oc.x >= 65 && oc.x < 84 && oc.y >= 7 && oc.y < 36) {
-      if (worldMap[oc.y][oc.x] !== 3) worldMap[oc.y][oc.x] = 16;
-      if (oc.x+1 < 84 && worldMap[oc.y][oc.x+1] !== 3) worldMap[oc.y][oc.x+1] = 16;
-      if (oc.y+1 < 36 && worldMap[oc.y+1][oc.x] !== 3) worldMap[oc.y+1][oc.x] = 16;
-    }
-  }
-
-  // Magma crystal nodes scattered
-  for (let i = 0; i < 25; i++) {
-    const mx = 65 + Math.floor(Math.random() * 18);
-    const my = 7 + Math.floor(Math.random() * 28);
-    if (mx < 84 && my < 36 && worldMap[my][mx] === 17) worldMap[my][mx] = 18;
-  }
-
-  // Volcanic hub settlement — surrounded by palm trees and sand
-  const vhX = 74, vhY = 14;
-  for (let y = vhY - 1; y < vhY + 5; y++) for (let x = vhX - 1; x < vhX + 7; x++) {
-    if (x >= 65 && x < 84 && y >= 7 && y < 36) {
+  // ── Volcanic Hub Settlement (x:68, y:28 area — centered on island) ──
+  const vhX = 66, vhY = 26;
+  // Clear a generous area for the hub (8x8 sand pad)
+  for (let y = vhY - 2; y < vhY + 7; y++) for (let x = vhX - 2; x < vhX + 9; x++) {
+    if (x >= 60 && x < 84 && y >= 8 && y < 70) {
       worldMap[y][x] = 20; // sand around settlement
     }
   }
-  for (let y = vhY; y < vhY + 4; y++) for (let x = vhX; x < vhX + 6; x++) {
-    if (x < 84 && y < 36) worldMap[y][x] = 2; // clear walkable area
+  // Walkable center (6x5)
+  for (let y = vhY; y < vhY + 5; y++) for (let x = vhX; x < vhX + 7; x++) {
+    if (x < 84 && y < 70) worldMap[y][x] = 2;
   }
   // Palm trees framing the settlement
-  const settlePalms = [{x:vhX-1,y:vhY-1},{x:vhX+6,y:vhY-1},{x:vhX-1,y:vhY+4},{x:vhX+6,y:vhY+4}];
+  const settlePalms = [
+    {x:vhX-2,y:vhY-2},{x:vhX+8,y:vhY-2},{x:vhX-2,y:vhY+6},{x:vhX+8,y:vhY+6},
+    {x:vhX+3,y:vhY-2},{x:vhX-2,y:vhY+2},{x:vhX+8,y:vhY+2},
+  ];
   for (const sp of settlePalms) {
-    if (sp.x >= 65 && sp.x < 84 && sp.y >= 7 && sp.y < 36) worldMap[sp.y][sp.x] = 21;
+    if (sp.x >= 60 && sp.x < 84 && sp.y >= 8 && sp.y < 70) worldMap[sp.y][sp.x] = 21;
   }
-  // Path to settlement
-  for (let x = 65; x <= vhX; x++) { worldMap[vhY+1][x] = 2; worldMap[vhY+2][x] = 2; }
-  // Buildings
+  // Path from west passage to settlement
+  for (let x = 59; x <= vhX; x++) { worldMap[vhY+1][x] = 2; worldMap[vhY+2][x] = 2; }
+  // Path from settlement east toward volcano
+  for (let x = vhX + 7; x <= 75; x++) { worldMap[vhY+2][x] = 2; worldMap[vhY+3][x] = 2; }
+  // Path south from settlement to lower island
+  for (let y = vhY + 5; y < 60; y++) {
+    const px = 68 + Math.floor(Math.sin(y * 0.2) * 2);
+    if (px >= 60 && px < 84) { worldMap[y][px] = 2; worldMap[y][px+1] = 2; }
+  }
+  // Buildings around hub
   worldMap[vhY+1][vhX+1] = 5; worldMap[vhY+1][vhX+2] = 5; // forge
-  worldMap[vhY+1][vhX+4] = 5; // outpost
-  worldMap[vhY+3][vhX+2] = 5; // tavern
+  worldMap[vhY+1][vhX+5] = 5; // outpost
+  worldMap[vhY+3][vhX+1] = 5; worldMap[vhY+3][vhX+2] = 5; // tavern
+  worldMap[vhY+3][vhX+5] = 5; // trading post
+
+  // ── Southern beach village (x:70, y:62) — second settlement ──
+  for (let y = 60; y < 66; y++) for (let x = 68; x < 76; x++) {
+    if (x >= 60 && x < 84 && y < 70) worldMap[y][x] = 20; // sand pad
+  }
+  for (let y = 61; y < 65; y++) for (let x = 69; x < 75; x++) {
+    worldMap[y][x] = 2; // walkable
+  }
+  worldMap[62][70] = 5; worldMap[62][73] = 5; // beach huts
+  worldMap[64][71] = 5; // dock house
 
   // Encounter zones — no longer painted as different-colored floors.
   // NPCs already wander the world; these micro-areas aren't needed visually.
@@ -513,10 +557,14 @@ function generateWorld() {
   // Clear trees from paths and buildings
   for (let y = 0; y < WORLD_H; y++) for (let x = 0; x < WORLD_W; x++) {
     if (worldMap[y][x] === 2 || worldMap[y][x] === 5 || worldMap[y][x] === 8 || worldMap[y][x] === 12 || worldMap[y][x] === 19 || worldMap[y][x] === 27) {
-      // Clear adjacent trees for breathing room
+      // Clear adjacent trees for breathing room (frost, warm, palm, dark)
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
         const ny = y+dy, nx = x+dx;
-        if (ny >= 0 && ny < WORLD_H && nx >= 0 && nx < WORLD_W && (worldMap[ny][nx] === 1 || worldMap[ny][nx] === 13)) worldMap[ny][nx] = (ny >= 45 ? 9 : 0);
+        if (ny >= 0 && ny < WORLD_H && nx >= 0 && nx < WORLD_W) {
+          const t = worldMap[ny][nx];
+          if (t === 1 || t === 13) worldMap[ny][nx] = (ny >= 45 && nx < 55 ? 9 : 0);
+          if (t === 21) worldMap[ny][nx] = 17; // palm -> ash_ground
+        }
       }
     }
   }

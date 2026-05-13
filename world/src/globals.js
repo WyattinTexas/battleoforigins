@@ -39,7 +39,7 @@ const WORLD_W = 110;
 const WORLD_H = 85; // Match 2D version exactly
 const HUB = { x: 15, y: 20 };
 const HUB_MEADOW = { x: 28, y: 52 };
-const HUB_VOLCANIC = { x: 68, y: 28 };
+const HUB_VOLCANIC = { x: 68, y: 28 }; // centered in expanded volcanic island
 const HUB_DARK = { x: 92, y: 15 };
 
 // worldMap declared + populated by world-gen.js (generateWorld function)
@@ -94,9 +94,10 @@ function getCurrentZone(px, py) {
 function getCurrentRegion(px, py) {
   const x = Math.floor(px);
   const y = Math.floor(py);
+  // Priority: dark_castle > volcanic_isles > rolling_hills > frost_valley
   if (x > 88 && y < 42) return 'dark_castle';
-  if (x > 60 && y < 43) return 'volcanic_isles';
-  if (y >= 45) return 'rolling_hills';
+  if (x > 55 && y < 76 && x <= 88) return 'volcanic_isles';
+  if (y >= 45 && x <= 55) return 'rolling_hills';
   return 'frost_valley';
 }
 
@@ -472,9 +473,10 @@ function ensurePlayerDefaults() {
   if (G.darkRiderUnlocked === undefined) G.darkRiderUnlocked = false;
   if (G.elderUnlocked === undefined) G.elderUnlocked = false;
   if (G.activeAmendment === undefined) G.activeAmendment = null; // Elder Council amendment id
-  // Wave 8: Willpower deck config (testroom2 battle engine)
+  // Wave 8: Willpower progression — collection + deck config
+  if (!G.willpowerCollection) G.willpowerCollection = []; // earned card IDs from drops
   if (!G.wpDeckConfig) {
-    G.wpDeckConfig = typeof getDefaultWpDeckConfig === 'function' ? getDefaultWpDeckConfig() : {};
+    G.wpDeckConfig = typeof getHeartDeckConfig === 'function' ? getHeartDeckConfig() : { 0: 15 };
   }
 }
 
@@ -949,8 +951,9 @@ var HOUSE_PLOTS = [
   { id: 'frost_2', name: 'Lakeside Cabin', x: 38, y: 18, region: 'Frost Valley' },
   { id: 'hills_1', name: 'Meadowbrook House', x: 22, y: 55, region: 'Rolling Hills' },
   { id: 'hills_2', name: 'Hilltop Villa', x: 38, y: 60, region: 'Rolling Hills' },
-  { id: 'volcanic_1', name: 'Beach Bungalow', x: 72, y: 35, region: 'Volcanic Isles' },
-  { id: 'volcanic_2', name: 'Island Retreat', x: 78, y: 10, region: 'Volcanic Isles' },
+  { id: 'volcanic_1', name: 'Beach Bungalow', x: 72, y: 55, region: 'Volcanic Isles' },
+  { id: 'volcanic_2', name: 'Island Retreat', x: 78, y: 15, region: 'Volcanic Isles' },
+  { id: 'volcanic_3', name: 'Lagoon Hut', x: 64, y: 48, region: 'Volcanic Isles' },
 ];
 
 var TROPHY_DEFS = {

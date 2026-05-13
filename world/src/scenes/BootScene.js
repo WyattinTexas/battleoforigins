@@ -57,6 +57,16 @@ class BootScene extends Phaser.Scene {
     this.load.spritesheet('erw_wall', 'assets/erw/tilesets/wall1.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('erw_water', 'assets/erw/tilesets/animated-water-tiles-(full-tile).png', { frameWidth: 32, frameHeight: 32 });
 
+    // ── ERW Highlands V1.4.1 (Frost Valley snow terrain, 32x32, 57 cols x 52 rows) ──
+    this.load.spritesheet('erw_highlands', 'assets/erw/highlands/tilesets.png', { frameWidth: 32, frameHeight: 32 });
+
+    // ── ERW Volcano V1.6 (Volcanic Isles rock + lava, 32x32, 64 cols x 64 rows) ──
+    this.load.spritesheet('erw_volcano', 'assets/erw/volcano/tileset.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('erw_lava', 'assets/erw/volcano/lava-16frames.png', { frameWidth: 32, frameHeight: 32 });
+
+    // ── ERW Crypt V1.6 (Dark Castle dungeon terrain, 32x32, 50 cols x 58 rows) ──
+    this.load.spritesheet('erw_crypt', 'assets/erw/crypt/tileset-terrain.png', { frameWidth: 32, frameHeight: 32 });
+
     // ── ERW animated props ──
     this.load.spritesheet('erw_campfire', 'assets/erw/props-animated/campfire1.png', { frameWidth: 160, frameHeight: 160 });
     this.load.spritesheet('erw_campfire_smoke', 'assets/erw/props-animated/campfire-smoke.png', { frameWidth: 64, frameHeight: 64 });
@@ -96,10 +106,35 @@ class BootScene extends Phaser.Scene {
     this.load.image('erw_tree_pine2', 'assets/erw/trees/pine2.png');
     this.load.image('erw_tree_pine3', 'assets/erw/trees/pine3.png');
 
+    // ── ERW snow-covered pine trees (Highlands pack — Frost Valley) ──
+    this.load.image('erw_tree_snow_big', 'assets/erw/trees-snow/pine-snow-big.png');
+    this.load.image('erw_tree_snow_med', 'assets/erw/trees-snow/pine-snow-medium.png');
+    this.load.image('erw_tree_snow_sm', 'assets/erw/trees-snow/pine-snow-small.png');
+
+    // ── ERW flower sprites (Rolling Hills) ──
+    this.load.image('erw_flower1', 'assets/erw/flowers/flower1.png');
+    this.load.image('erw_flower2', 'assets/erw/flowers/flower2.png');
+    this.load.image('erw_flower3', 'assets/erw/flowers/flower3.png');
+    this.load.image('erw_flower4', 'assets/erw/flowers/flower4.png');
+
     // ── ERW building sprites ──
     this.load.image('erw_cabin', 'assets/erw/buildings/cabin.png');
     this.load.image('erw_tent', 'assets/erw/buildings/tent.png');
     this.load.image('erw_tent_small', 'assets/erw/buildings/tent-small.png');
+
+    // ── Grand Castle sprite (single large image for Dark Castle) ──
+    this.load.image('grand_castle', 'assets/castle/sprites/grand_castle.png');
+
+    // ── Crypt pack props (Dark Castle region — dark village atmosphere) ──
+    this.load.spritesheet('crypt_torch', 'assets/erw/crypt/props/torch_burning.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('crypt_candle', 'assets/erw/crypt/props/candle_burning.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.image('crypt_statue1', 'assets/erw/crypt/props/statue1.png');
+    this.load.image('crypt_statue2', 'assets/erw/crypt/props/statue2.png');
+    this.load.image('crypt_banner1', 'assets/erw/crypt/props/banner1.png');
+    this.load.image('crypt_banner2', 'assets/erw/crypt/props/banner2.png');
+    this.load.image('crypt_candelabrum', 'assets/erw/crypt/props/candelabrum1.png');
+    this.load.image('crypt_bones', 'assets/erw/crypt/props/bones1.png');
+    this.load.image('crypt_vase', 'assets/erw/crypt/props/vase1.png');
 
     // ── ERW ground scatter (grass tufts + small rocks for Rolling Hills) ──
     this.load.image('erw_tuft1', 'assets/erw/scatter/tuft1.png');
@@ -161,6 +196,9 @@ class BootScene extends Phaser.Scene {
     if (this.textures.exists('erw_water')) {
       this.anims.create({ key: 'erw_water_flow', frames: this.anims.generateFrameNumbers('erw_water', { start: 0, end: 7 }), frameRate: 4, repeat: -1 });
     }
+    if (this.textures.exists('erw_lava')) {
+      this.anims.create({ key: 'erw_lava_flow', frames: this.anims.generateFrameNumbers('erw_lava', { start: 0, end: 15 }), frameRate: 6, repeat: -1 });
+    }
     if (this.textures.exists('erw_campfire')) {
       this.anims.create({ key: 'erw_campfire_burn', frames: this.anims.generateFrameNumbers('erw_campfire', { start: 0, end: 7 }), frameRate: 8, repeat: -1 });
     }
@@ -187,6 +225,12 @@ class BootScene extends Phaser.Scene {
     }
     if (this.textures.exists('erw_lamp')) {
       this.anims.create({ key: 'erw_lamp_flicker', frames: this.anims.generateFrameNumbers('erw_lamp', { start: 0, end: 11 }), frameRate: 6, repeat: -1 });
+    }
+    if (this.textures.exists('crypt_torch')) {
+      this.anims.create({ key: 'crypt_torch_burn', frames: this.anims.generateFrameNumbers('crypt_torch', { start: 0, end: 7 }), frameRate: 8, repeat: -1 });
+    }
+    if (this.textures.exists('crypt_candle')) {
+      this.anims.create({ key: 'crypt_candle_burn', frames: this.anims.generateFrameNumbers('crypt_candle', { start: 0, end: 7 }), frameRate: 6, repeat: -1 });
     }
 
     // ── Title screen ──
