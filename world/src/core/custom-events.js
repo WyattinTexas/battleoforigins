@@ -143,11 +143,11 @@ function spawnValkinEvent(scene) {
   event.battleDialogue._said10hp = false;
   event.battleDialogue._saidLowHp = false;
 
-  // Spawn Valkin at the east edge (Dark Castle direction), walking toward Polaris Hub center
-  const spawnX = (HUB.x + 25) * T; // east of hub
-  const spawnY = (HUB.y + 1) * T;
-  const targetX = (HUB.x + 3) * T; // hub center plaza
-  const targetY = (HUB.y + 3) * T;
+  // Spawn Valkin east of town (path from Dark Castle), walk to the tavern/plaza
+  const spawnX = (HUB.x + 15) * T; // east on the path, NOT on the lake
+  const spawnY = (HUB.y + 3) * T;
+  const targetX = (HUB.x + 3) * T; // tavern/plaza area center
+  const targetY = (HUB.y + 4) * T;
 
   const valkinSprite = scene.physics.add.sprite(spawnX, spawnY, 'npc_elder');
   valkinSprite.setDepth(10);
@@ -261,9 +261,74 @@ function updateValkinEvent(scene) {
     }
   }
 
-  // ── PHASE: HUNTING ──
+  // ── PHASE: HUNTING — attack NPCs and chase player ──
   if (v.phase === 'hunting') {
-    updateValkinHunt(scene);
+    const vx = v.sprite.x, vy = v.sprite.y;
+
+    // Hunt nearest NPC first, then player
+    if (!v._npcCooldown) v._npcCooldown = 0;
+    const now = Date.now();
+
+    // Attack nearby NPCs (every 4 seconds)
+    if (now - v._npcCooldown > 4000 && scene.npcSprites) {
+      for (const npc of scene.npcSprites) {
+        if (npc._valkinDestroyed) continue;
+        const npcDist = Phaser.Math.Distance.Between(vx, vy, npc.x, npc.y);
+        if (npcDist < 60) {
+          // Fire effect on NPC
+          const fire = scene.add.circle(npc.x, npc.y, 20, 0xff4400, 0.8).setDepth(15);
+          scene.tweens.add({
+            targets: fire, scaleX: 2, scaleY: 2, alpha: 0, duration: 600,
+            onComplete: () => fire.destroy(),
+          });
+          // Screen shake
+          scene.cameras.main.shake(200, 0.003);
+
+          // "Destroy" the NPC (hide sprite + label, mark as destroyed)
+          if (npc.sprite) npc.sprite.setVisible(false);
+          if (npc.label) npc.label.setVisible(false);
+          if (npc.marker) npc.marker.setVisible(false);
+          if (npc._hint) { npc._hint.destroy(); npc._hint = null; }
+          npc._valkinDestroyed = true;
+
+          // Kill count + trash talk
+          v.event.hunt.killCount = (v.event.hunt.killCount || 0) + 1;
+          const kc = v.event.hunt.killCount;
+          valkinChat('Kill Count ' + kc);
+          if (kc % 5 === 0) valkinChat('Kill-takular!');
+
+          // Respawn NPC after 5 minutes
+          scene.time.delayedCall(5 * 60 * 1000, () => {
+            if (npc.sprite) npc.sprite.setVisible(true);
+            if (npc.label) npc.label.setVisible(true);
+            if (npc.marker) npc.marker.setVisible(true);
+            npc._valkinDestroyed = false;
+          });
+
+          v._npcCooldown = now;
+          break; // one NPC per tick
+        }
+      }
+    }
+
+    // Chase the player
+    const px = scene.player.x, py = scene.player.y;
+    const pDist = Phaser.Math.Distance.Between(vx, vy, px, py);
+    if (pDist < v.event.hunt.aggroRange * T && pDist > 20) {
+      const speed = v.event.hunt.speed * T * 0.016;
+      const angle = Math.atan2(py - vy, px - vx);
+      v.sprite.x += Math.cos(angle) * speed;
+      v.sprite.y += Math.sin(angle) * speed;
+    } else if (pDist <= 30 && !G.inBattle) {
+      triggerValkinBattle(scene);
+    }
+
+    // Ambient trash talk every 20 seconds
+    if (now - v.lastAmbient > 20000) {
+      v.lastAmbient = now;
+      const line = v.event.ambientLines[Math.floor(Math.random() * v.event.ambientLines.length)];
+      valkinChat(line);
+    }
   }
 }
 
