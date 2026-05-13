@@ -603,29 +603,34 @@ class WorldScene extends Phaser.Scene {
     }
 
     // ── Frost Dungeon entrance (top of Frost Valley) ──
-    // Tiles 28 form a 3x3 patch centered at (38, 3); sprite is rendered at 96x96 over it.
+    // Tiles 28 form a 3x3 patch centered at (38, 3); castle stands on the south edge.
     const fdCenterX = 38 * T + T / 2;
     const fdCenterY = 3 * T + T / 2;
+    const fdBaseY = fdCenterY + T * 1.5; // ground line: south edge of 3x3 footprint
+    // Ground shadow — anchors the structure to the snow
+    this.add.ellipse(fdCenterX, fdBaseY - 4, 110, 20, 0x1a3a5a, 0.35).setDepth(4);
+    // Castle sprite, bottom-center anchored so it "stands" on the snow
     if (this.textures.exists('frost_dungeon')) {
-      this.add.image(fdCenterX, fdCenterY, 'frost_dungeon')
-        .setDisplaySize(96, 96).setDepth(5);
+      this.add.image(fdCenterX, fdBaseY, 'frost_dungeon')
+        .setOrigin(0.5, 1)
+        .setDisplaySize(128, 96)
+        .setDepth(5);
     } else {
-      // Fallback if asset failed to load
-      this.add.rectangle(fdCenterX, fdCenterY, 96, 96, 0x88bbdd, 0.9)
+      this.add.rectangle(fdCenterX, fdBaseY - 48, 96, 96, 0x88bbdd, 0.9)
         .setStrokeStyle(2, 0xccddff).setDepth(5);
     }
-    // Soft icy glow underneath
-    const fdGlow = this.add.circle(fdCenterX, fdCenterY, 64, 0x88ccff, 0.18).setDepth(4);
+    // Subtle icy shimmer at the base
+    const fdShimmer = this.add.ellipse(fdCenterX, fdBaseY - 8, 90, 16, 0x88ccff, 0.22).setDepth(4);
     this.tweens.add({
-      targets: fdGlow, scaleX: 1.2, scaleY: 1.2, alpha: 0.08,
-      duration: 1800, yoyo: true, repeat: -1,
+      targets: fdShimmer, alpha: 0.08, scaleX: 1.15,
+      duration: 2200, yoyo: true, repeat: -1,
     });
-    // Label above
-    this.add.text(fdCenterX, fdCenterY - 60, 'FROST DUNGEON', {
+    // Label above the spires
+    this.add.text(fdCenterX, fdBaseY - 110, 'FROST DUNGEON', {
       fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#bfe4ff',
       backgroundColor: '#00000099', padding: { x: 4, y: 2 },
     }).setOrigin(0.5).setDepth(7);
-    this._frostDungeon = { x: fdCenterX, y: fdCenterY };
+    this._frostDungeon = { x: fdCenterX, y: fdBaseY - 32 };
 
     // ── Wave 3: Building Interactions ──
     this._interactBuildings = [
