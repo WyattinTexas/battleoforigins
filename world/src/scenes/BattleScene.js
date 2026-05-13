@@ -38,8 +38,8 @@ class BattleScene extends Phaser.Scene {
     const eTeam = B[this._enemyTeam];
     if (!pTeam || !eTeam) { this.endBattle(false); return; }
 
-    this.pg = active(pTeam);
-    this.eg = active(eTeam);
+    this.pg = activeGhost(pTeam);
+    this.eg = activeGhost(eTeam);
     if (!this.pg || !this.eg) { this.endBattle(false); return; }
 
     // Mark battle as started (for entry effects that only fire mid-battle)
@@ -170,7 +170,7 @@ class BattleScene extends Phaser.Scene {
 
     const team = B[teamName];
     if (!team) return;
-    const f = active(team);
+    const f = activeGhost(team);
     if (!f || !f.willpower) return;
 
     const count = f.willpower.length;
@@ -207,8 +207,8 @@ class BattleScene extends Phaser.Scene {
               ? activateWillpower(team, teamName, (msg) => this.logText.setText(msg))
               : null;
             if (activated) {
-              this.pg = active(B[this._playerTeam]);
-              this.eg = active(B[this._enemyTeam]);
+              this.pg = activeGhost(B[this._playerTeam]);
+              this.eg = activeGhost(B[this._enemyTeam]);
               this.updateHP();
               this.refreshWillpowerStacks();
               this.rebuildResourceBar();
@@ -323,8 +323,8 @@ class BattleScene extends Phaser.Scene {
         if (c && c.desc) this.showFloatingText(this.scale.width / 2, this.scale.height * 0.15, c.name, c.color || '#ff6644');
       });
       // Refresh HP after chip damage
-      this.pg = active(B[this._playerTeam]);
-      this.eg = active(B[this._enemyTeam]);
+      this.pg = activeGhost(B[this._playerTeam]);
+      this.eg = activeGhost(B[this._enemyTeam]);
       this.updateHP();
       this.refreshWillpowerStacks();
     }
@@ -417,8 +417,8 @@ class BattleScene extends Phaser.Scene {
     const eRes = classify(eDice);
 
     // Hector check for singles-beats-doubles
-    const pF = active(B[this._playerTeam]);
-    const eF = active(B[this._enemyTeam]);
+    const pF = activeGhost(B[this._playerTeam]);
+    const eF = activeGhost(B[this._enemyTeam]);
     const hectorActive = (pF && pF.id === 96 && !pF.ko) || (eF && eF.id === 96 && !eF.ko);
 
     const winner = compareRolls(pRes, eRes, pDice, eDice, hectorActive);
@@ -490,8 +490,8 @@ class BattleScene extends Phaser.Scene {
     this.rebuildResourceBar();
 
     // Refresh active ghost refs
-    this.pg = active(B[this._playerTeam]);
-    this.eg = active(B[this._enemyTeam]);
+    this.pg = activeGhost(B[this._playerTeam]);
+    this.eg = activeGhost(B[this._enemyTeam]);
 
     // Check KO
     if (this.eg.hp <= 0 || this.eg.ko) {
@@ -516,7 +516,7 @@ class BattleScene extends Phaser.Scene {
         } else {
           eTeam.activeIdx = nextIdx;
         }
-        this.eg = active(eTeam);
+        this.eg = activeGhost(eTeam);
         // Trigger entry effects for new enemy
         if (typeof triggerEntry === 'function') triggerEntry(eTeam, this._enemyTeam);
         this.updateHP();
@@ -567,7 +567,7 @@ class BattleScene extends Phaser.Scene {
         } else {
           B[this._playerTeam].activeIdx = entry.idx;
         }
-        this.pg = active(B[this._playerTeam]);
+        this.pg = activeGhost(B[this._playerTeam]);
         if (typeof triggerEntry === 'function') triggerEntry(B[this._playerTeam], this._playerTeam);
         this._swapUI.forEach(o => o.destroy());
         this._swapUI = [];

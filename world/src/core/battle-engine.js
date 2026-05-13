@@ -5,7 +5,7 @@
 // ══════════════════════════════════════════════════════════
 
 // Get the active ghost on a team
-function active(t) { return t.ghosts[t.activeIdx]; }
+function activeGhost(t) { return t.ghosts[t.activeIdx]; }
 
 // Get the opposing team
 function oppTeam(teamName) {
@@ -335,7 +335,7 @@ function performKOSwap(teamName, newIdx, logFn) {
 function deathHowlBlocksHealing(teamName) {
   if (!B) return false;
   const opp = oppTeam(teamName);
-  const oppActive = B[opp] ? active(B[opp]) : null;
+  const oppActive = B[opp] ? activeGhost(B[opp]) : null;
   return oppActive && oppActive.id === 202 && !oppActive.ko;
 }
 

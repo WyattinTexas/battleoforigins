@@ -36,7 +36,7 @@ function ghostData(id) {
 
 function triggerEntry(team, teamName, logFn) {
   if (!B || !team) return [];
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f || f.ko) return [];
   const enemyName = oppTeam(teamName);
   const enemy = B[enemyName];
@@ -99,7 +99,7 @@ function triggerEntry(team, teamName, logFn) {
 
   // Nerina (306) — Leviathan: deal 3 damage to enemy active
   if (f.id === 306) {
-    const ef = active(enemy);
+    const ef = activeGhost(enemy);
     if (ef && !ef.ko) {
       wpDamage(ef, 3);
       if (ef.ko) ef.killedBy = f.id;
@@ -123,7 +123,7 @@ function triggerEntry(team, teamName, logFn) {
 
   // Jenkins (94) — Greeting: roll 4 dice, deal damage by type
   if (f.id === 94) {
-    const ef = active(enemy);
+    const ef = activeGhost(enemy);
     if (ef && !ef.ko) {
       const jenkinsDice = rollDice(4);
       const jenkinsRoll = classify(jenkinsDice);
@@ -137,7 +137,7 @@ function triggerEntry(team, teamName, logFn) {
 
   // Grawr (34) — Menace: deal 1 damage to enemy active
   if (f.id === 34) {
-    const ef = active(enemy);
+    const ef = activeGhost(enemy);
     if (ef && !ef.ko) {
       wpDamage(ef, 1);
       if (ef.ko) ef.killedBy = f.id;
@@ -231,12 +231,12 @@ function triggerPreRoll(teamName, logFn) {
   if (!B) return [];
   const team = B[teamName];
   if (!team) return [];
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f || f.ko) return [];
   const enemyName = oppTeam(teamName);
   const enemy = B[enemyName];
   if (!enemy) return [];
-  const ef = active(enemy);
+  const ef = activeGhost(enemy);
   const callouts = [];
 
   // Guard: only fire once per turn
@@ -317,7 +317,7 @@ function calculateDiceCount(teamName) {
   if (!B) return 3;
   const team = B[teamName];
   if (!team) return 3;
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f) return 3;
 
   let count = 3; // base
@@ -443,7 +443,7 @@ function triggerWinPath(teamName, rollResult, logFn) {
   if (!B) return [];
   const team = B[teamName];
   if (!team) return [];
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f || f.ko) return [];
   const callouts = [];
 
@@ -504,7 +504,7 @@ function triggerOnLoss(teamName, logFn) {
   if (!B) return [];
   const team = B[teamName];
   if (!team) return [];
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f || f.ko) return [];
   const callouts = [];
 
@@ -524,7 +524,7 @@ function checkSylviaDodge(teamName) {
   if (!B) return false;
   const team = B[teamName];
   if (!team) return false;
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f || f.id !== 313 || f.ko) return false;
 
   const dodgeRoll = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
@@ -536,7 +536,7 @@ function checkFangDodge(teamName) {
   if (!B) return false;
   const team = B[teamName];
   if (!team) return false;
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f || f.id !== 7 || f.ko) return false;
   return !!(B.fangUndercoverArmed && B.fangUndercoverArmed[teamName]);
 }
@@ -546,7 +546,7 @@ function checkPuffReduction(teamName, rollType) {
   if (!B) return 0;
   const team = B[teamName];
   if (!team) return 0;
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f) return 0;
   // Check if Puff is active on defending team
   // Puff reduces incoming doubles/triples damage by 1
@@ -563,7 +563,7 @@ function getDarkFangBonus(teamName) {
   if (!B) return 0;
   const team = B[teamName];
   if (!team) return 0;
-  const f = active(team);
+  const f = activeGhost(team);
   if (!f || f.id !== 202 || f.ko) return 0;
   const sides = B.red ? [B.red, B.blue] : [B.player, B.enemy];
   return sides.flatMap(s => s.ghosts).filter(g => g.ko).length;
