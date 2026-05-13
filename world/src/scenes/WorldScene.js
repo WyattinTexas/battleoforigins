@@ -157,16 +157,19 @@ class WorldScene extends Phaser.Scene {
     this._structureSprites = [];
     this._renderStructures();
 
-    // ── Dialogue box ──
+    // ── Dialogue box (zoom-corrected) ──
+    const dlgZoom = this.cameras.main.zoom || 1;
+    const dlgW = this.scale.width / dlgZoom;
+    const dlgH = this.scale.height / dlgZoom;
     this.dialogueContainer = this.add.container(0, 0).setDepth(300).setScrollFactor(0);
-    this.dialogueBg = this.add.rectangle(640, 660, 1100, 80, 0x111128, 0.92)
+    this.dialogueBg = this.add.rectangle(dlgW / 2, dlgH - 60, dlgW - 40, 60, 0x111128, 0.92)
       .setStrokeStyle(2, 0x4444aa);
-    this.dialogueNameText = this.add.text(120, 630, '', {
+    this.dialogueNameText = this.add.text(30, dlgH - 82, '', {
       fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffdd44',
     });
-    this.dialogueBodyText = this.add.text(120, 650, '', {
+    this.dialogueBodyText = this.add.text(30, dlgH - 64, '', {
       fontSize: '13px', fontFamily: 'Georgia, serif', color: '#ccccee',
-      wordWrap: { width: 900 },
+      wordWrap: { width: dlgW - 80 },
     });
     this.dialogueContainer.add([this.dialogueBg, this.dialogueNameText, this.dialogueBodyText]);
     this.dialogueContainer.setVisible(false);
@@ -3187,12 +3190,13 @@ class WorldScene extends Phaser.Scene {
   // ═══════ CHAT SYSTEM ═══════
 
   buildChatBox() {
-    const W = this.scale.width;
-    const H = this.scale.height;
-    const chatW = Math.min(400, W - 20);
-    const chatH = 160;
+    const zoom = this.cameras.main.zoom || 1;
+    const W = this.scale.width / zoom;
+    const H = this.scale.height / zoom;
+    const chatW = Math.min(300, W - 20);
+    const chatH = 130;
     const chatX = 10;
-    const chatY = H - chatH - 120;
+    const chatY = H - chatH - 90;
 
     // Chat container (fixed to screen)
     this._chatBg = this.add.rectangle(chatX + chatW / 2, chatY + chatH / 2, chatW, chatH, 0x0a0a1a, 0.75)
