@@ -77,8 +77,15 @@ class BattleScene extends Phaser.Scene {
     let n = 0;
     all.forEach(g => { const k='ghost_'+g.id; if(!this.textures.exists(k)){const u=_artUrl(g);if(u){this.load.image(k,u);n++;}} });
     if (n > 0) {
-      this.load.on('loaderror',()=>{});
-      this.load.once('complete', cb);
+      // Safety: fire cb at most once, and fall through after 2s in case
+      // Phaser's loader 'complete' event never fires (cross-origin hangs
+      // on art URLs have been observed under Phaser 4). Battle renders
+      // placeholder art if a texture missed but never deadlocks.
+      let fired = false;
+      const safe = () => { if (fired) return; fired = true; console.log('[BattleScene] _loadArt cb firing'); cb(); };
+      this.load.on('loaderror', () => {});
+      this.load.once('complete', safe);
+      this.time.delayedCall(2000, safe);
       this.load.start();
     } else cb();
   }
