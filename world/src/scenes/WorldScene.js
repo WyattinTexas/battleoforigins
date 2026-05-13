@@ -562,7 +562,8 @@ class WorldScene extends Phaser.Scene {
     const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
     this.regionText.setText(regionNames[region] || '');
 
-    // Building + NPC interactions (buildings first — they're inside NPC range)
+    // Building + NPC interactions — read E once, share across all checks
+    this._ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
     this._eConsumed = false;
     this.checkBuildingProximity();
     this.checkNPCProximity();
@@ -678,7 +679,7 @@ class WorldScene extends Phaser.Scene {
 
   checkNPCProximity() {
     if (this._eConsumed) return; // building already handled E this frame
-    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
+    const ePressed = this._ePressed;
 
     for (const npc of this.npcSprites) {
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
@@ -865,8 +866,7 @@ class WorldScene extends Phaser.Scene {
   // ═══════ WAVE 3: BUILDING INTERACTIONS ═══════
 
   checkBuildingProximity() {
-    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
-    if (!ePressed) return;
+    if (!this._ePressed) return;
     // Don't interact if a panel, comm overlay, or dialogue is active
     if (this.panels.isOpen()) return;
     if (this.comm && this.comm.isActive) return;
@@ -958,9 +958,7 @@ class WorldScene extends Phaser.Scene {
   // ═══════ WAVE 3: SIGNPOST INTERACTIONS ═══════
 
   checkSignpostProximity() {
-    if (this._eConsumed) return; // NPC or building already handled E this frame
-    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
-    if (!ePressed) return;
+    if (this._eConsumed || !this._ePressed) return;
     if (this.panels.isOpen()) return;
     if (this.comm && this.comm.isActive) return;
 
@@ -2378,7 +2376,7 @@ class WorldScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(12);
       }
 
-      if (Phaser.Input.Keyboard.JustDown(this.eKey) && !this._eConsumed && !this.panels.isOpen()) {
+      if (this._ePressed && !this._eConsumed && !this.panels.isOpen()) {
         this._eConsumed = true;
         this.triggerWorldBossBattle();
       }
@@ -3629,8 +3627,7 @@ class WorldScene extends Phaser.Scene {
 
   _checkStructureProximity() {
     if (typeof getStructuresNear !== 'function') return;
-    const ePressed = Phaser.Input.Keyboard.JustDown(this.eKey);
-    if (!ePressed) return;
+    if (!this._ePressed || this._eConsumed) return;
     if (this.panels.isOpen() || (this.comm && this.comm.isActive)) return;
 
     const nearby = getStructuresNear(Math.floor(G.x), Math.floor(G.y), 2);
