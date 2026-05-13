@@ -39,14 +39,14 @@ class WorldScene extends Phaser.Scene {
     // ── Sprite overlays: stamp real tileset art on trees, flowers, buildings ──
     // Frame index = row * COLS + col  (Nature=24cols, House=33cols, Desert=20cols)
     const TILE_SPRITES = {
-      10: { key: 'tiles_nature', frames: [152, 153, 176, 177], depth: 1 },   // flowers — small plants/flowers
-      1:  { key: 'tiles_nature', frames: [7, 8, 31, 32], depth: 2 },         // frost trees — snowy crowns
-      13: { key: 'tiles_nature', frames: [13, 14, 37, 38], depth: 2 },       // warm trees — green crowns
-      21: { key: 'tiles_desert', frames: [86, 87, 106, 107], depth: 2 },     // palm trees
-      25: { key: 'tiles_nature', frames: [1, 19, 25, 43], depth: 2 },        // dark/dead trees
-      5:  { key: 'tiles_house', frames: [0, 1, 2, 33, 34], depth: 2 },       // buildings — house facades
-      8:  { key: 'tiles_house', frames: [3, 4, 36, 37], depth: 2 },          // workshop
-      12: { key: 'tiles_house', frames: [5, 6, 38, 39], depth: 2 },          // cantina
+      10: { key: 'tiles_nature', frames: [156, 157, 158, 159, 160], depth: 1 }, // flowers — colorful blooms (row 6)
+      1:  { key: 'tiles_nature', frames: [30, 31, 32], depth: 2 },              // frost trees — snowy crowns (row 1, cols 6-8)
+      13: { key: 'tiles_nature', frames: [44, 45, 46, 47], depth: 2 },          // warm trees — green crowns (row 1, cols 20-23)
+      21: { key: 'tiles_desert', frames: [70, 71, 90, 91], depth: 2 },          // palm trees — fronds (rows 3-4)
+      25: { key: 'tiles_nature', frames: [24, 25, 120, 121], depth: 2 },        // dark/dead trees (row 1 + row 5)
+      5:  { key: 'tiles_house', frames: [12, 13, 14], depth: 2 },               // buildings — house fronts (row 0)
+      8:  { key: 'tiles_house', frames: [16, 17, 18], depth: 2 },               // workshop — stone buildings (row 0)
+      12: { key: 'tiles_house', frames: [45, 46, 47], depth: 2 },               // cantina — warm fronts (row 1)
     };
     for (let y = 0; y < MH; y++) {
       for (let x = 0; x < MW; x++) {
