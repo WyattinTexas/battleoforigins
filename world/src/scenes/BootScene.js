@@ -55,6 +55,10 @@ class BootScene extends Phaser.Scene {
     // Frost Dungeon entrance art (single image, rendered at 96x96 in world)
     this.load.image('frost_dungeon', 'assets/tiles/FrostDungeon.png');
 
+    // Wooden frost-covered door halves (16x32 each, butt together at tile center)
+    this.load.image('door_l', 'assets/tiles/door_l.png');
+    this.load.image('door_r', 'assets/tiles/door_r.png');
+
     // ── ERW Grass Land 2.0 tilesets (32x32 native) ──
     this.load.spritesheet('erw_terrain', 'assets/erw/tilesets/terrain-grass.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('erw_wall', 'assets/erw/tilesets/wall1.png', { frameWidth: 32, frameHeight: 32 });
@@ -258,7 +262,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v86', {
+    this.add.text(width / 2, height * 0.34, 'v87', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 

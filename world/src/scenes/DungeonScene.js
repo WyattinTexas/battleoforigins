@@ -96,50 +96,307 @@ class DungeonScene extends Phaser.Scene {
     const T = this.T;
     const p = this.config.palette;
     const g = this.add.graphics();
-    for (let y = 0; y < this.mapH; y++) {
-      for (let x = 0; x < this.mapW; x++) {
-        const t = this.grid[y][x];
-        let color;
-        if (t === D_TILE.WALL) color = p.wall;
-        else if (t === D_TILE.DOOR_CLOSED) color = p.doorClosed;
-        else if (t === D_TILE.DOOR_OPEN) color = p.doorOpen;
-        else color = p.floor;
-        g.fillStyle(color, 1);
-        g.fillRect(x * T, y * T, T, T);
-        // Subtle floor speckle for texture
-        if (t === D_TILE.FLOOR && ((x + y) & 3) === 0) {
-          g.fillStyle(p.floorAccent, 0.6);
-          g.fillRect(x * T + 8, y * T + 8, 4, 4);
-        }
-      }
-    }
     this._mapGfx = g;
 
+    // Floors first (so wall features draw on top)
+    for (let y = 0; y < this.mapH; y++) {
+      for (let x = 0; x < this.mapW; x++) {
+        if (this.grid[y][x] === D_TILE.WALL || this.grid[y][x] === D_TILE.DOOR_CLOSED) continue;
+        this._drawFloorTile(g, x, y);
+      }
+    }
+    // Walls on top so any inner-edge features overlap onto floor visually
+    for (let y = 0; y < this.mapH; y++) {
+      for (let x = 0; x < this.mapW; x++) {
+        if (this.grid[y][x] === D_TILE.WALL) this._drawWallTile(g, x, y);
+      }
+    }
+
     // ── Physics colliders for every impassable tile ─────────
-    // One static body per wall + closed-door tile. Phaser handles
-    // collision — no manual predictive math, no overshoot bugs.
-    // Doors are tracked separately so we can destroy their body on open.
     this._wallGroup = this.physics.add.staticGroup();
-    this._doorBodies = {};  // key "x,y" -> static body
+    this._doorBodies = {};   // collider rect per door
+    this._doorSprites = {};  // visual halves per door (for open animation)
 
     for (let y = 0; y < this.mapH; y++) {
       for (let x = 0; x < this.mapW; x++) {
         const t = this.grid[y][x];
         if (!D_IMPASSABLE.has(t)) continue;
         const rect = this.add.rectangle(x * T + T / 2, y * T + T / 2, T, T, 0x000000, 0);
-        this.physics.add.existing(rect, true); // true = static body
+        this.physics.add.existing(rect, true);
         this._wallGroup.add(rect);
         if (t === D_TILE.DOOR_CLOSED) {
-          // Visible door sprite on top of the collider
-          rect.setFillStyle(p.doorClosed, 1);
-          rect.setStrokeStyle(1, 0x223344);
-          rect.setDepth(2);
+          // Draw an icy-stone door frame first
+          this._drawDoorFrame(g, x, y);
           this._doorBodies[`${x},${y}`] = rect;
+          // Spawn the two wooden door halves on top
+          const cx = x * T + T / 2;
+          const cy = y * T + T / 2;
+          const halfW = 16;
+          const leftKey = this.textures.exists('door_l') ? 'door_l' : null;
+          const rightKey = this.textures.exists('door_r') ? 'door_r' : null;
+          if (leftKey && rightKey) {
+            const left  = this.add.image(cx - halfW / 2, cy, leftKey).setDepth(3);
+            const right = this.add.image(cx + halfW / 2, cy, rightKey).setDepth(3);
+            this._doorSprites[`${x},${y}`] = { left, right };
+          }
         }
       }
     }
 
+    // Decorative wall torches inside each room
+    this._spawnRoomTorches();
+
     this.cameras.main.setBounds(0, 0, this.mapW * T, this.mapH * T);
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  Deterministic per-tile hash — same dungeon looks the same
+  //  on every load.
+  // ───────────────────────────────────────────────────────────
+  _tileHash(x, y) {
+    let h = (x * 374761393 + y * 668265263) >>> 0;
+    h = ((h ^ (h >>> 13)) * 1274126177) >>> 0;
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+  _hashFloat(x, y, salt) {
+    return (this._tileHash(x + (salt|0) * 7919, y + (salt|0) * 104729) & 0xffff) / 0xffff;
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  FLOOR — 6 deterministic variants (plain / cracked / sparkle
+  //  / frosted patch / ice shards / deep ice). Plus hanging
+  //  icicle decoration if the tile above is a wall.
+  // ───────────────────────────────────────────────────────────
+  _drawFloorTile(g, x, y) {
+    const T = this.T;
+    const p = this.config.palette;
+    const tx = x * T, ty = y * T;
+    const h = this._tileHash(x, y);
+    // Base fill
+    g.fillStyle(p.floor, 1);
+    g.fillRect(tx, ty, T, T);
+
+    // Pick a variant
+    const r = (h & 0xff) / 0xff; // 0..1
+    if (r < 0.60) {
+      // Plain (~60%) — leave alone or add 1-2 micro-pixels
+      if ((h >> 8) & 1) {
+        g.fillStyle(p.floorAccent, 0.5);
+        g.fillRect(tx + 8 + ((h >> 9) & 0xf), ty + 8 + ((h >> 13) & 0xf), 1, 1);
+      }
+    } else if (r < 0.75) {
+      // Cracked ice — thin dark hairline crack
+      g.lineStyle(1, 0x6a88a0, 0.75);
+      const x0 = tx + 4 + ((h >> 4) & 0xf);
+      const y0 = ty + 6 + ((h >> 8) & 0xf);
+      g.beginPath();
+      g.moveTo(x0, y0);
+      g.lineTo(x0 + 6 + ((h >> 12) & 7), y0 + 8 + ((h >> 16) & 7));
+      g.lineTo(x0 + 12 + ((h >> 20) & 7), y0 + 4);
+      g.strokePath();
+      g.lineStyle();
+    } else if (r < 0.85) {
+      // Frost sparkle — small white star
+      const sx = tx + 6 + ((h >> 4) & 0x13);
+      const sy = ty + 6 + ((h >> 12) & 0x13);
+      g.fillStyle(0xeaf3ff, 0.95);
+      g.fillRect(sx, sy, 1, 1);
+      g.fillStyle(0xc8e0f0, 0.7);
+      g.fillRect(sx - 1, sy, 1, 1);
+      g.fillRect(sx + 1, sy, 1, 1);
+      g.fillRect(sx, sy - 1, 1, 1);
+      g.fillRect(sx, sy + 1, 1, 1);
+    } else if (r < 0.93) {
+      // Frosted patch — light circular wash
+      g.fillStyle(0xd0e4f0, 0.45);
+      const cxp = tx + 8 + ((h >> 4) & 0xf);
+      const cyp = ty + 8 + ((h >> 12) & 0xf);
+      g.fillCircle(cxp, cyp, 6);
+      g.fillStyle(0xeaf3ff, 0.35);
+      g.fillCircle(cxp, cyp, 3);
+    } else if (r < 0.98) {
+      // Small ice shard cluster — 2 tiny triangular shards
+      g.fillStyle(0xb0d0e4, 0.95);
+      const ax = tx + 4 + ((h >> 4) & 0xf);
+      const ay = ty + 18 + ((h >> 8) & 7);
+      g.fillTriangle(ax, ay, ax + 2, ay - 4, ax + 4, ay);
+      g.fillTriangle(ax + 8, ay + 2, ax + 9, ay - 2, ax + 11, ay + 2);
+      g.fillStyle(0xeaf3ff, 0.9);
+      g.fillRect(ax + 1, ay - 1, 1, 1);
+    } else {
+      // Deep ice patch — slightly darker with a bright highlight
+      g.fillStyle(0x88aac8, 0.55);
+      const dx = tx + 6;
+      const dy = ty + 8 + ((h >> 4) & 7);
+      g.fillRect(dx, dy, 20, 14);
+      g.fillStyle(0xeaf3ff, 0.6);
+      g.fillRect(dx + 2, dy + 2, 6, 1);
+    }
+
+    // Hanging icicles if the tile above is a wall — decorative,
+    // drawn at the top of THIS floor tile so they look like they
+    // dangle from the cavern ceiling into the room.
+    if (y > 0 && this.grid[y - 1][x] === D_TILE.WALL) {
+      const numIcicles = 1 + (h & 1) + ((h >> 2) & 1); // 1..3
+      for (let i = 0; i < numIcicles; i++) {
+        const ix = tx + 4 + ((h >> (i * 4 + 4)) & 0x17);
+        const iyTop = ty;
+        const len = 3 + ((h >> (i * 5 + 8)) & 5); // 3..8 px
+        // Icicle body — tapered triangle
+        g.fillStyle(0xa8c8dc, 1);
+        g.fillTriangle(ix, iyTop, ix + 3, iyTop, ix + 1, iyTop + len);
+        // Tip highlight
+        g.fillStyle(0xeaf3ff, 0.95);
+        g.fillRect(ix + 1, iyTop, 1, Math.max(1, len - 2));
+      }
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  WALL — base color + frost veins + jagged inner edges +
+  //  icicles on the BOTTOM of top-walls (where they hang into
+  //  rooms in adjacent floor tiles, see floor drawing).
+  // ───────────────────────────────────────────────────────────
+  _drawWallTile(g, x, y) {
+    const T = this.T;
+    const tx = x * T, ty = y * T;
+    const h = this._tileHash(x, y);
+
+    // Base — slightly darker than the config wall color for moody feel
+    const BASE = 0x2a3848;
+    const DARK = 0x1a2230;
+    const LIGHT = 0x4a5868;
+    const FROST = 0x6a88a0;
+
+    g.fillStyle(BASE, 1);
+    g.fillRect(tx, ty, T, T);
+
+    // Subtle base variation — three irregular blotches per tile
+    for (let i = 0; i < 3; i++) {
+      const bx = tx + 4 + ((h >> (i * 6)) & 0x17);
+      const by = ty + 4 + ((h >> (i * 6 + 3)) & 0x17);
+      const sz = 2 + ((h >> (i * 5 + 9)) & 3);
+      g.fillStyle((i & 1) ? DARK : LIGHT, 0.5);
+      g.fillRect(bx, by, sz, sz);
+    }
+
+    // Frost vein (a few light hairlines)
+    if (((h >> 16) & 3) !== 0) {
+      g.lineStyle(1, FROST, 0.55);
+      const vx = tx + 6 + ((h >> 4) & 0xf);
+      const vy = ty + 6 + ((h >> 8) & 0xf);
+      g.beginPath();
+      g.moveTo(vx, vy);
+      g.lineTo(vx + 4 + ((h >> 12) & 7), vy + 8 + ((h >> 16) & 7));
+      g.lineTo(vx + 8, vy + 12);
+      g.strokePath();
+      g.lineStyle();
+    }
+
+    // Inner-edge jagged accent toward whichever neighbor is floor.
+    // 2-3 small bumps on the inside edge so walls don't read as squares.
+    const isFloor = (nx, ny) => {
+      if (nx < 0 || ny < 0 || nx >= this.mapW || ny >= this.mapH) return false;
+      const t = this.grid[ny][nx];
+      return t === D_TILE.FLOOR || t === D_TILE.DOOR_OPEN || t === D_TILE.STAIRS;
+    };
+    const inS = isFloor(x, y + 1);   // wall above a floor (top wall of room)
+    const inN = isFloor(x, y - 1);
+    const inE = isFloor(x + 1, y);
+    const inW = isFloor(x - 1, y);
+
+    const drawJag = (px, py, vertical) => {
+      g.fillStyle(LIGHT, 0.7);
+      if (vertical) {
+        g.fillRect(px, py,     1, 2);
+        g.fillRect(px, py + 6, 1, 3);
+        g.fillRect(px, py + 14,1, 2);
+        g.fillRect(px, py + 22,1, 3);
+      } else {
+        g.fillRect(px,      py, 2, 1);
+        g.fillRect(px + 6,  py, 3, 1);
+        g.fillRect(px + 14, py, 2, 1);
+        g.fillRect(px + 22, py, 3, 1);
+      }
+    };
+    if (inS) drawJag(tx, ty + T - 1, false);     // highlight on bottom edge (looking down into room)
+    if (inN) drawJag(tx, ty,         false);     // top edge
+    if (inE) drawJag(tx + T - 1, ty, true);      // right edge
+    if (inW) drawJag(tx,         ty, true);      // left edge
+
+    // Icicles on top walls (south neighbor is floor): hang short
+    // crystals just at the bottom of the wall tile. The floor tile
+    // below ALSO draws taller icicles into the room — these are the
+    // "stumps" attached to the wall.
+    if (inS) {
+      const count = 2 + ((h >> 10) & 1);
+      for (let i = 0; i < count; i++) {
+        const ix = tx + 4 + ((h >> (i * 4 + 14)) & 0x17);
+        g.fillStyle(0x9bb8d0, 1);
+        g.fillTriangle(ix, ty + T - 4, ix + 3, ty + T - 4, ix + 1, ty + T);
+      }
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  DOOR FRAME — drawn directly into the map graphics behind
+  //  the wooden door halves. Looks like a stone arch.
+  // ───────────────────────────────────────────────────────────
+  _drawDoorFrame(g, x, y) {
+    const T = this.T;
+    const tx = x * T, ty = y * T;
+    const FRAME       = 0x6a5848;
+    const FRAME_LIGHT = 0x8a7060;
+    const FRAME_DARK  = 0x3a2828;
+    // Outer frame (wider, slightly proud of the tile)
+    g.fillStyle(FRAME_DARK, 1); g.fillRect(tx,     ty + 2, T, T - 4);
+    g.fillStyle(FRAME, 1);      g.fillRect(tx + 1, ty + 3, T - 2, T - 6);
+    g.fillStyle(FRAME_LIGHT, 1);g.fillRect(tx + 2, ty + 3, T - 4, 1);
+    // Inner cavity (where the door wood sits)
+    g.fillStyle(0x14101a, 1);   g.fillRect(tx + 3, ty + 5, T - 6, T - 10);
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  WALL TORCHES — one on each side wall of every room
+  // ───────────────────────────────────────────────────────────
+  _spawnRoomTorches() {
+    const T = this.T;
+    for (const room of this.config.rooms) {
+      const midY = Math.floor((room.yMin + room.yMax) / 2);
+      // Inside edge of left wall — east-facing torch
+      this._drawWallTorch((room.xMin - 1) * T + T - 3, midY * T + T / 2);
+      // Inside edge of right wall — west-facing torch
+      this._drawWallTorch((room.xMax + 1) * T + 3, midY * T + T / 2);
+    }
+  }
+
+  _drawWallTorch(px, py) {
+    const bracket = this.add.graphics().setDepth(2);
+    bracket.fillStyle(0x3a2818, 1);
+    bracket.fillRect(px - 1, py - 1, 2, 6);
+    bracket.fillStyle(0x6a5040, 1);
+    bracket.fillRect(px,     py - 1, 1, 4);
+
+    // Flame body — flicker via redraw
+    const flame = this.add.graphics().setDepth(3);
+    const drawFlame = (big) => {
+      flame.clear();
+      flame.fillStyle(0xff7733, 0.95); flame.fillCircle(px + 0.5, py - 4, big ? 3.5 : 3);
+      flame.fillStyle(0xffcc44, 1);    flame.fillCircle(px + 0.5, py - 4, big ? 2.2 : 1.8);
+      flame.fillStyle(0xffee99, 1);    flame.fillCircle(px + 0.5, py - 4, 1);
+    };
+    drawFlame(true);
+
+    // Soft warm halo (light pool)
+    const halo = this.add.circle(px, py - 4, 22, 0xff9944, 0.18).setDepth(1);
+
+    let big = true;
+    this.time.addEvent({
+      delay: 180, loop: true,
+      callback: () => { big = !big; drawFlame(big); },
+    });
+    this.tweens.add({ targets: halo, alpha: 0.08, scaleX: 1.15, scaleY: 1.15,
+      duration: 380, yoyo: true, repeat: -1 });
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -562,20 +819,37 @@ class DungeonScene extends Phaser.Scene {
     console.log('[Dungeon] _checkRoomClear room=', roomId, '| remaining mobs:', remaining.length,
       '| doors gated by this room:', this.config.doors.filter(d => d.unlockedBy === roomId).length);
     if (remaining.length > 0) return;
-    // Open every door gated by this room: kill its physics body + repaint floor
+    // Open every door gated by this room.
     this.config.doors.forEach((d, i) => {
       if (d.unlockedBy !== roomId) return;
       if (this._state.doorsOpen.has(i)) return;
       this._state.doorsOpen.add(i);
       this.grid[d.y][d.x] = D_TILE.DOOR_OPEN;
-      const T = this.T;
-      const p = this.config.palette;
-      this._mapGfx.fillStyle(p.doorOpen, 1);
-      this._mapGfx.fillRect(d.x * T, d.y * T, T, T);
-      // Destroy the door's static body so the player can walk through
       const key = `${d.x},${d.y}`;
+
+      // Destroy collider immediately so the player can already walk through.
       const doorObj = this._doorBodies[key];
       if (doorObj) { doorObj.destroy(); delete this._doorBodies[key]; }
+
+      // Animate the wooden door halves: swing outward + fade. The stone
+      // frame painted into mapGfx stays — looks like the door swung open
+      // and is now tucked into the wall recess.
+      const sprites = this._doorSprites[key];
+      if (sprites) {
+        this.tweens.add({
+          targets: sprites.left, x: sprites.left.x - 14, alpha: 0,
+          duration: 550, ease: 'Cubic.easeOut',
+          onComplete: () => sprites.left.destroy(),
+        });
+        this.tweens.add({
+          targets: sprites.right, x: sprites.right.x + 14, alpha: 0,
+          duration: 550, ease: 'Cubic.easeOut',
+          onComplete: () => sprites.right.destroy(),
+        });
+        delete this._doorSprites[key];
+      }
+
+      // Sound stub — a creak/thud would slot in here. Skipped for now.
     });
   }
 
