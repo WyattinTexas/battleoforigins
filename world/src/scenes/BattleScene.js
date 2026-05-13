@@ -279,12 +279,12 @@ class BattleScene extends Phaser.Scene {
     }
 
     // Name
-    c.add(this.add.text(0, artH + 10, ghost.name, {
+    c.add(this.add.text(0, artFrameH + 10, ghost.name, {
       fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: isKO ? '#555' : BC.TEXT,
     }).setOrigin(0.5));
 
     // Ability badge
-    const abilY = artH + 24;
+    const abilY = artFrameH + 24;
     const abBg = this.add.graphics();
     abBg.fillStyle(tCol, isKO ? 0.3 : 0.7);
     abBg.fillRoundedRect(-cw/2 + 6, abilY - 6, cw - 12, 14, 3);
