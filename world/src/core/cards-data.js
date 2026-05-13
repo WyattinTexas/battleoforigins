@@ -6,7 +6,7 @@
 // ═══════ SHELVED IDS — excluded from random encounters ═══════
 // Note: Finn (id 204), Calvin (id 342), and Clink (id 329) are NOT shelved — they're active on the dashboard
 const SHELVED_IDS = new Set([
-  316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 328, 330, 331, 332, 333, 334, 335, 337, // Penny-Fuego (329 Clink unshelved)
+  316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 328, 329, 330, 331, 332, 333, 334, 335, 337, // Penny-Fuego
   338, 339, 340, 341, 344, 346, 347, 348, 349, 350, 351, 353, 354, 355, 356, 357, 358, 359,      // Thistle-Volcanic Heart (342 Calvin unshelved)
   360, 361, 362, 363, 364, 366, 367, 368                                                               // The Shepherd-Dragonclaw
 ]);

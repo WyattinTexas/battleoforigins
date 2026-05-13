@@ -14,7 +14,10 @@
 <h2>Battle System Autonomous Test</h2>
 <div id="results"></div>
 
-<!-- Load game scripts in order (no Phaser needed for logic tests) -->
+<!-- Phaser stub for logic-only testing -->
+<script>
+  var Phaser = { AUTO:0, Scale:{RESIZE:0,CENTER_BOTH:0}, Math:{Distance:{Between:(a,b,c,d)=>Math.sqrt((c-a)**2+(d-b)**2)}}, Input:{Keyboard:{JustDown:()=>false}} };
+</script>
 <script src="src/main.js"></script>
 <script src="src/globals.js"></script>
 <script src="src/core/cards-data.js"></script>
@@ -44,7 +47,12 @@ section('=== CARD DATA ===');
 const activeCards = ALL_CARDS.filter(c => !SHELVED_IDS.has(c.id));
 log(`Total cards: ${ALL_CARDS.length} | Shelved: ${SHELVED_IDS.size} | Active: ${activeCards.length}`);
 if (activeCards.length === 200) pass('Active card count is 200');
-else fail(`Active card count is ${activeCards.length}, expected 200`);
+else {
+  fail(`Active card count is ${activeCards.length}, expected 200`);
+  // Find the extra card(s) not on the 200 dashboard
+  const dashNames = new Set(['Kodako','Nikon','Ancient Librarian','Wanderer','Puff','Fang Outside','Fang Undercover','Buttons','Little Boo','Patrick','Villager','Dupy','Shoo','Jeffery','Winston','Chip','Boo Brothers','Charlie','Grawr','Larry','Bill & Bob','Dealer','Alucard','Castle Guards','Team Zippy','Guard Thomas','Doc','Outlaw','Bubble Boys','Cornelius','Cave Dweller','Hermit','Opa','Greg','Jackson','Raditz','Doug','Sparky','Wim','Munch','Snorton','Kairan','Sonya','Katrina','Admiral','Sky','Stone Cold','Dark Jeff','Flora','Dark Wing','City Cyboo','Jenkins','Tabitha','Guardian Fairy','Cyboo','Splinter','Bo','The Mountain King','Shade','Doom','Scallywags','Floop','Needle','Ancient One','Mirror Matt','Lars','Rascals','Gom Gom Gom','Castle Gardener','Nicholas','Hugo','Knight Light','Chow','Garrick','Slicer','Yawn Eater','Haywire','Bilbo','Knight Terror','Bigsby','Princess Shade',"Lucy's Shadow",'Wendy','Captain James','Ryder','Sophia','Hector','Toby','Redd','Willow','Champ','Harvey','Lucy','Valkin the Grand','Powder','Simon','Cameron','Logey','Fredrick','Dream Cat','Sad Sal','Tommy Salami','Gus','Lou','Sandwiches','Chad','Mr Filbert','Bogey','Roger','Masked Hero','Marcus','Ashley','Dallas','Suspicious Jeff','Antoinette','Troubling Haters','Wandering Sue','Bandit Pete','Spockles','Eloise','Pelter','Zach','Pale Nimbus','Mallow','Jeanie','Calvin & Anna','Gary','Night Master','Skylar','Tyler','King Jay','Piper','Prince Balatron','Romy','Dylan','Maximo','Tweak and Twonk','Pudge','Jimmy','Nick & Knack','Nyx & Bessie','Boopies','Goobs','Eli','Kaplan','Aunt Susan','Granny','Timpleton','Calvin','Zippa','Chester','Young Cap','Gordok','Ridley','Laura','Dark Fang','Finn','Artemis','Harrison','Twyla','Jasper','Mable Stadango','Professor Hawking','Farmer Jeff','Pal Al','Kaylee','Maisie','Timber','Selene','Bouril','Hank','Happy Crystal','Dart','Boris','Tyson','Fed and Hayden','Carpenter','Ronan','Zork','Benjamin','The Ember Force','Chagrin','Sable','Rook','Lucas','Michael','Ripagoo',"Shade's Shadow",'Sylvia','Smudge','Welder','Foreman','Explorer Jeff','Zain','Natalia','Red Hunter','Pip','Miyoshi','Nerina','Humar']);
+  activeCards.filter(c => !dashNames.has(c.name)).forEach(c => log(`    EXTRA: id=${c.id} name="${c.name}"`, 'warn'));
+}
 
 // Check every card has required fields
 let cardIssues = 0;
@@ -260,8 +268,8 @@ const fredCount = calculateDiceCount('red');
 if (fredCount <= 3) pass(`Fredrick caps opponent dice: ${fredCount} (max 3)`);
 else fail(`Fredrick cap: ${fredCount}, expected <= 3`);
 
-// Test Cyboo (55) sideline — +1 die if active < 3 HP
-initBattle([59, 55, 1], [108, 34, 56], {type:'test'});
+// Test Cyboo (100) sideline — +1 die if active < 3 HP
+initBattle([59, 100, 1], [108, 34, 56], {type:'test'});
 const cybooGhost = activeGhost(B.red);
 wpDamage(cybooGhost, cybooGhost.hp - 2); // bring to 2 HP
 const cybooCount = calculateDiceCount('red');
@@ -284,12 +292,12 @@ triggerWinPath('red', {type:'singles',value:5,damage:1});
 if (B.red.resources.surge >= 2) pass(`Dart win: gained ${B.red.resources.surge} Surge`);
 else fail(`Dart win: surge = ${B.red.resources.surge}, expected >= 2`);
 
-// Test Outlaw (43) — Doubles: remove 1 enemy die next roll
+// Test Outlaw (43) — Doubles: remove 1 enemy die next roll (flag goes on ENEMY team)
 initBattle([43, 34, 56], [59, 60, 1], {type:'test'});
 triggerWinPath('red', {type:'doubles',value:3,damage:2});
-const outlawSteal = B.outlawStolenDie ? B.outlawStolenDie.red : 0;
-if (outlawSteal >= 1) pass(`Outlaw doubles: stole ${outlawSteal} enemy die`);
-else fail(`Outlaw doubles: outlawStolenDie = ${outlawSteal}`);
+const outlawSteal = B.outlawStolenDie ? B.outlawStolenDie.blue : 0;
+if (outlawSteal >= 1) pass(`Outlaw doubles: stole ${outlawSteal} enemy die (on blue)`);
+else fail(`Outlaw doubles: outlawStolenDie.blue = ${outlawSteal}`);
 
 section('=== LOSS PATH ABILITIES ===');
 
