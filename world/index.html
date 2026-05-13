@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Battle of Origins — Phaser</title>
+<title>Boo! Battle of Origins</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0a0a0f; overflow: hidden; }
@@ -66,11 +66,11 @@
 <script src="https://cdn.jsdelivr.net/npm/phaser@4.1.0/dist/phaser.min.js"></script>
 
 <!-- Global State & Stubs (must load before core modules) -->
-<script src="src/main.js?v=73"></script>
-<script src="src/globals.js?v=73"></script>
+<script src="src/main.js?v=79"></script>
+<script src="src/globals.js?v=79"></script>
 
 <!-- World generation (full map from 2D version) -->
-<script src="src/world-gen.js?v=73"></script>
+<script src="src/world-gen.js?v=79"></script>
 
 <!-- Block 2D-era setInterval/requestAnimationFrame during module load -->
 <script>
@@ -81,33 +81,42 @@
 </script>
 
 <!-- Core Game Logic (ported from 2D version — pure JS, no DOM) -->
-<script src="src/core/cards-data.js?v=73"></script>
+<script src="src/core/cards-data.js?v=79"></script>
 <!-- New battle engine (testroom2 port) -->
-<script src="src/core/dice-engine.js?v=73"></script>
-<script src="src/core/willpower.js?v=73"></script>
-<script src="src/core/resources.js?v=73"></script>
-<script src="src/core/card-abilities.js?v=73"></script>
-<script src="src/core/battle-engine.js?v=73"></script>
+<script src="src/core/dice-engine.js?v=79"></script>
+<script src="src/core/willpower.js?v=79"></script>
+<script src="src/core/resources.js?v=79"></script>
+<script src="src/core/card-abilities.js?v=79"></script>
+<script src="src/core/battle-engine.js?v=79"></script>
 <!-- Legacy battle (kept for backwards compat during transition) -->
-<script src="src/core/battle.js?v=73"></script>
-<script src="src/core/npcs.js?v=73"></script>
-<script src="src/core/crafting.js?v=73"></script>
-<script src="src/core/gathering.js?v=73"></script>
-<script src="src/core/quests.js?v=73"></script>
-<script src="src/core/professions.js?v=73"></script>
-<script src="src/core/talent-data.js?v=73"></script>
-<script src="src/core/fortune.js?v=73"></script>
-<script src="src/core/buffs.js?v=73"></script>
-<script src="src/core/structures.js?v=73"></script>
-<script src="src/core/custom-events.js?v=73"></script>
+<script src="src/core/battle.js?v=79"></script>
+<script src="src/core/npcs.js?v=79"></script>
+<script src="src/core/crafting.js?v=79"></script>
+<script src="src/core/gathering.js?v=79"></script>
+<script src="src/core/quests.js?v=79"></script>
+<script src="src/core/professions.js?v=79"></script>
+<script src="src/core/talent-data.js?v=79"></script>
+<script src="src/core/fortune.js?v=79"></script>
+<script src="src/core/buffs.js?v=79"></script>
+<script src="src/core/structures.js?v=79"></script>
+<script src="src/core/gardening.js?v=79"></script>
+<script src="src/core/custom-events.js?v=79"></script>
 
 <!-- Star Fox 64 Comm System -->
-<link rel="stylesheet" href="../online/starfox-comm.css">
-<script src="../online/starfox-comm.js?v=73"></script>
-<script src="src/core/market.js?v=73"></script>
-<script src="src/core/world-events.js?v=73"></script>
-<script src="src/core/housing.js?v=73"></script>
-<script src="src/core/achievements.js?v=73"></script>
+<link rel="stylesheet" href="starfox-comm.css">
+<script src="src/core/starfox-comm.js?v=79"></script>
+
+<!-- Battle Dice (fake 3D pip-face dice from testroom2) -->
+<link rel="stylesheet" href="battle-dice.css">
+<script src="src/core/battle-dice.js?v=79"></script>
+
+<!-- Battle Callout Overlay (dramatic banners for combat moments) -->
+<link rel="stylesheet" href="battle-callout.css">
+<script src="src/core/battle-callout.js?v=79"></script>
+<script src="src/core/market.js?v=79"></script>
+<script src="src/core/world-events.js?v=79"></script>
+<script src="src/core/housing.js?v=79"></script>
+<script src="src/core/achievements.js?v=79"></script>
 
 <!-- Restore after modules loaded — Phaser needs these -->
 <script>
@@ -116,16 +125,16 @@
 </script>
 
 <!-- Panel Manager (reusable overlay system) -->
-<script src="src/PanelManager.js?v=73"></script>
+<script src="src/PanelManager.js?v=79"></script>
 
 <!-- Phaser Scenes (rendering layer) -->
-<script src="src/scenes/CommScene.js?v=73"></script>
-<script src="src/scenes/BootScene.js?v=73"></script>
-<script src="src/scenes/WorldScene.js?v=73"></script>
-<script src="src/scenes/CraftScene.js?v=73"></script>
-<script src="src/scenes/TalentScene.js?v=73"></script>
-<script src="src/scenes/BuildingScene.js?v=73"></script>
-<script src="src/scenes/BattleScene.js?v=73"></script>
+<script src="src/scenes/CommScene.js?v=79"></script>
+<script src="src/scenes/BootScene.js?v=79"></script>
+<script src="src/scenes/WorldScene.js?v=79"></script>
+<script src="src/scenes/CraftScene.js?v=79"></script>
+<script src="src/scenes/TalentScene.js?v=79"></script>
+<script src="src/scenes/BuildingScene.js?v=79"></script>
+<script src="src/scenes/BattleScene.js?v=79"></script>
 
 <!-- Initialize -->
 <script>
