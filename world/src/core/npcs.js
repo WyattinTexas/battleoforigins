@@ -304,7 +304,7 @@ function checkHostileNPCProximity() {
 // ═══════ BLACK RIDERS (Night Path Patrols) ═══════
 const BLACK_RIDERS = [];
 const BLACK_RIDER_MAX = 1;
-const BLACK_RIDER_SPAWN_INTERVAL = 10 * 60 * 1000; // one every 10 minutes
+const BLACK_RIDER_SPAWN_INTERVAL = 60 * 60 * 1000; // one every hour
 const BLACK_RIDER_LIFESPAN = 2 * 60 * 1000; // despawn after 2 minutes
 
 function spawnBlackRiders() {
