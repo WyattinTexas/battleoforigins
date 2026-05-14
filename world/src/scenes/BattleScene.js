@@ -136,8 +136,7 @@ class BattleScene extends Phaser.Scene {
     this._eWPArea = this._buildWPArea('blue', W * 0.82, H * 0.82);
 
     // ── Roll buttons ──
-    this._redBtn = this._buildRollBtn(W * 0.15, H * 0.93, 'RED ROLL', BC.RED, () => this.doRound());
-    this._blueBtn = this._buildRollBtn(W * 0.85, H * 0.93, 'BLUE ROLL', BC.BLUE, null); // enemy auto-rolls
+    this._redBtn = this._buildRollBtn(W * 0.5, H * 0.93, 'ROLL', BC.RED, () => this.doRound());
 
     // ── Status bar (narrative text at bottom center) ──
     this._statusBar = this.add.text(W * 0.5, H * 0.97, '', {
