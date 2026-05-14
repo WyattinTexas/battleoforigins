@@ -405,11 +405,11 @@ class BattleScene extends Phaser.Scene {
       }).setOrigin(0, 0.5);
       c.add(resTxt);
 
-      // Make clickable for player side
-      if (team === 'red' && !this._rolling) {
-        resTxt.setInteractive({ useHandCursor: true });
-        resTxt.on('pointerdown', () => {
-          console.log('[Battle] Resource clicked:', key, 'count:', count, 'rolling:', this._rolling);
+      // Make clickable for player side — use Zone for reliable hit detection in Container
+      if (team === 'red') {
+        const resZone = this.add.zone(rx + 20, 38, 42, 22).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+        resZone.on('pointerdown', () => {
+          console.log('[Battle] Resource clicked:', key, 'count:', res[key], 'rolling:', this._rolling);
           if (this._rolling) return;
           if (committable.includes(key) && typeof cycleCommit === 'function') {
             cycleCommit(tKey, key);
@@ -427,6 +427,7 @@ class BattleScene extends Phaser.Scene {
             this.syncUI();
           }
         });
+        c.add(resZone);
       }
 
       rx += 46;
@@ -594,6 +595,31 @@ class BattleScene extends Phaser.Scene {
 
     if (B._moonstoneReady && B._moonstoneReady[this._pt] && typeof smartMoonstoneChange === 'function') smartMoonstoneChange(pDice);
     if (B._luckyStoneReady && B._luckyStoneReady[this._pt] && typeof smartLuckyStone === 'function') smartLuckyStone(pDice);
+
+    // Pepo auto-flick: change lowest die to match the most common value (simplified Charlie mode)
+    if (B.wpPepo && B.wpPepo[this._pt]) {
+      B.wpPepo[this._pt] = false;
+      const counts = {};
+      pDice.forEach(d => counts[d] = (counts[d] || 0) + 1);
+      const bestVal = +Object.entries(counts).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
+      let changed = false;
+      for (let i = 0; i < pDice.length; i++) {
+        if (pDice[i] !== bestVal) { pDice[i] = bestVal; changed = true; break; }
+      }
+      pDice.sort((a, b) => a - b);
+      if (changed) this._setStatus('Pepo flicked a die!');
+    }
+    // Enemy Pepo
+    if (B.wpPepo && B.wpPepo[this._et]) {
+      B.wpPepo[this._et] = false;
+      const counts = {};
+      eDice.forEach(d => counts[d] = (counts[d] || 0) + 1);
+      const bestVal = +Object.entries(counts).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
+      for (let i = 0; i < eDice.length; i++) {
+        if (eDice[i] !== bestVal) { eDice[i] = bestVal; break; }
+      }
+      eDice.sort((a, b) => a - b);
+    }
 
     if (!B.lastRollDiceCount) B.lastRollDiceCount = {};
     B.lastRollDiceCount[this._pt] = pDC; B.lastRollDiceCount[this._et] = eDC;

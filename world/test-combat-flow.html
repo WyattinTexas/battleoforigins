@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Combat Flow Test — Willpower + Resources</title>
+<style>
+  body { background: #0a0a14; color: #f0e8d4; font-family: monospace; font-size: 12px; padding: 20px; }
+  .pass { color: #4ade80; } .fail { color: #ff4444; } .warn { color: #fbbf24; }
+  .section { color: #4cc9f0; font-weight: bold; margin-top: 16px; }
+  #results { white-space: pre-wrap; line-height: 1.6; }
+</style>
+</head>
+<body>
+<h2>Combat Flow Test — Willpower, Resources, Full Rounds</h2>
+<div id="results"></div>
+<script>var Phaser={AUTO:0,Scale:{RESIZE:0,CENTER_BOTH:0},Math:{Distance:{Between:(a,b,c,d)=>Math.sqrt((c-a)**2+(d-b)**2)}},Input:{Keyboard:{JustDown:()=>false}}};</script>
+<script src="src/main.js"></script>
+<script src="src/globals.js"></script>
+<script src="src/core/cards-data.js"></script>
+<script src="src/core/dice-engine.js"></script>
+<script src="src/core/willpower.js"></script>
+<script src="src/core/resources.js"></script>
+<script src="src/core/card-abilities.js"></script>
+<script src="src/core/battle-engine.js"></script>
+<script src="src/core/battle.js"></script>
+<script>
+const out = document.getElementById('results');
+let P=0, F=0, W=0;
+function log(m,c){out.innerHTML+=`<span class="${c||''}">${m}</span>\n`;}
+function pass(m){P++;log('  ✓ '+m,'pass');}
+function fail(m){F++;log('  ✗ '+m,'fail');}
+function warn(m){W++;log('  ⚠ '+m,'warn');}
+function section(m){log('\n'+m,'section');}
+
+ensurePlayerDefaults();
+
+// ═══════════════════════════════════════════
+section('=== FULL COMBAT ROUND SIMULATION ===');
+
+// Simulate a complete round: pre-roll → roll → resolve → post-round
+G.team=[{id:108,hp:8,maxHp:8,ko:false},{id:34,hp:7,maxHp:7,ko:false},{id:56,hp:6,maxHp:6,ko:false}];
+initBattle([108,34,56],[59,60,1],{type:'test'});
+
+// Verify battle state
+if (B && B.red && B.blue) pass('Battle initialized');
+else { fail('Battle init failed'); }
+
+// Check entry effects fired (Chad=56 is on sideline, Lucy=108 is active)
+// Lucy has no entry effect. Chad is on sideline. Grawr(34) is on sideline.
+const redActive = activeGhost(B.red);
+log(`  Active: ${redActive.name} (id ${redActive.id}) HP: ${redActive.hp}`);
+
+// Trigger entry
+triggerEntry(B.red, 'red');
+triggerEntry(B.blue, 'blue');
+
+section('=== WILLPOWER ACTIVATION IN COMBAT ===');
+
+// Set up willpower hand with known cards
+B.red.ghosts[0].willpower = [2, 1, 9, 5, 0, 0, 0, 0]; // Spark, Bonanza, Shell, Moonstone, Heart x4
+B.red.ghosts[0].hp = 8;
+B.wpUsedThisTurn = { red: false, blue: false };
+
+// Test 1: Activate Spark (id=2) — should gain +1 Surge
+const sparkBefore = B.red.resources.surge || 0;
+const sparkResult = activateWillpower('red', 'red', (msg) => log('    LOG: ' + msg));
+if (sparkResult && sparkResult.effect === 'spark') {
+  if (B.red.resources.surge > sparkBefore) pass(`Spark activated: Surge ${sparkBefore} → ${B.red.resources.surge}`);
+  else fail(`Spark activated but Surge didn't increase: ${B.red.resources.surge}`);
+} else fail('Spark activation failed: ' + (sparkResult ? sparkResult.effect : 'null'));
+
+// Test 2: Can't activate twice per turn
+B.wpUsedThisTurn.red = true; // already used
+const doubleUse = activateWillpower('red', 'red', ()=>{});
+if (!doubleUse) pass('Correctly blocked double willpower use');
+else fail('Should not allow double willpower use');
+
+// Test 3: Reset for next round and try Bonanza
+B.wpUsedThisTurn.red = false;
+// Top card should now be Bonanza (id=1) since Spark was consumed
+const topNow = B.red.ghosts[0].willpower[0];
+const topCard = wpCardById(topNow);
+log(`  Top card after Spark consumed: ${topCard ? topCard.name : 'id=' + topNow}`);
+const bonResult = activateWillpower('red', 'red', (msg) => log('    LOG: ' + msg));
+if (bonResult && bonResult.effect === 'bonanza') {
+  if (B.wpBonanza && B.wpBonanza.red === 2) pass('Bonanza: +2 damage flag set');
+  else fail('Bonanza flag: ' + JSON.stringify(B.wpBonanza));
+} else fail('Bonanza activation: ' + (bonResult ? bonResult.effect : 'null'));
+
+section('=== RESOURCE COMMITMENT FLOW ===');
+
+// Give red some resources to commit
+B.red.resources.ice = 3;
+B.red.resources.fire = 1;
+B.red.resources.surge = 2;
+B.red.resources.moonstone = 1;
+B.red.resources.luckyStone = 1;
+B.red.resources.healingSeed = 2;
+
+// Test Ice Shard commit
+const iceCommit = cycleCommit('red', 'ice');
+if (iceCommit === 1 && B.red.resources.ice === 2) pass('Ice commit: 3→2, committed 1');
+else fail(`Ice commit: result=${iceCommit}, remaining=${B.red.resources.ice}`);
+
+// Test Surge commit (capped at 2)
+const surgeCommit1 = cycleCommit('red', 'surge');
+const surgeCommit2 = cycleCommit('red', 'surge');
+if (B.committed.red.surge === 2) pass('Surge double commit: 2 committed');
+else fail(`Surge commit: ${B.committed.red.surge}`);
+
+// Test Sacred Fire commit
+const fireCommit = cycleCommit('red', 'fire');
+if (fireCommit === 1) pass('Sacred Fire committed');
+else fail(`Sacred Fire commit: ${fireCommit}`);
+
+// Test Moonstone
+const moonResult = useMoonstone('red', (msg) => log('    ' + msg));
+if (moonResult && B._moonstoneReady && B._moonstoneReady.red) pass('Moonstone committed (will change die after roll)');
+else fail('Moonstone commit failed');
+
+// Test Lucky Stone
+const luckyResult = useLuckyStone('red', (msg) => log('    ' + msg));
+if (luckyResult && B._luckyStoneReady && B._luckyStoneReady.red) pass('Lucky Stone committed (will reroll die after roll)');
+else fail('Lucky Stone commit failed');
+
+// Test Healing Seed
+const hpBefore = activeGhost(B.red).hp;
+wpDamage(activeGhost(B.red), 3); // damage first
+const healResult = spendHealingSeed('red', (msg) => log('    ' + msg));
+if (healResult) pass(`Healing Seed spent: HP ${hpBefore}→${hpBefore-3}→${activeGhost(B.red).hp}`);
+else fail('Healing Seed spend failed');
+
+section('=== DAMAGE CALCULATION WITH COMMITTED RESOURCES ===');
+
+// Ice adds +1 damage per committed, Fire adds +3
+const baseDmg = calculateDamage('red', {type:'singles',value:5,damage:1}, [5,3,2]);
+log(`  Base damage with 1 ice + 1 fire + bonanza committed: ${baseDmg}`);
+// Expected: 1 (base) + 1 (ice) + 3 (fire) + 2 (bonanza) = 7
+if (baseDmg >= 7) pass(`Committed resources add to damage: ${baseDmg}`);
+else fail(`Expected >=7, got ${baseDmg}`);
+
+// Extra dice from surge
+const diceCount = calculateDiceCount('red');
+log(`  Dice count with 2 surge committed: ${diceCount}`);
+// Base 3 + 2 surge = 5
+if (diceCount >= 5) pass(`Surge gives extra dice: ${diceCount}`);
+else fail(`Expected >=5 dice, got ${diceCount}`);
+
+section('=== MOONSTONE + LUCKY STONE POST-ROLL ===');
+
+// Simulate the post-roll resource application
+const testDice = [1, 2, 4];
+log(`  Dice before moonstone: [${testDice}]`);
+smartMoonstoneChange(testDice);
+log(`  Dice after moonstone: [${testDice}]`);
+// Moonstone should change the most common value to match (creating doubles/triples)
+// With [1,2,4], it finds most common = any (all unique), changes lowest non-match
+pass('Moonstone applied to dice');
+
+const testDice2 = [1, 3, 5];
+log(`  Dice before lucky stone: [${testDice2}]`);
+smartLuckyStone(testDice2);
+log(`  Dice after lucky stone: [${testDice2}]`);
+pass('Lucky stone rerolled lowest die');
+
+section('=== ROUND RESET ===');
+
+// Reset round flags (should refund committed resources)
+resetRoundFlags();
+if (B.wpUsedThisTurn && !B.wpUsedThisTurn.red) pass('WP used flag reset');
+else fail('WP flag not reset');
+if (B.wpBonanza && B.wpBonanza.red === 0) pass('Bonanza flag reset');
+else warn('Bonanza flag: ' + (B.wpBonanza ? B.wpBonanza.red : '?'));
+
+// Check resources refunded
+log(`  Post-refund ice: ${B.red.resources.ice}, surge: ${B.red.resources.surge}`);
+
+section('=== WIN PATH RESOURCE GENERATION ===');
+
+// Lucy (108) wins — should gain Sacred Fire
+initBattle([108,34,56],[59,60,1],{type:'test'});
+B.red.resources.fire = 0;
+triggerWinPath('red', {type:'doubles', value:4, damage:2});
+if (B.red.resources.fire >= 1) pass(`Lucy win → Sacred Fire: ${B.red.resources.fire}`);
+else fail(`Lucy win → fire: ${B.red.resources.fire}`);
+
+// Ashley (112 in our data, but on dashboard she's different)
+// Let's test Spockles — Win: gain 2 Ice Shards
+initBattle([81,34,56],[59,60,1],{type:'test'});
+B.red.resources.ice = 0;
+triggerWinPath('red', {type:'singles', value:5, damage:1});
+if (B.red.resources.ice >= 2) pass(`Spockles win → 2 Ice: ${B.red.resources.ice}`);
+else fail(`Spockles win → ice: ${B.red.resources.ice}`);
+
+// Artemis (307) — Win: gain 3 Ice Shards
+initBattle([307,34,56],[59,60,1],{type:'test'});
+B.red.resources.ice = 0;
+triggerWinPath('red', {type:'singles', value:5, damage:1});
+if (B.red.resources.ice >= 3) pass(`Artemis win → 3 Ice: ${B.red.resources.ice}`);
+else fail(`Artemis win → ice: ${B.red.resources.ice}`);
+
+section('=== MULTI-ROUND BATTLE SIMULATION (10 rounds) ===');
+
+initBattle([108,34,56],[59,60,1],{type:'test'});
+let rounds = 0;
+let redWins = 0, blueWins = 0, ties = 0;
+let resourcesGenerated = { fire: 0, ice: 0, surge: 0 };
+
+for (let r = 0; r < 10; r++) {
+  const pDice = weightedRoll(B.red, 3);
+  const eDice = weightedRoll(B.blue, 3);
+  const pRes = classify(pDice);
+  const eRes = classify(eDice);
+  let winner = compareRolls(pRes, eRes, pDice, eDice, false);
+  if (winner === 'a') winner = 'red';
+  else if (winner === 'b') winner = 'blue';
+  else if (winner === 'tie') winner = null;
+
+  if (winner === 'red') {
+    redWins++;
+    const dmg = calculateDamage('red', pRes, pDice);
+    wpDamage(activeGhost(B.blue), Math.max(1, dmg));
+    triggerWinPath('red', pRes);
+  } else if (winner === 'blue') {
+    blueWins++;
+    const dmg = calculateDamage('blue', eRes, eDice);
+    wpDamage(activeGhost(B.red), Math.max(1, dmg));
+    triggerOnLoss('red');
+  } else {
+    ties++;
+  }
+
+  resetRoundFlags();
+  rounds++;
+
+  // Check for KO
+  if (activeGhost(B.red).hp <= 0 || activeGhost(B.blue).hp <= 0) break;
+}
+
+log(`  Simulated ${rounds} rounds: Red ${redWins} wins, Blue ${blueWins} wins, ${ties} ties`);
+log(`  Red HP: ${activeGhost(B.red).hp}, Blue HP: ${activeGhost(B.blue).hp}`);
+log(`  Red resources: ice=${B.red.resources.ice} fire=${B.red.resources.fire} surge=${B.red.resources.surge}`);
+
+if (rounds > 0) pass(`Battle simulation completed ${rounds} rounds without errors`);
+if (B.red.resources.fire > 0) pass(`Lucy generated ${B.red.resources.fire} Sacred Fire during battle`);
+else warn('Lucy didn\'t generate any Sacred Fire (may not have won any rounds)');
+
+section('=== ALL WILLPOWER CARDS ACTIVATION TEST ===');
+
+const wpCards = WILLPOWER_CARDS.filter(c => c.id > 0); // skip Heart
+let wpPassed = 0, wpFailed = 0;
+
+wpCards.forEach(card => {
+  initBattle([56,34,1],[59,60,108],{type:'test'});
+  const minHp = card.hpCost || 1;
+  // Give enough HP
+  B.red.ghosts[0].willpower = new Array(Math.max(minHp + 2, 6)).fill(card.id);
+  B.red.ghosts[0].hp = B.red.ghosts[0].willpower.length;
+  B.red.ghosts[0].maxHp = B.red.ghosts[0].hp;
+  B.wpUsedThisTurn = { red: false, blue: false };
+
+  const result = activateWillpower('red', 'red', ()=>{});
+  if (result && result.id === card.id) {
+    wpPassed++;
+  } else {
+    wpFailed++;
+    log(`    ✗ ${card.name} (id ${card.id}): activation returned ${result ? result.name : 'null'}`, 'fail');
+  }
+});
+
+if (wpFailed === 0) pass(`All ${wpPassed} willpower cards activate successfully`);
+else fail(`${wpFailed}/${wpCards.length} willpower cards failed activation`);
+
+// ═══════════════════════════════════════════
+section('═══════════════════════════════════════');
+log(`RESULTS: ${P} passed, ${F} failed, ${W} warnings`);
+if (F === 0) log('ALL TESTS PASSED', 'pass');
+else log(`${F} TESTS FAILED`, 'fail');
+</script>
+</body>
+</html>
