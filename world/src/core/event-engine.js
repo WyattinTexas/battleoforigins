@@ -116,6 +116,10 @@
   // ── waitForInteract: blocks until player presses E near this NPC ──
   registerAction('waitForInteract', function (inst, scene, action, state) {
     if (!inst.sprite || !scene.player) return 'running';
+    // Debounce: ignore for 500ms after phase start to prevent instant re-trigger
+    if (!state._readyAt) state._readyAt = Date.now() + 500;
+    if (Date.now() < state._readyAt) return 'running';
+
     const dist = Phaser.Math.Distance.Between(inst.sprite.x, inst.sprite.y, scene.player.x, scene.player.y);
     const range = (action.range || 80);
     // Show [E] hint when close

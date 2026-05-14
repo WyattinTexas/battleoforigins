@@ -296,10 +296,10 @@ const FV_MINIBOSS_GLACIUS_SCRIPT = {
   },
 };
 
-// ── FV 4: Treasure Discovery — Frozen Chest ──
+// ── FV 4: Treasure Discovery — Frostbitten Cache ──
 const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
   id: 'fv_treasure_frozen_chest',
-  name: 'Frozen Chest',
+  name: 'Frostbitten Cache',
   singleton: true,
 
   sprite: {
@@ -308,7 +308,7 @@ const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
     tint: 0x66aadd,
     depth: 10,
     labels: [
-      { text: '? Frozen Chest ?', offsetY: -20, style: { fontSize: '8px', fontFamily: 'monospace', color: '#ccddff', backgroundColor: '#00000088', padding: { x: 2, y: 1 } } },
+      { text: '? Frostbitten Cache ?', offsetY: -20, style: { fontSize: '8px', fontFamily: 'monospace', color: '#ccddff', backgroundColor: '#00000088', padding: { x: 2, y: 1 } } },
     ],
   },
 
@@ -320,10 +320,10 @@ const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
       actions: [
         { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'fv_frozen_chest_opened', gotoPhase: 'empty' },
-        { type: 'comm', speaker: 'Narrator', text: 'A chest encased in frost. The ice cracks as you approach.', color: '#ccddff', duration: 3500 },
+        { type: 'comm', speaker: 'Narrator', text: 'A frostbitten cache! The ice cracks as you pry it open.', color: '#ccddff', duration: 3500 },
         { type: 'wait', ms: 3800 },
         { type: 'comm', speaker: 'Narrator', text: 'Inside: a handful of coins and a note that reads "stay warm."', color: '#ccddff', duration: 3000 },
-        { type: 'giveReward', coins: 25, xp: 10, message: '+25 coins, +10 XP from Frozen Chest' },
+        { type: 'giveReward', coins: 25, xp: 10, message: '+25 coins, +10 XP from Frostbitten Cache' },
         { type: 'setFlag', key: 'fv_frozen_chest_opened', value: true },
         { type: 'endEvent' },
       ],
@@ -331,8 +331,8 @@ const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
     {
       id: 'empty',
       actions: [
-        { type: 'waitForInteract' },
-        { type: 'comm', speaker: 'Narrator', text: 'The chest is empty. You already claimed its contents.', color: '#999999', duration: 2500 },
+        { type: 'wait', ms: 300 },
+        { type: 'comm', speaker: 'Narrator', text: 'The cache is empty. You already claimed its contents.', color: '#999999', duration: 2500 },
         { type: 'endEvent' },
       ],
     },
@@ -579,7 +579,7 @@ const RH_TREASURE_MOSSY_STASH_SCRIPT = {
     {
       id: 'empty',
       actions: [
-        { type: 'waitForInteract' },
+        { type: 'wait', ms: 300 },
         { type: 'comm', speaker: 'Narrator', text: 'Just moss now. Nothing left to find.', color: '#999999', duration: 2500 },
         { type: 'endEvent' },
       ],
@@ -955,7 +955,7 @@ const DC_TREASURE_RELIQUARY_SCRIPT = {
     {
       id: 'empty',
       actions: [
-        { type: 'waitForInteract' },
+        { type: 'wait', ms: 300 },
         { type: 'comm', speaker: 'Narrator', text: 'The reliquary is hollow. Its power was already claimed.', color: '#999999', duration: 2500 },
         { type: 'endEvent' },
       ],
