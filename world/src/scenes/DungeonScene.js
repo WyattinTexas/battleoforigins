@@ -246,20 +246,21 @@ class DungeonScene extends Phaser.Scene {
     const T = this.T;
     const ed = this.config.intro?.exitDoor;
     if (!ed) return;
-    const cx = ed.x * T + T / 2;
-    const cy = ed.y * T + T / 2;
-    // PIL-pixeled doorway arch (48x64). Anchored at bottom-center so
-    // the stone arch rises 32px ABOVE this tile (into the wall area),
-    // with the light pool extending down onto the floor.
-    if (this.textures.exists('d_hallway_entry')) {
-      this.add.image(cx, cy + 8, 'd_hallway_entry').setOrigin(0.5, 1).setDepth(2);
+    // The passage sprite is 64×48 — it spans 2 tiles wide and reaches
+    // from the exit-door tile DOWN into the bottom wall row, so the
+    // wall appears to part where the passage opens. Anchored bottom-
+    // center on the bottom wall row.
+    const cx = ed.x * T + T;   // center between cols x and x+1
+    const cy = (ed.y + 1) * T + T;  // bottom of the bottom wall row
+    if (this.textures.exists('d_hallway_passage')) {
+      this.add.image(cx, cy, 'd_hallway_passage').setOrigin(0.5, 1).setDepth(2);
     } else {
-      this.add.rectangle(cx, cy, 26, 28, 0x5a4838, 1).setStrokeStyle(2, 0x2a1c12).setDepth(2);
+      // Fallback — dark rectangle in the wall
+      this.add.rectangle(cx, cy, 60, 44, 0x14202c, 1).setStrokeStyle(2, 0x3a4858).setDepth(2);
     }
-    // Soft pulsing warm glow on the floor in front of the doorway
-    const puddle = this.add.ellipse(cx, cy + 14, 44, 22, 0xffcc88, 0.22).setDepth(0.5);
-    this.tweens.add({ targets: puddle, alpha: 0.10, duration: 1800, yoyo: true, repeat: -1 });
-    this._exitDoorPos = { x: ed.x, y: ed.y, active: !!active };
+    // Trigger detection — player can step onto EITHER tile of the
+    // 2-wide passage entrance.
+    this._exitDoorPos = { x: ed.x, y: ed.y, w: 2, active: !!active };
   }
 
   _spawnHallwayStaircase() {
@@ -318,7 +319,10 @@ class DungeonScene extends Phaser.Scene {
     if (!this._trapdoorPos || !this.player) return;
     const tx = Math.floor(this.player.x / this.T);
     const ty = Math.floor(this.player.y / this.T);
-    if (tx === this._trapdoorPos.x && ty === this._trapdoorPos.y) {
+    const td = this._trapdoorPos;
+    const w = td.w || 1, h = td.h || 1;
+    // Player on any of the 2×2 trapdoor tiles
+    if (tx >= td.x && tx < td.x + w && ty >= td.y && ty < td.y + h) {
       this._triggerTrapdoor();
     }
   }
@@ -326,28 +330,34 @@ class DungeonScene extends Phaser.Scene {
   _triggerTrapdoor() {
     this._state.trapdoorFired = true;
     const T = this.T;
-    const cx = this._trapdoorPos.x * T + T / 2;
-    const cy = this._trapdoorPos.y * T + T / 2;
+    const td = this._trapdoorPos;
+    const w = td.w || 1, h = td.h || 1;
+    // Center of the 2×2 area = the corner where the 4 tiles meet.
+    const cx = (td.x + w / 2) * T;
+    const cy = (td.y + h / 2) * T;
 
-    // Freeze player immediately
+    // Snap player to the dead center of the trapdoor BEFORE the fall
+    // so they're visually framed in the middle of the door.
     if (this.player) {
       this.player.setVelocity(0, 0);
       if (this.player.body) this.player.body.enable = false;
+      this.player.setPosition(cx, cy);
     }
     if (this._marker) this._marker.setVisible(false);
 
-    // Step 1: trapdoor sprite "pops up" — square wooden door with hole.
-    // Starts at scale 0 and tweens up to 1.0 over 200ms.
+    // Step 1: 2×2 trapdoor sprite "pops up". Player has been snapped
+    // to its center; the door materializes around them with a back-
+    // eased scale tween.
     let trapdoorSprite;
-    if (this.textures.exists('d_trapdoor')) {
-      trapdoorSprite = this.add.image(cx, cy, 'd_trapdoor').setDepth(2).setScale(0);
+    if (this.textures.exists('d_trapdoor_2x2')) {
+      trapdoorSprite = this.add.image(cx, cy, 'd_trapdoor_2x2').setDepth(2).setScale(0);
       this.tweens.add({
         targets: trapdoorSprite, scaleX: 1, scaleY: 1,
-        duration: 200, ease: 'Back.easeOut',
+        duration: 220, ease: 'Back.easeOut',
       });
     } else {
-      // Fallback rectangle if sprite missing
-      trapdoorSprite = this.add.rectangle(cx, cy, 28, 28, 0x000000, 1)
+      // Fallback square if sprite missing
+      trapdoorSprite = this.add.rectangle(cx, cy, w * T - 4, h * T - 4, 0x000000, 1)
         .setStrokeStyle(2, 0x6a4830).setDepth(2);
     }
 
@@ -408,7 +418,9 @@ class DungeonScene extends Phaser.Scene {
     if (!this._exitDoorPos || !this._exitDoorPos.active || !this.player) return;
     const tx = Math.floor(this.player.x / this.T);
     const ty = Math.floor(this.player.y / this.T);
-    if (tx === this._exitDoorPos.x && ty === this._exitDoorPos.y) {
+    const ed = this._exitDoorPos;
+    const w = ed.w || 1;
+    if (tx >= ed.x && tx < ed.x + w && ty === ed.y) {
       this._state.postExited = true;
       G.frostDungeonCleared = true;
       saveGame();

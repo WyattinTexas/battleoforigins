@@ -73,7 +73,9 @@ const DUNGEONS = {
         name: 'King Jay',
         dialog: '"So, you found me. Think you got what it takes to beat me? Haha, show me what you got!"',
       },
-      trapdoor: { x: 3, y: 5 },
+      // 2×2 trapdoor: covers tiles (x..x+1, y..y+1). Player snaps to
+      // the center of the 2×2 area (between the 4 tiles) before falling.
+      trapdoor: { x: 3, y: 5, w: 2, h: 2 },
       staircaseUp: { x: 3, y: 2 },     // where player arrives in post phase (from boss room)
       exitDoor: { x: 3, y: 12 },        // exits to overworld in post phase
       playerIntroSpawn: { x: 3, y: 11 }, // where player starts in intro phase

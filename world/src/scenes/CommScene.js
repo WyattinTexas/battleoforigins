@@ -33,10 +33,13 @@ class CommOverlay {
   build() {
     if (this.container) return;
 
-    // Use game canvas dimensions divided by zoom for correct fixed positioning
-    const zoom = this.scene.cameras?.main?.zoom || 1;
-    const W = this.scene.scale.width / zoom;
-    const H = this.scene.scale.height / zoom;
+    // Use the raw canvas dimensions. The container will be set
+    // scrollFactor(0) below so its children are screen-space-locked;
+    // positions must be in canvas pixels, NOT divided by zoom (the
+    // old divide-by-zoom logic offset the dialog to the left half of
+    // the screen at high zoom levels — visible in DungeonScene at 1.6x).
+    const W = this.scene.scale.width;
+    const H = this.scene.scale.height;
 
     this.container = this.scene.add.container(0, 0).setDepth(500).setScrollFactor(0);
 
