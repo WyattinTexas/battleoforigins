@@ -105,6 +105,18 @@ class BattleScene extends Phaser.Scene {
     }
   }
   _doBuildStage() {
+    // Disable pixelArt filtering for battle — text and card art need smooth rendering
+    this.renderer.pipelines.get('TextureTintPipeline')?.glTexture?.bind?.();
+    // Force canvas smoothing on for this scene
+    if (this.sys.game.canvas) {
+      const ctx = this.sys.game.canvas.getContext('2d');
+      if (ctx) ctx.imageSmoothingEnabled = true;
+    }
+    // For WebGL: set default texture filter to LINEAR for new textures
+    if (this.textures && this.textures.setDefaultFilter) {
+      this.textures.setDefaultFilter(1); // LINEAR
+    }
+
     const W = this.cameras.main.width;
     const H = this.cameras.main.height;
     this._W = W; this._H = H;
