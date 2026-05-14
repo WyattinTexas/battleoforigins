@@ -281,17 +281,66 @@ class DungeonScene extends Phaser.Scene {
 
   _showIntroDialog() {
     const k = this.config.intro?.kingJay;
-    if (!k) return;
-    // Delay a moment so the fade-in finishes first
+    if (!k) { console.warn('[Dungeon] _showIntroDialog: no kingJay config'); return; }
+    console.log('[Dungeon] scheduling intro dialog for', k.name);
     this.time.delayedCall(700, () => {
+      console.log('[Dungeon] dialog delayedCall fired. CommOverlay class exists:',
+                  typeof CommOverlay !== 'undefined', '| existing comm:', !!this.comm);
       if (!this.comm) {
-        try { this.comm = new CommOverlay(this); } catch(e) { this.comm = null; }
+        try {
+          this.comm = new CommOverlay(this);
+          console.log('[Dungeon] CommOverlay constructed');
+        } catch(e) {
+          console.error('[Dungeon] CommOverlay constructor threw:', e, e?.stack);
+          this.comm = null;
+        }
       }
       if (this.comm && this.comm.show) {
-        try { this.comm.show(k.name || 'King Jay', k.dialog || '...', { color: '#aa66cc' }); }
-        catch(e) { console.warn('[Dungeon] comm.show failed:', e); }
+        console.log('[Dungeon] calling comm.show with', k.name);
+        try {
+          this.comm.show(k.name || 'King Jay', k.dialog || '...', { color: '#aa66cc' });
+          console.log('[Dungeon] comm.show returned cleanly');
+        } catch(e) {
+          console.error('[Dungeon] comm.show threw:', e, e?.stack);
+          // Fallback — render a simple Phaser text box so the user still
+          // sees the dialog if CommOverlay is broken.
+          this._showFallbackDialog(k.name, k.dialog);
+        }
+      } else {
+        console.warn('[Dungeon] comm not available — using fallback text box');
+        this._showFallbackDialog(k.name, k.dialog);
       }
     });
+  }
+
+  _showFallbackDialog(name, text) {
+    // Plain Phaser text box at the bottom of the screen — used if the
+    // CommOverlay system fails. Screen-locked, dismissed on E or click.
+    const W = this.scale.width, H = this.scale.height;
+    const boxY = H - 80;
+    const bg = this.add.rectangle(W / 2, boxY, Math.min(W - 80, 600), 100, 0x080c20, 0.95)
+      .setStrokeStyle(3, 0xaa66cc).setScrollFactor(0).setDepth(500);
+    const nameT = this.add.text(W / 2 - 280, boxY - 30, name, {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#aa66cc',
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(501);
+    const textT = this.add.text(W / 2 - 280, boxY + 4, text, {
+      fontSize: '13px', fontFamily: 'Georgia, serif', color: '#ccccee',
+      wordWrap: { width: 540 },
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(501);
+    const dismiss = this.add.text(W / 2 + 270, boxY + 28, '[E / click]', {
+      fontSize: '9px', fontFamily: 'monospace', color: '#556688',
+    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(501);
+    const cleanup = () => { bg.destroy(); nameT.destroy(); textT.destroy(); dismiss.destroy(); };
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerdown', cleanup);
+    const eKey = this.input.keyboard.addKey('E');
+    const checkKey = () => {
+      if (Phaser.Input.Keyboard.JustDown(eKey)) {
+        cleanup();
+        this.events.off('update', checkKey);
+      }
+    };
+    this.events.on('update', checkKey);
   }
 
   _showPostDialog() {
@@ -345,18 +394,16 @@ class DungeonScene extends Phaser.Scene {
     }
     if (this._marker) this._marker.setVisible(false);
 
-    // Step 1: 2×2 trapdoor sprite "pops up". Player has been snapped
-    // to its center; the door materializes around them with a back-
-    // eased scale tween.
+    // Step 1: trapdoor sprite "pops up" around the player.
+    const spriteKey = td.spriteKey || (w === 1 && h === 1 ? 'd_trapdoor' : 'd_trapdoor_2x2');
     let trapdoorSprite;
-    if (this.textures.exists('d_trapdoor_2x2')) {
-      trapdoorSprite = this.add.image(cx, cy, 'd_trapdoor_2x2').setDepth(2).setScale(0);
+    if (this.textures.exists(spriteKey)) {
+      trapdoorSprite = this.add.image(cx, cy, spriteKey).setDepth(2).setScale(0);
       this.tweens.add({
         targets: trapdoorSprite, scaleX: 1, scaleY: 1,
         duration: 220, ease: 'Back.easeOut',
       });
     } else {
-      // Fallback square if sprite missing
       trapdoorSprite = this.add.rectangle(cx, cy, w * T - 4, h * T - 4, 0x000000, 1)
         .setStrokeStyle(2, 0x6a4830).setDepth(2);
     }
