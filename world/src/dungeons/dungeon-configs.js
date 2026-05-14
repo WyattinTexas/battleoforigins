@@ -32,15 +32,17 @@ const DUNGEONS = {
     bossHpMultiplier: 3,       // boss HP = card.maxHp * 3 (matches world boss scaling)
     mobHpMultiplier: 1,        // common mob HP scaling (1 = card default)
     bossRewardGold: 100,       // gold awarded on final boss defeat
-    // Test flag — when true, walking into a mob instantly defeats it
-    // (no battle). Useful for verifying victory-exit flow end-to-end.
-    instaWin: false,
+    // Test flag — when true, walking into ANY enemy (mob or boss)
+    // instantly defeats it with no battle. Covers the full path:
+    // mobs in r1/r2 + Romy in r3. Use this to verify the post-phase
+    // flow without dice variance. Flip to false for real play.
+    instaWin: true,
 
-    // TEMP TEST FLAG — when true, every dungeon spiritkin (mobs AND
-    // boss) is forced to maxHp=1 so the boss-defeat → post-phase
-    // flow can be exercised quickly solo. Remove / set false once
-    // the post phase is verified end-to-end.
-    debugAllHpOne: true,
+    // Earlier debug flag (force every spiritkin to 1HP). Left in
+    // place for reference but disabled — 1HP still requires winning
+    // a dice round to land the killing blow, so it doesn't give a
+    // reliable test path. instaWin above is the right tool here.
+    debugAllHpOne: false,
 
     // Overworld tile the player is dropped onto when leaving the dungeon
     // (success or failure). MUST be walkable. The world-gen explicitly

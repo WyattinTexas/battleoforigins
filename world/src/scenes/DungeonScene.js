@@ -1317,30 +1317,33 @@ class DungeonScene extends Phaser.Scene {
 
     // Modal box
     const W = this.scale.width, H = this.scale.height;
-    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55)
-      .setScrollFactor(0).setDepth(220);
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55).setDepth(220);
     const box = this.add.rectangle(W / 2, H / 2, 380, 200, 0x1a2230, 0.97)
-      .setStrokeStyle(2, 0x4488cc).setScrollFactor(0).setDepth(221);
+      .setStrokeStyle(2, 0x4488cc).setDepth(221);
     const title = this.add.text(W / 2, H / 2 - 70, 'YOU WERE DEFEATED', {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ff8888',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(222);
+    }).setOrigin(0.5).setDepth(222);
     const body = this.add.text(W / 2, H / 2 - 20,
       `Your team has been knocked out.\n\nLeaving the dungeon will cost you ${this.config.goldLossOnFail} gold.`, {
       fontSize: '12px', fontFamily: 'monospace', color: '#ccddee', align: 'center',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(222);
+    }).setOrigin(0.5).setDepth(222);
 
     const btnBg = this.add.rectangle(W / 2, H / 2 + 50, 220, 40, 0x884444, 0.95)
-      .setStrokeStyle(2, 0xcc6666).setInteractive({ useHandCursor: true })
-      .setScrollFactor(0).setDepth(222);
+      .setStrokeStyle(2, 0xcc6666).setInteractive({ useHandCursor: true }).setDepth(222);
     const btnText = this.add.text(W / 2, H / 2 + 50, `Leave Dungeon  ( -${this.config.goldLossOnFail}g )`, {
       fontSize: '13px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(223);
+    }).setOrigin(0.5).setDepth(223);
 
     btnBg.on('pointerover', () => btnBg.setFillStyle(0xaa5555));
     btnBg.on('pointerout',  () => btnBg.setFillStyle(0x884444, 0.95));
     btnBg.on('pointerdown', () => this._exitDungeon({ reason: 'fail' }));
 
-    this._koModal = [overlay, box, title, body, btnBg, btnText];
+    const koUiObjects = [overlay, box, title, body, btnBg, btnText];
+    // Route through UI camera only — otherwise the main cam (zoom 1.6x)
+    // also draws them, stacking a second giant copy on top of the real modal.
+    if (this.uiCam) this.cameras.main.ignore(koUiObjects);
+    else koUiObjects.forEach(o => o.setScrollFactor(0));
+    this._koModal = koUiObjects;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -1350,31 +1353,33 @@ class DungeonScene extends Phaser.Scene {
     if (this._state.koActive) return;
     // Simple confirm using the same modal style
     const W = this.scale.width, H = this.scale.height;
-    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55)
-      .setScrollFactor(0).setDepth(220);
+    const overlay = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.55).setDepth(220);
     const box = this.add.rectangle(W / 2, H / 2, 380, 180, 0x1a2230, 0.97)
-      .setStrokeStyle(2, 0x4488cc).setScrollFactor(0).setDepth(221);
+      .setStrokeStyle(2, 0x4488cc).setDepth(221);
     const title = this.add.text(W / 2, H / 2 - 60, 'LEAVE DUNGEON?', {
       fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc88',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(222);
+    }).setOrigin(0.5).setDepth(222);
     const body = this.add.text(W / 2, H / 2 - 18,
       `Leaving now will cost you ${this.config.goldLossOnFail} gold.`, {
       fontSize: '12px', fontFamily: 'monospace', color: '#ccddee',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(222);
+    }).setOrigin(0.5).setDepth(222);
 
     const yesBg = this.add.rectangle(W / 2 - 60, H / 2 + 40, 110, 36, 0x884444, 0.95)
-      .setStrokeStyle(1, 0xcc6666).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(222);
+      .setStrokeStyle(1, 0xcc6666).setInteractive({ useHandCursor: true }).setDepth(222);
     const yesT  = this.add.text(W / 2 - 60, H / 2 + 40, 'Yes (-' + this.config.goldLossOnFail + 'g)', {
       fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(223);
+    }).setOrigin(0.5).setDepth(223);
 
     const noBg = this.add.rectangle(W / 2 + 60, H / 2 + 40, 110, 36, 0x336666, 0.95)
-      .setStrokeStyle(1, 0x66aaaa).setInteractive({ useHandCursor: true }).setScrollFactor(0).setDepth(222);
+      .setStrokeStyle(1, 0x66aaaa).setInteractive({ useHandCursor: true }).setDepth(222);
     const noT  = this.add.text(W / 2 + 60, H / 2 + 40, 'Stay', {
       fontSize: '12px', fontFamily: 'monospace', color: '#ffffff',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(223);
+    }).setOrigin(0.5).setDepth(223);
 
     const elems = [overlay, box, title, body, yesBg, yesT, noBg, noT];
+    // Route through UI camera only — see _showKOModal for the same fix.
+    if (this.uiCam) this.cameras.main.ignore(elems);
+    else elems.forEach(o => o.setScrollFactor(0));
     const cleanup = () => elems.forEach(e => e.destroy());
     yesBg.on('pointerdown', () => { cleanup(); this._exitDungeon({ reason: 'fail' }); });
     noBg.on('pointerdown',  cleanup);
@@ -1450,7 +1455,9 @@ class DungeonScene extends Phaser.Scene {
     const t = this.add.text(this.scale.width / 2, 48, msg, {
       fontSize: '12px', fontFamily: 'monospace', color: '#bfe4ff',
       backgroundColor: '#000000cc', padding: { x: 8, y: 4 },
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(250);
+    }).setOrigin(0.5, 0).setDepth(250);
+    if (this.uiCam) this.cameras.main.ignore(t);
+    else t.setScrollFactor(0);
     this.tweens.add({ targets: t, alpha: 0, y: 30, duration: 2200, delay: 1200,
       onComplete: () => t.destroy() });
   }
