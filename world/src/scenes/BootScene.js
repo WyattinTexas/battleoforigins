@@ -73,6 +73,12 @@ class BootScene extends Phaser.Scene {
     for (const c of ['se', 'sw', 'ne', 'nw']) this.load.image(`d_wall_corner_${c}`, `assets/tiles/wall_corner_${c}.png`);
     for (let i = 1; i <= 2; i++) this.load.image(`d_wall_hdiv_${i}`, `assets/tiles/wall_hdiv_${i}.png`);
     for (let i = 1; i <= 2; i++) this.load.image(`d_wall_interior_${i}`, `assets/tiles/wall_interior_${i}.png`);
+    // Decorative props (atmosphere, non-blocking) + snow particle
+    for (const name of ['crystals_small','crystals_lg','stalagmite','frost_pile','old_crate',
+                        'broken_sword','skull','frozen_barrel','frozen_statue']) {
+      this.load.image(`d_prop_${name}`, `assets/tiles/prop_${name}.png`);
+    }
+    this.load.image('d_snowflake', 'assets/tiles/snowflake.png');
 
     // ── ERW Grass Land 2.0 tilesets (32x32 native) ──
     this.load.spritesheet('erw_terrain', 'assets/erw/tilesets/terrain-grass.png', { frameWidth: 32, frameHeight: 32 });
@@ -277,7 +283,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v91', {
+    this.add.text(width / 2, height * 0.34, 'v92', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 

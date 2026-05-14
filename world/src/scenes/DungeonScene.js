@@ -154,8 +154,26 @@ class DungeonScene extends Phaser.Scene {
 
     // Decorative wall torches inside each room
     this._spawnRoomTorches();
+    // Decorative props (frozen statues, crystals, broken weapons, etc.)
+    this._spawnProps();
 
     this.cameras.main.setBounds(0, 0, this.mapW * T, this.mapH * T);
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  PROPS — scattered scenery placed from config. Non-blocking,
+  //  rendered above floor but below player.
+  // ───────────────────────────────────────────────────────────
+  _spawnProps() {
+    const T = this.T;
+    const list = (this.config.props || []);
+    for (const p of list) {
+      const key = p.propKey;
+      if (!this.textures.exists(key)) continue;
+      const cx = p.x * T + T / 2;
+      const cy = p.y * T + T / 2;
+      this.add.image(cx, cy, key).setDepth(1.5);
+    }
   }
 
   // ───────────────────────────────────────────────────────────
@@ -211,6 +229,11 @@ class DungeonScene extends Phaser.Scene {
     const inN = isFloor(x, y - 1);
     const inE = isFloor(x + 1, y);
     const inW = isFloor(x - 1, y);
+    // Diagonal floor checks — needed for inner-corner detection
+    const inSE = isFloor(x + 1, y + 1);
+    const inSW = isFloor(x - 1, y + 1);
+    const inNE = isFloor(x + 1, y - 1);
+    const inNW = isFloor(x - 1, y - 1);
 
     // Resolve sprite key based on adjacency
     let baseKey = null;
@@ -229,6 +252,17 @@ class DungeonScene extends Phaser.Scene {
       else if (inN && inW) baseKey = 'd_wall_corner_nw';
       else if (inN && inS) { baseKey = 'd_wall_hdiv'; variantCount = 2; }
       // E+W (vertical divider) — fallback to interior, rare in this map
+    } else if (floorCount === 0) {
+      // INNER CORNER detection — when no cardinal neighbors are floor
+      // but exactly one diagonal IS floor, this is a room's outer-wall
+      // corner (e.g. (0,0) when the room starts at (1,1)).
+      // We reuse the wall_corner_* sprites (now redesigned as proper
+      // inner corners with L-shaped lit edges that bridge top + side
+      // walls). Naming: corner_SE means floor is to the SE.
+      if      (inSE && !inNE && !inSW) baseKey = 'd_wall_corner_se';
+      else if (inSW && !inNW && !inSE) baseKey = 'd_wall_corner_sw';
+      else if (inNE && !inSE && !inNW) baseKey = 'd_wall_corner_ne';
+      else if (inNW && !inSW && !inNE) baseKey = 'd_wall_corner_nw';
     }
     if (!baseKey) { baseKey = 'd_wall_interior'; variantCount = 2; }
 
@@ -366,6 +400,26 @@ class DungeonScene extends Phaser.Scene {
         .setAlpha(L.vignetteAlpha);
       vig.setDisplaySize(cam.width, cam.height);
       this._lightingVignette = vig;
+    }
+
+    // ── Ambient snow particles ─────────────────────────────
+    // Screen-locked emitter so flakes drift across the camera
+    // regardless of where the player is in the dungeon. Subtle
+    // (low density) — atmosphere, not weather.
+    if (L.snowEnabled !== false && this.textures.exists('d_snowflake')) {
+      const W = cam.width, H = cam.height;
+      this._snowEmitter = this.add.particles(0, 0, 'd_snowflake', {
+        x: { min: 0, max: W },
+        y: -10,
+        lifespan: { min: 7000, max: 10000 },
+        speedY: { min: 22, max: 40 },
+        speedX: { min: -8, max: 8 },
+        scale: { min: 0.7, max: 1.4 },
+        alpha: { start: 0.85, end: 0.4 },
+        rotate: { min: 0, max: 360 },
+        frequency: 220,
+        quantity: 1,
+      }).setScrollFactor(0).setDepth(17);
     }
   }
 

@@ -115,6 +115,31 @@ const DUNGEONS = {
       bg: 0x080c14,          // very dark camera background outside map
     },
 
+    // ── Decorative props ─────────────────────────────────────
+    // Scattered through rooms for atmosphere. propKey matches the
+    // 'd_prop_*' texture key loaded in BootScene. Position is tile
+    // coords. Props render below player but above floor.
+    props: [
+      // Room 1 (entry room)
+      { propKey: 'd_prop_crystals_small', x: 2,  y: 19 },
+      { propKey: 'd_prop_old_crate',      x: 11, y: 18 },
+      { propKey: 'd_prop_broken_sword',   x: 4,  y: 21 },
+      { propKey: 'd_prop_stalagmite',     x: 9,  y: 20 },
+      { propKey: 'd_prop_frost_pile',     x: 3,  y: 17 },
+      // Room 2 (Pelter's room)
+      { propKey: 'd_prop_skull',          x: 2,  y: 14 },
+      { propKey: 'd_prop_frozen_barrel',  x: 11, y: 11 },
+      { propKey: 'd_prop_crystals_lg',    x: 3,  y: 11 },
+      { propKey: 'd_prop_stalagmite',     x: 10, y: 14 },
+      // Room 3 (boss room)
+      { propKey: 'd_prop_frozen_statue',  x: 2,  y: 2 },
+      { propKey: 'd_prop_frozen_statue',  x: 11, y: 2 },
+      { propKey: 'd_prop_crystals_lg',    x: 3,  y: 7 },
+      { propKey: 'd_prop_crystals_small', x: 10, y: 7 },
+      { propKey: 'd_prop_frost_pile',     x: 6,  y: 7 },
+      { propKey: 'd_prop_skull',          x: 9,  y: 5 },
+    ],
+
     // ── Lighting / vignette ──────────────────────────────────
     // All values here are tunable. Set `enabled: false` to disable
     // the whole effect at once. Other knobs let you shift intensity
@@ -126,6 +151,7 @@ const DUNGEONS = {
       ambientTintAlpha: 0.18, // 0..1 — strength of the cast
       torchLightRadius: 80,   // px — size of warm halo per torch
       torchLightAlpha: 0.42,  // 0..1 — strength of torch halos
+      snowEnabled: true,      // drifting ambient snow particles
     },
   },
 };
