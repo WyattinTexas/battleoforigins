@@ -773,6 +773,15 @@ class DungeonScene extends Phaser.Scene {
 
     this._pendingEnemy = enemy;
     G.inBattle = true;
+    // CRITICAL: stop the player immediately so they don't drift during
+    // the battle. aggroOnContact triggers a battle while the player is
+    // mid-walk — without this, the player's pre-battle velocity persists
+    // through the pause/resume cycle and they end up far from the enemy
+    // (e.g. at the top of the room) when the KO modal opens.
+    if (this.player) {
+      this.player.setVelocity(0, 0);
+      if (this.player.body) this.player.body.enable = false;
+    }
     const playerGhosts = buildPlayerBattleTeam();
     console.log('[Dungeon] launching battle vs', enemy.name, '| player team size:', playerGhosts.length, '| scaled HP:', scaledMaxHp);
 
@@ -813,6 +822,9 @@ class DungeonScene extends Phaser.Scene {
   // ═══════════════════════════════════════════════════════════
   _onBattleWin(enemy) {
     enemy.defeated = true;
+    // Re-enable player movement (was disabled in _launchBattle so the
+    // player wouldn't drift during the battle).
+    if (this.player && this.player.body) this.player.body.enable = true;
     // Remove visuals
     if (enemy.sprite) enemy.sprite.destroy();
     if (enemy.label) enemy.label.destroy();
@@ -888,8 +900,13 @@ class DungeonScene extends Phaser.Scene {
   _showKOModal() {
     this._state.koActive = true;
 
-    // Lying-down sprite: rotate the player 90deg, dim the texture, add ZZZ
+    // Lying-down sprite: rotate the player 90deg, dim the texture, add ZZZ.
+    // Also force-stop velocity + disable physics body so the player can't
+    // drift after KO (the velocity stop in _launchBattle should already
+    // have handled this, but this is the belt-and-suspenders guard).
     if (this.player) {
+      this.player.setVelocity && this.player.setVelocity(0, 0);
+      if (this.player.body) this.player.body.enable = false;
       this.player.setRotation(Math.PI / 2);
       this.player.setAlpha(0.7);
       this.player.anims && this.player.anims.stop();
