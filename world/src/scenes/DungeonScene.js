@@ -69,13 +69,14 @@ class DungeonScene extends Phaser.Scene {
 
     // Phase-specific setup
     if (this.phase === 'intro') {
+      this._spawnHallwayStaircase();  // visible behind King Jay
       this._spawnKingJay();
       this._spawnTrapdoor();
       this._spawnHallwayExitDoor(false /* not active in intro */);
       this._showIntroDialog();
     } else if (this.phase === 'post') {
+      this._spawnHallwayStaircase();  // where the player just emerged
       this._spawnHallwayExitDoor(true /* active */);
-      this._spawnHallwayStaircase();
       this._showPostDialog();
     }
 
@@ -185,7 +186,11 @@ class DungeonScene extends Phaser.Scene {
       this._drawWallTorch((this.mapW - 1) * T + 3, 10 * T + T / 2);
     }
 
-    this.cameras.main.setBounds(0, 0, this.mapW * T, this.mapH * T);
+    // Intentionally NOT setting camera bounds — that clamped the
+    // view to the map size, pushing smaller maps (like the intro
+    // hallway) against the left edge of the screen. With no bounds,
+    // the camera follows the player freely and small maps appear
+    // centered with black space around them.
   }
 
   // ───────────────────────────────────────────────────────────
@@ -243,30 +248,34 @@ class DungeonScene extends Phaser.Scene {
     if (!ed) return;
     const cx = ed.x * T + T / 2;
     const cy = ed.y * T + T / 2;
-    // Open doorway visual: brighter rectangle with warm glow suggesting light coming through
-    this.add.rectangle(cx, cy, 26, 28, 0x5a4838, 1).setStrokeStyle(2, 0x2a1c12).setDepth(2);
-    this.add.rectangle(cx, cy, 18, 22, 0x14101a, 1).setDepth(2);
-    // Light spilling out (warmer color, soft)
-    const lightHalo = this.add.rectangle(cx, cy, 22, 24, 0xffcc88, 0.45).setDepth(2);
-    this.tweens.add({ targets: lightHalo, alpha: 0.25, duration: 1500, yoyo: true, repeat: -1 });
-    // Bright light puddle in front of door (extends slightly south onto floor)
-    const puddle = this.add.ellipse(cx, cy + 14, 38, 18, 0xffcc88, 0.18).setDepth(0.5);
-    this.tweens.add({ targets: puddle, alpha: 0.08, duration: 1800, yoyo: true, repeat: -1 });
+    // PIL-pixeled doorway arch (48x64). Anchored at bottom-center so
+    // the stone arch rises 32px ABOVE this tile (into the wall area),
+    // with the light pool extending down onto the floor.
+    if (this.textures.exists('d_hallway_entry')) {
+      this.add.image(cx, cy + 8, 'd_hallway_entry').setOrigin(0.5, 1).setDepth(2);
+    } else {
+      this.add.rectangle(cx, cy, 26, 28, 0x5a4838, 1).setStrokeStyle(2, 0x2a1c12).setDepth(2);
+    }
+    // Soft pulsing warm glow on the floor in front of the doorway
+    const puddle = this.add.ellipse(cx, cy + 14, 44, 22, 0xffcc88, 0.22).setDepth(0.5);
+    this.tweens.add({ targets: puddle, alpha: 0.10, duration: 1800, yoyo: true, repeat: -1 });
     this._exitDoorPos = { x: ed.x, y: ed.y, active: !!active };
   }
 
   _spawnHallwayStaircase() {
-    // In post phase, the staircase is where the player arrives from
-    // the boss room. Draw the same staircase visual we use in the main
-    // dungeon's boss room.
+    // Stairwell going down — visible in BOTH intro (behind King Jay)
+    // and post (where the player emerges after beating Romy).
+    const T = this.T;
     const s = this.config.intro?.staircaseUp;
     if (!s) return;
-    // Reuse the existing staircase rendering by spoofing stairsSlot.
-    const savedSlot = this.stairsSlot;
-    this.stairsSlot = { x: s.x, y: s.y };
-    this._state.bossDefeated = true; // so _spawnStaircase doesn't gate
-    this._spawnStaircase();
-    this.stairsSlot = savedSlot;
+    const cx = s.x * T + T / 2;
+    const cy = s.y * T + T / 2;
+    if (this.textures.exists('d_stairwell_down')) {
+      // PIL stairwell sprite (32x48): top portion is wall recess +
+      // dark depths, bottom is the visible top steps emerging out.
+      // Anchored bottom-center so the recess rises into the wall above.
+      this.add.image(cx, cy + 8, 'd_stairwell_down').setOrigin(0.5, 1).setDepth(2);
+    }
   }
 
   _showIntroDialog() {
@@ -320,27 +329,64 @@ class DungeonScene extends Phaser.Scene {
     const cx = this._trapdoorPos.x * T + T / 2;
     const cy = this._trapdoorPos.y * T + T / 2;
 
-    // Freeze player
+    // Freeze player immediately
     if (this.player) {
       this.player.setVelocity(0, 0);
       if (this.player.body) this.player.body.enable = false;
     }
     if (this._marker) this._marker.setVisible(false);
 
-    // Trapdoor opening: an expanding dark circle that becomes the hole
-    const hole = this.add.circle(cx, cy, 2, 0x000000, 1).setDepth(2);
-    this.tweens.add({ targets: hole, radius: 18, scaleX: 9, scaleY: 9, duration: 250, ease: 'Cubic.easeOut' });
+    // Step 1: trapdoor sprite "pops up" — square wooden door with hole.
+    // Starts at scale 0 and tweens up to 1.0 over 200ms.
+    let trapdoorSprite;
+    if (this.textures.exists('d_trapdoor')) {
+      trapdoorSprite = this.add.image(cx, cy, 'd_trapdoor').setDepth(2).setScale(0);
+      this.tweens.add({
+        targets: trapdoorSprite, scaleX: 1, scaleY: 1,
+        duration: 200, ease: 'Back.easeOut',
+      });
+    } else {
+      // Fallback rectangle if sprite missing
+      trapdoorSprite = this.add.rectangle(cx, cy, 28, 28, 0x000000, 1)
+        .setStrokeStyle(2, 0x6a4830).setDepth(2);
+    }
 
-    // Player fall — spin, scale to nothing, drop into the center of the hole
-    this.tweens.add({
-      targets: this.player,
-      x: cx, y: cy, scaleX: 0.15, scaleY: 0.15, alpha: 0.5,
-      rotation: Math.PI * 6,  // 3 full spins
-      duration: 1200, delay: 200, ease: 'Cubic.easeIn',
+    // Step 2: red "!" marks appear above the player's head. Three of
+    // them, slightly offset, bouncing for emphasis.
+    const exclaims = [];
+    for (let i = 0; i < 3; i++) {
+      const ex = this.player.x + (i - 1) * 8;
+      const ey = this.player.y - 24;
+      const exclaim = this.add.text(ex, ey, '!', {
+        fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'bold',
+        color: '#ff3322', stroke: '#ffffff', strokeThickness: 2,
+      }).setOrigin(0.5).setDepth(12).setAlpha(0);
+      this.tweens.add({
+        targets: exclaim, alpha: 1, y: ey - 4,
+        duration: 150, delay: i * 60, ease: 'Back.easeOut',
+        onComplete: () => {
+          this.tweens.add({ targets: exclaim, y: ey - 8, duration: 250, yoyo: true, repeat: -1 });
+        },
+      });
+      exclaims.push(exclaim);
+    }
+
+    // Step 3: after 500ms of "oh shit" beat, start the fall animation.
+    this.time.delayedCall(500, () => {
+      // Fade the "!" marks out
+      this.tweens.add({ targets: exclaims, alpha: 0, duration: 200,
+        onComplete: () => exclaims.forEach(e => e.destroy()) });
+      // Player falls — spin + shrink + drift to center of trapdoor
+      this.tweens.add({
+        targets: this.player,
+        x: cx, y: cy, scaleX: 0.15, scaleY: 0.15, alpha: 0.5,
+        rotation: Math.PI * 6,
+        duration: 1100, ease: 'Cubic.easeIn',
+      });
     });
 
-    // After the animation, fade to black and restart in main phase
-    this.time.delayedCall(1500, () => {
+    // Step 4: after fall, fade and restart in main phase.
+    this.time.delayedCall(500 + 1100 + 100, () => {
       this.cameras.main.fadeOut(400, 0, 0, 0);
       this.time.delayedCall(420, () => {
         this.scene.restart({

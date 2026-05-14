@@ -79,6 +79,10 @@ class BootScene extends Phaser.Scene {
       this.load.image(`d_prop_${name}`, `assets/tiles/prop_${name}.png`);
     }
     this.load.image('d_snowflake', 'assets/tiles/snowflake.png');
+    // King Jay intro hallway pieces
+    this.load.image('d_trapdoor', 'assets/tiles/trapdoor_open.png');
+    this.load.image('d_hallway_entry', 'assets/tiles/hallway_entry.png');
+    this.load.image('d_stairwell_down', 'assets/tiles/stairwell_down.png');
 
     // ── ERW Grass Land 2.0 tilesets (32x32 native) ──
     this.load.spritesheet('erw_terrain', 'assets/erw/tilesets/terrain-grass.png', { frameWidth: 32, frameHeight: 32 });
@@ -286,7 +290,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v95', {
+    this.add.text(width / 2, height * 0.34, 'v96', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 
