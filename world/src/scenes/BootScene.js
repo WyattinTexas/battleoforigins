@@ -59,18 +59,14 @@ class BootScene extends Phaser.Scene {
     this.load.image('door_l', 'assets/tiles/door_l.png');
     this.load.image('door_r', 'assets/tiles/door_r.png');
 
-    // Dungeon tile + lighting assets (icy flagstone + rock walls + vignette)
-    for (let i = 1; i <= 5; i++) {
-      this.load.image(`d_floor_${i}`, `assets/tiles/floor_${i}.png`);
-    }
+    // Dungeon tile + lighting assets — body+overlay architecture
+    this.load.image('d_floor_base', 'assets/tiles/d_floor_base.png');
+    for (let i = 1; i <= 3; i++) this.load.image(`d_floor_decor_${i}`, `assets/tiles/d_floor_decor_${i}.png`);
     this.load.image('d_vignette', 'assets/tiles/vignette.png');
-    // Hand-pixeled frost-cavern wall set — top/bottom/sides (variants),
-    // 4 organic curved corner pieces, horizontal divider, interior.
-    for (let i = 1; i <= 3; i++) this.load.image(`d_wall_top_${i}`, `assets/tiles/wall_top_${i}.png`);
-    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_bottom_${i}`, `assets/tiles/wall_bottom_${i}.png`);
-    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_left_${i}`, `assets/tiles/wall_left_${i}.png`);
-    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_right_${i}`, `assets/tiles/wall_right_${i}.png`);
-    for (const c of ['se', 'sw', 'ne', 'nw']) this.load.image(`d_wall_corner_${c}`, `assets/tiles/wall_corner_${c}.png`);
+    // Shared wall body (3 variants) + frost-band overlay for "top of wall"
+    for (let i = 1; i <= 3; i++) this.load.image(`d_wall_body_${i}`, `assets/tiles/d_wall_body_${i}.png`);
+    this.load.image('d_frost_top', 'assets/tiles/d_frost_top.png');
+    // Special-case sprites
     for (let i = 1; i <= 2; i++) this.load.image(`d_wall_hdiv_${i}`, `assets/tiles/wall_hdiv_${i}.png`);
     for (let i = 1; i <= 2; i++) this.load.image(`d_wall_interior_${i}`, `assets/tiles/wall_interior_${i}.png`);
 
@@ -277,7 +273,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v89', {
+    this.add.text(width / 2, height * 0.34, 'v90', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 
