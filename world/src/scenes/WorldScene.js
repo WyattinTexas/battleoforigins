@@ -1453,7 +1453,14 @@ class WorldScene extends Phaser.Scene {
     const returnY = this.player.y;
     this.cameras.main.fadeOut(400, 0, 0, 0);
     this.time.delayedCall(400, () => {
-      this.scene.launch('DungeonScene', { dungeonId, returnX, returnY });
+      // Frost Dungeon has an intro hallway (King Jay cinematic) that
+      // plays until the dungeon has been beaten once. Replays skip
+      // straight to the main dungeon.
+      let initialPhase = 'main';
+      if (dungeonId === 'frost_dungeon' && !G.frostDungeonCleared) {
+        initialPhase = 'intro';
+      }
+      this.scene.launch('DungeonScene', { dungeonId, returnX, returnY, phase: initialPhase });
       this.scene.pause();
     });
   }

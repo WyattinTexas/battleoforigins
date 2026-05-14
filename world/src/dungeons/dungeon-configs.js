@@ -41,6 +41,45 @@ const DUNGEONS = {
     // sets (38, 5) to a path tile south of the dungeon entrance.
     overworldExit: { x: 38, y: 5 },
 
+    // ── INTRO/POST hallway — King Jay cinematic ──────────────
+    // Same map used for both the intro (player enters here, walks
+    // up to King Jay who taunts and drops them through a trapdoor)
+    // and the post (after beating the dungeon boss, player arrives
+    // at the staircase at the north end, King Jay is gone, exits
+    // via the south door). Skipped entirely once
+    // G.frostDungeonCleared is true.
+    intro: {
+      mapAscii: [
+        '########', //  0  top wall
+        '#......#', //  1
+        '#......#', //  2  staircase up appears here (post phase only)
+        '#......#', //  3  King Jay spawns here (intro phase only)
+        '#......#', //  4
+        '#......#', //  5  trapdoor at (3,5) — 2 south of King Jay
+        '#......#', //  6
+        '#......#', //  7
+        '#......#', //  8
+        '#......#', //  9
+        '#......#', // 10
+        '#......#', // 11  player intro spawn here (south end)
+        '#......#', // 12  exit door — active in post phase
+        '########', // 13  bottom wall
+      ],
+      // All these positions are within the hallway grid above.
+      // Centered on col 3 (8-wide map; cols 1-6 are floor).
+      kingJay: {
+        x: 3, y: 3,
+        spriteKey: 'creature_skull',  // placeholder until custom NPC sprite designed
+        name: 'King Jay',
+        dialog: '"So, you found me. Think you got what it takes to beat me? Haha, show me what you got!"',
+      },
+      trapdoor: { x: 3, y: 5 },
+      staircaseUp: { x: 3, y: 2 },     // where player arrives in post phase (from boss room)
+      exitDoor: { x: 3, y: 12 },        // exits to overworld in post phase
+      playerIntroSpawn: { x: 3, y: 11 }, // where player starts in intro phase
+      postDialog: 'King Jay has escaped...',
+    },
+
     // ── Map (each row is a string of single-char tiles) ──────
     // Chars: '#'=wall, '.'=floor, '|'=closed door, 'E'=entry spawn, 'S'=staircase spawn slot
     // The grid is parsed by DungeonScene into the D_TILE numeric grid.

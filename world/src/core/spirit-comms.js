@@ -26,6 +26,8 @@ const NPC_COMM_PORTRAITS = {
   'Maren':    { art: 'https://drbango.com/testroom/art/originals/Tabitha.png',  color: '#d4a44a' },
   'Leon':     { art: 'https://drbango.com/testroom/art/originals/FangOutside.png', color: '#cc5544' },
   'Valkin':   { art: 'https://drbango.com/testroom/art/originals/ValkinTheGrand.png', color: '#aa44ff' },
+  // Dungeon antagonists
+  'King Jay': { art: 'https://drbango.com/testroom/art/originals/king_jay.jpg', color: '#aa66cc' },
   // Cantina NPCs
   'Grix':             { art: 'https://drbango.com/testroom/art/originals/Greg.png',      color: '#daa520' },
   'Grix the Bartender': { art: 'https://drbango.com/testroom/art/originals/Greg.png',    color: '#daa520' },

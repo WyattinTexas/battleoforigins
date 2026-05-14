@@ -24,6 +24,11 @@ class DungeonScene extends Phaser.Scene {
     this.config = getDungeonConfig(this.dungeonId);
     this.returnX = data.returnX; // overworld pixel coords to drop the player at on exit
     this.returnY = data.returnY;
+    // Phase: 'intro' (hallway w/ King Jay), 'main' (the actual dungeon),
+    // or 'post' (hallway again, King Jay gone, exit door active).
+    // Defaults to 'main' if intro config is missing.
+    this.phase = data.phase || 'main';
+    if (!this.config?.intro) this.phase = 'main';
   }
 
   create() {
@@ -34,35 +39,46 @@ class DungeonScene extends Phaser.Scene {
     }
 
     this.T = 32; // tile size in px
-
-    // Mark the player as inside a dungeon so WorldScene's global BLACKOUT
-    // hub-teleport doesn't fire here. Cleared in _exitDungeon.
     G.inDungeon = true;
 
-    // Parse map and runtime state
+    // Parse map for this phase, init runtime state.
     this._parseMap();
     this._state = {
-      defeatedMobs: new Set(),  // mobIds
+      defeatedMobs: new Set(),
       bossDefeated: false,
-      doorsOpen: new Set(),     // door indices that have opened
-      koActive: false,          // is the player currently in the KO modal?
+      doorsOpen: new Set(),
+      koActive: false,
+      trapdoorFired: false,  // intro phase one-shot
+      postExited: false,      // post phase one-shot
     };
 
-    // Camera background
     this.cameras.main.setBackgroundColor(this.config.palette.bg);
 
     this._buildMap();
-    this._spawnEnemies();
+    // Mobs / boss / props only in the main dungeon phase.
+    if (this.phase === 'main') {
+      this._spawnEnemies();
+    }
     this._spawnPlayer();
     this._setupInput();
     this._setupHUD();
     this._buildLighting();
     this._setupResumeHandler();
 
-    // Hide overworld DOM HUD (chat input etc.)
+    // Phase-specific setup
+    if (this.phase === 'intro') {
+      this._spawnKingJay();
+      this._spawnTrapdoor();
+      this._spawnHallwayExitDoor(false /* not active in intro */);
+      this._showIntroDialog();
+    } else if (this.phase === 'post') {
+      this._spawnHallwayExitDoor(true /* active */);
+      this._spawnHallwayStaircase();
+      this._showPostDialog();
+    }
+
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.style.display = 'none';
-
     this.cameras.main.fadeIn(400, 0, 0, 0);
   }
 
@@ -70,10 +86,13 @@ class DungeonScene extends Phaser.Scene {
   //  MAP PARSING + RENDERING
   // ═══════════════════════════════════════════════════════════
   _parseMap() {
-    const ascii = this.config.mapAscii;
+    // Intro and post phases use the hallway map; main uses the dungeon map.
+    const ascii = (this.phase === 'main')
+      ? this.config.mapAscii
+      : this.config.intro.mapAscii;
     this.mapH = ascii.length;
     this.mapW = ascii[0].length;
-    this.grid = []; // grid[y][x] = D_TILE value
+    this.grid = [];
     this.entry = null;
     this.stairsSlot = null;
 
@@ -152,10 +171,17 @@ class DungeonScene extends Phaser.Scene {
       }
     }
 
-    // Decorative wall torches inside each room
-    this._spawnRoomTorches();
-    // Decorative props (frozen statues, crystals, broken weapons, etc.)
-    this._spawnProps();
+    // Decorative wall torches + props only in the main dungeon phase.
+    if (this.phase === 'main') {
+      this._spawnRoomTorches();
+      this._spawnProps();
+    } else {
+      // Hallway gets just two torches — one near the top, one near the bottom.
+      this._drawWallTorch(0 * T + T - 3, 5 * T + T / 2);
+      this._drawWallTorch((this.mapW - 1) * T + 3, 5 * T + T / 2);
+      this._drawWallTorch(0 * T + T - 3, 10 * T + T / 2);
+      this._drawWallTorch((this.mapW - 1) * T + 3, 10 * T + T / 2);
+    }
 
     this.cameras.main.setBounds(0, 0, this.mapW * T, this.mapH * T);
   }
@@ -173,6 +199,172 @@ class DungeonScene extends Phaser.Scene {
       const cx = p.x * T + T / 2;
       const cy = p.y * T + T / 2;
       this.add.image(cx, cy, key).setDepth(1.5);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  INTRO PHASE — King Jay, trapdoor, dialog
+  // ═══════════════════════════════════════════════════════════
+  _spawnKingJay() {
+    const T = this.T;
+    const k = this.config.intro?.kingJay;
+    if (!k) return;
+    const cx = k.x * T + T / 2;
+    const cy = k.y * T + T / 2;
+    const skey = k.spriteKey || 'creature_skull';
+    if (this.textures.exists(skey)) {
+      this._kingJaySprite = this.add.sprite(cx, cy, skey, 0).setScale(2.5).setDepth(8).setTint(0xddaaff);
+    } else {
+      this._kingJaySprite = this.add.rectangle(cx, cy, 32, 32, 0xaa66cc).setStrokeStyle(2, 0xeebbff).setDepth(8);
+    }
+    // Floating idle motion
+    this.tweens.add({ targets: this._kingJaySprite, y: cy - 3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    // Name label above
+    this.add.text(cx, cy - 30, k.name || 'King Jay', {
+      fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#eebbff',
+      backgroundColor: '#000000cc', padding: { x: 4, y: 2 },
+    }).setOrigin(0.5).setDepth(9);
+  }
+
+  _spawnTrapdoor() {
+    const T = this.T;
+    const td = this.config.intro?.trapdoor;
+    if (!td) return;
+    this._trapdoorPos = { x: td.x, y: td.y };
+    // Trapdoor is invisible until triggered — appears as normal floor.
+    // The triggering happens in update() based on player position.
+  }
+
+  _spawnHallwayExitDoor(active) {
+    const T = this.T;
+    const ed = this.config.intro?.exitDoor;
+    if (!ed) return;
+    const cx = ed.x * T + T / 2;
+    const cy = ed.y * T + T / 2;
+    // Open doorway visual: brighter rectangle with warm glow suggesting light coming through
+    this.add.rectangle(cx, cy, 26, 28, 0x5a4838, 1).setStrokeStyle(2, 0x2a1c12).setDepth(2);
+    this.add.rectangle(cx, cy, 18, 22, 0x14101a, 1).setDepth(2);
+    // Light spilling out (warmer color, soft)
+    const lightHalo = this.add.rectangle(cx, cy, 22, 24, 0xffcc88, 0.45).setDepth(2);
+    this.tweens.add({ targets: lightHalo, alpha: 0.25, duration: 1500, yoyo: true, repeat: -1 });
+    // Bright light puddle in front of door (extends slightly south onto floor)
+    const puddle = this.add.ellipse(cx, cy + 14, 38, 18, 0xffcc88, 0.18).setDepth(0.5);
+    this.tweens.add({ targets: puddle, alpha: 0.08, duration: 1800, yoyo: true, repeat: -1 });
+    this._exitDoorPos = { x: ed.x, y: ed.y, active: !!active };
+  }
+
+  _spawnHallwayStaircase() {
+    // In post phase, the staircase is where the player arrives from
+    // the boss room. Draw the same staircase visual we use in the main
+    // dungeon's boss room.
+    const s = this.config.intro?.staircaseUp;
+    if (!s) return;
+    // Reuse the existing staircase rendering by spoofing stairsSlot.
+    const savedSlot = this.stairsSlot;
+    this.stairsSlot = { x: s.x, y: s.y };
+    this._state.bossDefeated = true; // so _spawnStaircase doesn't gate
+    this._spawnStaircase();
+    this.stairsSlot = savedSlot;
+  }
+
+  _showIntroDialog() {
+    const k = this.config.intro?.kingJay;
+    if (!k) return;
+    // Delay a moment so the fade-in finishes first
+    this.time.delayedCall(700, () => {
+      if (!this.comm) {
+        try { this.comm = new CommOverlay(this); } catch(e) { this.comm = null; }
+      }
+      if (this.comm && this.comm.show) {
+        try { this.comm.show(k.name || 'King Jay', k.dialog || '...', { color: '#aa66cc' }); }
+        catch(e) { console.warn('[Dungeon] comm.show failed:', e); }
+      }
+    });
+  }
+
+  _showPostDialog() {
+    const text = this.config.intro?.postDialog || 'They have escaped...';
+    // A floating text banner that fades in, lingers, fades out.
+    const cam = this.cameras.main;
+    const banner = this.add.text(cam.width / 2, cam.height * 0.25, text, {
+      fontSize: '20px', fontFamily: 'Georgia, serif', fontStyle: 'bold italic',
+      color: '#eebbff', backgroundColor: '#000000bb', padding: { x: 14, y: 8 },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(250).setAlpha(0);
+    this.tweens.add({ targets: banner, alpha: 1, duration: 600, yoyo: false });
+    this.time.delayedCall(3000, () => {
+      this.tweens.add({ targets: banner, alpha: 0, duration: 600, onComplete: () => banner.destroy() });
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  TRAPDOOR — fires when player steps onto the trapdoor tile
+  //  in intro phase. Plays open animation + player fall, then
+  //  restarts the scene in 'main' phase.
+  // ═══════════════════════════════════════════════════════════
+  _checkTrapdoor() {
+    if (this.phase !== 'intro') return;
+    if (this._state.trapdoorFired) return;
+    if (!this._trapdoorPos || !this.player) return;
+    const tx = Math.floor(this.player.x / this.T);
+    const ty = Math.floor(this.player.y / this.T);
+    if (tx === this._trapdoorPos.x && ty === this._trapdoorPos.y) {
+      this._triggerTrapdoor();
+    }
+  }
+
+  _triggerTrapdoor() {
+    this._state.trapdoorFired = true;
+    const T = this.T;
+    const cx = this._trapdoorPos.x * T + T / 2;
+    const cy = this._trapdoorPos.y * T + T / 2;
+
+    // Freeze player
+    if (this.player) {
+      this.player.setVelocity(0, 0);
+      if (this.player.body) this.player.body.enable = false;
+    }
+    if (this._marker) this._marker.setVisible(false);
+
+    // Trapdoor opening: an expanding dark circle that becomes the hole
+    const hole = this.add.circle(cx, cy, 2, 0x000000, 1).setDepth(2);
+    this.tweens.add({ targets: hole, radius: 18, scaleX: 9, scaleY: 9, duration: 250, ease: 'Cubic.easeOut' });
+
+    // Player fall — spin, scale to nothing, drop into the center of the hole
+    this.tweens.add({
+      targets: this.player,
+      x: cx, y: cy, scaleX: 0.15, scaleY: 0.15, alpha: 0.5,
+      rotation: Math.PI * 6,  // 3 full spins
+      duration: 1200, delay: 200, ease: 'Cubic.easeIn',
+    });
+
+    // After the animation, fade to black and restart in main phase
+    this.time.delayedCall(1500, () => {
+      this.cameras.main.fadeOut(400, 0, 0, 0);
+      this.time.delayedCall(420, () => {
+        this.scene.restart({
+          dungeonId: this.dungeonId,
+          phase: 'main',
+          returnX: this.returnX, returnY: this.returnY,
+        });
+      });
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  HALLWAY EXIT DOOR — active only in post phase. Walking onto
+  //  it sets G.frostDungeonCleared=true and returns to overworld.
+  // ═══════════════════════════════════════════════════════════
+  _checkHallwayExit() {
+    if (this.phase !== 'post') return;
+    if (this._state.postExited) return;
+    if (!this._exitDoorPos || !this._exitDoorPos.active || !this.player) return;
+    const tx = Math.floor(this.player.x / this.T);
+    const ty = Math.floor(this.player.y / this.T);
+    if (tx === this._exitDoorPos.x && ty === this._exitDoorPos.y) {
+      this._state.postExited = true;
+      G.frostDungeonCleared = true;
+      saveGame();
+      this._exitDungeon({ reason: 'victory' });
     }
   }
 
@@ -478,8 +670,22 @@ class DungeonScene extends Phaser.Scene {
   // ═══════════════════════════════════════════════════════════
   _spawnPlayer() {
     const T = this.T;
-    const spawnPX = this.entry.x * T + T / 2;
-    const spawnPY = this.entry.y * T + T / 2;
+    // Phase-specific spawn point overrides the ascii 'E' entry.
+    let spawnTileX, spawnTileY;
+    if (this.phase === 'intro' && this.config.intro?.playerIntroSpawn) {
+      spawnTileX = this.config.intro.playerIntroSpawn.x;
+      spawnTileY = this.config.intro.playerIntroSpawn.y;
+    } else if (this.phase === 'post' && this.config.intro?.staircaseUp) {
+      // Post-phase spawn: at the staircase the player came up from (top of hallway).
+      spawnTileX = this.config.intro.staircaseUp.x;
+      spawnTileY = this.config.intro.staircaseUp.y;
+    } else {
+      // Main phase: use the parsed 'E' entry tile.
+      spawnTileX = this.entry.x;
+      spawnTileY = this.entry.y;
+    }
+    const spawnPX = spawnTileX * T + T / 2;
+    const spawnPY = spawnTileY * T + T / 2;
 
     const tex = (G.spriteKey && this.textures.exists(G.spriteKey)) ? G.spriteKey : 'player';
     this.player = this.physics.add.sprite(spawnPX, spawnPY, tex, 0);
@@ -563,6 +769,8 @@ class DungeonScene extends Phaser.Scene {
     this._handleMovement();
     this._checkAggro();
     this._checkStaircase();
+    this._checkTrapdoor();
+    this._checkHallwayExit();
 
     if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
       this._confirmEscape();
@@ -635,13 +843,30 @@ class DungeonScene extends Phaser.Scene {
   //  STAIRCASE — only appears after boss defeat; step on it = exit
   // ═══════════════════════════════════════════════════════════
   _checkStaircase() {
+    if (this.phase !== 'main') return;
     if (!this._state.bossDefeated || !this.stairsSlot) return;
+    if (this._state.stairsUsed) return;
     const sx = this.stairsSlot.x * this.T + this.T / 2;
     const sy = this.stairsSlot.y * this.T + this.T / 2;
     const dx = this.player.x - sx;
     const dy = this.player.y - sy;
     if (dx * dx + dy * dy < 24 * 24) {
-      this._exitDungeon({ reason: 'victory' });
+      this._state.stairsUsed = true;
+      // First-time clear of this dungeon: transition to post hallway
+      // (where the player sees "King Jay has escaped" and walks out).
+      // Already-cleared replays skip the post hallway and exit directly.
+      if (this.config.intro && !G.frostDungeonCleared) {
+        this.cameras.main.fadeOut(400, 0, 0, 0);
+        this.time.delayedCall(420, () => {
+          this.scene.restart({
+            dungeonId: this.dungeonId,
+            phase: 'post',
+            returnX: this.returnX, returnY: this.returnY,
+          });
+        });
+      } else {
+        this._exitDungeon({ reason: 'victory' });
+      }
     }
   }
 
