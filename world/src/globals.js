@@ -685,6 +685,11 @@ const MultiplayerPresence = {
     this._switchRegionListener(region);
   },
 
+  // Reject entries older than this — onDisconnect cleanup fails for crashed
+  // tabs / sleeping laptops, leaving stale presence rows in Firebase. They
+  // re-render as semi-transparent "ghost" copies until purged.
+  STALE_MS: 60000,
+
   _switchRegionListener(newRegion) {
     if (this._isStub) return;
     const self = this;
@@ -700,22 +705,32 @@ const MultiplayerPresence = {
     this._regionPlayers = new Set();
     this._currentRegion = newRegion;
 
+    const handleSnap = (snap) => {
+      const data = snap.val();
+      const pid = snap.key || '';
+      if (pid === self._sessionKey) return;
+      // Stale-entry guard: skip rendering AND try to delete from Firebase
+      // so other clients clean up too. Server clock skew of a few seconds
+      // is fine — we only care about minutes-old entries.
+      const ts = data && data.ts;
+      if (typeof ts === 'number' && Date.now() - ts > self.STALE_MS) {
+        try { db.ref('world/' + newRegion + '/' + pid).remove(); } catch(e) {}
+        // Belt-and-suspenders: drop any local sprite for this pid too.
+        if (self._regionPlayers.has(pid)) {
+          self._regionPlayers.delete(pid);
+          if (self._onPlayerRemove) self._onPlayerRemove(pid);
+        }
+        return;
+      }
+      self._regionPlayers.add(pid);
+      if (data && self._onPlayerUpdate) self._onPlayerUpdate(pid, data);
+    };
+
     // Subscribe to new region
     try {
       const ref = db.ref('world/' + newRegion);
-      ref.on('child_added', snap => {
-        const data = snap.val();
-        const pid = snap.key || '';
-        if (pid === self._sessionKey) return;
-        self._regionPlayers.add(pid);
-        if (data && self._onPlayerUpdate) self._onPlayerUpdate(pid, data);
-      });
-      ref.on('child_changed', snap => {
-        const data = snap.val();
-        const pid = snap.key || '';
-        if (pid === self._sessionKey) return;
-        if (data && self._onPlayerUpdate) self._onPlayerUpdate(pid, data);
-      });
+      ref.on('child_added', handleSnap);
+      ref.on('child_changed', handleSnap);
       ref.on('child_removed', snap => {
         const pid = snap.key || '';
         self._regionPlayers.delete(pid);
