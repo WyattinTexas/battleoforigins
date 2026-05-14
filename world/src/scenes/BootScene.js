@@ -86,6 +86,8 @@ class BootScene extends Phaser.Scene {
     this.load.image('d_hallway_entry', 'assets/tiles/hallway_entry.png');
     this.load.image('d_hallway_passage', 'assets/tiles/hallway_south_passage.png');
     this.load.image('d_stairwell_down', 'assets/tiles/stairwell_down.png');
+    // King Jay portrait — shown in the inline dialog's left panel
+    this.load.image('portrait_king_jay', 'https://drbango.com/testroom/art/originals/king_jay.jpg');
 
     // ── ERW Grass Land 2.0 tilesets (32x32 native) ──
     this.load.spritesheet('erw_terrain', 'assets/erw/tilesets/terrain-grass.png', { frameWidth: 32, frameHeight: 32 });
@@ -293,7 +295,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v100', {
+    this.add.text(width / 2, height * 0.34, 'v101', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 

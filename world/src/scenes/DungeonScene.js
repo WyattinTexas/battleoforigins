@@ -314,36 +314,63 @@ class DungeonScene extends Phaser.Scene {
       console.warn('[Dungeon] _showInlineDialog: no uiCam, falling back to default rendering');
     }
     const W = this.scale.width, H = this.scale.height;
-    console.log('[Dungeon] dialog dims:', W, 'x', H, '| main cam zoom:', this.cameras.main.zoom);
     const boxW = Math.min(W - 80, 640);
     const boxH = 110;
     const cx = W / 2;
     const cy = H - 80;
+    const colorInt = Phaser.Display.Color.HexStringToColor(color).color;
 
     const bg = this.add.rectangle(cx, cy, boxW, boxH, 0x080c20, 0.96)
-      .setStrokeStyle(3, Phaser.Display.Color.HexStringToColor(color).color)
+      .setStrokeStyle(3, colorInt)
       .setDepth(900);
-    const nameT = this.add.text(cx - boxW / 2 + 20, cy - boxH / 2 + 14, name, {
+
+    // Portrait on the left — inset inside the dialog box.
+    const portraitSize = 80;
+    const portraitX = cx - boxW / 2 + 14 + portraitSize / 2;
+    const portraitY = cy;
+    const portraitBg = this.add.rectangle(portraitX, portraitY, portraitSize, portraitSize, 0x1a1a3e)
+      .setStrokeStyle(2, colorInt).setDepth(901);
+
+    // Texture key by name convention: 'portrait_king_jay'.
+    const portraitKey = 'portrait_' + (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    let portraitImg = null;
+    let portraitLetter = null;
+    if (this.textures.exists(portraitKey)) {
+      portraitImg = this.add.image(portraitX, portraitY, portraitKey)
+        .setDisplaySize(portraitSize - 6, portraitSize - 6).setDepth(902);
+    } else {
+      portraitLetter = this.add.text(portraitX, portraitY, (name || '?').charAt(0).toUpperCase(), {
+        fontSize: '40px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: color,
+      }).setOrigin(0.5).setDepth(902);
+    }
+
+    // Text panel — shifted right to make room for portrait.
+    const textLeft = cx - boxW / 2 + portraitSize + 28;
+    const nameT = this.add.text(textLeft, cy - boxH / 2 + 14, name, {
       fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: color,
     }).setOrigin(0, 0).setDepth(901);
-    const textT = this.add.text(cx - boxW / 2 + 20, cy - boxH / 2 + 40, text, {
+    const textT = this.add.text(textLeft, cy - boxH / 2 + 40, text, {
       fontSize: '14px', fontFamily: 'Georgia, serif', color: '#ccccee',
-      wordWrap: { width: boxW - 40 },
+      wordWrap: { width: boxW - portraitSize - 48 },
     }).setOrigin(0, 0).setDepth(901);
     const dismiss = this.add.text(cx + boxW / 2 - 14, cy + boxH / 2 - 14, '[E or click]', {
       fontSize: '10px', fontFamily: 'monospace', fontStyle: 'italic', color: '#556688',
     }).setOrigin(1, 1).setDepth(901);
 
+    const uiObjects = [bg, portraitBg, nameT, textT, dismiss];
+    if (portraitImg) uiObjects.push(portraitImg);
+    if (portraitLetter) uiObjects.push(portraitLetter);
+
     // Route these objects through the UI camera only (no zoom, no scroll).
     if (this.uiCam) {
-      this.cameras.main.ignore([bg, nameT, textT, dismiss]);
+      this.cameras.main.ignore(uiObjects);
     } else {
       // Fallback: at least lock them to the screen if uiCam is missing.
-      [bg, nameT, textT, dismiss].forEach(o => o.setScrollFactor(0));
+      uiObjects.forEach(o => o.setScrollFactor(0));
     }
 
     const cleanup = () => {
-      bg.destroy(); nameT.destroy(); textT.destroy(); dismiss.destroy();
+      uiObjects.forEach(o => o.destroy());
       this.input.off('pointerdown', onClick);
       this.input.keyboard.off('keydown-E', onKey);
     };
@@ -352,7 +379,6 @@ class DungeonScene extends Phaser.Scene {
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerdown', onClick);
     this.input.keyboard.on('keydown-E', onKey);
-    console.log('[Dungeon] inline dialog placed at world', cx, cy, 'box', boxW, 'x', boxH);
   }
 
   _showPostDialog() {
