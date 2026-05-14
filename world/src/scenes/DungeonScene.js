@@ -55,30 +55,43 @@ class DungeonScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(this.config.palette.bg);
 
     this._buildMap();
-    // Always seed the enemy list — even empty — so _checkAggro doesn't
-    // crash in the intro/post hallway where no mobs spawn.
     this.enemies = [];
     if (this.phase === 'main') {
       this._spawnEnemies();
     }
     this._spawnPlayer();
     this._setupInput();
-    this._setupHUD();
     this._buildLighting();
     this._setupResumeHandler();
 
-    // Phase-specific setup
+    // Phase-specific setup (everything here lives on the MAIN camera).
     if (this.phase === 'intro') {
       this._spawnHallwayStaircase();  // visible behind King Jay
       this._spawnKingJay();
       this._spawnTrapdoor();
       this._spawnHallwayExitDoor(false /* not active in intro */);
-      this._showIntroDialog();
     } else if (this.phase === 'post') {
-      this._spawnHallwayStaircase();  // where the player just emerged
+      this._spawnHallwayStaircase();
       this._spawnHallwayExitDoor(true /* active */);
-      this._showPostDialog();
     }
+
+    // UI camera — zoom 1, scroll 0 — so dialogs/HUD use literal screen
+    // coordinates. Phaser 4 has been inconsistent about applying the
+    // main camera's zoom to scrollFactor(0) objects, which kept pushing
+    // the dialog off-screen or to the left half of the canvas. A
+    // dedicated UI camera sidesteps the whole problem.
+    this.uiCam = this.cameras.add(0, 0, this.scale.width, this.scale.height);
+    this.uiCam.setScroll(0, 0).setZoom(1).setName('uiCam');
+    // UI camera ignores all currently-existing world objects.
+    this.uiCam.ignore(this.children.list);
+
+    // Setup HUD AFTER uiCam exists so HUD elements route through it.
+    this._setupHUD();
+
+    // Phase-specific dialogs (placed AFTER uiCam ignore so they
+    // are rendered by the UI camera only).
+    if (this.phase === 'intro') this._showIntroDialog();
+    else if (this.phase === 'post') this._showPostDialog();
 
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.style.display = 'none';
@@ -286,74 +299,74 @@ class DungeonScene extends Phaser.Scene {
     if (!k) { console.warn('[Dungeon] _showIntroDialog: no kingJay config'); return; }
     console.log('[Dungeon] scheduling intro dialog for', k.name);
     this.time.delayedCall(700, () => {
-      console.log('[Dungeon] dialog delayedCall fired. CommOverlay class exists:',
-                  typeof CommOverlay !== 'undefined', '| existing comm:', !!this.comm);
-      if (!this.comm) {
-        try {
-          this.comm = new CommOverlay(this);
-          console.log('[Dungeon] CommOverlay constructed');
-        } catch(e) {
-          console.error('[Dungeon] CommOverlay constructor threw:', e, e?.stack);
-          this.comm = null;
-        }
-      }
-      if (this.comm && this.comm.show) {
-        console.log('[Dungeon] calling comm.show with', k.name);
-        try {
-          this.comm.show(k.name || 'King Jay', k.dialog || '...', { color: '#aa66cc' });
-          console.log('[Dungeon] comm.show returned cleanly');
-        } catch(e) {
-          console.error('[Dungeon] comm.show threw:', e, e?.stack);
-          // Fallback — render a simple Phaser text box so the user still
-          // sees the dialog if CommOverlay is broken.
-          this._showFallbackDialog(k.name, k.dialog);
-        }
-      } else {
-        console.warn('[Dungeon] comm not available — using fallback text box');
-        this._showFallbackDialog(k.name, k.dialog);
-      }
+      this._showInlineDialog(k.name || 'King Jay', k.dialog || '...', '#aa66cc');
     });
   }
 
-  _showFallbackDialog(name, text) {
-    // Plain Phaser text box at the bottom of the screen — used if the
-    // CommOverlay system fails. Screen-locked, dismissed on E or click.
+  // ───────────────────────────────────────────────────────────
+  //  INLINE DIALOG — uses the dungeon's UI camera so positioning
+  //  is exact screen coords regardless of zoom/scroll quirks.
+  //  CommOverlay had positioning issues at zoom 1.6× that pushed
+  //  the dialog off-screen or to the left half of the canvas.
+  // ───────────────────────────────────────────────────────────
+  _showInlineDialog(name, text, color) {
+    if (!this.uiCam) {
+      console.warn('[Dungeon] _showInlineDialog: no uiCam, falling back to default rendering');
+    }
     const W = this.scale.width, H = this.scale.height;
-    const boxY = H - 80;
-    const bg = this.add.rectangle(W / 2, boxY, Math.min(W - 80, 600), 100, 0x080c20, 0.95)
-      .setStrokeStyle(3, 0xaa66cc).setScrollFactor(0).setDepth(500);
-    const nameT = this.add.text(W / 2 - 280, boxY - 30, name, {
-      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#aa66cc',
-    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(501);
-    const textT = this.add.text(W / 2 - 280, boxY + 4, text, {
-      fontSize: '13px', fontFamily: 'Georgia, serif', color: '#ccccee',
-      wordWrap: { width: 540 },
-    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(501);
-    const dismiss = this.add.text(W / 2 + 270, boxY + 28, '[E / click]', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#556688',
-    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(501);
-    const cleanup = () => { bg.destroy(); nameT.destroy(); textT.destroy(); dismiss.destroy(); };
-    bg.setInteractive({ useHandCursor: true });
-    bg.on('pointerdown', cleanup);
-    const eKey = this.input.keyboard.addKey('E');
-    const checkKey = () => {
-      if (Phaser.Input.Keyboard.JustDown(eKey)) {
-        cleanup();
-        this.events.off('update', checkKey);
-      }
+    console.log('[Dungeon] dialog dims:', W, 'x', H, '| main cam zoom:', this.cameras.main.zoom);
+    const boxW = Math.min(W - 80, 640);
+    const boxH = 110;
+    const cx = W / 2;
+    const cy = H - 80;
+
+    const bg = this.add.rectangle(cx, cy, boxW, boxH, 0x080c20, 0.96)
+      .setStrokeStyle(3, Phaser.Display.Color.HexStringToColor(color).color)
+      .setDepth(900);
+    const nameT = this.add.text(cx - boxW / 2 + 20, cy - boxH / 2 + 14, name, {
+      fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: color,
+    }).setOrigin(0, 0).setDepth(901);
+    const textT = this.add.text(cx - boxW / 2 + 20, cy - boxH / 2 + 40, text, {
+      fontSize: '14px', fontFamily: 'Georgia, serif', color: '#ccccee',
+      wordWrap: { width: boxW - 40 },
+    }).setOrigin(0, 0).setDepth(901);
+    const dismiss = this.add.text(cx + boxW / 2 - 14, cy + boxH / 2 - 14, '[E or click]', {
+      fontSize: '10px', fontFamily: 'monospace', fontStyle: 'italic', color: '#556688',
+    }).setOrigin(1, 1).setDepth(901);
+
+    // Route these objects through the UI camera only (no zoom, no scroll).
+    if (this.uiCam) {
+      this.cameras.main.ignore([bg, nameT, textT, dismiss]);
+    } else {
+      // Fallback: at least lock them to the screen if uiCam is missing.
+      [bg, nameT, textT, dismiss].forEach(o => o.setScrollFactor(0));
+    }
+
+    const cleanup = () => {
+      bg.destroy(); nameT.destroy(); textT.destroy(); dismiss.destroy();
+      this.input.off('pointerdown', onClick);
+      this.input.keyboard.off('keydown-E', onKey);
     };
-    this.events.on('update', checkKey);
+    const onClick = () => cleanup();
+    const onKey = () => cleanup();
+    bg.setInteractive({ useHandCursor: true });
+    bg.on('pointerdown', onClick);
+    this.input.keyboard.on('keydown-E', onKey);
+    console.log('[Dungeon] inline dialog placed at world', cx, cy, 'box', boxW, 'x', boxH);
   }
 
   _showPostDialog() {
     const text = this.config.intro?.postDialog || 'They have escaped...';
-    // A floating text banner that fades in, lingers, fades out.
-    const cam = this.cameras.main;
-    const banner = this.add.text(cam.width / 2, cam.height * 0.25, text, {
-      fontSize: '20px', fontFamily: 'Georgia, serif', fontStyle: 'bold italic',
-      color: '#eebbff', backgroundColor: '#000000bb', padding: { x: 14, y: 8 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(250).setAlpha(0);
-    this.tweens.add({ targets: banner, alpha: 1, duration: 600, yoyo: false });
+    const W = this.scale.width, H = this.scale.height;
+    const banner = this.add.text(W / 2, H * 0.25, text, {
+      fontSize: '22px', fontFamily: 'Georgia, serif', fontStyle: 'bold italic',
+      color: '#eebbff', backgroundColor: '#000000cc', padding: { x: 14, y: 8 },
+    }).setOrigin(0.5).setDepth(250).setAlpha(0);
+    // Route through UI camera (zoom 1 / scroll 0) so the banner is
+    // centered on the actual canvas, not the zoomed main view.
+    if (this.uiCam) this.cameras.main.ignore(banner);
+    else banner.setScrollFactor(0);
+    this.tweens.add({ targets: banner, alpha: 1, duration: 600 });
     this.time.delayedCall(3000, () => {
       this.tweens.add({ targets: banner, alpha: 0, duration: 600, onComplete: () => banner.destroy() });
     });
@@ -837,12 +850,21 @@ class DungeonScene extends Phaser.Scene {
     this._titleText = this.add.text(this.scale.width / 2, 10, this.config.name.toUpperCase(), {
       fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#bfe4ff',
       backgroundColor: '#000000cc', padding: { x: 10, y: 4 },
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200);
+    }).setOrigin(0.5, 0).setDepth(200);
 
     this._hintText = this.add.text(10, this.scale.height - 20,
       'WASD: Move  |  Walk into enemy: Fight  |  ESC: Leave dungeon (-' + this.config.goldLossOnFail + 'g)', {
       fontSize: '10px', fontFamily: 'monospace', color: '#aaaacc',
-    }).setScrollFactor(0).setDepth(200);
+    }).setDepth(200);
+
+    // Route HUD through the UI camera — main camera ignores them so
+    // they aren't double-rendered with zoom applied.
+    if (this.uiCam) {
+      this.cameras.main.ignore([this._titleText, this._hintText]);
+    } else {
+      this._titleText.setScrollFactor(0);
+      this._hintText.setScrollFactor(0);
+    }
 
     // ESC key for voluntary exit
     this.escKey = this.input.keyboard.addKey('ESC');
