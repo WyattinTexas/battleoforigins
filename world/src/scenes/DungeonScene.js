@@ -55,7 +55,9 @@ class DungeonScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(this.config.palette.bg);
 
     this._buildMap();
-    // Mobs / boss / props only in the main dungeon phase.
+    // Always seed the enemy list — even empty — so _checkAggro doesn't
+    // crash in the intro/post hallway where no mobs spawn.
+    this.enemies = [];
     if (this.phase === 'main') {
       this._spawnEnemies();
     }
