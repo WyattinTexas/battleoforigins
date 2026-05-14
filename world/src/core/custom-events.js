@@ -303,12 +303,11 @@ const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
   singleton: true,
 
   sprite: {
-    key: 'npc_child',
-    scale: 1.8,
-    tint: 0x66aadd,
-    depth: 10,
+    key: 'chest_wooden',
+    scale: 0.8,
+    depth: 6,
     labels: [
-      { text: '? Frostbitten Cache ?', offsetY: -20, style: { fontSize: '8px', fontFamily: 'monospace', color: '#ccddff', backgroundColor: '#00000088', padding: { x: 2, y: 1 } } },
+      { text: '?', offsetY: -16, style: { fontSize: '12px', fontFamily: 'serif', color: '#ffdd88' } },
     ],
   },
 
@@ -551,12 +550,11 @@ const RH_TREASURE_MOSSY_STASH_SCRIPT = {
   singleton: true,
 
   sprite: {
-    key: 'npc_child',
-    scale: 1.8,
-    tint: 0x669944,
-    depth: 10,
+    key: 'chest_wooden2',
+    scale: 0.8,
+    depth: 6,
     labels: [
-      { text: '? Mossy Stash ?', offsetY: -20, style: { fontSize: '8px', fontFamily: 'monospace', color: '#aaddaa', backgroundColor: '#00000088', padding: { x: 2, y: 1 } } },
+      { text: '?', offsetY: -16, style: { fontSize: '12px', fontFamily: 'serif', color: '#88dd66' } },
     ],
   },
 
@@ -927,12 +925,12 @@ const DC_TREASURE_RELIQUARY_SCRIPT = {
   singleton: true,
 
   sprite: {
-    key: 'npc_child',
-    scale: 1.8,
-    tint: 0x442266,
-    depth: 10,
+    key: 'chest_wooden3',
+    scale: 0.8,
+    tint: 0x8866aa,
+    depth: 6,
     labels: [
-      { text: '? Cursed Reliquary ?', offsetY: -20, style: { fontSize: '8px', fontFamily: 'monospace', color: '#bb88dd', backgroundColor: '#00000088', padding: { x: 2, y: 1 } } },
+      { text: '?', offsetY: -16, style: { fontSize: '12px', fontFamily: 'serif', color: '#bb88dd' } },
     ],
   },
 

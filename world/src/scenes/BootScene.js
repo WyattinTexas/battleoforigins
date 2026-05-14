@@ -115,6 +115,9 @@ class BootScene extends Phaser.Scene {
     this.load.image('erw_fortress', 'assets/erw/props-static/fortress-front.png');
     this.load.image('erw_orc_tents', 'assets/erw/props-static/orc-tents.png');
     this.load.image('erw_loot', 'assets/erw/props-static/loot-drops.png');
+    this.load.image('chest_wooden', 'assets/erw/props/chest_wooden.png');
+    this.load.image('chest_wooden2', 'assets/erw/props/chest_wooden2.png');
+    this.load.image('chest_wooden3', 'assets/erw/props/chest_wooden3.png');
 
     // ── ERW tree sprites (full multi-tile trees with trunks + canopies) ──
     this.load.image('erw_tree_green1', 'assets/erw/trees/green1.png');
