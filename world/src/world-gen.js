@@ -234,19 +234,25 @@ function generateWorld() {
     }
   }
 
-  // Warm trees — noise-based organic groves (start y=49 to keep zone entrance clear)
+  // Warm trees — noise-based organic groves
+  // Left side (x < 20) is mostly open meadow for exploration + housing
+  // Trees concentrate on the right side and in small scattered clusters
   for (let y = 49; y < 76; y++) {
     for (let x = 3; x < 54; x++) {
       if (worldMap[y][x] !== 9) continue;
       // Skip near the passage (x: 26-33) to keep zone entrance open
       if (y < 52 && x >= 26 && x <= 33) continue;
-      const density = forestNoise(x, y, 77); // different seed than frost
-      // Thinned — open meadows with scattered groves
-      if (density > 0.78) {
+      // Skip near Meadowbrook hub
+      if (Math.abs(x - HUB_MEADOW.x) < 6 && Math.abs(y - HUB_MEADOW.y) < 6) continue;
+      const density = forestNoise(x, y, 77);
+      // Left side (x < 18): very sparse — open fields for exploration
+      // Right side (x >= 18): moderate groves
+      const threshold = x < 18 ? 0.92 : 0.82;
+      if (density > threshold) {
         worldMap[y][x] = 13;
-      } else if (density > 0.70) {
-        const edgeChance = (density - 0.70) / 0.08;
-        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.25) {
+      } else if (density > threshold - 0.06 && x >= 18) {
+        const edgeChance = (density - (threshold - 0.06)) / 0.06;
+        if (_hash(x * 3, y * 5) / 0x7fffffff < edgeChance * 0.2) {
           worldMap[y][x] = 13;
         }
       }
