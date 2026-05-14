@@ -296,10 +296,10 @@ const FV_MINIBOSS_GLACIUS_SCRIPT = {
   },
 };
 
-// ── FV 4: Treasure Discovery — Frostbitten Cache ──
+// ── FV 4: Treasure Discovery — Treasure Chest ──
 const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
   id: 'fv_treasure_frozen_chest',
-  name: 'Frostbitten Cache',
+  name: 'Treasure Chest',
   singleton: true,
 
   sprite: {
@@ -319,10 +319,10 @@ const FV_TREASURE_FROZEN_CHEST_SCRIPT = {
       actions: [
         { type: 'waitForInteract' },
         { type: 'checkFlag', key: 'fv_frozen_chest_opened', gotoPhase: 'empty' },
-        { type: 'comm', speaker: 'Narrator', text: 'A frostbitten cache! The ice cracks as you pry it open.', color: '#ccddff', duration: 3500 },
+        { type: 'comm', speaker: 'Narrator', text: 'A Treasure Chest! The ice cracks as you pry it open.', color: '#ccddff', duration: 3500 },
         { type: 'wait', ms: 3800 },
         { type: 'comm', speaker: 'Narrator', text: 'Inside: a handful of coins and a note that reads "stay warm."', color: '#ccddff', duration: 3000 },
-        { type: 'giveReward', coins: 25, xp: 10, message: '+25 coins, +10 XP from Frostbitten Cache' },
+        { type: 'giveReward', coins: 25, xp: 10, message: '+25 coins, +10 XP from Treasure Chest' },
         { type: 'setFlag', key: 'fv_frozen_chest_opened', value: true },
         { type: 'endEvent' },
       ],
@@ -543,10 +543,10 @@ const RH_MINIBOSS_BRIAR_SCRIPT = {
   },
 };
 
-// ── RH 4: Treasure Discovery — Mossy Stash ──
+// ── RH 4: Treasure Discovery — Treasure Chest ──
 const RH_TREASURE_MOSSY_STASH_SCRIPT = {
   id: 'rh_treasure_mossy_stash',
-  name: 'Mossy Stash',
+  name: 'Treasure Chest',
   singleton: true,
 
   sprite: {
@@ -569,7 +569,7 @@ const RH_TREASURE_MOSSY_STASH_SCRIPT = {
         { type: 'comm', speaker: 'Narrator', text: 'A mound of moss hides something beneath. You dig carefully.', color: '#aaddaa', duration: 3500 },
         { type: 'wait', ms: 3800 },
         { type: 'comm', speaker: 'Narrator', text: 'A leather pouch with coins and seeds. Someone\'s forgotten savings.', color: '#aaddaa', duration: 3000 },
-        { type: 'giveReward', coins: 30, xp: 15, message: '+30 coins, +15 XP from Mossy Stash' },
+        { type: 'giveReward', coins: 30, xp: 15, message: '+30 coins, +15 XP from Treasure Chest' },
         { type: 'setFlag', key: 'rh_mossy_stash_opened', value: true },
         { type: 'endEvent' },
       ],
@@ -918,10 +918,10 @@ const DC_MINIBOSS_MALACHAR_SCRIPT = {
   },
 };
 
-// ── DC 3: Treasure Discovery — Cursed Reliquary ──
+// ── DC 3: Treasure Discovery — Treasure Chest ──
 const DC_TREASURE_RELIQUARY_SCRIPT = {
   id: 'dc_treasure_reliquary',
-  name: 'Cursed Reliquary',
+  name: 'Treasure Chest',
   singleton: true,
 
   sprite: {
@@ -945,7 +945,7 @@ const DC_TREASURE_RELIQUARY_SCRIPT = {
         { type: 'comm', speaker: 'Narrator', text: 'An ancient reliquary pulses with dark energy. You pry it open.', color: '#bb88dd', duration: 3500 },
         { type: 'wait', ms: 3800 },
         { type: 'comm', speaker: 'Narrator', text: 'Coins stamped with a forgotten king\'s face. And something else... power.', color: '#bb88dd', duration: 3500 },
-        { type: 'giveReward', coins: 50, xp: 25, message: '+50 coins, +25 XP from Cursed Reliquary' },
+        { type: 'giveReward', coins: 50, xp: 25, message: '+50 coins, +25 XP from Treasure Chest' },
         { type: 'setFlag', key: 'dc_reliquary_opened', value: true },
         { type: 'endEvent' },
       ],
