@@ -36,6 +36,12 @@ const DUNGEONS = {
     // (no battle). Useful for verifying victory-exit flow end-to-end.
     instaWin: false,
 
+    // TEMP TEST FLAG — when true, every dungeon spiritkin (mobs AND
+    // boss) is forced to maxHp=1 so the boss-defeat → post-phase
+    // flow can be exercised quickly solo. Remove / set false once
+    // the post phase is verified end-to-end.
+    debugAllHpOne: true,
+
     // Overworld tile the player is dropped onto when leaving the dungeon
     // (success or failure). MUST be walkable. The world-gen explicitly
     // sets (38, 5) to a path tile south of the dungeon entrance.

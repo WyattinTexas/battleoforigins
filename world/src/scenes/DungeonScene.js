@@ -1151,7 +1151,13 @@ class DungeonScene extends Phaser.Scene {
     if (!card) { console.warn('[Dungeon] missing card for', enemy); return; }
 
     const mult = enemy.isBoss ? this.config.bossHpMultiplier : this.config.mobHpMultiplier;
-    const scaledMaxHp = Math.max(1, Math.round(card.maxHp * mult));
+    let scaledMaxHp = Math.max(1, Math.round(card.maxHp * mult));
+    // TEMP debug flag — see dungeon-configs.js. Forces every spiritkin
+    // (mob and boss) to 1HP so we can test the post-phase flow fast.
+    if (this.config.debugAllHpOne) {
+      scaledMaxHp = 1;
+      console.log('[Dungeon] debugAllHpOne ACTIVE — forcing', enemy.name, 'to 1HP');
+    }
 
     this._pendingEnemy = enemy;
     G.inBattle = true;
