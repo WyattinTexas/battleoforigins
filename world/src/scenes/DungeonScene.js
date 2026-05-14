@@ -234,12 +234,14 @@ class DungeonScene extends Phaser.Scene {
   }
 
   _spawnTrapdoor() {
-    const T = this.T;
     const td = this.config.intro?.trapdoor;
     if (!td) return;
-    this._trapdoorPos = { x: td.x, y: td.y };
-    // Trapdoor is invisible until triggered — appears as normal floor.
-    // The triggering happens in update() based on player position.
+    // Spread the full config so w, h, spriteKey are preserved — without
+    // these _checkTrapdoor falls back to a single tile and the player
+    // never triggers the trap.
+    this._trapdoorPos = { ...td };
+    // Trapdoor stays invisible until the player steps onto it. The
+    // sprite pops up in _triggerTrapdoor.
   }
 
   _spawnHallwayExitDoor(active) {

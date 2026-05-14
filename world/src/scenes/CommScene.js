@@ -33,13 +33,15 @@ class CommOverlay {
   build() {
     if (this.container) return;
 
-    // Use the raw canvas dimensions. The container will be set
-    // scrollFactor(0) below so its children are screen-space-locked;
-    // positions must be in canvas pixels, NOT divided by zoom (the
-    // old divide-by-zoom logic offset the dialog to the left half of
-    // the screen at high zoom levels — visible in DungeonScene at 1.6x).
-    const W = this.scene.scale.width;
-    const H = this.scene.scale.height;
+    // Phaser 4 applies camera ZOOM to scrollFactor(0) objects even
+    // though it ignores scroll. So world positions get multiplied by
+    // zoom at render time. To land at the desired SCREEN position we
+    // pre-divide by zoom here. Required for the dialog to be on-screen
+    // and centered (DungeonScene runs at zoom 1.6, so boxY=H-70 without
+    // the divide ends up below the visible canvas).
+    const zoom = this.scene.cameras?.main?.zoom || 1;
+    const W = this.scene.scale.width / zoom;
+    const H = this.scene.scale.height / zoom;
 
     this.container = this.scene.add.container(0, 0).setDepth(500).setScrollFactor(0);
 
