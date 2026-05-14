@@ -621,6 +621,7 @@
   // ══════════════════════════════════════════
 
   function advanceActions(inst, scene) {
+    try {
     var phases = inst.script.phases || [];
     if (inst.phaseIdx >= phases.length) {
       _cleanup(inst, scene);
@@ -678,6 +679,7 @@
     if (inst.phaseIdx >= phases.length) {
       _cleanup(inst, scene);
     }
+    } catch(e) { console.error('[EventEngine] advanceActions error:', e, 'event:', inst.script?.id, 'phase:', inst.phaseIdx, 'action:', inst.actionIdx); }
   }
 
   // ══════════════════════════════════════════
@@ -729,6 +731,7 @@
     /** Main update — call once per frame from WorldScene.update() */
     update: function (scene) {
       _active.forEach(function (inst, id) {
+        try {
         if (inst.paused || inst._cleaned) return;
 
         // Check expiry
@@ -752,6 +755,7 @@
 
         // Update label positions
         updateLabels(inst);
+        } catch(e) { console.error('[EventEngine] update error for', inst.script?.id, ':', e); _cleanup(inst, scene); }
       });
     },
 
