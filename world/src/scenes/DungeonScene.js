@@ -172,18 +172,16 @@ class DungeonScene extends Phaser.Scene {
   }
 
   // ───────────────────────────────────────────────────────────
-  //  FLOOR — mostly uniform icy stone with rare per-tile
-  //  decorations (~85% base / 5% each of 3 decorations).
+  //  FLOOR — placed as one of 5 hand-designed flagstone sprites,
+  //  chosen deterministically per tile so the dungeon looks the
+  //  same every load. Falls back to flat fill if textures missing.
   // ───────────────────────────────────────────────────────────
   _drawFloorTile(g, x, y) {
     const T = this.T;
     const tx = x * T, ty = y * T;
     const h = this._tileHash(x, y);
-    const roll = h % 100;
-    let key = 'd_floor_base';
-    if (roll >= 85 && roll < 90)  key = 'd_floor_decor_1';
-    else if (roll >= 90 && roll < 95) key = 'd_floor_decor_2';
-    else if (roll >= 95)          key = 'd_floor_decor_3';
+    const variant = 1 + (h % 5);
+    const key = `d_floor_${variant}`;
     if (this.textures.exists(key)) {
       this.add.image(tx, ty, key).setOrigin(0, 0).setDepth(0);
     } else {
@@ -193,10 +191,9 @@ class DungeonScene extends Phaser.Scene {
   }
 
   // ───────────────────────────────────────────────────────────
-  //  WALL — body sprite + frost-band overlay (only at top of
-  //  wall mass) + shadow strips on edges facing the room.
-  //  Naturally blends at corners because all tiles share the
-  //  same body and overlay system.
+  //  WALL — picks a hand-pixeled sprite based on which neighbors
+  //  are floor. Closed doors are treated as walls so walls beside
+  //  a door read as a continuous edge.
   // ───────────────────────────────────────────────────────────
   _drawWallTile(g, x, y) {
     const T = this.T;
@@ -206,64 +203,43 @@ class DungeonScene extends Phaser.Scene {
     const isFloor = (nx, ny) => {
       if (nx < 0 || ny < 0 || nx >= this.mapW || ny >= this.mapH) return false;
       const t = this.grid[ny][nx];
+      // DOOR_CLOSED reads as wall for adjacency so the surrounding wall
+      // sprite stays consistent. DOOR_OPEN and STAIRS read as floor.
       return t === D_TILE.FLOOR || t === D_TILE.DOOR_OPEN || t === D_TILE.STAIRS;
     };
-    const isWall = (nx, ny) => {
-      if (nx < 0 || ny < 0 || nx >= this.mapW || ny >= this.mapH) return false;
-      const t = this.grid[ny][nx];
-      return t === D_TILE.WALL || t === D_TILE.DOOR_CLOSED;
-    };
-
     const inS = isFloor(x, y + 1);
     const inN = isFloor(x, y - 1);
     const inE = isFloor(x + 1, y);
     const inW = isFloor(x - 1, y);
 
-    // Special-case: horizontal divider (room above AND below). Use the
-    // baked hdiv sprite — it has lit edges on both faces.
-    if (inN && inS) {
-      const v = 1 + (h % 2);
-      const k = `d_wall_hdiv_${v}`;
-      if (this.textures.exists(k)) {
-        this.add.image(tx, ty, k).setOrigin(0, 0).setDepth(1);
-        return;
-      }
-    }
+    // Resolve sprite key based on adjacency
+    let baseKey = null;
+    let variantCount = 1;
+    const floorCount = (inS ? 1 : 0) + (inN ? 1 : 0) + (inE ? 1 : 0) + (inW ? 1 : 0);
 
-    // Default: pick a body variant + decide overlays.
-    const bodyVar = 1 + (h % 3);
-    const bodyKey = `d_wall_body_${bodyVar}`;
-    if (this.textures.exists(bodyKey)) {
-      this.add.image(tx, ty, bodyKey).setOrigin(0, 0).setDepth(1);
+    if (floorCount === 1) {
+      if (inS)      { baseKey = 'd_wall_top';    variantCount = 3; }
+      else if (inN) { baseKey = 'd_wall_bottom'; variantCount = 2; }
+      else if (inE) { baseKey = 'd_wall_left';   variantCount = 2; }
+      else          { baseKey = 'd_wall_right';  variantCount = 2; }
+    } else if (floorCount === 2) {
+      if      (inS && inE) baseKey = 'd_wall_corner_se';
+      else if (inS && inW) baseKey = 'd_wall_corner_sw';
+      else if (inN && inE) baseKey = 'd_wall_corner_ne';
+      else if (inN && inW) baseKey = 'd_wall_corner_nw';
+      else if (inN && inS) { baseKey = 'd_wall_hdiv'; variantCount = 2; }
+      // E+W (vertical divider) — fallback to interior, rare in this map
+    }
+    if (!baseKey) { baseKey = 'd_wall_interior'; variantCount = 2; }
+
+    const variant = 1 + (h % variantCount);
+    const fullKey = variantCount > 1 ? `${baseKey}_${variant}` : baseKey;
+
+    if (this.textures.exists(fullKey)) {
+      this.add.image(tx, ty, fullKey).setOrigin(0, 0).setDepth(1);
     } else {
       g.fillStyle(0x2a3848, 1);
       g.fillRect(tx, ty, T, T);
-    }
-
-    // Frost-band overlay: this tile is at the top of its wall mass if
-    // its north neighbor is NOT a wall. The frost continues smoothly
-    // across all such tiles, regardless of orientation, which is what
-    // makes corners blend with adjacent top walls.
-    const topOfMass = !isWall(x, y - 1);
-    if (topOfMass && this.textures.exists('d_frost_top')) {
-      this.add.image(tx, ty, 'd_frost_top').setOrigin(0, 0).setDepth(2);
-    }
-
-    // Shadow strips on edges that face a room (drawn ABOVE body but
-    // below frost overlay, so the lit horizon still pops).
-    if (inS) {
-      g.fillStyle(0x040810, 0.80);
-      g.fillRect(tx, ty + T - 3, T, 3);
-      g.fillStyle(0x101828, 0.55);
-      g.fillRect(tx, ty + T - 5, T, 2);
-    }
-    if (inE) {
-      g.fillStyle(0x101828, 0.55);
-      g.fillRect(tx + T - 3, ty, 3, T);
-    }
-    if (inW) {
-      g.fillStyle(0x101828, 0.55);
-      g.fillRect(tx, ty, 3, T);
     }
   }
 
