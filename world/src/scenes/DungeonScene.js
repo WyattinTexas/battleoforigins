@@ -191,57 +191,55 @@ class DungeonScene extends Phaser.Scene {
   }
 
   // ───────────────────────────────────────────────────────────
-  //  WALL — base rock sprite + code-drawn top highlight + bottom
-  //  shadow strip on whichever edge faces the room (light from
-  //  above). No more per-tile noise.
+  //  WALL — picks a hand-pixeled sprite based on which neighbors
+  //  are floor. Closed doors are treated as walls so walls beside
+  //  a door read as a continuous edge.
   // ───────────────────────────────────────────────────────────
   _drawWallTile(g, x, y) {
     const T = this.T;
     const tx = x * T, ty = y * T;
-
-    if (this.textures.exists('d_wall_body')) {
-      this.add.image(tx, ty, 'd_wall_body').setOrigin(0, 0).setDepth(1);
-    } else {
-      g.fillStyle(0x2a3848, 1);
-      g.fillRect(tx, ty, T, T);
-    }
+    const h = this._tileHash(x, y);
 
     const isFloor = (nx, ny) => {
       if (nx < 0 || ny < 0 || nx >= this.mapW || ny >= this.mapH) return false;
       const t = this.grid[ny][nx];
-      return t === D_TILE.FLOOR || t === D_TILE.DOOR_OPEN || t === D_TILE.DOOR_CLOSED || t === D_TILE.STAIRS;
+      // DOOR_CLOSED reads as wall for adjacency so the surrounding wall
+      // sprite stays consistent. DOOR_OPEN and STAIRS read as floor.
+      return t === D_TILE.FLOOR || t === D_TILE.DOOR_OPEN || t === D_TILE.STAIRS;
     };
     const inS = isFloor(x, y + 1);
     const inN = isFloor(x, y - 1);
     const inE = isFloor(x + 1, y);
     const inW = isFloor(x - 1, y);
 
-    // Top highlight (lit edge) — always at the TOP of the tile if a
-    // floor is anywhere adjacent. Reads as "light from above hits
-    // the top of the rock formation."
-    if (inS || inE || inW) {
-      g.fillStyle(0x7a94ac, 0.8);
-      g.fillRect(tx, ty, T, 2);
-      g.fillStyle(0xa0b8c8, 0.55);
-      g.fillRect(tx, ty + 2, T, 1);
+    // Resolve sprite key based on adjacency
+    let baseKey = null;
+    let variantCount = 1;
+    const floorCount = (inS ? 1 : 0) + (inN ? 1 : 0) + (inE ? 1 : 0) + (inW ? 1 : 0);
+
+    if (floorCount === 1) {
+      if (inS)      { baseKey = 'd_wall_top';    variantCount = 3; }
+      else if (inN) { baseKey = 'd_wall_bottom'; variantCount = 2; }
+      else if (inE) { baseKey = 'd_wall_left';   variantCount = 2; }
+      else          { baseKey = 'd_wall_right';  variantCount = 2; }
+    } else if (floorCount === 2) {
+      if      (inS && inE) baseKey = 'd_wall_corner_se';
+      else if (inS && inW) baseKey = 'd_wall_corner_sw';
+      else if (inN && inE) baseKey = 'd_wall_corner_ne';
+      else if (inN && inW) baseKey = 'd_wall_corner_nw';
+      else if (inN && inS) { baseKey = 'd_wall_hdiv'; variantCount = 2; }
+      // E+W (vertical divider) — fallback to interior, rare in this map
     }
-    // Bottom shadow (the wall's front face throws shadow onto floor).
-    // Drawn into the wall tile's lower 3 pixels so it looks like the
-    // shadow extends to where wall meets floor.
-    if (inS) {
-      g.fillStyle(0x0a1018, 0.85);
-      g.fillRect(tx, ty + T - 3, T, 3);
-      g.fillStyle(0x14202c, 0.65);
-      g.fillRect(tx, ty + T - 5, T, 2);
-    }
-    // Side shadows for left/right edges of walls touching rooms
-    if (inE) {
-      g.fillStyle(0x14202c, 0.55);
-      g.fillRect(tx + T - 2, ty, 2, T);
-    }
-    if (inW) {
-      g.fillStyle(0x14202c, 0.55);
-      g.fillRect(tx, ty, 2, T);
+    if (!baseKey) { baseKey = 'd_wall_interior'; variantCount = 2; }
+
+    const variant = 1 + (h % variantCount);
+    const fullKey = variantCount > 1 ? `${baseKey}_${variant}` : baseKey;
+
+    if (this.textures.exists(fullKey)) {
+      this.add.image(tx, ty, fullKey).setOrigin(0, 0).setDepth(1);
+    } else {
+      g.fillStyle(0x2a3848, 1);
+      g.fillRect(tx, ty, T, T);
     }
   }
 

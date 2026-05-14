@@ -63,8 +63,16 @@ class BootScene extends Phaser.Scene {
     for (let i = 1; i <= 5; i++) {
       this.load.image(`d_floor_${i}`, `assets/tiles/floor_${i}.png`);
     }
-    this.load.image('d_wall_body', 'assets/tiles/wall_body.png');
     this.load.image('d_vignette', 'assets/tiles/vignette.png');
+    // Hand-pixeled frost-cavern wall set — top/bottom/sides (variants),
+    // 4 organic curved corner pieces, horizontal divider, interior.
+    for (let i = 1; i <= 3; i++) this.load.image(`d_wall_top_${i}`, `assets/tiles/wall_top_${i}.png`);
+    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_bottom_${i}`, `assets/tiles/wall_bottom_${i}.png`);
+    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_left_${i}`, `assets/tiles/wall_left_${i}.png`);
+    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_right_${i}`, `assets/tiles/wall_right_${i}.png`);
+    for (const c of ['se', 'sw', 'ne', 'nw']) this.load.image(`d_wall_corner_${c}`, `assets/tiles/wall_corner_${c}.png`);
+    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_hdiv_${i}`, `assets/tiles/wall_hdiv_${i}.png`);
+    for (let i = 1; i <= 2; i++) this.load.image(`d_wall_interior_${i}`, `assets/tiles/wall_interior_${i}.png`);
 
     // ── ERW Grass Land 2.0 tilesets (32x32 native) ──
     this.load.spritesheet('erw_terrain', 'assets/erw/tilesets/terrain-grass.png', { frameWidth: 32, frameHeight: 32 });
@@ -269,7 +277,7 @@ class BootScene extends Phaser.Scene {
       fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v88', {
+    this.add.text(width / 2, height * 0.34, 'v89', {
       fontSize: '11px', fontFamily: 'monospace', color: '#555577',
     }).setOrigin(0.5);
 
