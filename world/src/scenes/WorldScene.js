@@ -495,6 +495,8 @@ class WorldScene extends Phaser.Scene {
 
     // ── Enemies ──
     this.enemies = this.physics.add.group();
+    this._failedArt = new Set();   // Track card art that failed to load (404, etc.)
+    this._loadingArt = {};          // Track card art currently being loaded
     for (let i = 0; i < 8; i++) this.spawnEnemy();
     this._spawnTimer = this.time.addEvent({ delay: 4000, callback: this.spawnEnemy, callbackScope: this, loop: true });
     this.physics.add.overlap(this.player, this.enemies, this.onEnemyContact, null, this);
@@ -2029,22 +2031,42 @@ class WorldScene extends Phaser.Scene {
     const creatureKeys = ['creature_bear','creature_dragon','creature_axolot','creature_axolotblue','creature_butterfly','creature_butterflyblue','creature_bluebat','creature_slime','creature_mushroom','creature_bamboo'];
     const fallbackKey = creatureKeys[Math.floor(Math.random() * creatureKeys.length)];
 
+    // Track art keys that failed to load so we don't retry or use broken textures
+    if (!this._failedArt) this._failedArt = new Set();
+
     // Load card art if not already loaded, use fallback creature sprite until ready
     let enemy;
-    if (artUrl && this.textures.exists(artKey)) {
+    const artLoaded = artUrl && !this._failedArt.has(artKey) && this.textures.exists(artKey);
+    if (artLoaded) {
       enemy = this.enemies.create(ex, ey, artKey, 0);
       // Scale to mini card size (~40px tall)
       const srcH = enemy.height || 100;
       enemy.setScale(40 / srcH);
     } else {
       enemy = this.enemies.create(ex, ey, fallbackKey, 0).setScale(1.8);
-      // Async load card art — swap when ready
-      if (artUrl && !this._loadingArt?.[artKey]) {
+      // Async load card art — swap when ready (skip if already failed or loading)
+      if (artUrl && !this._failedArt.has(artKey) && !this._loadingArt?.[artKey]) {
         if (!this._loadingArt) this._loadingArt = {};
         this._loadingArt[artKey] = true;
+
+        // Listen for load errors so broken images don't show as black/green squares
+        const errorHandler = (file) => {
+          if (file.key === artKey) {
+            this._failedArt.add(artKey);
+            // Remove the broken texture entry Phaser may have created
+            if (this.textures.exists(artKey)) this.textures.remove(artKey);
+            delete this._loadingArt[artKey];
+            this.load.off('loaderror', errorHandler);
+          }
+        };
+        this.load.on('loaderror', errorHandler);
+
         this.load.image(artKey, artUrl);
         this.load.once('complete', () => {
-          if (enemy.active && this.textures.exists(artKey)) {
+          // Clean up error listener if load succeeded
+          this.load.off('loaderror', errorHandler);
+          // Only swap if the art actually loaded successfully (not in failed set)
+          if (enemy.active && !this._failedArt.has(artKey) && this.textures.exists(artKey)) {
             enemy.setTexture(artKey);
             const srcH = enemy.height || 100;
             enemy.setScale(40 / srcH);
@@ -4947,8 +4969,18 @@ class WorldScene extends Phaser.Scene {
     const time = document.getElementById('hud-time');
     if (time && typeof getTimeOfDay === 'function') time.textContent = getTimeOfDay();
 
-    // Region — display on hud-top-right directly
-    const regionEl = document.getElementById('hud-top-right');
+    // Region — display in a dedicated element inside hud-top-right
+    // (Do NOT set textContent on hud-top-right — it destroys the GUIDE button and time)
+    let regionEl = document.getElementById('hud-region-label');
+    if (!regionEl) {
+      const topRight = document.getElementById('hud-top-right');
+      if (topRight) {
+        regionEl = document.createElement('div');
+        regionEl.id = 'hud-region-label';
+        regionEl.style.cssText = 'color:#aac; font-size:10px; font-family:monospace; background:#000000aa; padding:2px 6px;';
+        topRight.appendChild(regionEl);
+      }
+    }
     if (regionEl && typeof getCurrentRegion === 'function') {
       const r = getCurrentRegion(G.x, G.y);
       const names = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };

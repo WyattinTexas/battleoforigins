@@ -477,7 +477,7 @@ class BootScene extends Phaser.Scene {
           }
         }
         saveGame();
-        // Wave 6: Show sprite select FIRST, then name, then discipline
+        // Onboarding: Step 1 avatar select, Step 2 class choice, then world
         this.showSpriteSelect();
         return;
       }
@@ -505,27 +505,51 @@ class BootScene extends Phaser.Scene {
     }
   }
 
-  // ═══════ WAVE 6: SPRITE SELECT (new game only) ═══════
+  // ═══════ STEP 1: CHOOSE YOUR AVATAR (new game only) ═══════
   showSpriteSelect() {
     const { width, height } = this.scale;
 
     // Clear the scene and rebuild with sprite select screen
     this._spriteSelectGroup = [];
 
-    // Dim overlay
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8)
+    // Full dark overlay
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x0a0a1a, 0.95)
       .setDepth(100);
     this._spriteSelectGroup.push(overlay);
 
-    // Header
-    const header = this.add.text(width / 2, height * 0.08, 'CHOOSE YOUR CHARACTER', {
-      fontSize: '28px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
-      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 4, fill: true },
+    // Subtle star particles behind
+    for (let i = 0; i < 60; i++) {
+      const dot = this.add.circle(
+        Phaser.Math.Between(0, width), Phaser.Math.Between(0, height),
+        Phaser.Math.Between(1, 2), 0x6688cc, Phaser.Math.FloatBetween(0.05, 0.2)
+      ).setDepth(100);
+      this.tweens.add({ targets: dot, alpha: 0, duration: Phaser.Math.Between(1500, 3000), yoyo: true, repeat: -1 });
+      this._spriteSelectGroup.push(dot);
+    }
+
+    // Step indicator
+    const stepText = this.add.text(width / 2, height * 0.04, 'STEP 1 OF 2', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#556677', letterSpacing: 4,
+    }).setOrigin(0.5).setDepth(101);
+    this._spriteSelectGroup.push(stepText);
+
+    // Header with gold glow
+    const headerGlow = this.add.text(width / 2, height * 0.10, 'CHOOSE YOUR AVATAR', {
+      fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc44',
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 16, fill: true },
+    }).setOrigin(0.5).setDepth(101).setAlpha(0.4);
+    this.tweens.add({ targets: headerGlow, alpha: 0.25, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this._spriteSelectGroup.push(headerGlow);
+
+    const header = this.add.text(width / 2, height * 0.10, 'CHOOSE YOUR AVATAR', {
+      fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffe680',
+      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 6, fill: true },
+      stroke: '#aa7700', strokeThickness: 1,
     }).setOrigin(0.5).setDepth(101);
     this._spriteSelectGroup.push(header);
 
-    const subtitle = this.add.text(width / 2, height * 0.15, 'Pick your adventurer sprite', {
-      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#888899',
+    const subtitle = this.add.text(width / 2, height * 0.17, 'Pick your adventurer', {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5).setDepth(101);
     this._spriteSelectGroup.push(subtitle);
 
@@ -533,36 +557,54 @@ class BootScene extends Phaser.Scene {
     const cols = 4, rows = 2;
     const cellW = 140, cellH = 130;
     const gridW = cols * cellW;
-    const gridH = rows * cellH;
     const gridStartX = (width - gridW) / 2 + cellW / 2;
-    const gridStartY = height * 0.28 + cellH / 2;
+    const gridStartY = height * 0.30 + cellH / 2;
 
-    // Selection highlight (starts null)
+    // Selection state
     let selectedKey = null;
     let selectedBorder = null;
+    const allCellBgs = [];
 
-    // Confirm button (initially hidden)
-    const confirmBg = this.add.rectangle(width / 2, height * 0.88, 200, 44, 0x44aa44, 0.9)
-      .setInteractive({ useHandCursor: true }).setStrokeStyle(2, 0x66cc66)
+    // Large preview of selected avatar (right side or center bottom)
+    const previewX = width / 2;
+    const previewY = height * 0.78;
+    const previewSprite = this.add.sprite(previewX, previewY, 'player', 0)
+      .setScale(6).setDepth(103).setAlpha(0);
+    this._spriteSelectGroup.push(previewSprite);
+
+    const previewName = this.add.text(previewX, previewY + 55, '', {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffe680',
+    }).setOrigin(0.5).setDepth(103);
+    this._spriteSelectGroup.push(previewName);
+
+    // Next button (initially hidden)
+    const nextBtnW = 200, nextBtnH = 48;
+    const nextBtnY = height * 0.92;
+    const nextGlow = this.add.rectangle(width / 2, nextBtnY, nextBtnW + 12, nextBtnH + 12, 0x2266aa, 0.25)
       .setDepth(102).setVisible(false);
-    const confirmText = this.add.text(width / 2, height * 0.88, 'CONFIRM', {
-      fontSize: '20px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+    this.tweens.add({ targets: nextGlow, alpha: 0.1, scaleX: 1.06, scaleY: 1.06, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const nextBg = this.add.rectangle(width / 2, nextBtnY, nextBtnW, nextBtnH, 0x1a3366)
+      .setStrokeStyle(2, 0x4488cc)
+      .setInteractive({ useHandCursor: true }).setDepth(102).setVisible(false);
+    const nextLabel = this.add.text(width / 2, nextBtnY, 'NEXT', {
+      fontSize: '22px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+      shadow: { offsetX: 0, offsetY: 0, color: '#44aaff', blur: 8, fill: true },
     }).setOrigin(0.5).setDepth(103).setVisible(false);
-    this._spriteSelectGroup.push(confirmBg, confirmText);
+    this._spriteSelectGroup.push(nextGlow, nextBg, nextLabel);
 
-    confirmBg.on('pointerover', () => confirmBg.setFillStyle(0x55cc55));
-    confirmBg.on('pointerout', () => confirmBg.setFillStyle(0x44aa44, 0.9));
-    confirmBg.on('pointerdown', () => {
+    nextBg.on('pointerover', () => { nextBg.setFillStyle(0x2255aa); nextBg.setStrokeStyle(2, 0x66aaee); nextLabel.setColor('#ffffcc'); });
+    nextBg.on('pointerout', () => { nextBg.setFillStyle(0x1a3366); nextBg.setStrokeStyle(2, 0x4488cc); nextLabel.setColor('#ffffff'); });
+    nextBg.on('pointerdown', () => {
       if (!selectedKey) return;
       G.spriteKey = selectedKey;
       saveGame();
-      // Clean up sprite select UI
+      // Clean up
       for (const obj of this._spriteSelectGroup) {
         if (obj && obj.destroy) obj.destroy();
       }
       this._spriteSelectGroup = [];
-      // Next step: name input
-      this.showNameInput();
+      // Step 2: class selection
+      this.showClassChoice();
     });
 
     CHARACTER_SPRITES.forEach((cs, i) => {
@@ -572,245 +614,270 @@ class BootScene extends Phaser.Scene {
       const cy = gridStartY + row * cellH;
 
       // Cell background
-      const cellBg = this.add.rectangle(cx, cy, cellW - 10, cellH - 10, 0x222244, 0.7)
-        .setStrokeStyle(2, 0x444466)
+      const cellBg = this.add.rectangle(cx, cy, cellW - 10, cellH - 10, 0x151530, 0.8)
+        .setStrokeStyle(2, 0x333355)
         .setInteractive({ useHandCursor: true })
         .setDepth(102);
+      allCellBgs.push(cellBg);
 
       // Sprite preview (frame 0 = front-facing idle)
       const spritePreview = this.add.sprite(cx, cy - 15, cs.key, 0).setScale(4).setDepth(103);
 
       // Label
       const label = this.add.text(cx, cy + 40, cs.label, {
-        fontSize: '12px', fontFamily: 'monospace', color: '#aaaacc',
+        fontSize: '12px', fontFamily: 'monospace', color: '#8888aa',
       }).setOrigin(0.5).setDepth(103);
 
       this._spriteSelectGroup.push(cellBg, spritePreview, label);
 
       // Hover
       cellBg.on('pointerover', () => {
-        if (selectedKey !== cs.key) cellBg.setStrokeStyle(2, 0x88aacc);
+        if (selectedKey !== cs.key) {
+          cellBg.setStrokeStyle(2, 0x5566aa);
+          cellBg.setFillStyle(0x1a1a40, 0.9);
+        }
       });
       cellBg.on('pointerout', () => {
-        if (selectedKey !== cs.key) cellBg.setStrokeStyle(2, 0x444466);
+        if (selectedKey !== cs.key) {
+          cellBg.setStrokeStyle(2, 0x333355);
+          cellBg.setFillStyle(0x151530, 0.8);
+        }
       });
 
       // Click to select
       cellBg.on('pointerdown', () => {
         // Deselect previous
-        if (selectedBorder) selectedBorder.setStrokeStyle(2, 0x444466);
+        if (selectedBorder) {
+          selectedBorder.setStrokeStyle(2, 0x333355);
+          selectedBorder.setFillStyle(0x151530, 0.8);
+        }
 
         selectedKey = cs.key;
         selectedBorder = cellBg;
         cellBg.setStrokeStyle(3, 0x44aaff);
+        cellBg.setFillStyle(0x1a2255, 0.95);
+
+        // Update large preview
+        previewSprite.setTexture(cs.key, 0).setAlpha(1);
+        previewName.setText(cs.label);
 
         // Update title preview if it still exists
         if (this._titlePreview && this._titlePreview.active) {
           this._titlePreview.setTexture(cs.key, 0);
         }
 
-        // Show confirm button
-        confirmBg.setVisible(true);
-        confirmText.setVisible(true);
+        // Show next button
+        nextGlow.setVisible(true);
+        nextBg.setVisible(true);
+        nextLabel.setVisible(true);
       });
     });
   }
 
-  // ═══════ WAVE 6: NAME INPUT (after sprite select) ═══════
-  showNameInput() {
+  // ═══════ STEP 2: CHOOSE YOUR STARTING PATH / CLASS (new game only) ═══════
+  showClassChoice() {
     const { width, height } = this.scale;
-    this._nameSelectGroup = [];
+    this._classSelectGroup = [];
 
-    // Overlay
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8)
+    // Full dark overlay
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x0a0a1a, 0.97)
       .setDepth(100);
-    this._nameSelectGroup.push(overlay);
+    this._classSelectGroup.push(overlay);
 
-    // Header
-    const header = this.add.text(width / 2, height * 0.12, 'ENTER YOUR NAME', {
-      fontSize: '28px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
-      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 4, fill: true },
+    // Subtle star particles
+    for (let i = 0; i < 60; i++) {
+      const dot = this.add.circle(
+        Phaser.Math.Between(0, width), Phaser.Math.Between(0, height),
+        Phaser.Math.Between(1, 2), 0x6688cc, Phaser.Math.FloatBetween(0.05, 0.2)
+      ).setDepth(100);
+      this.tweens.add({ targets: dot, alpha: 0, duration: Phaser.Math.Between(1500, 3000), yoyo: true, repeat: -1 });
+      this._classSelectGroup.push(dot);
+    }
+
+    // Step indicator
+    const stepText = this.add.text(width / 2, height * 0.04, 'STEP 2 OF 2', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#556677', letterSpacing: 4,
     }).setOrigin(0.5).setDepth(101);
-    this._nameSelectGroup.push(header);
+    this._classSelectGroup.push(stepText);
 
-    // Character preview with chosen sprite
-    const previewKey = G.spriteKey || 'player';
-    const charPreview = this.add.sprite(width / 2, height * 0.3, previewKey, 0).setScale(5).setDepth(101);
-    this._nameSelectGroup.push(charPreview);
+    // Header with gold glow
+    const headerGlow = this.add.text(width / 2, height * 0.10, 'CHOOSE YOUR PATH', {
+      fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc44',
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 16, fill: true },
+    }).setOrigin(0.5).setDepth(101).setAlpha(0.4);
+    this.tweens.add({ targets: headerGlow, alpha: 0.25, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this._classSelectGroup.push(headerGlow);
 
-    // ── Text input field ──
-    const inputBg = this.add.rectangle(width / 2, height * 0.48, 320, 40, 0x111128, 0.95)
-      .setStrokeStyle(2, 0x4444aa).setDepth(102);
-    this._nameSelectGroup.push(inputBg);
-
-    let currentName = '';
-    const maxLen = 16;
-
-    const inputText = this.add.text(width / 2, height * 0.48, '|', {
-      fontSize: '20px', fontFamily: 'monospace', color: '#ffffff',
-    }).setOrigin(0.5).setDepth(103);
-    this._nameSelectGroup.push(inputText);
-
-    const hint = this.add.text(width / 2, height * 0.55, 'Type your name, then press ENTER   (or pick one below)', {
-      fontSize: '11px', fontFamily: 'monospace', fontStyle: 'italic', color: '#666688',
+    const header = this.add.text(width / 2, height * 0.10, 'CHOOSE YOUR PATH', {
+      fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffe680',
+      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 6, fill: true },
+      stroke: '#aa7700', strokeThickness: 1,
     }).setOrigin(0.5).setDepth(101);
-    this._nameSelectGroup.push(hint);
+    this._classSelectGroup.push(header);
 
-    // Blinking cursor
-    const cursorBlink = this.time.addEvent({
-      delay: 500, loop: true,
-      callback: () => {
-        const cursor = inputText.text.endsWith('|') ? inputText.text.slice(0, -1) : inputText.text + '|';
-        inputText.setText(currentName + (cursor.endsWith('|') ? '|' : ''));
-        inputText.setText(currentName + (this._cursorVisible ? '|' : ''));
-        this._cursorVisible = !this._cursorVisible;
-      }
-    });
-    this._cursorVisible = true;
-
-    // Keyboard listener for typing
-    const onKeyDown = (event) => {
-      if (event.key === 'Backspace') {
-        currentName = currentName.slice(0, -1);
-        inputText.setText(currentName + '|');
-      } else if (event.key === 'Enter') {
-        if (currentName.trim().length > 0) {
-          finalizeName(currentName.trim());
-        }
-      } else if (event.key.length === 1 && currentName.length < maxLen) {
-        // Only allow alphanumeric + spaces
-        if (/[a-zA-Z0-9 ]/.test(event.key)) {
-          currentName += event.key;
-          inputText.setText(currentName + '|');
-        }
-      }
-    };
-    this.input.keyboard.on('keydown', onKeyDown);
-
-    // ── Preset name buttons ──
-    const presets = ['Adventurer', 'Wanderer', 'Seeker', 'Explorer', 'Spirit Walker', 'Champion'];
-    const btnW = 140, btnH = 32, btnGap = 10;
-    const presetsPerRow = 3;
-    const rowCount = Math.ceil(presets.length / presetsPerRow);
-    const presetStartY = height * 0.62;
-
-    presets.forEach((name, i) => {
-      const col = i % presetsPerRow;
-      const row = Math.floor(i / presetsPerRow);
-      const totalRowW = presetsPerRow * btnW + (presetsPerRow - 1) * btnGap;
-      const rowStartX = (width - totalRowW) / 2 + btnW / 2;
-      const bx = rowStartX + col * (btnW + btnGap);
-      const by = presetStartY + row * (btnH + btnGap);
-
-      const bg = this.add.rectangle(bx, by, btnW, btnH, 0x334466, 0.85)
-        .setStrokeStyle(1, 0x556688)
-        .setInteractive({ useHandCursor: true }).setDepth(102);
-      const txt = this.add.text(bx, by, name, {
-        fontSize: '13px', fontFamily: 'Georgia, serif', color: '#ccccee',
-      }).setOrigin(0.5).setDepth(103);
-
-      this._nameSelectGroup.push(bg, txt);
-
-      bg.on('pointerover', () => bg.setFillStyle(0x445588));
-      bg.on('pointerout', () => bg.setFillStyle(0x334466, 0.85));
-      bg.on('pointerdown', () => {
-        finalizeName(name);
-      });
-    });
-
-    const finalizeName = (name) => {
-      // Clean up
-      this.input.keyboard.off('keydown', onKeyDown);
-      cursorBlink.remove();
-
-      G.name = name;
-      saveGame();
-
-      for (const obj of this._nameSelectGroup) {
-        if (obj && obj.destroy) obj.destroy();
-      }
-      this._nameSelectGroup = [];
-
-      // Next step: discipline choice
-      this.showDisciplineChoice();
-    };
-  }
-
-  // ═══════ DISCIPLINE CHOICE (new game only) ═══════
-  showDisciplineChoice() {
-    const { width, height } = this.scale;
-
-    // Dim the title screen
-    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.75)
-      .setDepth(100);
-
-    // Header
-    this.add.text(width / 2, height * 0.12, 'CHOOSE YOUR DISCIPLINE', {
-      fontSize: '28px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
-      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 4, fill: true },
+    const subtitle = this.add.text(width / 2, height * 0.17, 'Your starting class shapes your journey through the Spirit World', {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5).setDepth(101);
+    this._classSelectGroup.push(subtitle);
 
-    this.add.text(width / 2, height * 0.19, 'This shapes your journey through the Spirit World', {
-      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#888899',
-    }).setOrigin(0.5).setDepth(101);
+    // Avatar preview (top right corner)
+    const avatarKey = G.spriteKey || 'player';
+    const avatarPreview = this.add.sprite(width - 60, 60, avatarKey, 0).setScale(4).setDepth(103);
+    const avatarGlow = this.add.circle(width - 60, 60, 28, 0x2244aa, 0.15).setDepth(102);
+    this._classSelectGroup.push(avatarPreview, avatarGlow);
 
-    // Discipline cards
-    const disciplines = [
-      { key: 'fighter',  icon: '\u2694\uFE0F', name: 'Fighter',  desc: '+10% combat XP gain',                        color: 0x662222 },
-      { key: 'scout',    icon: '\uD83E\uDDED', name: 'Scout',    desc: '+10% exploration XP\n+20% recruit chance',    color: 0x223355 },
-      { key: 'artisan',  icon: '\uD83D\uDD28', name: 'Artisan',  desc: '+10% crafting XP\n+1 assembly roll bonus',    color: 0x554422 },
-      { key: 'merchant', icon: '\uD83D\uDCB0', name: 'Merchant', desc: 'Start with +50 gold\n+10% trade XP',         color: 0x225522 },
+    // Class definitions
+    const classes = [
+      { key: 'trainer',        name: 'Trainer',        desc: 'Focused on combat and battle mastery',         color: 0x44dd66, accent: 0x33aa55, icon: '\u2694\uFE0F' },
+      { key: 'cultivator',     name: 'Cultivator',     desc: 'Focused on growing, gathering, and nature',    color: 0x66cc66, accent: 0x449944, icon: '\uD83C\uDF3F' },
+      { key: 'fortune_teller', name: 'Fortune Teller', desc: 'Focused on mystical abilities and fate',       color: 0x44bbff, accent: 0x3388cc, icon: '\uD83D\uDD2E' },
+      { key: 'artisan',        name: 'Artisan',        desc: 'Focused on crafting and building',             color: 0xdd9933, accent: 0xaa7722, icon: '\uD83D\uDD28' },
+      { key: 'scientist',      name: 'Scientist',      desc: 'Focused on knowledge and discovery',           color: 0xaa55ff, accent: 0x8833cc, icon: '\uD83E\uDDEA' },
     ];
 
-    const cardW = 200, cardH = 160, gap = 20;
-    const totalW = disciplines.length * cardW + (disciplines.length - 1) * gap;
+    // Card layout — 5 cards in a row
+    const cardW = 180, cardH = 220, gap = 16;
+    const totalW = classes.length * cardW + (classes.length - 1) * gap;
     const startX = (width - totalW) / 2 + cardW / 2;
     const cardY = height * 0.48;
 
-    disciplines.forEach((d, i) => {
+    let selectedClass = null;
+    let selectedCardBg = null;
+    const allCardBgs = [];
+    const allCardGlows = [];
+
+    // Begin Journey button (initially hidden)
+    const beginBtnW = 260, beginBtnH = 52;
+    const beginBtnY = height * 0.88;
+    const beginGlow = this.add.rectangle(width / 2, beginBtnY, beginBtnW + 14, beginBtnH + 14, 0x2266aa, 0.25)
+      .setDepth(102).setVisible(false);
+    this.tweens.add({ targets: beginGlow, alpha: 0.1, scaleX: 1.06, scaleY: 1.06, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const beginBg = this.add.rectangle(width / 2, beginBtnY, beginBtnW, beginBtnH, 0x1a3366)
+      .setStrokeStyle(2, 0x4488cc)
+      .setInteractive({ useHandCursor: true }).setDepth(102).setVisible(false);
+    const beginLabel = this.add.text(width / 2, beginBtnY, 'BEGIN JOURNEY', {
+      fontSize: '24px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+      shadow: { offsetX: 0, offsetY: 0, color: '#44aaff', blur: 10, fill: true },
+    }).setOrigin(0.5).setDepth(103).setVisible(false);
+    this._classSelectGroup.push(beginGlow, beginBg, beginLabel);
+
+    beginBg.on('pointerover', () => { beginBg.setFillStyle(0x2255aa); beginBg.setStrokeStyle(2, 0x66aaee); beginLabel.setColor('#ffffcc'); });
+    beginBg.on('pointerout', () => { beginBg.setFillStyle(0x1a3366); beginBg.setStrokeStyle(2, 0x4488cc); beginLabel.setColor('#ffffff'); });
+    beginBg.on('pointerdown', () => {
+      if (!selectedClass) return;
+
+      // Save starting class
+      G.startingClass = selectedClass.key;
+      G.discipline = selectedClass.key; // backwards compat with discipline field
+
+      // Pre-learn the Apprentice talent for the chosen class ONLY
+      // Clear any auto-unlocked apprentices first
+      const classKeys = ['trainer', 'cultivator', 'fortune_teller', 'artisan', 'scientist'];
+      for (const ck of classKeys) {
+        if (!G.talents) G.talents = {};
+        if (!G.talents[ck]) G.talents[ck] = {};
+        // Remove auto-unlocked apprentice from all classes
+        delete G.talents[ck]._app;
+      }
+      // Now learn the chosen class apprentice
+      G.talents[selectedClass.key]._app = 1;
+
+      notify(`Path chosen: ${selectedClass.name}!`);
+      saveGame();
+
+      // Clean up
+      for (const obj of this._classSelectGroup) {
+        if (obj && obj.destroy) obj.destroy();
+      }
+      this._classSelectGroup = [];
+
+      // Transition to world
+      this.cameras.main.fadeOut(600, 0, 0, 0);
+      this.time.delayedCall(600, () => this.scene.start('WorldScene'));
+    });
+
+    classes.forEach((cls, i) => {
       const cx = startX + i * (cardW + gap);
 
+      // Card glow (behind card, subtle pulse)
+      const cardGlow = this.add.rectangle(cx, cardY, cardW + 8, cardH + 8, cls.color, 0.06)
+        .setDepth(101);
+      allCardGlows.push(cardGlow);
+      this._classSelectGroup.push(cardGlow);
+
       // Card background
-      const cardBg = this.add.rectangle(cx, cardY, cardW, cardH, d.color, 0.85)
-        .setStrokeStyle(2, 0x555566)
+      const cardBg = this.add.rectangle(cx, cardY, cardW, cardH, 0x111128, 0.92)
+        .setStrokeStyle(2, 0x333355)
         .setInteractive({ useHandCursor: true })
         .setDepth(102);
+      allCardBgs.push(cardBg);
+      this._classSelectGroup.push(cardBg);
+
+      // Top color accent bar
+      const accentBar = this.add.rectangle(cx, cardY - cardH / 2 + 4, cardW - 4, 6, cls.color, 0.7)
+        .setDepth(103);
+      this._classSelectGroup.push(accentBar);
 
       // Icon
-      this.add.text(cx, cardY - 45, d.icon, {
-        fontSize: '36px',
+      const icon = this.add.text(cx, cardY - 55, cls.icon, {
+        fontSize: '40px',
       }).setOrigin(0.5).setDepth(103);
+      this._classSelectGroup.push(icon);
 
-      // Name
-      this.add.text(cx, cardY - 8, d.name, {
+      // Class name
+      const nameText = this.add.text(cx, cardY - 10, cls.name, {
         fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+        shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 3, fill: true },
       }).setOrigin(0.5).setDepth(103);
+      this._classSelectGroup.push(nameText);
+
+      // Divider line
+      const divider = this.add.rectangle(cx, cardY + 12, cardW - 40, 1, cls.color, 0.3).setDepth(103);
+      this._classSelectGroup.push(divider);
 
       // Description
-      this.add.text(cx, cardY + 28, d.desc, {
-        fontSize: '12px', fontFamily: 'monospace', color: '#bbbbcc', align: 'center',
-        lineSpacing: 4,
+      const descText = this.add.text(cx, cardY + 28, cls.desc, {
+        fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
+        align: 'center', wordWrap: { width: cardW - 24 }, lineSpacing: 3,
       }).setOrigin(0.5, 0).setDepth(103);
+      this._classSelectGroup.push(descText);
 
       // Hover effects
-      cardBg.on('pointerover', () => { cardBg.setStrokeStyle(3, 0xffffff); cardBg.setAlpha(1); });
-      cardBg.on('pointerout', () => { cardBg.setStrokeStyle(2, 0x555566); cardBg.setAlpha(0.85); });
+      cardBg.on('pointerover', () => {
+        if (selectedClass?.key !== cls.key) {
+          cardBg.setStrokeStyle(2, 0x5566aa);
+          cardBg.setFillStyle(0x151535, 0.95);
+          cardGlow.setAlpha(0.12);
+        }
+      });
+      cardBg.on('pointerout', () => {
+        if (selectedClass?.key !== cls.key) {
+          cardBg.setStrokeStyle(2, 0x333355);
+          cardBg.setFillStyle(0x111128, 0.92);
+          cardGlow.setAlpha(0.06);
+        }
+      });
 
-      // Click to choose
+      // Click to select
       cardBg.on('pointerdown', () => {
-        G.discipline = d.key;
-
-        // Apply Merchant starting bonus
-        if (d.key === 'merchant') {
-          G.coins = (G.coins || 100) + 50;
+        // Deselect previous
+        if (selectedCardBg) {
+          const prevIdx = allCardBgs.indexOf(selectedCardBg);
+          selectedCardBg.setStrokeStyle(2, 0x333355);
+          selectedCardBg.setFillStyle(0x111128, 0.92);
+          if (prevIdx >= 0) allCardGlows[prevIdx].setAlpha(0.06);
         }
 
-        notify(`Discipline chosen: ${d.name}!`);
-        saveGame();
+        selectedClass = cls;
+        selectedCardBg = cardBg;
+        cardBg.setStrokeStyle(3, cls.color);
+        cardBg.setFillStyle(0x1a1a44, 0.98);
+        cardGlow.setAlpha(0.2);
 
-        // Transition to world
-        this.cameras.main.fadeOut(600, 0, 0, 0);
-        this.time.delayedCall(600, () => this.scene.start('WorldScene'));
+        // Show begin button
+        beginGlow.setVisible(true);
+        beginBg.setVisible(true);
+        beginLabel.setVisible(true);
       });
     });
   }

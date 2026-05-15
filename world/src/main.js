@@ -54,4 +54,6 @@ const G = {
   surge: 0, moonstone: 0, firefly: 0,
   // Zone system
   currentZone: 'frost_valley',
+  // Starting class (chosen during onboarding)
+  startingClass: null,
 };

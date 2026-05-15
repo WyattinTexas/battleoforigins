@@ -1328,11 +1328,13 @@ class BattleScene extends Phaser.Scene {
     else if (coinChange < 0) sub = `${coinChange} Gold`;
 
     this._showCallout(text, type, sub, 2500);
-    this.time.delayedCall(2800, () => {
+
+    // ── Bridge Moment: first-win Kickstarter reveal ──
+    const isFirstWin = won && G.rep && G.rep.battlesWon === 1;
+    const _doSceneExit = () => {
       if (typeof GameAudio !== 'undefined') { won?GameAudio.victory():GameAudio.defeat(); }
       this.cameras.main.fadeOut(300, 0, 0, 0, (cam, p) => {
         if (p >= 1) {
-          // Return to whichever scene launched the battle (defaults to WorldScene).
           const target = this.battleData.returnScene || 'WorldScene';
           this.scene.stop();
           this.scene.resume(target);
@@ -1340,7 +1342,17 @@ class BattleScene extends Phaser.Scene {
           if (rs && rs.cameras) rs.cameras.main.fadeIn(300);
         }
       });
-    });
+    };
+
+    if (isFirstWin && this.pg) {
+      // Show the card reveal after the VICTORY callout fades
+      this.time.delayedCall(2800, () => {
+        if (typeof GameAudio !== 'undefined') GameAudio.victory();
+        this._showKickstarterReveal(this.pg, _doSceneExit);
+      });
+    } else {
+      this.time.delayedCall(2800, _doSceneExit);
+    }
   }
 
   reportRaidDamage(dmg, dice) { if (!this._raidId || typeof RaidManager === 'undefined') return; RaidManager.reportDamage(this._raidId, dmg, dice); }
@@ -1355,4 +1367,99 @@ class BattleScene extends Phaser.Scene {
   buildRaidPartyStrip() {}
   showRaidFeedEntry() {}
   renderWillpowerStack() { this._rebuildWP(); }
-}
+
+  // ═══════════════════════════════════════════════════════
+  //  KICKSTARTER BRIDGE MOMENT — first win card reveal
+  // ═══════════════════════════════════════════════════════
+  _showKickstarterReveal(ghost, onDone) {
+    const artUrl = _artUrl(ghost);
+    const cardName = ghost.name || 'Your Spiritkin';
+    const rarityColor = BC.RARITY_S[(ghost.rarity||'common').toLowerCase()] || '#d4a040';
+
+    // Build the full-screen DOM overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'kickstarter-reveal';
+    overlay.style.cssText = `
+      position:fixed; inset:0; z-index:99999;
+      background:rgba(0,0,0,0);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-family:'Segoe UI',system-ui,sans-serif;
+      opacity:0; transition:opacity 0.6s ease, background 0.6s ease;
+      cursor:pointer;
+    `;
+
+    overlay.innerHTML = `
+      <div id="kr-card-wrap" style="
+        position:relative; width:260px; height:360px;
+        border-radius:16px; overflow:hidden;
+        box-shadow:0 0 0px ${rarityColor}, 0 20px 60px rgba(0,0,0,0.8);
+        transform:scale(0.3) rotateY(90deg);
+        transition:transform 0.8s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.8s ease;
+      ">
+        <img src="${artUrl}" style="width:100%;height:100%;object-fit:cover;" alt="${cardName}">
+      </div>
+      <div id="kr-card-name" style="
+        margin-top:24px; font-size:28px; font-weight:700;
+        color:${rarityColor}; text-shadow:0 2px 20px ${rarityColor}40;
+        letter-spacing:2px; text-transform:uppercase;
+        opacity:0; transform:translateY(20px);
+        transition:opacity 0.5s ease 0.6s, transform 0.5s ease 0.6s;
+      ">${cardName}</div>
+      <div id="kr-tagline" style="
+        margin-top:12px; font-size:15px; color:#c8c0b0;
+        opacity:0; transform:translateY(20px);
+        transition:opacity 0.5s ease 0.9s, transform 0.5s ease 0.9s;
+        text-align:center; line-height:1.5; max-width:400px;
+      ">This is a real card.<br>Back us on Kickstarter to hold it in your hands.</div>
+      <a id="kr-cta" href="https://www.kickstarter.com" target="_blank" rel="noopener" style="
+        display:inline-block; margin-top:28px; padding:14px 36px;
+        background:linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color:#fff; font-size:16px; font-weight:700; letter-spacing:1px;
+        text-decoration:none; border-radius:8px;
+        box-shadow:0 4px 20px rgba(46,204,113,0.4);
+        opacity:0; transform:translateY(20px);
+        transition:opacity 0.5s ease 1.2s, transform 0.5s ease 1.2s, background 0.2s ease;
+        cursor:pointer;
+      ">BACK ON KICKSTARTER</a>
+      <div id="kr-skip" style="
+        margin-top:20px; font-size:13px; color:#6a6a80;
+        opacity:0; transition:opacity 0.5s ease 2s;
+      ">Click anywhere to continue</div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Prevent the CTA link click from also triggering the dismiss
+    const cta = overlay.querySelector('#kr-cta');
+    cta.addEventListener('click', e => e.stopPropagation());
+    cta.addEventListener('mouseenter', () => { cta.style.background = 'linear-gradient(135deg, #27ae60 0%, #1e8449 100%)'; });
+    cta.addEventListener('mouseleave', () => { cta.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)'; });
+
+    // Animate in
+    requestAnimationFrame(() => {
+      overlay.style.opacity = '1';
+      overlay.style.background = 'rgba(0,0,0,0.92)';
+      const wrap = overlay.querySelector('#kr-card-wrap');
+      wrap.style.transform = 'scale(1) rotateY(0deg)';
+      wrap.style.boxShadow = `0 0 40px ${rarityColor}80, 0 20px 60px rgba(0,0,0,0.8)`;
+      // Trigger text animations
+      overlay.querySelector('#kr-card-name').style.opacity = '1';
+      overlay.querySelector('#kr-card-name').style.transform = 'translateY(0)';
+      overlay.querySelector('#kr-tagline').style.opacity = '1';
+      overlay.querySelector('#kr-tagline').style.transform = 'translateY(0)';
+      overlay.querySelector('#kr-cta').style.opacity = '1';
+      overlay.querySelector('#kr-cta').style.transform = 'translateY(0)';
+      overlay.querySelector('#kr-skip').style.opacity = '1';
+    });
+
+    // Dismiss on click (outside the CTA)
+    const dismiss = () => {
+      overlay.style.opacity = '0';
+      overlay.style.background = 'rgba(0,0,0,0)';
+      setTimeout(() => {
+        overlay.remove();
+        onDone();
+      }, 600);
+    };
+    overlay.addEventListener('click', dismiss);
+  }

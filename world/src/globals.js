@@ -471,17 +471,14 @@ function ensurePlayerDefaults() {
   if (!G.party) G.party = [];
   // Wave 7: talent trees
   if (!G.talents) G.talents = {};
-  // All base class apprentices start unlocked (player can unlearn to reclaim points)
-  if (!G.talents.fortune_teller) G.talents.fortune_teller = {};
-  if (!G.talents.fortune_teller._app) G.talents.fortune_teller._app = 1;
-  if (!G.talents.artisan) G.talents.artisan = {};
-  if (!G.talents.artisan._app) G.talents.artisan._app = 1;
-  if (!G.talents.trainer) G.talents.trainer = {};
-  if (!G.talents.trainer._app) G.talents.trainer._app = 1;
-  if (!G.talents.scientist) G.talents.scientist = {};
-  if (!G.talents.scientist._app) G.talents.scientist._app = 1;
-  if (!G.talents.cultivator) G.talents.cultivator = {};
-  if (!G.talents.cultivator._app) G.talents.cultivator._app = 1;
+  // Starting class apprentice — only the chosen class gets auto-unlocked
+  // (set during onboarding in BootScene.showClassChoice)
+  // Ensure sub-objects exist for all class trees (but don't force _app)
+  const _classTrees = ['fortune_teller', 'artisan', 'trainer', 'scientist', 'cultivator'];
+  for (const _ct of _classTrees) {
+    if (!G.talents[_ct]) G.talents[_ct] = {};
+  }
+  if (!G.startingClass) G.startingClass = null;
   if (G.darkRiderUnlocked === undefined) G.darkRiderUnlocked = false;
   if (G.elderUnlocked === undefined) G.elderUnlocked = false;
   if (G.activeAmendment === undefined) G.activeAmendment = null; // Elder Council amendment id
@@ -512,10 +509,16 @@ function getProfessionMasteryInfo(xp) {
 
 // ── Discipline definitions (chosen at game start, bonuses referenced by other systems) ──
 const PLAYER_DISCIPLINES = {
+  // Legacy disciplines (backwards compat with old saves)
   fighter:  { name: 'Fighter',  icon: '\u2694\uFE0F', desc: '+10% combat XP gain', color: '#ff6644' },
   scout:    { name: 'Scout',    icon: '\uD83E\uDDED', desc: '+10% exploration XP, +20% recruit chance', color: '#44bbff' },
-  artisan:  { name: 'Artisan',  icon: '\uD83D\uDD28', desc: '+10% crafting XP, +1 assembly roll bonus', color: '#ffaa22' },
   merchant: { name: 'Merchant', icon: '\uD83D\uDCB0', desc: 'Start with +50 gold, +10% trade XP', color: '#44dd44' },
+  // New class-based paths (Wave 9 onboarding)
+  trainer:        { name: 'Trainer',        icon: '\u2694\uFE0F', desc: 'Combat and battle mastery',         color: '#44dd66' },
+  cultivator:     { name: 'Cultivator',     icon: '\uD83C\uDF3F', desc: 'Growing, gathering, and nature',    color: '#66cc66' },
+  fortune_teller: { name: 'Fortune Teller', icon: '\uD83D\uDD2E', desc: 'Mystical abilities and fate',       color: '#44bbff' },
+  artisan:        { name: 'Artisan',        icon: '\uD83D\uDD28', desc: 'Crafting and building',             color: '#dd9933' },
+  scientist:      { name: 'Scientist',      icon: '\uD83E\uDDEA', desc: 'Knowledge and discovery',           color: '#aa55ff' },
 };
 
 // ═══════════════════════════════════════════════════
