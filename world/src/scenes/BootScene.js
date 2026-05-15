@@ -203,12 +203,79 @@ class BootScene extends Phaser.Scene {
     this.load.audio('music_battle', 'assets/audio/battle.ogg');
     this.load.audio('music_frost', 'assets/audio/frost_valley.ogg');
 
-    // Loading bar
+    // ── Showcase card art for loading/title screen ──
+    const showcaseCards = ['flora', 'gary', 'kodako', 'redd', 'munch', 'sylvia'];
+    for (const name of showcaseCards) {
+      this.load.image('showcase_' + name, 'https://drbango.com/testroom/art/originals/' + name + '.png');
+    }
+
+    // ── Premium loading screen ──
     const { width, height } = this.scale;
-    const bar = this.add.rectangle(width/2, height/2 + 40, 300, 16, 0x333333);
-    const fill = this.add.rectangle(width/2 - 148, height/2 + 40, 4, 12, 0x4488ff).setOrigin(0, 0.5);
-    this.add.text(width/2, height/2, 'Loading...', { fontSize: '16px', color: '#888' }).setOrigin(0.5);
-    this.load.on('progress', (p) => { fill.width = 296 * p; });
+    this.cameras.main.setBackgroundColor('#0a0a1a');
+
+    // Subtle particle field behind everything
+    for (let i = 0; i < 40; i++) {
+      const dot = this.add.circle(
+        Phaser.Math.Between(0, width), Phaser.Math.Between(0, height),
+        Phaser.Math.Between(1, 2), 0x6688cc, Phaser.Math.FloatBetween(0.05, 0.25)
+      );
+      this.tweens.add({ targets: dot, alpha: 0, duration: Phaser.Math.Between(1500, 3000), yoyo: true, repeat: -1 });
+    }
+
+    // "Loading Spirits..." text
+    const loadText = this.add.text(width / 2, height - 70, 'Loading Spirits...', {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
+    }).setOrigin(0.5);
+
+    // Loading bar track (bottom of screen)
+    const barW = Math.min(400, width * 0.7);
+    const barH = 10;
+    const barY = height - 40;
+    const barX = width / 2 - barW / 2;
+    // Outer track
+    this.add.rectangle(width / 2, barY, barW + 4, barH + 4, 0x1a1a3a).setStrokeStyle(1, 0x334466);
+    // Fill — gradient-ish using overlapping rectangles
+    const fillBase = this.add.rectangle(barX + 2, barY, 1, barH - 2, 0x2266aa).setOrigin(0, 0.5);
+    const fillGlow = this.add.rectangle(barX + 2, barY, 1, barH - 4, 0x44aaff).setOrigin(0, 0.5).setAlpha(0.6);
+
+    // Percentage text
+    const pctText = this.add.text(width / 2, barY, '0%', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#aaccff',
+    }).setOrigin(0.5).setAlpha(0.8);
+
+    // Card showcase slots — fade in as loading progresses
+    this._showcaseSlots = [];
+    const cardCount = showcaseCards.length;
+    const slotSpacing = Math.min(120, (width - 80) / cardCount);
+    const slotStartX = width / 2 - ((cardCount - 1) * slotSpacing) / 2;
+    const slotY = height / 2 - 20;
+
+    for (let i = 0; i < cardCount; i++) {
+      // Placeholder glow circle behind each card slot
+      const glow = this.add.circle(slotStartX + i * slotSpacing, slotY, 50, 0x2244aa, 0.08);
+      this.tweens.add({ targets: glow, alpha: 0.02, duration: 2000, yoyo: true, repeat: -1, delay: i * 300 });
+      this._showcaseSlots.push({ key: 'showcase_' + showcaseCards[i], x: slotStartX + i * slotSpacing, y: slotY, revealed: false });
+    }
+
+    // Progress handler — fill bar + reveal cards as loading progresses
+    this.load.on('progress', (p) => {
+      const fillW = (barW - 4) * p;
+      fillBase.width = fillW;
+      fillGlow.width = fillW;
+      pctText.setText(Math.floor(p * 100) + '%');
+
+      // Reveal showcase cards as we pass thresholds
+      for (let i = 0; i < this._showcaseSlots.length; i++) {
+        const slot = this._showcaseSlots[i];
+        const threshold = (i + 1) / (this._showcaseSlots.length + 1);
+        if (!slot.revealed && p >= threshold && this.textures.exists(slot.key)) {
+          slot.revealed = true;
+          const img = this.add.image(slot.x, slot.y + 30, slot.key)
+            .setDisplaySize(90, 90).setAlpha(0).setOrigin(0.5);
+          this.tweens.add({ targets: img, alpha: 0.7, y: slot.y, duration: 800, ease: 'Power2' });
+        }
+      }
+    });
   }
 
   create() {
@@ -274,40 +341,135 @@ class BootScene extends Phaser.Scene {
     }
 
     // ── Title screen ──
-    this.cameras.main.setBackgroundColor('#1a1a2e');
+    this.cameras.main.setBackgroundColor('#0a0a1a');
 
-    for (let i = 0; i < 80; i++) {
+    // Dense twinkling star field
+    for (let i = 0; i < 150; i++) {
       const star = this.add.circle(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height),
-        Phaser.Math.Between(1, 2), 0xffffff, Phaser.Math.FloatBetween(0.2, 0.8));
-      this.tweens.add({ targets: star, alpha: 0.1, duration: Phaser.Math.Between(1000, 3000), yoyo: true, repeat: -1 });
+        Phaser.Math.Between(1, 3), 0xffffff, Phaser.Math.FloatBetween(0.1, 0.7));
+      this.tweens.add({ targets: star, alpha: 0.05, duration: Phaser.Math.Between(800, 2500), yoyo: true, repeat: -1, delay: Phaser.Math.Between(0, 2000) });
+    }
+    // Colored accent stars
+    const accentColors = [0xffcc44, 0x44aaff, 0xff6644, 0x66ff88];
+    for (let i = 0; i < 20; i++) {
+      const astar = this.add.circle(Phaser.Math.Between(0, width), Phaser.Math.Between(0, height),
+        Phaser.Math.Between(1, 2), Phaser.Math.RND.pick(accentColors), Phaser.Math.FloatBetween(0.1, 0.4));
+      this.tweens.add({ targets: astar, alpha: 0, duration: Phaser.Math.Between(1500, 3000), yoyo: true, repeat: -1 });
     }
 
-    // Player character preview (use saved sprite if returning)
+    // ── Fanned card showcase (angled hand of cards) ──
+    const showcaseNames = ['flora', 'gary', 'kodako', 'redd', 'munch', 'sylvia'];
+    const fanCount = showcaseNames.length;
+    const fanCenterX = width / 2;
+    const fanY = height * 0.52;
+    const cardW = Math.min(100, width / 8);
+    const cardH = cardW * 1.2;
+    const fanSpread = Math.min(70, width / 12); // horizontal spacing
+    const fanAngleRange = 30; // total degrees across all cards
+
+    this._fanCards = [];
+    for (let i = 0; i < fanCount; i++) {
+      const key = 'showcase_' + showcaseNames[i];
+      const normI = (i - (fanCount - 1) / 2); // centered index: -2.5 to 2.5
+      const tx = fanCenterX + normI * fanSpread;
+      const angle = normI * (fanAngleRange / fanCount);
+      const yOffset = Math.abs(normI) * 8; // outer cards slightly lower (arc)
+
+      if (this.textures.exists(key)) {
+        // Card border/frame
+        const border = this.add.rectangle(tx, fanY + yOffset, cardW + 6, cardH + 6, 0x2a2a4a, 0.9)
+          .setStrokeStyle(2, 0x4466aa).setAngle(angle);
+        // Card art
+        const card = this.add.image(tx, fanY + yOffset, key)
+          .setDisplaySize(cardW, cardH).setAngle(angle);
+        // Floating animation
+        this.tweens.add({
+          targets: [card, border],
+          y: fanY + yOffset - 6,
+          duration: 2000 + i * 200,
+          yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+          delay: i * 150
+        });
+        // Subtle glow behind
+        const glow = this.add.circle(tx, fanY + yOffset, cardW * 0.6, 0x3366cc, 0.08);
+        this.tweens.add({ targets: glow, alpha: 0.02, duration: 2500, yoyo: true, repeat: -1, delay: i * 200 });
+        this._fanCards.push({ card, border, glow });
+      }
+    }
+
+    // Player character preview (use saved sprite if returning) — above cards
     const previewKey = (G.spriteKey && G.spriteKey !== 'player' && this.textures.exists(G.spriteKey)) ? G.spriteKey : 'player';
-    this._titlePreview = this.add.sprite(width / 2, height * 0.55, previewKey, 0).setScale(5);
+    this._titlePreview = this.add.sprite(width / 2, height * 0.35, previewKey, 0).setScale(5);
 
-    this.add.text(width / 2, height * 0.2, 'BATTLE OF ORIGINS', {
-      fontSize: '52px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
-      shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 8, fill: true }
+    // ── Grand title with gold glow ──
+    // Glow layer (blurred gold shadow behind text)
+    const titleGlow = this.add.text(width / 2, height * 0.12, 'BATTLE OF ORIGINS', {
+      fontSize: '54px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc44',
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 20, fill: true },
+    }).setOrigin(0.5).setAlpha(0.5);
+    this.tweens.add({ targets: titleGlow, alpha: 0.3, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    // Main title
+    this.add.text(width / 2, height * 0.12, 'BATTLE OF ORIGINS', {
+      fontSize: '54px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffe680',
+      shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 10, fill: true },
+      stroke: '#aa7700', strokeThickness: 2,
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.3, 'Online', {
-      fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaacc',
+    // Subtitle
+    this.add.text(width / 2, height * 0.21, 'Online', {
+      fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5);
 
-    this.add.text(width / 2, height * 0.34, 'v105', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#555577',
+    // Tagline
+    const tagline = this.add.text(width / 2, height * 0.25, 'Collect Spirits. Roll Dice. Forge Legends.', {
+      fontSize: '13px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#667799',
+      shadow: { offsetX: 0, offsetY: 0, color: '#4466aa', blur: 6, fill: true },
+    }).setOrigin(0.5);
+    this.tweens.add({ targets: tagline, alpha: 0.5, duration: 3000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    // Version
+    this.add.text(width / 2, height * 0.29, 'v106', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#445566',
     }).setOrigin(0.5);
 
-    const btnBg = this.add.rectangle(width / 2, height * 0.75, 180, 50, 0xeeeeee, 0.9)
-      .setInteractive({ useHandCursor: true }).setStrokeStyle(2, 0x333333);
-    this.add.text(width / 2, height * 0.75, 'START', {
-      fontSize: '26px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#1a1a1a',
+    // ── START button — grand, glowing, breathing ──
+    const btnW = 220, btnH = 56;
+    const btnY = height * 0.78;
+
+    // Button glow backing
+    const btnGlow = this.add.rectangle(width / 2, btnY, btnW + 16, btnH + 16, 0x2266aa, 0.3)
+      .setStrokeStyle(0);
+    this.tweens.add({ targets: btnGlow, alpha: 0.1, scaleX: 1.08, scaleY: 1.08, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    // Button body — gradient look via layered rects
+    const btnOuter = this.add.rectangle(width / 2, btnY, btnW, btnH, 0x1a3366)
+      .setStrokeStyle(2, 0x4488cc);
+    const btnInner = this.add.rectangle(width / 2, btnY - 1, btnW - 4, btnH / 2, 0x2255aa, 0.3)
+      .setOrigin(0.5, 1); // top highlight
+
+    const btnHit = this.add.rectangle(width / 2, btnY, btnW, btnH, 0x000000, 0.001)
+      .setInteractive({ useHandCursor: true });
+
+    const btnLabel = this.add.text(width / 2, btnY, 'START', {
+      fontSize: '30px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
+      shadow: { offsetX: 0, offsetY: 0, color: '#44aaff', blur: 10, fill: true },
     }).setOrigin(0.5);
 
-    btnBg.on('pointerover', () => btnBg.setFillStyle(0xffffff));
-    btnBg.on('pointerout', () => btnBg.setFillStyle(0xeeeeee, 0.9));
-    btnBg.on('pointerdown', () => {
+    // Breathing animation on the label
+    this.tweens.add({ targets: btnLabel, alpha: 0.85, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    btnHit.on('pointerover', () => {
+      btnOuter.setFillStyle(0x2255aa);
+      btnOuter.setStrokeStyle(2, 0x66aaee);
+      btnLabel.setColor('#ffffcc');
+    });
+    btnHit.on('pointerout', () => {
+      btnOuter.setFillStyle(0x1a3366);
+      btnOuter.setStrokeStyle(2, 0x4488cc);
+      btnLabel.setColor('#ffffff');
+    });
+    btnHit.on('pointerdown', () => {
       if (G.team.length === 0) {
         // New game — give starter ghost, then proceed through onboarding flow
         const starterIds = [39, 66, 91];
