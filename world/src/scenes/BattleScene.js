@@ -1121,7 +1121,8 @@ class BattleScene extends Phaser.Scene {
         this._setStatus(`${this.eg.name} deals ${fd} damage! ${rollDesc}`);
         if (typeof GameAudio !== 'undefined') GameAudio.hurt();
         this._showFloat(this._W*0.28, this._H*0.30, `-${fd}`, '#e94560');
-        if (fd >= 4) this.cameras.main.shake(150, 0.008);
+        this.cameras.main.flash(150, 255, 50, 50);
+        this.cameras.main.shake(200, 0.008);
       }
       if (typeof triggerWinPath === 'function') triggerWinPath(this._et, eRes);
       if (typeof triggerOnLoss === 'function') triggerOnLoss(this._pt);
@@ -1209,6 +1210,11 @@ class BattleScene extends Phaser.Scene {
         });
       }
     } else {
+      // Final KO — enemy team wiped
+      this.cameras.main.flash(200, 255, 100, 100);
+      if (this._eActive) {
+        this.tweens.add({ targets: this._eActive, scaleX: 0, scaleY: 0, alpha: 0, duration: 500, ease: 'Back.easeIn' });
+      }
       this.time.delayedCall(1600, () => this._exit(true));
     }
   }
@@ -1335,9 +1341,17 @@ class BattleScene extends Phaser.Scene {
     if (won) { sub = `+${xpGain} XP  +${coinChange} Gold`; if (leveledUp) sub += `  LEVEL ${G.level}!`; }
     else if (coinChange < 0) sub = `${coinChange} Gold`;
 
+    // ── Victory juice ──
+    if (won) {
+      this.cameras.main.flash(400, 255, 255, 200);
+      this.cameras.main.shake(300, 0.01);
+    }
+
     // First win gets a bigger, longer callout
     const isFirstWin = won && G.rep && G.rep.battlesWon === 1;
     if (isFirstWin) {
+      this.cameras.main.flash(600, 255, 220, 100);
+      this.cameras.main.shake(400, 0.015);
       this._showCallout('FIRST VICTORY!', type, sub + '  You\'re a natural.', 3200);
     } else {
       this._showCallout(text, type, sub, 2500);

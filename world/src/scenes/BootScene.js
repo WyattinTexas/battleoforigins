@@ -237,10 +237,43 @@ class BootScene extends Phaser.Scene {
       this.tweens.add({ targets: dot, alpha: 0, duration: Phaser.Math.Between(1500, 3000), yoyo: true, repeat: -1 });
     }
 
-    // "Loading World..." text
-    const loadText = this.add.text(width / 2, height - 70, 'Loading World...', {
+    // Thematic loading text
+    const loadingPhrases = ['Summoning Spiritkin...', 'Preparing the Overworld...', 'Awakening ancient forces...'];
+    const loadText = this.add.text(width / 2, height - 90, loadingPhrases[0], {
       fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5);
+    // Cycle loading phrases
+    let phraseIdx = 0;
+    const phraseTimer = this.time.addEvent({ delay: 3000, loop: true, callback: () => {
+      phraseIdx = (phraseIdx + 1) % loadingPhrases.length;
+      this.tweens.add({ targets: loadText, alpha: 0, duration: 300, onComplete: () => {
+        loadText.setText(loadingPhrases[phraseIdx]);
+        this.tweens.add({ targets: loadText, alpha: 1, duration: 300 });
+      }});
+    }});
+
+    // Rotating gameplay tips
+    const tips = [
+      'Walk into wild Spiritkin to battle them',
+      'Higher dice rolls deal more damage',
+      'Each pink circle is 1 HP',
+      'Collect all Spiritkin to complete the Codex',
+      'Explore every region to find rare encounters',
+      'Some abilities trigger before you roll',
+      'Visit shrines to heal your team',
+      'Spiritkin with higher rarity are harder to find',
+    ];
+    let tipIdx = Math.floor(Math.random() * tips.length);
+    const tipText = this.add.text(width / 2, height - 70, 'TIP: ' + tips[tipIdx], {
+      fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#556688',
+    }).setOrigin(0.5);
+    const tipTimer = this.time.addEvent({ delay: 4000, loop: true, callback: () => {
+      tipIdx = (tipIdx + 1) % tips.length;
+      this.tweens.add({ targets: tipText, alpha: 0, duration: 400, onComplete: () => {
+        tipText.setText('TIP: ' + tips[tipIdx]);
+        this.tweens.add({ targets: tipText, alpha: 1, duration: 400 });
+      }});
+    }});
 
     // Loading bar track (bottom of screen)
     const barW = Math.min(400, width * 0.7);
@@ -258,38 +291,85 @@ class BootScene extends Phaser.Scene {
       fontSize: '10px', fontFamily: 'monospace', color: '#aaccff',
     }).setOrigin(0.5).setAlpha(0.8);
 
-    // Card showcase slots — fade in as loading progresses
-    this._showcaseSlots = [];
-    const cardCount = showcaseCards.length;
-    const slotSpacing = Math.min(120, (width - 80) / cardCount);
-    const slotStartX = width / 2 - ((cardCount - 1) * slotSpacing) / 2;
-    const slotY = height / 2 - 20;
+    // ── Card art slideshow — centered, cycles through showcase cards as they load ──
+    const slideY = height / 2 - 10;
+    const slideCardW = Math.min(140, width / 5);
+    const slideCardH = slideCardW * 1.2;
+    // Card frame border
+    const slideBorder = this.add.rectangle(width / 2, slideY, slideCardW + 8, slideCardH + 8, 0x1a1a3a, 0.6)
+      .setStrokeStyle(2, 0x334466).setAlpha(0);
+    // Glow behind card
+    const slideGlow = this.add.circle(width / 2, slideY, slideCardW * 0.7, 0x2244aa, 0).setAlpha(0);
+    // Current card image (placeholder — swapped as textures load)
+    let slideImg = null;
+    // Card name label below
+    const slideNameText = this.add.text(width / 2, slideY + slideCardH / 2 + 16, '', {
+      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffe680',
+      shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 8, fill: true },
+    }).setOrigin(0.5).setAlpha(0);
 
-    for (let i = 0; i < cardCount; i++) {
-      // Placeholder glow circle behind each card slot
-      const glow = this.add.circle(slotStartX + i * slotSpacing, slotY, 50, 0x2244aa, 0.08);
-      this.tweens.add({ targets: glow, alpha: 0.02, duration: 2000, yoyo: true, repeat: -1, delay: i * 300 });
-      this._showcaseSlots.push({ key: 'showcase_' + showcaseCards[i], x: slotStartX + i * slotSpacing, y: slotY, revealed: false });
-    }
+    // Showcase slideshow state
+    const showcaseLabels = { flora: 'Flora', gary: 'Gary', kodako: 'Kodako', redd: 'Redd', munch: 'Munch', sylvia: 'Sylvia' };
+    let slideIdx = 0;
+    let slideActive = false;
+    const availableSlides = []; // filled as textures become available
 
-    // Progress handler — fill bar + reveal cards as loading progresses
+    // Function to transition to next card
+    const showNextCard = () => {
+      if (availableSlides.length === 0) return;
+      slideIdx = slideIdx % availableSlides.length;
+      const entry = availableSlides[slideIdx];
+      slideIdx++;
+
+      // Fade out existing, then swap and fade in
+      const fadeOutTargets = [slideBorder, slideGlow, slideNameText];
+      if (slideImg) fadeOutTargets.push(slideImg);
+
+      this.tweens.add({ targets: fadeOutTargets, alpha: 0, duration: 400, onComplete: () => {
+        // Destroy old image
+        if (slideImg) { slideImg.destroy(); slideImg = null; }
+        // Create new card image
+        slideImg = this.add.image(width / 2, slideY, entry.key)
+          .setDisplaySize(slideCardW, slideCardH).setAlpha(0).setOrigin(0.5);
+        slideNameText.setText(entry.label);
+        // Fade in
+        this.tweens.add({ targets: [slideImg, slideBorder, slideNameText], alpha: 1, duration: 500, ease: 'Power2' });
+        this.tweens.add({ targets: slideGlow, alpha: 0.12, duration: 500 });
+      }});
+    };
+
+    // Start slideshow timer — check for available cards every 2s
+    const slideTimer = this.time.addEvent({ delay: 2500, loop: true, callback: () => {
+      // Gather any newly-loaded showcase textures
+      for (const name of showcaseCards) {
+        const key = 'showcase_' + name;
+        if (this.textures.exists(key) && !availableSlides.find(s => s.key === key)) {
+          availableSlides.push({ key, label: showcaseLabels[name] || name });
+        }
+      }
+      if (availableSlides.length > 0) {
+        if (!slideActive) {
+          slideActive = true;
+          // First card — immediate show
+          const entry = availableSlides[0];
+          slideIdx = 1;
+          slideImg = this.add.image(width / 2, slideY, entry.key)
+            .setDisplaySize(slideCardW, slideCardH).setAlpha(0).setOrigin(0.5);
+          slideNameText.setText(entry.label);
+          this.tweens.add({ targets: [slideImg, slideBorder, slideNameText], alpha: 1, duration: 600, ease: 'Power2' });
+          this.tweens.add({ targets: slideGlow, alpha: 0.12, duration: 600 });
+        } else {
+          showNextCard();
+        }
+      }
+    }});
+
+    // Progress handler — fill bar
     this.load.on('progress', (p) => {
       const fillW = (barW - 4) * p;
       fillBase.width = fillW;
       fillGlow.width = fillW;
       pctText.setText(Math.floor(p * 100) + '%');
-
-      // Reveal showcase cards as we pass thresholds
-      for (let i = 0; i < this._showcaseSlots.length; i++) {
-        const slot = this._showcaseSlots[i];
-        const threshold = (i + 1) / (this._showcaseSlots.length + 1);
-        if (!slot.revealed && p >= threshold && this.textures.exists(slot.key)) {
-          slot.revealed = true;
-          const img = this.add.image(slot.x, slot.y + 30, slot.key)
-            .setDisplaySize(90, 90).setAlpha(0).setOrigin(0.5);
-          this.tweens.add({ targets: img, alpha: 0.7, y: slot.y, duration: 800, ease: 'Power2' });
-        }
-      }
     });
   }
 
