@@ -347,9 +347,11 @@ class BattleScene extends Phaser.Scene {
     if (team === 'red') this._pSideline = s; else this._eSideline = s;
   }
 
-  // ── WILLPOWER CARDS — visual hand row ──────────────────
-  // New players (all Hearts): looks like simple health cards.
-  // Mixed decks: cards reveal their type, top card glows if activatable.
+  // ── WILLPOWER BAR — health bar + willpower cards unified ────
+  // Each willpower card is a segment of the health bar.
+  // Together they ARE the bar. Lose a card, the bar shrinks.
+  // Beginners see a red health bar with hearts. Experienced players
+  // see colored segments with icons for their special cards.
   _buildWPArea(team, cx, cy) {
     const c = this.add.container(cx, cy);
     const tKey = team === 'red' ? this._pt : this._et;
@@ -358,117 +360,126 @@ class BattleScene extends Phaser.Scene {
     if (!ghost) return c;
 
     const hand = ghost.willpower || [];
+    const maxHp = ghost.maxHp || hand.length || 1;
     const isAllHearts = hand.length > 0 && hand.every(id => id === 0);
     const wpUsed = B.wpUsedThisTurn && B.wpUsedThisTurn[tKey];
 
-    // ── Card sizing — BIG, bold, impossible to miss ──
-    const maxCards = Math.max(hand.length, 1);
-    const cardW = maxCards <= 6 ? 52 : maxCards <= 9 ? 44 : maxCards <= 12 ? 36 : 28;
-    const cardH = Math.round(cardW * 1.3);
-    const gap = Math.max(5, Math.round(cardW * 0.14));
-    const step = cardW + gap;
-    const totalW = hand.length > 0 ? cardW + (hand.length - 1) * step : 0;
-    const startX = -totalW / 2;
+    // ── Bar dimensions — fixed width based on maxHp, segments fill it ──
+    const barW = Math.min(this._W * 0.28, 340);
+    const barH = 36;
+    const segW = (barW - 2) / maxHp; // segment width fills the track evenly
+    const segGap = 1.5; // tiny hairline between segments
+    const barR = 6; // border radius
 
-    // Color map for willpower card borders
-    const WP_COLORS = { red: 0xe94560, blue: 0x4cc9f0, green: 0x27ae60, orange: 0xf39c12 };
+    // ── Dark track background (shows maxHp capacity) ──
+    const track = this.add.graphics();
+    track.fillStyle(0x0a0a14, 0.9);
+    track.fillRoundedRect(-barW / 2, -barH / 2, barW, barH, barR);
+    track.lineStyle(1.5, 0x222244, 0.6);
+    track.strokeRoundedRect(-barW / 2, -barH / 2, barW, barH, barR);
+    c.add(track);
 
-    // ── Draw each willpower card ──
+    // ── Ghost segments for lost HP (dim empty slots) ──
+    for (let i = hand.length; i < maxHp; i++) {
+      const sx = -barW / 2 + 1 + i * segW;
+      const empty = this.add.graphics();
+      empty.fillStyle(0x1a0a0a, 0.4);
+      empty.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
+      c.add(empty);
+    }
+
+    // Color map for willpower card types
+    const WP_FILLS = { red: 0xc0392b, blue: 0x2980b9, green: 0x27ae60, orange: 0xd4790e };
+    const WP_BORDERS = { red: 0xe94560, blue: 0x4cc9f0, green: 0x2ecc71, orange: 0xf39c12 };
+
+    // ── Draw each living willpower segment ──
     hand.forEach((cardId, i) => {
       const wp = typeof wpCardById === 'function' ? wpCardById(cardId) : null;
-      const x = startX + i * step;
+      const sx = -barW / 2 + 1 + i * segW;
       const isTop = (i === 0);
       const isSpecial = cardId !== 0;
       const canActivate = isTop && isSpecial && !wpUsed && team === 'red';
 
-      const g = this.add.graphics();
+      const seg = this.add.graphics();
 
       if (isAllHearts) {
-        // ── BEGINNER MODE: clean red health cards ──
-        g.fillStyle(0x8b2020, 0.88);
-        g.fillRoundedRect(x, -cardH / 2, cardW, cardH, 4);
-        g.lineStyle(1, 0xcc3333, 0.35);
-        g.strokeRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+        // ── Beginner: solid red health segments ──
+        const hpPct = ghost.hp / maxHp;
+        const fillCol = hpPct > 0.5 ? 0xc0392b : hpPct > 0.25 ? 0xc49922 : 0x991111;
+        seg.fillStyle(fillCol, 0.92);
+        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
       } else if (isSpecial) {
-        // ── SPECIAL CARD: colored border, dark interior ──
-        const borderCol = WP_COLORS[wp?.color] || 0xd4a040;
-        g.fillStyle(0x141828, 0.95);
-        g.fillRoundedRect(x, -cardH / 2, cardW, cardH, 4);
-        g.lineStyle(canActivate ? 2.5 : 1.5, borderCol, canActivate ? 1 : 0.7);
-        g.strokeRoundedRect(x, -cardH / 2, cardW, cardH, 4);
-        // Pulsing glow behind activatable top card
+        // ── Special card: colored segment ──
+        const fillCol = WP_FILLS[wp?.color] || 0x8844aa;
+        seg.fillStyle(fillCol, 0.9);
+        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
+        // Bright top edge accent
+        const borderCol = WP_BORDERS[wp?.color] || 0xd4a040;
+        seg.fillStyle(borderCol, 0.5);
+        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, 3);
+        // Pulsing glow for activatable top card
         if (canActivate) {
           const glow = this.add.graphics();
-          glow.fillStyle(borderCol, 0.18);
-          glow.fillRoundedRect(x - 3, -cardH / 2 - 3, cardW + 6, cardH + 6, 6);
+          glow.fillStyle(borderCol, 0.2);
+          glow.fillRoundedRect(sx - 2, -barH / 2 - 3, segW + 4, barH + 6, 4);
           c.add(glow);
-          this.tweens.add({ targets: glow, alpha: 0.3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+          this.tweens.add({ targets: glow, alpha: 0.4, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         }
       } else {
-        // ── HEART in a mixed deck: subtle, quieter than specials ──
-        g.fillStyle(0x6b1818, 0.7);
-        g.fillRoundedRect(x, -cardH / 2, cardW, cardH, 4);
-        g.lineStyle(1, 0x993333, 0.25);
-        g.strokeRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+        // ── Heart in mixed deck: darker red, quieter ──
+        seg.fillStyle(0x8b2020, 0.75);
+        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
       }
-      c.add(g);
+      c.add(seg);
 
-      // ── Symbol on each card ──
+      // ── Icon inside each segment ──
+      const iconX = sx + segW / 2;
       if (isAllHearts) {
-        // Simple heart symbol — big, bold, unmistakable
-        c.add(this.add.text(x + cardW / 2, 0, '♥', {
-          fontFamily: 'Georgia, serif', fontSize: cardW >= 48 ? '28px' : cardW >= 40 ? '24px' : '18px', color: '#e04040',
-        }).setOrigin(0.5));
+        // Only show ♥ on segments wide enough to read
+        if (segW >= 20) {
+          c.add(this.add.text(iconX, 0, '♥', {
+            fontFamily: 'Georgia, serif', fontSize: segW >= 35 ? '18px' : '14px', color: '#ff9999',
+          }).setOrigin(0.5).setAlpha(0.7));
+        }
       } else {
-        // Show card's unique emoji — large enough to read across the room
         const emoji = wp ? wp.emoji : '♥';
-        c.add(this.add.text(x + cardW / 2, -3, emoji, {
-          fontFamily: 'sans-serif', fontSize: cardW >= 48 ? '26px' : cardW >= 40 ? '22px' : '16px',
-        }).setOrigin(0.5));
-        // Card name below emoji on special cards
-        if (isSpecial && wp) {
-          c.add(this.add.text(x + cardW / 2, cardH / 2 - 10, wp.name.split(' ').pop().substring(0, 6).toUpperCase(), {
-            fontFamily: 'Courier New, monospace', fontSize: cardW >= 44 ? '8px' : '6px', color: '#bbb',
+        if (segW >= 18) {
+          c.add(this.add.text(iconX, 0, emoji, {
+            fontFamily: 'sans-serif', fontSize: segW >= 35 ? '17px' : segW >= 25 ? '14px' : '11px',
           }).setOrigin(0.5));
         }
       }
     });
 
-    // ── Label above cards — context for what these cards mean ──
-    const labelY = -cardH / 2 - 14;
+    // ── HP number overlay (centered on bar) ──
+    const hpCol = _hpCol(ghost.hp, ghost.maxHp);
+    c.add(this.add.text(barW / 2 + 10, 0, `${ghost.hp}/${maxHp}`, {
+      fontFamily: 'Cinzel, serif', fontSize: '16px', color: hpCol, fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+
+    // ── Label above bar ──
+    const labelY = -barH / 2 - 12;
     if (isAllHearts || hand.length === 0) {
-      // Beginners: simple, clear — "these are your health"
       c.add(this.add.text(0, labelY, '♥ HEALTH', {
-        fontFamily: 'Cinzel, Georgia, serif', fontSize: '11px', color: '#cc4444',
-        letterSpacing: 2,
+        fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: '#cc4444', letterSpacing: 2,
       }).setOrigin(0.5));
     } else {
-      // Mixed deck: they've graduated — introduce the real name
       c.add(this.add.text(0, labelY, '✦ WILLPOWER', {
-        fontFamily: 'Cinzel, Georgia, serif', fontSize: '11px', color: BC.GOLD,
-        letterSpacing: 2,
+        fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: BC.GOLD, letterSpacing: 2,
       }).setOrigin(0.5));
     }
 
-    // ── HP count badge (right of cards) ──
-    const hpX = startX + totalW + 12;
-    const hpCol = _hpCol(ghost.hp, ghost.maxHp);
-    c.add(this.add.text(hpX, -6, `♥ ${ghost.hp}`, {
-      fontFamily: 'Cinzel, serif', fontSize: '22px', color: hpCol, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-
-    // ── Deck info (only for mixed decks) ──
+    // ── Deck info (mixed decks only, subtle) ──
     if (!isAllHearts && hand.length > 0) {
-      c.add(this.add.text(hpX, 12, `deck ${t.wpDeck ? t.wpDeck.length : 0}`, {
+      c.add(this.add.text(barW / 2 + 10, 14, `deck ${t.wpDeck ? t.wpDeck.length : 0}`, {
         fontFamily: 'Courier New, monospace', fontSize: '7px', color: '#4a4a60',
       }).setOrigin(0, 0.5));
     }
 
-    // ── Click to activate top card (player only) ──
+    // ── Click first segment to activate willpower (player only) ──
     if (team === 'red' && hand.length > 0) {
-      const topCardW = cardW + 6;
-      const topCardH = cardH + 6;
-      const wpZone = this.add.zone(startX + cardW / 2, 0, topCardW, topCardH)
+      const firstSegX = -barW / 2 + 1 + segW / 2;
+      const wpZone = this.add.zone(firstSegX, 0, segW + 4, barH + 4)
         .setOrigin(0.5).setInteractive({ useHandCursor: true });
       wpZone.on('pointerdown', () => {
         const topId = ghost.willpower && ghost.willpower[0];
@@ -481,18 +492,18 @@ class BattleScene extends Phaser.Scene {
       c.add(wpZone);
     }
 
-    // ── Resources below cards ──
+    // ── Resources below bar ──
     const res = t.resources || {};
     const RDISPLAY = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
     const committable = ['ice', 'fire', 'surge'];
-    let rx = startX;
+    let rx = -barW / 2;
     Object.entries(RDISPLAY).forEach(([key, cfg]) => {
       const count = res[key] || 0;
       if (count <= 0) return;
       const committed = (B.committed && B.committed[tKey] && B.committed[tKey][key]) || 0;
       const label = committed > 0 ? `${cfg.emoji}${count}(${committed})` : `${cfg.emoji}${count}`;
 
-      const resTxt = this.add.text(rx, cardH / 2 + 14, label, {
+      const resTxt = this.add.text(rx, barH / 2 + 10, label, {
         fontFamily: 'sans-serif', fontSize: '12px', color: cfg.color || BC.TEXT,
         backgroundColor: committed > 0 ? '#2a1a00cc' : '#0a0a14aa',
         padding: { x: 3, y: 1 },
@@ -500,7 +511,7 @@ class BattleScene extends Phaser.Scene {
       c.add(resTxt);
 
       if (team === 'red') {
-        const resZone = this.add.zone(rx + 18, cardH / 2 + 14, 40, 20).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+        const resZone = this.add.zone(rx + 18, barH / 2 + 10, 40, 20).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
         resZone.on('pointerdown', () => {
           if (this._rolling) return;
           if (committable.includes(key) && typeof cycleCommit === 'function') {
