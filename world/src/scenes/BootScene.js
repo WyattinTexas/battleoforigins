@@ -222,8 +222,8 @@ class BootScene extends Phaser.Scene {
       this.tweens.add({ targets: dot, alpha: 0, duration: Phaser.Math.Between(1500, 3000), yoyo: true, repeat: -1 });
     }
 
-    // "Loading Spirits..." text
-    const loadText = this.add.text(width / 2, height - 70, 'Loading Spirits...', {
+    // "Loading World..." text
+    const loadText = this.add.text(width / 2, height - 70, 'Loading World...', {
       fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5);
 
@@ -417,20 +417,13 @@ class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Subtitle
-    this.add.text(width / 2, height * 0.21, 'Online', {
-      fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
+    this.add.text(width / 2, height * 0.21, 'Your Universe to Explore', {
+      fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5);
-
-    // Tagline
-    const tagline = this.add.text(width / 2, height * 0.25, 'Collect Spirits. Roll Dice. Forge Legends.', {
-      fontSize: '13px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#667799',
-      shadow: { offsetX: 0, offsetY: 0, color: '#4466aa', blur: 6, fill: true },
-    }).setOrigin(0.5);
-    this.tweens.add({ targets: tagline, alpha: 0.5, duration: 3000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     // Version
-    this.add.text(width / 2, height * 0.29, 'v106', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#445566',
+    this.add.text(width / 2, height * 0.26, 'Pre-Beta', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#556677',
     }).setOrigin(0.5);
 
     // ── START button — grand, glowing, breathing ──
