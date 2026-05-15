@@ -2778,10 +2778,17 @@ class WorldScene extends Phaser.Scene {
   // ═══════ WAVE 5: BLACK RIDERS (night-only enemies) ═══════
 
   updateBlackRiders() {
+    // Dark Riders only appear during the Valkin event — not in normal gameplay
+    const valkinActive = this._valkinEvent && this._valkinEvent.active;
+    if (!valkinActive) {
+      if (this._wasNight) { this._wasNight = false; if (this._blackRiderTimer) { this._blackRiderTimer.remove(); this._blackRiderTimer = null; } this.despawnAllBlackRiders(); }
+      return;
+    }
+
     const tod = getTimeOfDay();
     const isNight = tod.phase === 'night';
 
-    // Spawn riders during night
+    // Spawn riders during night (Valkin event only)
     if (isNight && !this._wasNight) {
       this._wasNight = true;
       this._blackRiderTimer = this.time.addEvent({
