@@ -511,9 +511,9 @@ class WorldScene extends Phaser.Scene {
     for (let i = 0; i < 8; i++) this.spawnEnemy();
     this._spawnTimer = this.time.addEvent({ delay: 4000, callback: this.spawnEnemy, callbackScope: this, loop: true });
     this.physics.add.overlap(this.player, this.enemies, this.onEnemyContact, null, this);
-    // 2-second grace period — no battles immediately after scene load
+    // Grace period — no battles immediately after scene load (extended for tutorial flow)
     this._spawnGrace = true;
-    this.time.delayedCall(2000, () => { this._spawnGrace = false; });
+    this.time.delayedCall(5000, () => { this._spawnGrace = false; });
 
     // ── Spirit Wisps (glowing collectible orbs) ──
     this.wisps = this.physics.add.group();
@@ -763,8 +763,11 @@ class WorldScene extends Phaser.Scene {
       bg.on('pointerdown', btn.action);
       bg.on('pointerover', () => bg.setAlpha(1));
       bg.on('pointerout', () => bg.setAlpha(0.85));
-      this._menuBtns.push({ bg, label });
+      this._menuBtns.push({ bg, label, key: btn.key });
     });
+
+    // ── Progressive HUD: hide menu buttons for new players ──
+    this._applyMenuVisibility();
 
     // ── Class Action Bar — DOM-based now, skip Phaser version ──
     // this._buildActionBar(); // DISABLED — DOM #hud-action-bar handles this
@@ -792,6 +795,9 @@ class WorldScene extends Phaser.Scene {
     // ── DOM HUD (always anchored to screen edges) ──
     this._buildDomActionBar();
     this._updateDomHUD();
+
+    // ── Progressive HUD: hide chat input during tutorial ──
+    this._applyChatInputVisibility();
     // Wire GUIDE button directly (must happen in create, not conditionally)
     const _guideBtn = document.getElementById('hud-guide-btn');
     if (_guideBtn) {
@@ -901,6 +907,8 @@ class WorldScene extends Phaser.Scene {
       if (this._pendingIntroFirstBattle && G.rep.battlesWon > 0) {
         this._pendingIntroFirstBattle = false;
         const className = G.startingClass || 'Warden';
+        // Immediately show TEAM + TALENT after first battle win
+        this._applyMenuVisibility();
         this.time.delayedCall(1000, () => {
           if (typeof StarfoxComm !== 'undefined') {
             StarfoxComm.play([
@@ -910,12 +918,17 @@ class WorldScene extends Phaser.Scene {
                 G.tutorialComplete = true;
                 G.tutorialStep = 4;
                 saveGame();
+                // Reveal all menu buttons + chat input now that tutorial is complete
+                this._applyMenuVisibility();
+                this._applyChatInputVisibility();
               },
             });
           } else {
             G.tutorialComplete = true;
             G.tutorialStep = 4;
             saveGame();
+            this._applyMenuVisibility();
+            this._applyChatInputVisibility();
           }
         });
       }
@@ -1358,27 +1371,28 @@ class WorldScene extends Phaser.Scene {
     this.checkBuildingProximity();
     this.checkFrostDungeonProximity();
 
-    // Panel hotkeys
-    if (Phaser.Input.Keyboard.JustDown(this.cKey)) {
+    // Panel hotkeys — gated by progressive HUD (tutorial state)
+    const _postBattle = G.tutorialComplete || (G.rep?.battlesWon > 0);
+    if (G.tutorialComplete && Phaser.Input.Keyboard.JustDown(this.cKey)) {
       GameAudio.menuOpen();
       this.scene.launch('CraftScene');
       this.scene.pause();
     }
-    if (Phaser.Input.Keyboard.JustDown(this.tKey)) {
+    if (_postBattle && Phaser.Input.Keyboard.JustDown(this.tKey)) {
       this.showTeamLineup();
     }
-    if (Phaser.Input.Keyboard.JustDown(this.iKey)) {
+    if (G.tutorialComplete && Phaser.Input.Keyboard.JustDown(this.iKey)) {
       this.showInventory();
     }
-    if (Phaser.Input.Keyboard.JustDown(this.pKey)) {
+    if (G.tutorialComplete && Phaser.Input.Keyboard.JustDown(this.pKey)) {
       this.showProfessionPanel();
     }
-    if (Phaser.Input.Keyboard.JustDown(this.yKey)) {
+    if (_postBattle && Phaser.Input.Keyboard.JustDown(this.yKey)) {
       GameAudio.menuOpen();
       this.scene.launch('TalentScene');
       this.scene.pause();
     }
-    if (Phaser.Input.Keyboard.JustDown(this.bKey)) {
+    if (G.tutorialComplete && Phaser.Input.Keyboard.JustDown(this.bKey)) {
       this._showBuildMenu();
     }
     // Tick buffs (slow — timer-based internally)
@@ -1454,8 +1468,8 @@ class WorldScene extends Phaser.Scene {
     // Wave 5: World Boss proximity check (medium)
     if (medTick) this.checkWorldBossProximity();
 
-    // Wave 5: Help panel hotkey
-    if (Phaser.Input.Keyboard.JustDown(this.hKey)) {
+    // Wave 5: Help panel hotkey (gated by tutorial)
+    if (G.tutorialComplete && Phaser.Input.Keyboard.JustDown(this.hKey)) {
       this.showHelpPanel();
     }
 
@@ -2202,6 +2216,8 @@ class WorldScene extends Phaser.Scene {
     if (G.inBattle || G.team.length === 0) return;
     // Grace period: no battles for 2 seconds after scene load
     if (this._spawnGrace) return;
+    // During tutorial steps 1-2 (before tutorial enemy spawns), block random encounters
+    if (G.tutorialStep > 0 && G.tutorialStep < 3 && !enemy._isTutorialEnemy) return;
     const cardData = enemy.cardData;
     const isBlackRider = !!enemy._isBlackRider;
 
@@ -5540,5 +5556,35 @@ class WorldScene extends Phaser.Scene {
     // Keep max 8 messages
     while (el.children.length > 8) el.removeChild(el.firstChild);
     el.scrollTop = el.scrollHeight;
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  PROGRESSIVE HUD — hide menus until player is ready
+  // ══════════════════════════════════════════════════════
+
+  _applyMenuVisibility() {
+    if (!this._menuBtns) return;
+    const postBattle = G.tutorialComplete || (G.rep?.battlesWon > 0);
+    // Which keys are visible at each stage:
+    //   pre-battle (tutorial): NONE
+    //   post-first-battle:     TEAM (T) + TALENT (Y)
+    //   tutorialComplete:      ALL
+    this._menuBtns.forEach(btn => {
+      let show = false;
+      if (G.tutorialComplete) {
+        show = true;
+      } else if (postBattle && (btn.key === 'T' || btn.key === 'Y')) {
+        show = true;
+      }
+      btn.bg.setVisible(show);
+      btn.label.setVisible(show);
+    });
+  }
+
+  _applyChatInputVisibility() {
+    const chatInput = document.getElementById('hud-chat-input');
+    if (chatInput) {
+      chatInput.style.display = G.tutorialComplete ? '' : 'none';
+    }
   }
 }

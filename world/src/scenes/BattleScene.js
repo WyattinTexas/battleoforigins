@@ -164,34 +164,11 @@ class BattleScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(300, 14, 21, 40);
 
-    // ── First-battle tutorial hints ──
+    // ── First-battle tutorial overlay ──
     if (this._isFirstBattle) {
-      this.time.delayedCall(1200, () => {
-        this._setStatus('You and your opponent both roll dice. Highest roll deals damage. Press ROLL!');
-        // Pulse the ROLL button + glow to draw attention
-        if (this._redBtn) {
-          this._tutorialPulse = this.tweens.add({
-            targets: this._redBtn,
-            scaleX: 1.12, scaleY: 1.12,
-            duration: 600, yoyo: true, repeat: -1,
-            ease: 'Sine.easeInOut',
-          });
-          // Add a bright glow ring that pulses with the button
-          if (this._redBtn._glow) {
-            this._tutorialGlowPulse = this.tweens.add({
-              targets: this._redBtn._glow,
-              alpha: 1.8, duration: 600, yoyo: true, repeat: -1,
-              ease: 'Sine.easeInOut',
-            });
-          }
-        }
-        // Willpower circles hint after a short delay
-        this.time.delayedCall(4000, () => {
-          if (this.scene.isActive() && this._isFirstBattle && this.roundNum === 0) {
-            this._setStatus('Each pink circle is 1 HP. Lose them all and your Spiritkin gets knocked out!');
-          }
-        });
-      });
+      // Disable ROLL until tutorial completes
+      this._setFightEnabled(false);
+      this.time.delayedCall(800, () => this._showBattleTutorial());
     }
   }
 
@@ -1392,6 +1369,144 @@ class BattleScene extends Phaser.Scene {
   buildRaidPartyStrip() {}
   showRaidFeedEntry() {}
   renderWillpowerStack() { this._rebuildWP(); }
+
+  // ═══════════════════════════════════════════════════════
+  //  FIRST-BATTLE TUTORIAL OVERLAY (3 steps)
+  // ═══════════════════════════════════════════════════════
+  _showBattleTutorial() {
+    const ghostName = this.pg ? this.pg.name : 'your Spiritkin';
+    let step = 0;
+
+    // ── Build DOM overlay ──
+    const overlay = document.createElement('div');
+    overlay.id = 'battle-tutorial-overlay';
+    overlay.style.cssText = `
+      position:fixed; inset:0; z-index:50000;
+      background:rgba(0,0,0,0.7);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-family:'Cinzel',Georgia,serif;
+      cursor:pointer; user-select:none;
+    `;
+
+    // Highlight ring — repositioned each step
+    const highlight = document.createElement('div');
+    highlight.id = 'bt-highlight';
+    highlight.style.cssText = `
+      position:fixed; border:3px solid #d4a040; border-radius:16px;
+      box-shadow:0 0 30px rgba(212,160,64,0.5), inset 0 0 30px rgba(212,160,64,0.15);
+      pointer-events:none; z-index:50001;
+      transition:all 0.4s ease;
+    `;
+    overlay.appendChild(highlight);
+
+    // Main text
+    const textEl = document.createElement('div');
+    textEl.id = 'bt-text';
+    textEl.style.cssText = `
+      position:fixed; top:12%; left:50%; transform:translateX(-50%);
+      z-index:50002; text-align:center;
+      font-size:22px; color:#f0e8d4; line-height:1.5;
+      text-shadow:0 2px 12px rgba(0,0,0,0.8);
+      max-width:500px; padding:16px 28px;
+      background:rgba(14,21,40,0.85); border-radius:12px;
+      border:1px solid rgba(212,160,64,0.3);
+    `;
+    overlay.appendChild(textEl);
+
+    // "Click to continue" prompt
+    const prompt = document.createElement('div');
+    prompt.style.cssText = `
+      position:fixed; bottom:8%; left:50%; transform:translateX(-50%);
+      z-index:50002; font-size:14px; color:#6a6a80;
+      font-family:Georgia,serif;
+    `;
+    prompt.textContent = 'Click to continue';
+    overlay.appendChild(prompt);
+
+    // ── Step definitions ──
+    const canvas = document.querySelector('canvas');
+    const cRect = canvas ? canvas.getBoundingClientRect() : { left:0, top:0, width:window.innerWidth, height:window.innerHeight };
+
+    const steps = [
+      {
+        text: `This is ${ghostName} — your Spiritkin!`,
+        // Highlight the player card area (left side, ~28% from left)
+        rect: () => ({
+          left: cRect.left + cRect.width * 0.16,
+          top: cRect.top + cRect.height * 0.12,
+          width: cRect.width * 0.24,
+          height: cRect.width * 0.24 * 1.4,
+        }),
+      },
+      {
+        text: 'These are your willpower points. Each one is 1 HP.',
+        // Highlight the willpower area (bottom left, ~18% from left, ~82% down)
+        rect: () => ({
+          left: cRect.left + cRect.width * 0.03,
+          top: cRect.top + cRect.height * 0.72,
+          width: cRect.width * 0.34,
+          height: cRect.height * 0.18,
+        }),
+      },
+      {
+        text: 'Press ROLL to fight! Highest dice roll deals damage.',
+        // Highlight the ROLL button (bottom center, ~50%, ~93% down)
+        rect: () => ({
+          left: cRect.left + cRect.width * 0.36,
+          top: cRect.top + cRect.height * 0.86,
+          width: cRect.width * 0.28,
+          height: cRect.height * 0.10,
+        }),
+      },
+    ];
+
+    // ── Render a step ──
+    const showStep = (idx) => {
+      const s = steps[idx];
+      textEl.textContent = s.text;
+      const r = s.rect();
+      highlight.style.left = r.left + 'px';
+      highlight.style.top = r.top + 'px';
+      highlight.style.width = r.width + 'px';
+      highlight.style.height = r.height + 'px';
+    };
+
+    // ── Click handler ──
+    overlay.addEventListener('click', () => {
+      step++;
+      if (step < steps.length) {
+        showStep(step);
+      } else {
+        // Done — remove overlay and enable the ROLL button
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => overlay.remove(), 300);
+
+        // Enable roll and start pulse animation
+        this._setFightEnabled(true);
+        if (this._redBtn) {
+          this._tutorialPulse = this.tweens.add({
+            targets: this._redBtn,
+            scaleX: 1.12, scaleY: 1.12,
+            duration: 600, yoyo: true, repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+          if (this._redBtn._glow) {
+            this._tutorialGlowPulse = this.tweens.add({
+              targets: this._redBtn._glow,
+              alpha: 1.8, duration: 600, yoyo: true, repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+          }
+        }
+        this._setStatus('Press ROLL to fight!');
+      }
+    });
+
+    // ── Show step 0 and append ──
+    showStep(0);
+    document.body.appendChild(overlay);
+  }
 
   // ═══════════════════════════════════════════════════════
   //  KICKSTARTER BRIDGE MOMENT — first win card reveal

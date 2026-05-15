@@ -835,17 +835,15 @@ class BootScene extends Phaser.Scene {
         ts.maxWidth = '600px';
         overlay.appendChild(textEl);
 
-        // ── Theatrical delivery — let each line breathe ──
+        // ── Theatrical delivery — tightened to ~7.5s ──
 
-        // Beat 1: silence. Just black. Let them sit in it.
-
-        // Line 1 — slow fade in
+        // Line 1 — quick fade in
         setTimeout(() => {
           textEl.textContent = 'A world full of Spiritkin awaits.';
           textEl.style.opacity = '1';
-        }, 1200);
+        }, 500);
         // Hold... then fade
-        setTimeout(() => { textEl.style.opacity = '0'; }, 4000);
+        setTimeout(() => { textEl.style.opacity = '0'; }, 2000);
 
         // Line 2 — the threat. Purple glow, bigger
         setTimeout(() => {
@@ -854,9 +852,9 @@ class BootScene extends Phaser.Scene {
           textEl.style.textShadow = '0 0 40px rgba(160,80,255,0.5)';
           textEl.textContent = 'Something ancient stirs. Valkin the Grand is watching.';
           textEl.style.opacity = '1';
-        }, 5200);
-        // Hold longer — let the name sink in
-        setTimeout(() => { textEl.style.opacity = '0'; }, 8500);
+        }, 2500);
+        // Hold — let the name sink in
+        setTimeout(() => { textEl.style.opacity = '0'; }, 4500);
 
         // Line 3 — the title drop. Gold. Italic. Big.
         setTimeout(() => {
@@ -866,19 +864,19 @@ class BootScene extends Phaser.Scene {
           textEl.style.textShadow = '0 0 50px rgba(255,200,60,0.4)';
           textEl.textContent = 'Your battle begins now.';
           textEl.style.opacity = '1';
-        }, 9800);
+        }, 5000);
         // Final hold — let it land
-        setTimeout(() => { textEl.style.opacity = '0'; }, 13000);
+        setTimeout(() => { textEl.style.opacity = '0'; }, 6500);
 
         // Transition to world
         setTimeout(() => {
-          overlay.style.transition = 'opacity 0.8s ease';
+          overlay.style.transition = 'opacity 0.5s ease';
           overlay.style.opacity = '0';
           if (cvs) cvs.style.display = '';
           if (hudOv) hudOv.style.display = '';
-          setTimeout(() => { overlay.remove(); }, 800);
+          setTimeout(() => { overlay.remove(); }, 500);
           this.scene.start('WorldScene');
-        }, 14000);
+        }, 7000);
       });
     });
 
