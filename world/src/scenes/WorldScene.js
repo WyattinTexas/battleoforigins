@@ -28,6 +28,8 @@ class WorldScene extends Phaser.Scene {
     if (cvs && cvs.style.display === 'none') cvs.style.display = '';
     const hudOv = document.getElementById('hud-overlay');
     if (hudOv && hudOv.style.display === 'none') hudOv.style.display = '';
+    // Clear any stale event freeze from previous sessions
+    this._freezeStart = null;
 
     const T = 32;
     const MW = WORLD_W, MH = WORLD_H; // 110x85 from world-gen.js
@@ -1234,8 +1236,18 @@ class WorldScene extends Phaser.Scene {
 
     // Frozen by event (chase→talk→battle flow)
     if (this.player && this.player._eventFrozen) {
-      this.player.setVelocity(0, 0);
-      return;
+      // Safety: auto-unfreeze after 10 seconds to prevent permanent softlock
+      if (!this._freezeStart) this._freezeStart = time;
+      if (time - this._freezeStart > 10000) {
+        console.warn('[WorldScene] Auto-unfreeze: player was frozen for 10s');
+        this.player._eventFrozen = false;
+        this._freezeStart = null;
+      } else {
+        this.player.setVelocity(0, 0);
+        return;
+      }
+    } else {
+      this._freezeStart = null;
     }
 
     // ── BLACKOUT CHECK — all team ghosts KO'd → instant heal + teleport ──
