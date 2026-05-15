@@ -347,11 +347,9 @@ class BattleScene extends Phaser.Scene {
     if (team === 'red') this._pSideline = s; else this._eSideline = s;
   }
 
-  // ── WILLPOWER BAR — health bar + willpower cards unified ────
-  // Each willpower card is a segment of the health bar.
-  // Together they ARE the bar. Lose a card, the bar shrinks.
-  // Beginners see a red health bar with hearts. Experienced players
-  // see colored segments with icons for their special cards.
+  // ── WILLPOWER STRIP + HEALTH BAR — stacked, aligned ─────
+  // Top: willpower color strip (front card highlighted, rest dimmed)
+  // Bottom: classic health bar directly below, same width
   _buildWPArea(team, cx, cy) {
     const c = this.add.container(cx, cy);
     const tKey = team === 'red' ? this._pt : this._et;
@@ -364,170 +362,161 @@ class BattleScene extends Phaser.Scene {
     const isAllHearts = hand.length > 0 && hand.every(id => id === 0);
     const wpUsed = B.wpUsedThisTurn && B.wpUsedThisTurn[tKey];
 
-    // ── Bar dimensions — fixed width based on maxHp, segments fill it ──
-    const barW = Math.min(this._W * 0.28, 340);
-    const barH = 36;
-    const segW = (barW - 2) / maxHp; // segment width fills the track evenly
-    const segGap = 1.5; // tiny hairline between segments
-    const barR = 6; // border radius
+    // ── Layout dimensions ──
+    const barW = Math.min(this._W * 0.28, 320);
+    const wpH = 18;       // willpower strip height
+    const hpH = 12;       // health bar height
+    const gapY = 3;       // gap between strip and bar
+    const totalH = wpH + gapY + hpH;
+    const topY = -totalH / 2;
+    const segW = maxHp > 0 ? (barW - 2) / maxHp : barW;
+    const segGap = 1.5;
 
-    // ── Dark track background (shows maxHp capacity) ──
-    const track = this.add.graphics();
-    track.fillStyle(0x0a0a14, 0.9);
-    track.fillRoundedRect(-barW / 2, -barH / 2, barW, barH, barR);
-    track.lineStyle(1.5, 0x222244, 0.6);
-    track.strokeRoundedRect(-barW / 2, -barH / 2, barW, barH, barR);
-    c.add(track);
-
-    // ── Ghost segments for lost HP (dim empty slots) ──
-    for (let i = hand.length; i < maxHp; i++) {
-      const sx = -barW / 2 + 1 + i * segW;
-      const empty = this.add.graphics();
-      empty.fillStyle(0x1a0a0a, 0.4);
-      empty.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
-      c.add(empty);
-    }
-
-    // Color map for willpower card types
+    // Willpower color map
     const WP_FILLS = { red: 0xc0392b, blue: 0x2980b9, green: 0x27ae60, orange: 0xd4790e };
-    const WP_BORDERS = { red: 0xe94560, blue: 0x4cc9f0, green: 0x2ecc71, orange: 0xf39c12 };
+    const WP_BRIGHT = { red: 0xe94560, blue: 0x4cc9f0, green: 0x2ecc71, orange: 0xf39c12 };
 
-    // ── Draw each living willpower segment ──
+    // ════════════════════════════════════════════════════════
+    // TOP ROW: Willpower strip — colored segments, front highlighted
+    // ════════════════════════════════════════════════════════
+    const wpTrack = this.add.graphics();
+    wpTrack.fillStyle(0x0a0a14, 0.85);
+    wpTrack.fillRoundedRect(-barW / 2, topY, barW, wpH, { tl: 5, tr: 5, bl: 0, br: 0 });
+    wpTrack.lineStyle(1, 0x222244, 0.4);
+    wpTrack.strokeRoundedRect(-barW / 2, topY, barW, wpH, { tl: 5, tr: 5, bl: 0, br: 0 });
+    c.add(wpTrack);
+
     hand.forEach((cardId, i) => {
       const wp = typeof wpCardById === 'function' ? wpCardById(cardId) : null;
       const sx = -barW / 2 + 1 + i * segW;
-      const isTop = (i === 0);
+      const isFirst = (i === 0);
       const isSpecial = cardId !== 0;
-      const canActivate = isTop && isSpecial && !wpUsed && team === 'red';
+      const canActivate = isFirst && isSpecial && !wpUsed && team === 'red';
 
       const seg = this.add.graphics();
 
-      if (isAllHearts) {
-        // ── Beginner: solid red health segments ──
-        const hpPct = ghost.hp / maxHp;
-        const fillCol = hpPct > 0.5 ? 0xc0392b : hpPct > 0.25 ? 0xc49922 : 0x991111;
-        seg.fillStyle(fillCol, 0.92);
-        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
-      } else if (isSpecial) {
-        // ── Special card: colored segment ──
-        const fillCol = WP_FILLS[wp?.color] || 0x8844aa;
-        seg.fillStyle(fillCol, 0.9);
-        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
-        // Bright top edge accent
-        const borderCol = WP_BORDERS[wp?.color] || 0xd4a040;
-        seg.fillStyle(borderCol, 0.5);
-        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, 3);
-        // Pulsing glow for activatable top card
-        if (canActivate) {
-          const glow = this.add.graphics();
-          glow.fillStyle(borderCol, 0.2);
-          glow.fillRoundedRect(sx - 2, -barH / 2 - 3, segW + 4, barH + 6, 4);
-          c.add(glow);
-          this.tweens.add({ targets: glow, alpha: 0.4, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-        }
+      if (isSpecial) {
+        // Colored segment — bright if first (activatable), dimmed otherwise
+        const fillCol = isFirst ? (WP_BRIGHT[wp?.color] || 0xd4a040) : (WP_FILLS[wp?.color] || 0x664488);
+        const alpha = isFirst ? 0.95 : 0.5;
+        seg.fillStyle(fillCol, alpha);
+        seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
       } else {
-        // ── Heart in mixed deck: darker red, quieter ──
-        seg.fillStyle(0x8b2020, 0.75);
-        seg.fillRect(sx + segGap / 2, -barH / 2 + 1, segW - segGap, barH - 2);
+        // Heart — red, dimmed unless it's the front card
+        const fillCol = isFirst ? 0xaa2020 : 0x551515;
+        const alpha = isFirst ? 0.85 : 0.45;
+        seg.fillStyle(fillCol, alpha);
+        seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
       }
       c.add(seg);
 
-      // ── Icon inside each segment ──
-      const iconX = sx + segW / 2;
-      if (isAllHearts) {
-        // Only show ♥ on segments wide enough to read
-        if (segW >= 20) {
-          c.add(this.add.text(iconX, 0, '♥', {
-            fontFamily: 'Georgia, serif', fontSize: segW >= 35 ? '18px' : '14px', color: '#ff9999',
-          }).setOrigin(0.5).setAlpha(0.7));
-        }
-      } else {
-        const emoji = wp ? wp.emoji : '♥';
-        if (segW >= 18) {
-          c.add(this.add.text(iconX, 0, emoji, {
-            fontFamily: 'sans-serif', fontSize: segW >= 35 ? '17px' : segW >= 25 ? '14px' : '11px',
-          }).setOrigin(0.5));
-        }
+      // Pulsing glow on activatable first segment
+      if (canActivate) {
+        const glowCol = WP_BRIGHT[wp?.color] || 0xd4a040;
+        const glow = this.add.graphics();
+        glow.fillStyle(glowCol, 0.25);
+        glow.fillRoundedRect(sx - 1, topY - 2, segW + 2, wpH + 4, 3);
+        c.add(glow);
+        this.tweens.add({ targets: glow, alpha: 0.5, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
     });
 
-    // ── HP number overlay (centered on bar) ──
+    // Empty slots for lost willpower
+    for (let i = hand.length; i < maxHp; i++) {
+      const sx = -barW / 2 + 1 + i * segW;
+      const empty = this.add.graphics();
+      empty.fillStyle(0x110808, 0.3);
+      empty.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
+      c.add(empty);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // BOTTOM ROW: Health bar — classic fill bar, same width
+    // ════════════════════════════════════════════════════════
+    const hpY = topY + wpH + gapY;
+    const hpTrack = this.add.graphics();
+    hpTrack.fillStyle(0x0a0a14, 0.9);
+    hpTrack.fillRoundedRect(-barW / 2, hpY, barW, hpH, { tl: 0, tr: 0, bl: 5, br: 5 });
+    c.add(hpTrack);
+
+    // Health fill
+    const hpPct = Math.max(0, ghost.hp / maxHp);
+    if (hpPct > 0) {
+      const hpFill = this.add.graphics();
+      const fillCol = _hpHex(ghost.hp, ghost.maxHp);
+      hpFill.fillStyle(fillCol, 0.9);
+      const fillW = (barW - 2) * hpPct;
+      hpFill.fillRoundedRect(-barW / 2 + 1, hpY + 1, fillW, hpH - 2, { tl: 0, tr: 0, bl: 4, br: hpPct > 0.95 ? 4 : 0 });
+      c.add(hpFill);
+      // Bright top edge on health bar
+      hpFill.fillStyle(fillCol, 0.4);
+      hpFill.fillRect(-barW / 2 + 1, hpY + 1, fillW, 2);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // LABELS + HP COUNT
+    // ════════════════════════════════════════════════════════
+    // HP number to the right
     const hpCol = _hpCol(ghost.hp, ghost.maxHp);
-    c.add(this.add.text(barW / 2 + 10, 0, `${ghost.hp}/${maxHp}`, {
-      fontFamily: 'Cinzel, serif', fontSize: '16px', color: hpCol, fontStyle: 'bold',
+    c.add(this.add.text(barW / 2 + 8, topY + totalH / 2, `${ghost.hp}/${maxHp}`, {
+      fontFamily: 'Cinzel, serif', fontSize: '14px', color: hpCol, fontStyle: 'bold',
     }).setOrigin(0, 0.5));
 
-    // ── Label above bar ──
-    const labelY = -barH / 2 - 12;
+    // Label above
+    const labelY = topY - 11;
     if (isAllHearts || hand.length === 0) {
       c.add(this.add.text(0, labelY, '♥ HEALTH', {
-        fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: '#cc4444', letterSpacing: 2,
+        fontFamily: 'Cinzel, Georgia, serif', fontSize: '9px', color: '#cc4444', letterSpacing: 2,
       }).setOrigin(0.5));
     } else {
       c.add(this.add.text(0, labelY, '✦ WILLPOWER', {
-        fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px', color: BC.GOLD, letterSpacing: 2,
+        fontFamily: 'Cinzel, Georgia, serif', fontSize: '9px', color: BC.GOLD, letterSpacing: 2,
       }).setOrigin(0.5));
     }
 
-    // ── Deck info (mixed decks only, subtle) ──
-    if (!isAllHearts && hand.length > 0) {
-      c.add(this.add.text(barW / 2 + 10, 14, `deck ${t.wpDeck ? t.wpDeck.length : 0}`, {
-        fontFamily: 'Courier New, monospace', fontSize: '7px', color: '#4a4a60',
-      }).setOrigin(0, 0.5));
-    }
-
-    // ── Click first segment to activate willpower (player only) ──
+    // ── Click first segment to activate (player only) ──
     if (team === 'red' && hand.length > 0) {
-      const firstSegX = -barW / 2 + 1 + segW / 2;
-      const wpZone = this.add.zone(firstSegX, 0, segW + 4, barH + 4)
+      const firstX = -barW / 2 + 1 + segW / 2;
+      const wpZone = this.add.zone(firstX, topY + wpH / 2, segW + 6, wpH + 6)
         .setOrigin(0.5).setInteractive({ useHandCursor: true });
       wpZone.on('pointerdown', () => {
         const topId = ghost.willpower && ghost.willpower[0];
-        if (topId === 0) {
-          this._setStatus('♥ Heart — basic willpower, no effect');
-          return;
-        }
+        if (topId === 0) { this._setStatus('♥ Heart — no effect'); return; }
         this._activateWillpower();
       });
       c.add(wpZone);
     }
 
-    // ── Resources below bar ──
+    // ── Resources below ──
     const res = t.resources || {};
     const RDISPLAY = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
     const committable = ['ice', 'fire', 'surge'];
     let rx = -barW / 2;
+    const resY = topY + totalH + 10;
     Object.entries(RDISPLAY).forEach(([key, cfg]) => {
       const count = res[key] || 0;
       if (count <= 0) return;
       const committed = (B.committed && B.committed[tKey] && B.committed[tKey][key]) || 0;
       const label = committed > 0 ? `${cfg.emoji}${count}(${committed})` : `${cfg.emoji}${count}`;
 
-      const resTxt = this.add.text(rx, barH / 2 + 10, label, {
+      c.add(this.add.text(rx, resY, label, {
         fontFamily: 'sans-serif', fontSize: '12px', color: cfg.color || BC.TEXT,
         backgroundColor: committed > 0 ? '#2a1a00cc' : '#0a0a14aa',
         padding: { x: 3, y: 1 },
-      }).setOrigin(0, 0.5);
-      c.add(resTxt);
+      }).setOrigin(0, 0.5));
 
       if (team === 'red') {
-        const resZone = this.add.zone(rx + 18, barH / 2 + 10, 40, 20).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+        const resZone = this.add.zone(rx + 18, resY, 40, 20).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
         resZone.on('pointerdown', () => {
           if (this._rolling) return;
           if (committable.includes(key) && typeof cycleCommit === 'function') {
-            cycleCommit(tKey, key);
-            this._rebuildWP();
-            this._setStatus(`Committed ${cfg.label}!`);
+            cycleCommit(tKey, key); this._rebuildWP(); this._setStatus(`Committed ${cfg.label}!`);
           } else if (key === 'moonstone' && typeof useMoonstone === 'function') {
-            useMoonstone(tKey, (msg) => this._setStatus(msg));
-            this._rebuildWP();
+            useMoonstone(tKey, (msg) => this._setStatus(msg)); this._rebuildWP();
           } else if (key === 'luckyStone' && typeof useLuckyStone === 'function') {
-            useLuckyStone(tKey, (msg) => this._setStatus(msg));
-            this._rebuildWP();
+            useLuckyStone(tKey, (msg) => this._setStatus(msg)); this._rebuildWP();
           } else if (key === 'healingSeed' && typeof spendHealingSeed === 'function') {
-            spendHealingSeed(tKey, (msg) => this._setStatus(msg));
-            this._rebuildWP();
-            this.syncUI();
+            spendHealingSeed(tKey, (msg) => this._setStatus(msg)); this._rebuildWP(); this.syncUI();
           }
         });
         c.add(resZone);
@@ -677,28 +666,68 @@ class BattleScene extends Phaser.Scene {
   // ── ROLL BUTTON ─────────────────────────────────────────
   _buildRollBtn(cx, cy, label, color, onClick) {
     const c = this.add.container(cx, cy);
-    const w = Math.min(this._W * 0.14, 180);
-    const h = 38;
+    const w = Math.min(this._W * 0.22, 260);
+    const h = 54;
 
+    // Outer glow ring
+    const glow = this.add.graphics();
+    glow.fillStyle(color, 0.08);
+    glow.fillRoundedRect(-w/2 - 6, -h/2 - 6, w + 12, h + 12, 14);
+    c.add(glow);
+
+    // Main button background — gradient feel with highlight
     const bg = this.add.graphics();
-    bg.fillStyle(color, 0.85);
-    bg.fillRoundedRect(-w/2, -h/2, w, h, 6);
+    bg.fillStyle(color, 0.9);
+    bg.fillRoundedRect(-w/2, -h/2, w, h, 10);
+    // Top highlight strip
+    bg.fillStyle(0xffffff, 0.12);
+    bg.fillRoundedRect(-w/2 + 2, -h/2 + 2, w - 4, h * 0.35, { tl: 8, tr: 8, bl: 0, br: 0 });
+    // Bottom shadow
+    bg.fillStyle(0x000000, 0.2);
+    bg.fillRoundedRect(-w/2 + 2, h/2 - 6, w - 4, 5, { tl: 0, tr: 0, bl: 8, br: 8 });
+    // Border
+    bg.lineStyle(2, 0xffffff, 0.15);
+    bg.strokeRoundedRect(-w/2, -h/2, w, h, 10);
     c.add(bg);
 
-    c.add(this.add.text(0, 0, label, {
-      fontFamily: 'Cinzel, Georgia, serif', fontSize: '14px', color: '#fff', fontStyle: 'bold',
+    // Dice emoji flanking the text
+    c.add(this.add.text(-w/2 + 22, 0, '🎲', {
+      fontFamily: 'sans-serif', fontSize: '20px',
+    }).setOrigin(0.5));
+    c.add(this.add.text(w/2 - 22, 0, '🎲', {
+      fontFamily: 'sans-serif', fontSize: '20px',
+    }).setOrigin(0.5));
+
+    // Label text — big and bold
+    c.add(this.add.text(0, -1, label, {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '22px', color: '#fff', fontStyle: 'bold',
+      stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5));
 
     if (onClick) {
       const zone = this.add.zone(0, 0, w, h).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      zone.on('pointerdown', onClick);
-      zone.on('pointerover', () => c.setScale(1.05));
-      zone.on('pointerout', () => c.setScale(1));
+      zone.on('pointerdown', () => {
+        // Press feedback
+        c.setScale(0.95);
+        this.time.delayedCall(100, () => c.setScale(1));
+        onClick();
+      });
+      zone.on('pointerover', () => {
+        c.setScale(1.06);
+        glow.setAlpha(1.5);
+      });
+      zone.on('pointerout', () => {
+        c.setScale(1);
+        glow.setAlpha(1);
+      });
       c.add(zone);
       c._zone = zone;
     }
 
-    c._bg = bg; c._color = color;
+    // Idle breathing animation
+    this.tweens.add({ targets: glow, alpha: 0.5, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    c._bg = bg; c._color = color; c._glow = glow;
     return c;
   }
 
