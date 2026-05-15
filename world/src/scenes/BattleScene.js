@@ -1452,7 +1452,7 @@ class BattleScene extends Phaser.Scene {
       z-index:50002; font-size:14px; color:#6a6a80;
       font-family:Georgia,serif;
     `;
-    prompt.textContent = 'Click to continue';
+    prompt.textContent = 'ontouchstart' in window ? 'Tap to continue' : 'Click to continue';
     overlay.appendChild(prompt);
 
     // ── Step definitions ──
@@ -1596,7 +1596,7 @@ class BattleScene extends Phaser.Scene {
       <div id="kr-skip" style="
         margin-top:20px; font-size:13px; color:#6a6a80;
         opacity:0; transition:opacity 0.5s ease 2s;
-      ">Click anywhere to continue</div>
+      ">${'ontouchstart' in window ? 'Tap anywhere to continue' : 'Click anywhere to continue'}</div>
     `;
 
     document.body.appendChild(overlay);
@@ -1604,6 +1604,7 @@ class BattleScene extends Phaser.Scene {
     // Prevent the CTA link click from also triggering the dismiss
     const cta = overlay.querySelector('#kr-cta');
     cta.addEventListener('click', e => e.stopPropagation());
+    cta.addEventListener('touchend', e => e.stopPropagation());
     cta.addEventListener('mouseenter', () => { cta.style.background = 'linear-gradient(135deg, #27ae60 0%, #1e8449 100%)'; });
     cta.addEventListener('mouseleave', () => { cta.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)'; });
 
