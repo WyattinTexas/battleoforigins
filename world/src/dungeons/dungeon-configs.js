@@ -36,7 +36,7 @@ const DUNGEONS = {
     // instantly defeats it with no battle. Covers the full path:
     // mobs in r1/r2 + Romy in r3. Use this to verify the post-phase
     // flow without dice variance. Flip to false for real play.
-    instaWin: true,
+    instaWin: false,
 
     // Earlier debug flag (force every spiritkin to 1HP). Left in
     // place for reference but disabled — 1HP still requires winning
