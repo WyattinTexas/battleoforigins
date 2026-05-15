@@ -909,10 +909,11 @@ class BattleScene extends Phaser.Scene {
     const pDice = weightedRoll(B[this._pt], pDC);
     const eDice = weightedRoll(B[this._et], eDC);
 
+    // Pre-committed moonstone/lucky stone still auto-apply
     if (B._moonstoneReady && B._moonstoneReady[this._pt] && typeof smartMoonstoneChange === 'function') smartMoonstoneChange(pDice);
     if (B._luckyStoneReady && B._luckyStoneReady[this._pt] && typeof smartLuckyStone === 'function') smartLuckyStone(pDice);
 
-    // Pepo auto-flick: change lowest die to match the most common value (simplified Charlie mode)
+    // Pepo auto-flick
     if (B.wpPepo && B.wpPepo[this._pt]) {
       B.wpPepo[this._pt] = false;
       const counts = {};
@@ -944,8 +945,113 @@ class BattleScene extends Phaser.Scene {
     this._tumbleDice(pDice, eDice, () => {
       this._showDice('player', pDice, false);
       this._showDice('enemy', eDice, false);
-      this.time.delayedCall(200, () => this.resolveDice(pDice, eDice));
+      // Check if player has post-roll resources to use
+      this._postRollWindow(pDice, eDice);
     });
+  }
+
+  // ── POST-ROLL DECISION WINDOW ──────────────────────────
+  // After dice are shown, give the player 5 seconds to use
+  // moonstone or lucky stone to modify their dice.
+  _postRollWindow(pDice, eDice) {
+    const pRes = B[this._pt]?.resources || {};
+    const hasMoonstone = (pRes.moonstone || 0) > 0;
+    const hasLucky = (pRes.luckyStone || 0) > 0;
+
+    // No resources to use — resolve immediately
+    if (!hasMoonstone && !hasLucky) {
+      this.time.delayedCall(200, () => this.resolveDice(pDice, eDice));
+      return;
+    }
+
+    // Build the decision UI
+    const W = this._W, H = this._H;
+    const uiC = this.add.container(W * 0.5, H * 0.72).setDepth(800);
+    let resolved = false;
+
+    const resolve = () => {
+      if (resolved) return;
+      resolved = true;
+      if (this._postRollTimer) { this._postRollTimer.remove(); this._postRollTimer = null; }
+      this.tweens.add({ targets: uiC, alpha: 0, duration: 150, onComplete: () => uiC.destroy() });
+      this.time.delayedCall(200, () => this.resolveDice(pDice, eDice));
+    };
+
+    // Background panel
+    const panelW = 300, panelH = 56;
+    const bg = this.add.graphics();
+    bg.fillStyle(0x0a0a1e, 0.92);
+    bg.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
+    bg.lineStyle(2, BC.GOLD_H, 0.6);
+    bg.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, 10);
+    uiC.add(bg);
+
+    let bx = -panelW / 2 + 16;
+
+    // Moonstone button
+    if (hasMoonstone) {
+      const mBtn = this.add.text(bx, 0, `💎 MOONSTONE`, {
+        fontFamily: 'Cinzel, serif', fontSize: '14px', color: '#44dddd', fontStyle: 'bold',
+        backgroundColor: '#112233cc', padding: { x: 8, y: 6 },
+      }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+      mBtn.on('pointerdown', () => {
+        if (resolved) return;
+        if (typeof smartMoonstoneChange === 'function') {
+          smartMoonstoneChange(pDice);
+          pRes.moonstone--;
+          this._setStatus('💎 Moonstone! Lowest die → highest match!');
+          this._showDice('player', pDice, false);
+          if (typeof GameAudio !== 'undefined') GameAudio.collect();
+        }
+        resolve();
+      });
+      mBtn.on('pointerover', () => mBtn.setScale(1.05));
+      mBtn.on('pointerout', () => mBtn.setScale(1));
+      uiC.add(mBtn);
+      bx += 150;
+    }
+
+    // Lucky Stone button
+    if (hasLucky) {
+      const lBtn = this.add.text(bx, 0, `🍀 LUCKY STONE`, {
+        fontFamily: 'Cinzel, serif', fontSize: '14px', color: '#44cc44', fontStyle: 'bold',
+        backgroundColor: '#113311cc', padding: { x: 8, y: 6 },
+      }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+      lBtn.on('pointerdown', () => {
+        if (resolved) return;
+        if (typeof smartLuckyStone === 'function') {
+          smartLuckyStone(pDice);
+          pRes.luckyStone--;
+          this._setStatus('🍀 Lucky Stone! Rerolled lowest die!');
+          this._showDice('player', pDice, false);
+          if (typeof GameAudio !== 'undefined') GameAudio.collect();
+        }
+        resolve();
+      });
+      lBtn.on('pointerover', () => lBtn.setScale(1.05));
+      lBtn.on('pointerout', () => lBtn.setScale(1));
+      uiC.add(lBtn);
+    }
+
+    // Countdown timer (5 seconds)
+    const timerText = this.add.text(panelW / 2 - 16, 0, '5', {
+      fontFamily: 'Cinzel, serif', fontSize: '18px', color: BC.GOLD, fontStyle: 'bold',
+    }).setOrigin(1, 0.5);
+    uiC.add(timerText);
+
+    let countdown = 5;
+    this._postRollTimer = this.time.addEvent({
+      delay: 1000, repeat: 4,
+      callback: () => {
+        countdown--;
+        if (timerText.active !== false) timerText.setText(`${countdown}`);
+        if (countdown <= 0) resolve();
+      }
+    });
+
+    // Entrance animation
+    uiC.setAlpha(0).setScale(0.9);
+    this.tweens.add({ targets: uiC, alpha: 1, scaleX: 1, scaleY: 1, duration: 200, ease: 'Back.easeOut' });
   }
 
   resolveDice(pDice, eDice) {
