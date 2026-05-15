@@ -245,7 +245,7 @@
     const dist = Phaser.Math.Distance.Between(vx, vy, px, py);
     const range = (action.aggroRange || 8) * T;
 
-    if (dist < range && dist > 40) {
+    if (dist < range && dist > 24) {
       const speed = (action.speed || 280) * 0.016;
       const angle = Math.atan2(py - vy, px - vx);
       sprite.x += Math.cos(angle) * speed;
