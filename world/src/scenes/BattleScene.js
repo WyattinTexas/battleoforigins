@@ -395,80 +395,46 @@ class BattleScene extends Phaser.Scene {
     const hpH = 16;
     const flameY = 0;           // center of flame row
 
-    // ── Spirit flame colors ──
-    const FLAME_BRIGHT = 0x55bbff;   // bright blue spirit fire
-    const FLAME_MID    = 0x3388cc;   // medium blue
-    const FLAME_DIM    = 0x224466;   // dim blue for inactive
-    const FLAME_CORE   = 0xaaddff;   // bright inner core
-    const FLAME_GHOST  = 0x112233;   // lost HP ghost flame
-
-    // Helper: draw a spirit flame shape at (0,0) pointing up
-    const drawFlame = (g, r, h, fillCol, alpha, isActive) => {
-      // Outer glow (soft)
-      if (isActive) {
-        g.fillStyle(fillCol, alpha * 0.2);
-        g.fillEllipse(0, 2, r * 2.4, h * 0.9);
-      }
-      // Main flame body (teardrop: circle bottom + triangle tip)
-      g.fillStyle(fillCol, alpha);
-      g.fillCircle(0, r * 0.3, r);                              // round bottom
-      g.fillTriangle(-r * 0.75, -r * 0.1, r * 0.75, -r * 0.1, 0, -h * 0.52); // flame tip
-      // Inner core (brighter, smaller)
-      const coreCol = isActive ? FLAME_CORE : fillCol;
-      g.fillStyle(coreCol, alpha * 0.6);
-      g.fillCircle(0, r * 0.3, r * 0.55);
-      g.fillTriangle(-r * 0.35, r * 0.05, r * 0.35, r * 0.05, 0, -h * 0.35);
-      // Top highlight spark
-      if (isActive) {
-        g.fillStyle(0xffffff, 0.4);
-        g.fillCircle(0, -h * 0.3, 2);
-      }
-    };
+    // ── Willpower circle colors ──
+    const WP_ACTIVE  = 0xdd66aa;   // bright pink — active willpower
+    const WP_DIM     = 0x884466;   // muted pink — queued willpower
+    const WP_GHOST   = 0x332233;   // dark — lost HP / empty slot
 
     // ════════════════════════════════════════════════════════
-    // SPIRIT FLAMES — active (index 0) on the RIGHT
+    // WILLPOWER CIRCLES — active (index 0) on the RIGHT
     // ════════════════════════════════════════════════════════
     const flameStartX = barW / 2 - flameR;
 
     hand.forEach((cardId, i) => {
       const fx = flameStartX - i * flameStep;
       const isActive = (i === 0);
-
-      const flame = this.add.container(fx, flameY);
       const g = this.add.graphics();
 
-      const col = isActive ? FLAME_BRIGHT : FLAME_DIM;
-      const alpha = isActive ? 1 : (0.5 - i * 0.03);
-      drawFlame(g, flameR, flameH, col, Math.max(0.2, alpha), isActive);
-      flame.add(g);
-      c.add(flame);
-
-      // ── Floating bob — each flame at its own rhythm ──
-      const bobAmt = isActive ? 5 : 3;
-      const bobDur = 900 + i * 140;
-      this.tweens.add({
-        targets: flame, y: flameY - bobAmt,
-        duration: bobDur, yoyo: true, repeat: -1,
-        ease: 'Sine.easeInOut', delay: i * 70,
-      });
-
-      // ── Flicker scale on active flame ──
+      // Outer glow on active
       if (isActive) {
-        this.tweens.add({
-          targets: flame, scaleX: 1.08, scaleY: 1.05,
-          duration: 400, yoyo: true, repeat: -1,
-          ease: 'Sine.easeInOut',
-        });
+        g.fillStyle(WP_ACTIVE, 0.15);
+        g.fillCircle(fx, flameY, flameR * 1.5);
       }
+      // Main circle
+      g.fillStyle(isActive ? WP_ACTIVE : WP_DIM, isActive ? 1 : (0.5 - i * 0.03));
+      g.fillCircle(fx, flameY, flameR);
+      // Inner highlight
+      g.fillStyle(0xffffff, isActive ? 0.3 : 0.1);
+      g.fillCircle(fx - flameR * 0.25, flameY - flameR * 0.25, flameR * 0.35);
+      // Border
+      g.lineStyle(1.5, isActive ? 0xffaacc : 0x665566, isActive ? 0.8 : 0.4);
+      g.strokeCircle(fx, flameY, flameR);
+      c.add(g);
     });
 
-    // Ghost flames for lost HP (dim, hollow)
+    // Ghost circles for lost HP (dim, hollow)
     for (let i = hand.length; i < maxHp; i++) {
       const fx = flameStartX - i * flameStep;
       const g = this.add.graphics();
-      g.fillStyle(FLAME_GHOST, 0.3);
-      g.fillCircle(fx, flameY + flameR * 0.3, flameR * 0.7);
-      g.fillTriangle(fx - flameR * 0.4, flameY, fx + flameR * 0.4, flameY, fx, flameY - flameH * 0.3);
+      g.fillStyle(WP_GHOST, 0.4);
+      g.fillCircle(fx, flameY, flameR * 0.8);
+      g.lineStyle(1, 0x443344, 0.3);
+      g.strokeCircle(fx, flameY, flameR * 0.8);
       c.add(g);
     }
 
@@ -548,9 +514,9 @@ class BattleScene extends Phaser.Scene {
     // LABEL
     // ════════════════════════════════════════════════════════
     const leftFlameX = flameStartX - (Math.max(hand.length, maxHp) - 1) * flameStep;
-    c.add(this.add.text(leftFlameX - flameR, flameY - flameH * 0.55 - 6, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '✦ WILLPOWER', {
+    c.add(this.add.text(leftFlameX - flameR, flameY - flameR - 8, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '♥ WILLPOWER', {
       fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px',
-      color: isAllHearts || hand.length === 0 ? '#cc6677' : BC.GOLD, letterSpacing: 2,
+      color: '#dd66aa', letterSpacing: 2,
     }).setOrigin(0, 1));
 
     // ── Click active orb to activate (player only) ──
