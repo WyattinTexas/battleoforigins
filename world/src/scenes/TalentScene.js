@@ -1,8 +1,31 @@
 // ══════════════════════════════════════════════════════════
-//  TALENT SCENE — WoW-style talent calculator
+//  TALENT SCENE — Journal / Tome aesthetic
 //  Bottom-to-top: Apprentice → Tier 0-3 → Master
 //  All trees viewable (locked ones are read-only)
 // ══════════════════════════════════════════════════════════
+
+const TUI = {
+  BG:         0x0e1528,
+  SURFACE:    0x161c2e,
+  PARCHMENT:  0x1e2438,
+  GOLD:       0xd4a040,
+  GOLD_S:     '#d4a040',
+  TEXT:        '#f0e8d4',
+  DIM:         '#6a6a80',
+  FONT_TITLE:  'Cinzel, Georgia, serif',
+  FONT_BODY:   'Georgia, serif',
+};
+
+// Category mapping for the chapter index
+const TREE_CATEGORIES = {
+  'SPIRIT ARTS':    ['fortune_teller', 'shaman', 'scholar', 'enchanter'],
+  'CRAFTSMANSHIP':  ['artisan', 'architect', 'armorsmith', 'weaponsmith'],
+  'CULTIVATION':    ['cultivator', 'botanist', 'pet_keeper', 'terraformer'],
+  'BEAST MASTERY':  ['trainer', 'beastmaster', 'gladiator', 'ranger'],
+  'SCIENCE':        ['scientist', 'alchemist', 'gene_splicer', 'inventor'],
+  'HIDDEN':         ['dark_rider', 'shadow_knight', 'nightmare', 'wraith',
+                     'elder', 'sage', 'arbiter', 'lorekeeper'],
+};
 
 class TalentScene extends Phaser.Scene {
   constructor() { super('TalentScene'); }
@@ -13,153 +36,238 @@ class TalentScene extends Phaser.Scene {
     this._dyn = [];
     this._sideDyn = [];
     this._selectedTree = null;
+    this._tooltip = null;
+    this._pulseTweens = [];
 
     this.input.mouse.disableContextMenu();
 
-    // Full-screen backdrop
-    this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.9).setDepth(0);
+    // ── Full-screen dark blue backdrop ──
+    this.add.rectangle(W / 2, H / 2, W, H, TUI.BG).setDepth(0);
 
-    // Title bar
-    this.add.rectangle(W / 2, 20, W, 40, 0x0a0a1a, 0.95).setDepth(1);
-    this.add.text(16, 12, 'TALENT CALCULATOR', {
-      fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffdd44',
-    }).setDepth(2);
+    // ── Gold-bordered inner frame ──
+    const frameGfx = this.add.graphics().setDepth(1);
+    frameGfx.lineStyle(1, TUI.GOLD, 0.6);
+    frameGfx.strokeRect(20, 20, W - 40, H - 40);
+    // Inner double-line accent
+    frameGfx.lineStyle(1, TUI.GOLD, 0.15);
+    frameGfx.strokeRect(24, 24, W - 48, H - 48);
 
-    // Close button
-    const closeBtn = this.add.rectangle(W - 24, 20, 36, 28, 0x442222)
-      .setStrokeStyle(1, 0x663333).setDepth(2).setInteractive({ useHandCursor: true });
-    this.add.text(W - 24, 20, 'X', {
-      fontSize: '14px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ff6666',
-    }).setOrigin(0.5).setDepth(3);
+    // ── Title: Tome of Knowledge ──
+    this.add.text(W / 2, 10, 'Tome of Knowledge', {
+      fontSize: '20px', fontFamily: TUI.FONT_TITLE, color: TUI.GOLD_S,
+    }).setOrigin(0.5, 0).setDepth(3);
+
+    // ── Close button ──
+    const closeBtn = this.add.text(W - 36, 10, '\u2715', {
+      fontSize: '18px', fontFamily: TUI.FONT_TITLE, color: '#886644',
+    }).setOrigin(0.5, 0).setDepth(4).setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerover', () => closeBtn.setColor('#ffcc88'));
+    closeBtn.on('pointerout', () => closeBtn.setColor('#886644'));
     closeBtn.on('pointerdown', () => this._close());
-    closeBtn.on('pointerover', () => closeBtn.setFillStyle(0x663333));
-    closeBtn.on('pointerout', () => closeBtn.setFillStyle(0x442222));
-
-    // SWG-style Skill Points bar (top center)
-    const barW = 300;
-    const barX = this._sideW + (W - this._sideW) / 2;
-    this._spBarBg = this.add.rectangle(barX, 20, barW, 16, 0x111122, 0.9)
-      .setStrokeStyle(1, 0x333355).setDepth(2);
-    this._spBarFill = this.add.rectangle(barX - barW/2, 20, 0, 14, 0x44aa44, 0.7)
-      .setOrigin(0, 0.5).setDepth(2);
-    this._pointsText = this.add.text(barX, 20, '', {
-      fontSize: '10px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ffaa',
-    }).setOrigin(0.5).setDepth(3);
-    this._spBarMaxW = barW - 2;
 
     // ESC to close
     this.input.keyboard.on('keydown-ESC', () => this._close());
 
-    // Sidebar background
-    this._sideW = 200;
-    this.add.rectangle(this._sideW / 2, H / 2 + 20, this._sideW, H - 40, 0x111122, 0.95)
-      .setStrokeStyle(1, 0x222244).setDepth(1);
+    // ── Left Panel constants ──
+    this._sideW = 220;
+    this._mainX = this._sideW + 4;
 
-    // Respec button
+    // Left panel background
+    this.add.rectangle(this._sideW / 2 + 20, H / 2, this._sideW - 4, H - 48, TUI.SURFACE, 0.95)
+      .setDepth(1);
+    // Gold left border accent
+    const sideAccent = this.add.graphics().setDepth(2);
+    sideAccent.lineStyle(2, TUI.GOLD, 0.4);
+    sideAccent.beginPath();
+    sideAccent.moveTo(this._sideW + 18, 24);
+    sideAccent.lineTo(this._sideW + 18, H - 24);
+    sideAccent.strokePath();
+
+    // ── Respec button (bottom of sidebar) ──
     const respecY = H - 50;
-    const respecBg = this.add.rectangle(this._sideW / 2, respecY, this._sideW - 12, 32, 0x442222, 0.9)
-      .setStrokeStyle(1, 0x663333).setDepth(2).setInteractive({ useHandCursor: true });
-    this.add.text(this._sideW / 2, respecY, 'SURRENDER ALL', {
-      fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ff8888',
-    }).setOrigin(0.5).setDepth(3);
+    const respecW = this._sideW - 32;
+    const respecBg = this.add.rectangle(this._sideW / 2 + 20, respecY, respecW, 28, 0x2a1520, 0.9)
+      .setStrokeStyle(1, 0x663344).setDepth(3).setInteractive({ useHandCursor: true });
+    const respecTxt = this.add.text(this._sideW / 2 + 20, respecY, 'SURRENDER ALL', {
+      fontSize: '10px', fontFamily: TUI.FONT_TITLE, fontStyle: 'bold', color: '#cc6666',
+      letterSpacing: 1,
+    }).setOrigin(0.5).setDepth(4);
     respecBg.on('pointerdown', () => this._respecCurrent());
-    respecBg.on('pointerover', () => respecBg.setFillStyle(0x553333));
-    respecBg.on('pointerout', () => respecBg.setFillStyle(0x442222));
+    respecBg.on('pointerover', () => { respecBg.setFillStyle(0x3a2030); respecTxt.setColor('#ff8888'); });
+    respecBg.on('pointerout', () => { respecBg.setFillStyle(0x2a1520); respecTxt.setColor('#cc6666'); });
 
-    // Tooltip area
-    this._tooltipName = this.add.text(this._sideW + 20, H - 80, '', {
-      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffdd44',
-    }).setDepth(3);
-    this._tooltipDesc = this.add.text(this._sideW + 20, H - 60, '', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#aaaacc',
-      wordWrap: { width: W - this._sideW - 40 },
-    }).setDepth(3);
-    this._tooltipRank = this.add.text(W - 60, H - 80, '', {
-      fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#88ff88',
-    }).setOrigin(1, 0).setDepth(3);
-    this._tooltipHint = this.add.text(this._sideW + 20, H - 40, '', {
-      fontSize: '9px', fontFamily: 'monospace', color: '#555577',
-    }).setDepth(3);
+    // ── Bottom XP Bar ──
+    this._buildBottomBar();
 
-    // Build sidebar + select first tree
+    // ── Build sidebar + select first tree ──
     this._buildSidebar();
     const firstTree = Object.keys(CLASS_TREES)[0];
     if (firstTree) this._selectTree(firstTree);
     this._updatePoints();
   }
 
-  // ── Sidebar (all trees clickable for viewing) ────────
+  // ══════════════════════════════════════════════════════════
+  //  BOTTOM BAR — Profession XP totals
+  // ══════════════════════════════════════════════════════════
+
+  _buildBottomBar() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const barY = H - 16;
+
+    // Dark strip
+    this.add.rectangle(W / 2, H - 14, W - 40, 28, TUI.SURFACE, 0.8).setDepth(2);
+
+    const xpTypes = [
+      { key: 'combat',      icon: '\u2694', label: 'Combat',    color: '#ee6644' },
+      { key: 'exploration',  icon: '\uD83E\uDDED', label: 'Explore',   color: '#44bbff' },
+      { key: 'crafting',    icon: '\uD83D\uDD28', label: 'Craft',     color: '#dd9933' },
+      { key: 'trade',       icon: '\uD83D\uDCB0', label: 'Trade',     color: '#66cc66' },
+      { key: 'charisma',    icon: '\u2728', label: 'Charisma',  color: '#bb66dd' },
+    ];
+
+    const startX = this._mainX + 40;
+    const spacing = (W - this._mainX - 80) / xpTypes.length;
+    this._xpTexts = [];
+
+    for (let i = 0; i < xpTypes.length; i++) {
+      const x = startX + spacing * i + spacing / 2;
+      const xp = xpTypes[i];
+      const val = (G.professionXP && G.professionXP[xp.key]) || 0;
+      const txt = this.add.text(x, barY, xp.icon + ' ' + xp.label + ': ' + val, {
+        fontSize: '11px', fontFamily: TUI.FONT_BODY, color: xp.color,
+      }).setOrigin(0.5).setDepth(3);
+      this._xpTexts.push({ text: txt, key: xp.key, icon: xp.icon, label: xp.label, color: xp.color });
+    }
+  }
+
+  _refreshBottomBar() {
+    if (!this._xpTexts) return;
+    for (const entry of this._xpTexts) {
+      const val = (G.professionXP && G.professionXP[entry.key]) || 0;
+      entry.text.setText(entry.icon + ' ' + entry.label + ': ' + val);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  SIDEBAR — Chapter Index
+  // ══════════════════════════════════════════════════════════
 
   _buildSidebar() {
     this._sideDyn.forEach(o => o.destroy());
     this._sideDyn = [];
     this._sidebarTabs = [];
 
-    const treeIds = Object.keys(CLASS_TREES);
-    const tabH = 30;
-    const gap = 2;
-    let y = 50;
+    const H = this.scale.height;
+    const padL = 28;
+    const tabH = 34;
+    const gap = 1;
+    const headerGap = 6;
+    let y = 48;
 
-    for (const treeId of treeIds) {
-      const tree = CLASS_TREES[treeId];
-      const visible = isTreeVisible(treeId);
-      const isSubTree = !!tree.requiresTree;
-      const isHidden = !!tree.hidden;
-      const indent = isSubTree ? 16 : 0;
+    for (const [category, treeIds] of Object.entries(TREE_CATEGORIES)) {
+      // Filter to only trees that exist in CLASS_TREES
+      const validIds = treeIds.filter(id => CLASS_TREES[id]);
+      if (validIds.length === 0) continue;
 
-      // Hide sub-trees of hidden parents until the parent is unlocked
-      // (e.g. Shadow Knight stays hidden until Dark Rider is unlocked)
-      if (isSubTree && isHidden) {
-        const parentTree = CLASS_TREES[tree.requiresTree];
-        const parentUnlocked = parentTree && !parentTree.hidden ? true :
-          (parentTree && parentTree.hidden === 'darkRider' && G.darkRiderUnlocked) ||
-          (parentTree && parentTree.hidden === 'elder' && G.elderUnlocked);
-        if (!parentUnlocked) continue; // skip entirely
+      // Check if any tree in the category should be shown
+      // For HIDDEN, only show category if at least one hidden tree is revealed
+      if (category === 'HIDDEN') {
+        const anyVisible = validIds.some(id => {
+          const tree = CLASS_TREES[id];
+          if (!tree.hidden) return true;
+          if (tree.hidden === 'darkRider' && G.darkRiderUnlocked) return true;
+          if (tree.hidden === 'elder' && G.elderUnlocked) return true;
+          return false;
+        });
+        // Always show HIDDEN section header but only show ??? entries
       }
 
-      let displayName, displayColor;
-      if (isHidden && !visible && !isSubTree) {
-        // Only base hidden trees show as ???
-        displayName = '???';
-        displayColor = '#555555';
-      } else if (isSubTree && !visible) {
-        displayName = tree.name;
-        displayColor = '#444455';
-      } else {
-        displayName = tree.name;
-        displayColor = tree.color;
-      }
-
-      const bg = this.add.rectangle(this._sideW / 2, y, this._sideW - 8, tabH, 0x1a1a2e, 0.8)
-        .setStrokeStyle(1, 0x333355).setDepth(2)
-        .setInteractive({ useHandCursor: true });
-      this._sideDyn.push(bg);
-
-      // ALL trees clickable for viewing
-      bg.on('pointerdown', () => this._selectTree(treeId));
-      bg.on('pointerover', () => { if (this._selectedTree !== treeId) bg.setFillStyle(0x222244); });
-      bg.on('pointerout', () => { if (this._selectedTree !== treeId) bg.setFillStyle(0x1a1a2e); });
-
-      if (isSubTree) {
-        const conn = this.add.text(6, y - 5, '└', {
-          fontSize: '9px', fontFamily: 'monospace', color: '#333355',
-        }).setDepth(3);
-        this._sideDyn.push(conn);
-      }
-
-      const label = this.add.text(10 + indent, y - 5, displayName, {
-        fontSize: isSubTree ? '10px' : '11px',
-        fontFamily: 'Georgia, serif', fontStyle: 'bold', color: displayColor,
+      // Category header
+      const hdr = this.add.text(padL, y, category, {
+        fontSize: '9px', fontFamily: TUI.FONT_TITLE, color: TUI.DIM,
+        letterSpacing: 2,
       }).setDepth(3);
-      this._sideDyn.push(label);
+      this._sideDyn.push(hdr);
+      y += 16;
 
-      const pts = this.add.text(this._sideW - 10, y + 3, '', {
-        fontSize: '8px', fontFamily: 'monospace', color: '#666688',
-      }).setOrigin(1, 0).setDepth(3);
-      this._sideDyn.push(pts);
+      for (const treeId of validIds) {
+        const tree = CLASS_TREES[treeId];
+        const visible = isTreeVisible(treeId);
+        const isSubTree = !!tree.requiresTree;
+        const isHidden = !!tree.hidden;
 
-      this._sidebarTabs.push({ treeId, bg, label, pts, visible });
-      y += tabH + gap;
+        // Hide sub-trees of hidden parents until parent is unlocked
+        if (isSubTree && isHidden) {
+          const parentTree = CLASS_TREES[tree.requiresTree];
+          const parentUnlocked = parentTree && !parentTree.hidden ? true :
+            (parentTree && parentTree.hidden === 'darkRider' && G.darkRiderUnlocked) ||
+            (parentTree && parentTree.hidden === 'elder' && G.elderUnlocked);
+          if (!parentUnlocked) continue;
+        }
+
+        let displayName, displayColor, isSecret;
+        if (isHidden && !visible && !isSubTree) {
+          displayName = '???';
+          displayColor = TUI.DIM;
+          isSecret = true;
+        } else if (isSubTree && !visible) {
+          displayName = tree.name;
+          displayColor = '#444460';
+          isSecret = false;
+        } else {
+          displayName = tree.name;
+          displayColor = tree.color;
+          isSecret = false;
+        }
+
+        const indent = isSubTree ? 20 : 0;
+        const itemX = padL + indent;
+        const itemW = this._sideW - 24;
+
+        // Tab background
+        const bg = this.add.rectangle(this._sideW / 2 + 20, y + tabH / 2, itemW, tabH, TUI.PARCHMENT, 0.5)
+          .setDepth(2).setInteractive({ useHandCursor: true });
+        this._sideDyn.push(bg);
+
+        // 3px left color border
+        const borderGfx = this.add.graphics().setDepth(3);
+        const treeColor = Phaser.Display.Color.HexStringToColor(displayColor).color;
+        borderGfx.fillStyle(treeColor, 0.8);
+        borderGfx.fillRect(padL - 4, y + 2, 3, tabH - 4);
+        this._sideDyn.push(borderGfx);
+
+        // Sub-tree connector
+        if (isSubTree) {
+          const conn = this.add.text(padL + 4, y + 4, '\u2514', {
+            fontSize: '11px', fontFamily: TUI.FONT_BODY, color: TUI.DIM,
+          }).setDepth(3);
+          this._sideDyn.push(conn);
+        }
+
+        // Tree name
+        const nameStyle = {
+          fontSize: '13px', fontFamily: TUI.FONT_BODY, color: displayColor,
+        };
+        if (isSecret) nameStyle.fontStyle = 'italic';
+        const label = this.add.text(itemX + (isSubTree ? 16 : 0), y + 6, displayName, nameStyle).setDepth(3);
+        this._sideDyn.push(label);
+
+        // Progress text (right-aligned)
+        const pts = this.add.text(this._sideW + 10, y + 10, '', {
+          fontSize: '10px', fontFamily: TUI.FONT_BODY, color: TUI.DIM,
+        }).setOrigin(1, 0).setDepth(3);
+        this._sideDyn.push(pts);
+
+        // Interactions
+        bg.on('pointerdown', () => this._selectTree(treeId));
+        bg.on('pointerover', () => { if (this._selectedTree !== treeId) bg.setFillStyle(0x283050); });
+        bg.on('pointerout', () => { if (this._selectedTree !== treeId) bg.setFillStyle(TUI.PARCHMENT); });
+
+        this._sidebarTabs.push({ treeId, bg, label, pts, visible, borderGfx, displayColor });
+        y += tabH + gap;
+      }
+      y += headerGap;
     }
   }
 
@@ -181,7 +289,7 @@ class TalentScene extends Phaser.Scene {
       if (spent > 0) {
         const mastered = isMaster(tab.treeId);
         tab.pts.setText(mastered ? 'MASTERED' : spent + '/' + maxPts);
-        tab.pts.setColor(mastered ? '#88ff88' : '#666688');
+        tab.pts.setColor(mastered ? '#88ff88' : TUI.DIM);
       } else {
         tab.pts.setText('');
       }
@@ -191,22 +299,32 @@ class TalentScene extends Phaser.Scene {
   _highlightSidebarTab(treeId) {
     for (const tab of this._sidebarTabs) {
       if (tab.treeId === treeId) {
-        const c = CLASS_TREES[treeId] ? Phaser.Display.Color.HexStringToColor(CLASS_TREES[treeId].color).color : 0x4488aa;
-        tab.bg.setFillStyle(0x333366);
-        tab.bg.setStrokeStyle(2, c);
+        tab.bg.setFillStyle(0x283050);
+        tab.bg.setAlpha(0.9);
+        // Bright gold left border for active
+        tab.borderGfx.clear();
+        tab.borderGfx.fillStyle(TUI.GOLD, 1);
+        tab.borderGfx.fillRect(24, tab.bg.y - tab.bg.height/2 + 2, 3, tab.bg.height - 4);
       } else {
-        tab.bg.setFillStyle(0x1a1a2e);
-        tab.bg.setStrokeStyle(1, 0x333355);
+        tab.bg.setFillStyle(TUI.PARCHMENT);
+        tab.bg.setAlpha(0.5);
+        // Restore tree color border
+        const c = Phaser.Display.Color.HexStringToColor(tab.displayColor).color;
+        tab.borderGfx.clear();
+        tab.borderGfx.fillStyle(c, 0.8);
+        tab.borderGfx.fillRect(24, tab.bg.y - tab.bg.height/2 + 2, 3, tab.bg.height - 4);
       }
     }
   }
 
-  // ── Tree Selection & Rendering ───────────────────────
+  // ══════════════════════════════════════════════════════════
+  //  TREE SELECTION & RENDERING
+  // ══════════════════════════════════════════════════════════
 
   _selectTree(treeId) {
     this._selectedTree = treeId;
     this._highlightSidebarTab(treeId);
-    this._clearTooltip();
+    this._hideTooltip();
     this._renderTree(treeId);
     this._updatePoints();
     this._updateSidebarPoints();
@@ -216,11 +334,15 @@ class TalentScene extends Phaser.Scene {
     this._renderTree(treeId);
     this._updatePoints();
     this._refreshSidebar();
+    this._refreshBottomBar();
   }
 
   _renderTree(treeId) {
+    // Clean up previous
     this._dyn.forEach(o => o.destroy());
     this._dyn = [];
+    this._pulseTweens.forEach(t => t.stop());
+    this._pulseTweens = [];
 
     const tree = CLASS_TREES[treeId];
     if (!tree) return;
@@ -228,134 +350,115 @@ class TalentScene extends Phaser.Scene {
 
     const W = this.scale.width;
     const H = this.scale.height;
-    const mainX = this._sideW + 10;
-    const mainW = W - mainX - 10;
+    const mainX = this._mainX + 20;
+    const mainW = W - mainX - 30;
     const mainCX = mainX + mainW / 2;
     const colW = mainW / 3;
-
-    // Locked overlay label
-    if (!visible) {
-      let lockMsg = 'LOCKED';
-      if (tree.hidden) lockMsg = 'SECRET — ???';
-      else if (tree.requiresTree) {
-        const pName = CLASS_TREES[tree.requiresTree] ? CLASS_TREES[tree.requiresTree].name : '';
-        lockMsg = 'Requires ' + pName + ' mastery';
-      }
-      const lockText = this.add.text(mainCX, 50, lockMsg, {
-        fontSize: '12px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ff6666',
-      }).setOrigin(0.5).setDepth(3);
-      this._dyn.push(lockText);
-    }
-
-    // Description
-    const desc = this.add.text(mainCX, 62, tree.desc, {
-      fontSize: '10px', fontFamily: 'Georgia, serif', color: '#777788',
-      wordWrap: { width: mainW - 20 },
-    }).setOrigin(0.5, 0).setDepth(2);
-    this._dyn.push(desc);
-
-    // Layout: bottom-to-top
-    // Row positions (y): Master(top) → Tier3 → Tier2 → Tier1 → Tier0 → Apprentice(bottom)
-    const nodeW = 125;
-    const nodeH = 50;
-    const masterY = 90;
-    const tier3Y = 150;
-    const tier2Y = 210;
-    const tier1Y = 270;
-    const tier0Y = 330;
-    const apprenticeY = 400;
-    const tierYMap = { 3: tier3Y, 2: tier2Y, 1: tier1Y, 0: tier0Y };
-
-    // Branch headers (between master and tier 3)
-    for (let b = 0; b < tree.branches.length; b++) {
-      const cx = mainX + colW * b + colW / 2;
-      const hdr = this.add.text(cx, 80, tree.branches[b], {
-        fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: tree.color,
-      }).setOrigin(0.5).setDepth(2);
-      this._dyn.push(hdr);
-    }
 
     const treeColor = Phaser.Display.Color.HexStringToColor(tree.color).color;
     const gfx = this.add.graphics().setDepth(1);
     this._dyn.push(gfx);
 
-    // ── Render APPRENTICE node (bottom, centered, wide) ──
+    // ── Tree name ──
+    const treeName = this.add.text(mainCX, 36, tree.name, {
+      fontSize: '22px', fontFamily: TUI.FONT_TITLE, color: tree.color,
+    }).setOrigin(0.5, 0).setDepth(3);
+    this._dyn.push(treeName);
+
+    // ── Locked overlay ──
+    if (!visible) {
+      let lockMsg = 'LOCKED';
+      if (tree.hidden) lockMsg = 'SECRET \u2014 ???';
+      else if (tree.requiresTree) {
+        const pName = CLASS_TREES[tree.requiresTree] ? CLASS_TREES[tree.requiresTree].name : '';
+        lockMsg = 'Requires ' + pName + ' mastery';
+      }
+      const lockText = this.add.text(mainCX, 62, lockMsg, {
+        fontSize: '13px', fontFamily: TUI.FONT_TITLE, color: '#cc5555',
+      }).setOrigin(0.5).setDepth(3);
+      this._dyn.push(lockText);
+    }
+
+    // ── Description ──
+    const descY = visible ? 62 : 80;
+    const desc = this.add.text(mainCX, descY, tree.desc, {
+      fontSize: '14px', fontFamily: TUI.FONT_BODY, color: '#aabbcc',
+      wordWrap: { width: mainW - 40 },
+    }).setOrigin(0.5, 0).setDepth(2);
+    this._dyn.push(desc);
+
+    // ── Skill Points Bar (below description) ──
+    const barY = descY + 30;
+    const barW = 280;
+    this._spBarBg = this.add.rectangle(mainCX, barY, barW, 14, 0x111122, 0.7)
+      .setStrokeStyle(1, TUI.GOLD, 0.3).setDepth(2);
+    this._dyn.push(this._spBarBg);
+    this._spBarFill = this.add.rectangle(mainCX - barW/2 + 1, barY, 0, 12, 0x44aa44, 0.6)
+      .setOrigin(0, 0.5).setDepth(2);
+    this._dyn.push(this._spBarFill);
+    this._spBarMaxW = barW - 2;
+    this._pointsText = this.add.text(mainCX, barY, '', {
+      fontSize: '10px', fontFamily: TUI.FONT_BODY, fontStyle: 'bold', color: '#88ffaa',
+    }).setOrigin(0.5).setDepth(3);
+    this._dyn.push(this._pointsText);
+    this._updatePoints();
+
+    // ── Layout positions ──
+    const nodeW = 140;
+    const nodeH = 70;
+    const appW = mainW - 40;
+    const appH = 60;
+
+    // Vertical positions (top to bottom: master → tier3 → tier2 → tier1 → tier0 → apprentice)
+    const masterY = barY + 36;
+    const tier3Y = masterY + 80;
+    const tier2Y = tier3Y + 80;
+    const tier1Y = tier2Y + 80;
+    const tier0Y = tier1Y + 80;
+    const apprenticeY = tier0Y + 80;
+    const tierYMap = { 3: tier3Y, 2: tier2Y, 1: tier1Y, 0: tier0Y };
+
+    // ── Branch headers ──
+    for (let b = 0; b < tree.branches.length; b++) {
+      const cx = mainX + colW * b + colW / 2;
+      const hdr = this.add.text(cx, masterY - 12, tree.branches[b], {
+        fontSize: '14px', fontFamily: TUI.FONT_TITLE, color: tree.color,
+      }).setOrigin(0.5).setDepth(2).setAlpha(0.8);
+      this._dyn.push(hdr);
+    }
+
+    // ── APPRENTICE NODE (bottom, full-width card) ──
     const appInfo = getApprenticeInfo(treeId);
     const appRank = getTalentRank(treeId, '_app');
     const appMaxed = appRank >= 1;
     const appCanAlloc = canAllocateTalent(treeId, '_app');
-    const appW = mainW - 40;
-    let appBgColor, appStroke;
-    if (appMaxed) { appBgColor = treeColor; appStroke = treeColor; }
-    else if (appCanAlloc) { appBgColor = 0x222244; appStroke = 0x4488aa; }
-    else { appBgColor = 0x151520; appStroke = 0x222233; }
+    this._renderWideNode(mainCX, apprenticeY, appW, appH, appInfo, treeId, '_app',
+      appMaxed, appCanAlloc, treeColor, tree.color, visible, false);
 
-    const appBg = this.add.rectangle(mainCX, apprenticeY, appW, nodeH, appBgColor, appMaxed ? 0.25 : 0.9)
-      .setStrokeStyle(appMaxed ? 2 : 1, appStroke).setDepth(2)
-      .setInteractive({ useHandCursor: visible });
-    this._dyn.push(appBg);
-    const appName = this.add.text(mainCX, apprenticeY - 10, appInfo.name, {
-      fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: appMaxed ? '#ccccdd' : (appCanAlloc ? '#ccccdd' : '#555566'),
-    }).setOrigin(0.5).setDepth(3);
-    this._dyn.push(appName);
-    const appRankTxt = this.add.text(mainCX, apprenticeY + 10, appMaxed ? '✓ LEARNED' : (appCanAlloc ? 'Purchase (' + APPRENTICE_COST + ' pts)' : 'LOCKED'), {
-      fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: appMaxed ? '#88ff88' : (appCanAlloc ? '#44bbff' : '#555566'),
-    }).setOrigin(0.5).setDepth(3);
-    this._dyn.push(appRankTxt);
-    if (!appMaxed && appCanAlloc) {
-      const costTxt = this.add.text(mainCX + appW/2 - 4, apprenticeY - nodeH/2 + 4, APPRENTICE_COST + 'pt', {
-        fontSize: '8px', fontFamily: 'monospace', color: '#888899',
-      }).setOrigin(1, 0).setDepth(3);
-      this._dyn.push(costTxt);
-    }
-    this._addNodeInteraction(appBg, treeId, '_app', appInfo, appMaxed, appCanAlloc, appStroke, visible);
-
-    // ── Render MASTER node (top, centered, wide) ──
+    // ── MASTER NODE (top, full-width card, ornate) ──
     const masInfo = getMasterInfo(treeId);
     const masRank = getTalentRank(treeId, '_mas');
     const masMaxed = masRank >= 1;
     const masCanAlloc = canAllocateTalent(treeId, '_mas');
-    let masBgColor, masStroke;
-    if (masMaxed) { masBgColor = treeColor; masStroke = treeColor; }
-    else if (masCanAlloc) { masBgColor = 0x222244; masStroke = 0x4488aa; }
-    else { masBgColor = 0x151520; masStroke = 0x222233; }
-
-    const masBg = this.add.rectangle(mainCX, masterY, appW, nodeH, masBgColor, masMaxed ? 0.25 : 0.9)
-      .setStrokeStyle(masMaxed ? 2 : 1, masStroke).setDepth(2)
-      .setInteractive({ useHandCursor: visible });
-    this._dyn.push(masBg);
-    const masName = this.add.text(mainCX, masterY - 10, masInfo.name, {
-      fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: masMaxed ? '#ffdd44' : (masCanAlloc ? '#ccccdd' : '#555566'),
-    }).setOrigin(0.5).setDepth(3);
-    this._dyn.push(masName);
-    const masRankTxt = this.add.text(mainCX, masterY + 10, masMaxed ? '✓ MASTERED' : (masCanAlloc ? 'Purchase (' + MASTER_COST + ' pts)' : 'LOCKED'), {
-      fontSize: '9px', fontFamily: 'monospace', fontStyle: 'bold', color: masMaxed ? '#ffdd44' : (masCanAlloc ? '#44bbff' : '#555566'),
-    }).setOrigin(0.5).setDepth(3);
-    this._dyn.push(masRankTxt);
-    if (!masMaxed && masCanAlloc) {
-      const costTxt = this.add.text(mainCX + appW/2 - 4, masterY - nodeH/2 + 4, MASTER_COST + 'pt', {
-        fontSize: '8px', fontFamily: 'monospace', color: '#888899',
-      }).setOrigin(1, 0).setDepth(3);
-      this._dyn.push(costTxt);
-    }
-    this._addNodeInteraction(masBg, treeId, '_mas', masInfo, masMaxed, masCanAlloc, masStroke, visible);
+    this._renderWideNode(mainCX, masterY + 20, appW, appH, masInfo, treeId, '_mas',
+      masMaxed, masCanAlloc, treeColor, tree.color, visible, true);
 
     // ── Connection lines: Apprentice → all tier 0, all tier 3 → Master ──
     for (let b = 0; b < 3; b++) {
       const cx = mainX + colW * b + colW / 2;
       // Apprentice to tier 0
       const appLine = appMaxed ? treeColor : 0x333344;
-      gfx.lineStyle(2, appLine, appMaxed ? 0.7 : 0.3);
-      gfx.beginPath(); gfx.moveTo(mainCX, apprenticeY - nodeH/2); gfx.lineTo(cx, tier0Y + nodeH/2); gfx.strokePath();
+      gfx.lineStyle(1, appLine, appMaxed ? 0.6 : 0.2);
+      gfx.beginPath(); gfx.moveTo(mainCX, apprenticeY - appH/2); gfx.lineTo(cx, tier0Y + nodeH/2); gfx.strokePath();
       // Tier 3 to master
       const t3talents = tree.talents.filter(t => t.branch === b && t.tier === 3);
       const t3Maxed = t3talents.every(t => getTalentRank(treeId, t.id) >= t.maxRank);
       const masLine = t3Maxed ? treeColor : 0x333344;
-      gfx.lineStyle(2, masLine, t3Maxed ? 0.7 : 0.3);
-      gfx.beginPath(); gfx.moveTo(cx, tier3Y - nodeH/2); gfx.lineTo(mainCX, masterY + nodeH/2); gfx.strokePath();
+      gfx.lineStyle(1, masLine, t3Maxed ? 0.6 : 0.2);
+      gfx.beginPath(); gfx.moveTo(cx, tier3Y - nodeH/2); gfx.lineTo(mainCX, masterY + 20 + appH/2); gfx.strokePath();
     }
 
-    // ── Render branch talent nodes ──
+    // ── Node positions map ──
     const nodePositions = {};
     for (const talent of tree.talents) {
       const cx = mainX + colW * talent.branch + colW / 2;
@@ -363,66 +466,203 @@ class TalentScene extends Phaser.Scene {
       nodePositions[talent.id] = { cx, cy };
     }
 
-    // Branch connection lines (tier-to-tier within branch)
+    // ── Branch connection lines (tier-to-tier) ──
     for (const talent of tree.talents) {
       if (talent.prereq && nodePositions[talent.prereq]) {
         const parent = nodePositions[talent.prereq];
         const child = nodePositions[talent.id];
         const prereqMaxed = getTalentRank(treeId, talent.prereq) >= _findTalent(treeId, talent.prereq).maxRank;
-        gfx.lineStyle(2, prereqMaxed ? treeColor : 0x333344, prereqMaxed ? 0.7 : 0.3);
+        gfx.lineStyle(1, prereqMaxed ? treeColor : 0x333344, prereqMaxed ? 0.6 : 0.2);
         gfx.beginPath(); gfx.moveTo(parent.cx, parent.cy - nodeH/2); gfx.lineTo(child.cx, child.cy + nodeH/2); gfx.strokePath();
       }
     }
 
-    // Draw talent nodes
+    // ── Render talent nodes ──
     for (const talent of tree.talents) {
       const pos = nodePositions[talent.id];
-      const rank = getTalentRank(treeId, talent.id);
-      const canAlloc = canAllocateTalent(treeId, talent.id);
-      const isMaxed = rank >= talent.maxRank;
-      const isLocked = !canAlloc && rank === 0;
-
-      let bgColor, strokeColor, bgAlpha;
-      if (isMaxed) { bgColor = treeColor; bgAlpha = 0.25; strokeColor = treeColor; }
-      else if (rank > 0) { bgColor = 0x223344; bgAlpha = 0.9; strokeColor = treeColor; }
-      else if (canAlloc) { bgColor = 0x222244; bgAlpha = 0.9; strokeColor = 0x4488aa; }
-      else { bgColor = 0x151520; bgAlpha = 0.6; strokeColor = 0x222233; }
-
-      const bg = this.add.rectangle(pos.cx, pos.cy, nodeW, nodeH, bgColor, bgAlpha)
-        .setStrokeStyle(isMaxed ? 2 : 1, strokeColor).setDepth(2)
-        .setInteractive({ useHandCursor: !isLocked || !visible });
-      this._dyn.push(bg);
-
-      const nameColor = isLocked ? '#555566' : '#ccccdd';
-      const name = this.add.text(pos.cx, pos.cy - 10, talent.name, {
-        fontSize: '9px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: nameColor,
-      }).setOrigin(0.5).setDepth(3);
-      this._dyn.push(name);
-
-      // Status label: LEARNED / Purchase (Xpt) / LOCKED
-      let statusLabel, statusColor;
-      if (isMaxed) { statusLabel = '✓ LEARNED'; statusColor = '#88ff88'; }
-      else if (canAlloc) { statusLabel = 'Purchase (' + talent.cost + ' pts)'; statusColor = '#44bbff'; }
-      else { statusLabel = 'LOCKED'; statusColor = '#555566'; }
-      const rankText = this.add.text(pos.cx, pos.cy + 10, statusLabel, {
-        fontSize: '7px', fontFamily: 'monospace', fontStyle: 'bold', color: statusColor,
-      }).setOrigin(0.5).setDepth(3);
-      this._dyn.push(rankText);
-
-      this._addNodeInteraction(bg, treeId, talent.id, talent, isMaxed, canAlloc, strokeColor, visible);
+      this._renderTalentNode(pos.cx, pos.cy, nodeW, nodeH, talent, treeId, treeColor, tree.color, visible);
     }
   }
 
-  // ── Shared node interaction logic ────────────────────
+  // ══════════════════════════════════════════════════════════
+  //  WIDE NODE — Apprentice / Master
+  // ══════════════════════════════════════════════════════════
+
+  _renderWideNode(cx, cy, w, h, info, treeId, talentId, isMaxed, canAlloc, treeColor, treeColorStr, visible, isMasterNode) {
+    const cost = talentId === '_app' ? APPRENTICE_COST : MASTER_COST;
+    const isLocked = !canAlloc && !isMaxed;
+
+    // Background
+    let bgColor, strokeColor, strokeAlpha;
+    if (isMaxed) {
+      bgColor = TUI.PARCHMENT; strokeColor = isMasterNode ? TUI.GOLD : treeColor; strokeAlpha = 1;
+    } else if (canAlloc) {
+      bgColor = TUI.SURFACE; strokeColor = TUI.GOLD; strokeAlpha = 0.8;
+    } else {
+      bgColor = TUI.SURFACE; strokeColor = 0x333355; strokeAlpha = 0.4;
+    }
+
+    const bg = this.add.rectangle(cx, cy, w, h, bgColor, isLocked ? 0.4 : 0.9)
+      .setStrokeStyle(isMasterNode && isMaxed ? 2 : 1, strokeColor, strokeAlpha)
+      .setDepth(2).setInteractive({ useHandCursor: visible });
+    this._dyn.push(bg);
+
+    // Ornate double border for master
+    if (isMasterNode) {
+      const ornate = this.add.rectangle(cx, cy, w - 6, h - 6, 0x000000, 0)
+        .setStrokeStyle(1, isMaxed ? TUI.GOLD : 0x333355, isMaxed ? 0.4 : 0.15).setDepth(2);
+      this._dyn.push(ornate);
+    }
+
+    // Checkmark for learned
+    if (isMaxed) {
+      const check = this.add.text(cx - w/2 + 14, cy - 6, '\u2713', {
+        fontSize: '16px', fontFamily: TUI.FONT_BODY, color: isMasterNode ? TUI.GOLD_S : '#88ff88',
+      }).setDepth(3);
+      this._dyn.push(check);
+    }
+
+    // Name
+    const nameX = isMaxed ? cx - w/2 + 34 : cx - w/2 + 14;
+    const name = this.add.text(nameX, cy - 14, info.name, {
+      fontSize: '16px', fontFamily: TUI.FONT_TITLE,
+      color: isLocked ? TUI.DIM : (isMasterNode && isMaxed ? TUI.GOLD_S : TUI.TEXT),
+    }).setDepth(3);
+    this._dyn.push(name);
+
+    // Description (truncated for card)
+    const descText = (info.desc || '').length > 60 ? info.desc.substring(0, 57) + '...' : (info.desc || '');
+    const descLabel = this.add.text(nameX, cy + 4, descText, {
+      fontSize: '12px', fontFamily: TUI.FONT_BODY, color: isLocked ? '#444460' : '#8899aa',
+      wordWrap: { width: w - 100 },
+    }).setDepth(3);
+    this._dyn.push(descLabel);
+
+    // Cost pill
+    if (!isMaxed) {
+      const pillText = cost + ' pts';
+      const pill = this.add.text(cx + w/2 - 14, cy, pillText, {
+        fontSize: '11px', fontFamily: TUI.FONT_BODY, fontStyle: 'bold',
+        color: canAlloc ? TUI.GOLD_S : TUI.DIM,
+        backgroundColor: canAlloc ? '#1a1a30' : '#0e0e1e',
+        padding: { x: 6, y: 3 },
+      }).setOrigin(1, 0.5).setDepth(3);
+      this._dyn.push(pill);
+    }
+
+    // Pulse tween for available
+    if (canAlloc && !isMaxed) {
+      const tw = this.tweens.add({
+        targets: bg, alpha: { from: 0.9, to: 0.65 },
+        duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      this._pulseTweens.push(tw);
+    }
+
+    this._addNodeInteraction(bg, treeId, talentId, info, isMaxed, canAlloc, strokeColor, visible);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  TALENT NODE — Branch cards
+  // ══════════════════════════════════════════════════════════
+
+  _renderTalentNode(cx, cy, w, h, talent, treeId, treeColor, treeColorStr, visible) {
+    const rank = getTalentRank(treeId, talent.id);
+    const canAlloc = canAllocateTalent(treeId, talent.id);
+    const isMaxed = rank >= talent.maxRank;
+    const isLocked = !canAlloc && rank === 0;
+
+    let bgColor, bgAlpha, strokeColor, strokeAlpha;
+    if (isMaxed) {
+      bgColor = treeColor; bgAlpha = 0.2; strokeColor = treeColor; strokeAlpha = 0.8;
+    } else if (rank > 0) {
+      bgColor = TUI.SURFACE; bgAlpha = 0.9; strokeColor = treeColor; strokeAlpha = 0.6;
+    } else if (canAlloc) {
+      bgColor = TUI.SURFACE; bgAlpha = 0.9; strokeColor = TUI.GOLD; strokeAlpha = 0.7;
+    } else {
+      bgColor = TUI.SURFACE; bgAlpha = 0.4; strokeColor = 0x333355; strokeAlpha = 0.3;
+    }
+
+    // Rounded-corner card via graphics
+    const cardGfx = this.add.graphics().setDepth(2);
+    const r = 6; // corner radius
+    cardGfx.fillStyle(bgColor, bgAlpha);
+    cardGfx.fillRoundedRect(cx - w/2, cy - h/2, w, h, r);
+    cardGfx.lineStyle(isMaxed ? 2 : 1, strokeColor, strokeAlpha);
+    cardGfx.strokeRoundedRect(cx - w/2, cy - h/2, w, h, r);
+    this._dyn.push(cardGfx);
+
+    // Invisible hit area for interaction
+    const hitArea = this.add.rectangle(cx, cy, w, h, 0x000000, 0)
+      .setDepth(3).setInteractive({ useHandCursor: !isLocked || !visible });
+    this._dyn.push(hitArea);
+
+    // Checkmark
+    if (isMaxed) {
+      const check = this.add.text(cx + w/2 - 16, cy - h/2 + 4, '\u2713', {
+        fontSize: '13px', fontFamily: TUI.FONT_BODY, fontStyle: 'bold', color: '#88ff88',
+      }).setDepth(4);
+      this._dyn.push(check);
+    }
+
+    // Name
+    const name = this.add.text(cx, cy - 14, talent.name, {
+      fontSize: '14px', fontFamily: TUI.FONT_BODY, fontStyle: 'bold',
+      color: isLocked ? TUI.DIM : TUI.TEXT,
+    }).setOrigin(0.5, 0.5).setDepth(4);
+    this._dyn.push(name);
+
+    // Description (abbreviated)
+    const descText = (talent.desc || '').length > 45 ? talent.desc.substring(0, 42) + '...' : (talent.desc || '');
+    const descLabel = this.add.text(cx, cy + 4, descText, {
+      fontSize: '11px', fontFamily: TUI.FONT_BODY,
+      color: isLocked ? '#444460' : '#8899aa',
+      wordWrap: { width: w - 16 },
+    }).setOrigin(0.5, 0).setDepth(4);
+    this._dyn.push(descLabel);
+
+    // Cost pill (bottom-right)
+    if (!isMaxed) {
+      const pill = this.add.text(cx + w/2 - 8, cy + h/2 - 6, talent.cost + 'pt', {
+        fontSize: '10px', fontFamily: TUI.FONT_BODY,
+        color: canAlloc ? TUI.GOLD_S : TUI.DIM,
+        backgroundColor: '#0e0e1e',
+        padding: { x: 4, y: 2 },
+      }).setOrigin(1, 1).setDepth(4);
+      this._dyn.push(pill);
+    }
+
+    // Pulse tween for available nodes
+    if (canAlloc && !isMaxed) {
+      const tw = this.tweens.add({
+        targets: hitArea, alpha: { from: 0, to: 0.08 },
+        duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      this._pulseTweens.push(tw);
+      // Also pulse the card border
+      const tw2 = this.tweens.add({
+        targets: cardGfx, alpha: { from: 1, to: 0.7 },
+        duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      this._pulseTweens.push(tw2);
+    }
+
+    this._addNodeInteraction(hitArea, treeId, talent.id, talent, isMaxed, canAlloc, strokeColor, visible);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  SHARED NODE INTERACTION
+  // ══════════════════════════════════════════════════════════
 
   _addNodeInteraction(bg, treeId, talentId, talentInfo, isMaxed, canAlloc, strokeColor, visible) {
-    bg.on('pointerover', () => {
-      if (canAlloc || isMaxed) bg.setStrokeStyle(2, 0xffffff);
-      this._showTooltip(treeId, talentId, talentInfo);
+    bg.on('pointerover', (pointer) => {
+      this._showTooltip(treeId, talentId, talentInfo, pointer);
+    });
+    bg.on('pointermove', (pointer) => {
+      this._moveTooltip(pointer);
     });
     bg.on('pointerout', () => {
-      bg.setStrokeStyle(isMaxed ? 2 : 1, strokeColor);
-      this._clearTooltip();
+      this._hideTooltip();
     });
     bg.on('pointerdown', (pointer) => {
       if (!visible) return;
@@ -440,9 +680,13 @@ class TalentScene extends Phaser.Scene {
     });
   }
 
-  // ── Tooltip ──────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  //  FLOATING TOOLTIP
+  // ══════════════════════════════════════════════════════════
 
-  _showTooltip(treeId, talentId, talentInfo) {
+  _showTooltip(treeId, talentId, talentInfo, pointer) {
+    this._hideTooltip();
+
     const rank = getTalentRank(treeId, talentId);
     const maxRank = talentInfo.maxRank || 1;
     const cost = talentInfo.cost || (talentId === '_app' ? APPRENTICE_COST : (talentId === '_mas' ? MASTER_COST : 1));
@@ -450,68 +694,144 @@ class TalentScene extends Phaser.Scene {
     const canAlloc = canAllocateTalent(treeId, talentId);
     const canDealloc = canDeallocateTalent(treeId, talentId);
 
-    this._tooltipName.setText(talentInfo.name);
-    this._tooltipDesc.setText(talentInfo.desc || '');
+    const ttW = 280;
+    const container = this.add.container(0, 0).setDepth(10);
 
+    // Build text elements first to measure height
+    const pad = 12;
+    let yOff = pad;
+
+    const nameText = this.add.text(pad, yOff, talentInfo.name, {
+      fontSize: '16px', fontFamily: TUI.FONT_TITLE, color: TUI.GOLD_S,
+    });
+    yOff += 24;
+
+    const descText = this.add.text(pad, yOff, talentInfo.desc || '', {
+      fontSize: '14px', fontFamily: TUI.FONT_BODY, color: TUI.TEXT,
+      wordWrap: { width: ttW - pad * 2 }, lineSpacing: 2,
+    });
+    yOff += descText.height + 10;
+
+    // Separator
+    const sepGfx = this.add.graphics();
+    sepGfx.lineStyle(1, TUI.GOLD, 0.2);
+    sepGfx.beginPath(); sepGfx.moveTo(pad, yOff); sepGfx.lineTo(ttW - pad, yOff); sepGfx.strokePath();
+    yOff += 8;
+
+    const costText = this.add.text(pad, yOff, 'Costs ' + cost + ' Skill Points', {
+      fontSize: '12px', fontFamily: TUI.FONT_BODY, color: TUI.DIM,
+    });
+    yOff += 18;
+
+    // Status line
+    let statusStr, statusColor;
     if (isLearned) {
-      this._tooltipRank.setText('✓ LEARNED');
-      this._tooltipRank.setColor('#88ff88');
-      this._tooltipHint.setText(canDealloc ? 'Shift+Click to surrender — recover ' + cost + ' skill points' : 'Cannot surrender (dependents learned)');
-      this._tooltipHint.setColor(canDealloc ? '#ff8888' : '#555566');
+      statusStr = 'LEARNED \u2713';
+      statusColor = '#88ff88';
     } else if (canAlloc) {
-      this._tooltipRank.setText('Click to purchase — costs ' + cost + ' skill points');
-      this._tooltipRank.setColor('#44bbff');
-      this._tooltipHint.setText('Skill Points Available: ' + getTalentPointsRemaining());
-      this._tooltipHint.setColor('#88ffaa');
+      statusStr = 'Click to purchase';
+      statusColor = TUI.GOLD_S;
     } else {
-      this._tooltipRank.setText('LOCKED — ' + cost + ' skill points to learn');
-      this._tooltipRank.setColor('#666666');
+      // Figure out why locked
       if (talentId === '_mas') {
-        this._tooltipHint.setText('Requires all branch talents learned');
+        statusStr = 'Requires all branch talents learned';
       } else if (talentId === '_app') {
         const tree = CLASS_TREES[treeId];
         if (tree && tree.requiresTree) {
           const pName = CLASS_TREES[tree.requiresTree] ? CLASS_TREES[tree.requiresTree].name : '';
-          this._tooltipHint.setText('Requires Master ' + pName);
+          statusStr = 'Requires Master ' + pName;
         } else if (tree && tree.hidden) {
-          this._tooltipHint.setText('Secret — unlock condition hidden');
+          statusStr = 'Secret \u2014 unlock condition hidden';
         } else {
-          this._tooltipHint.setText('Not enough skill points');
+          statusStr = 'Not enough skill points';
         }
       } else if (talentInfo.prereq) {
         const pt = _findTalent(treeId, talentInfo.prereq);
-        this._tooltipHint.setText('Requires: ' + (pt ? pt.name : talentInfo.prereq));
+        statusStr = 'Requires: ' + (pt ? pt.name : talentInfo.prereq);
       } else {
-        this._tooltipHint.setText('Learn Apprentice first');
+        statusStr = 'Learn Apprentice first';
       }
-      this._tooltipHint.setColor('#555566');
+      statusColor = '#cc6666';
+    }
+
+    const statusText = this.add.text(pad, yOff, statusStr, {
+      fontSize: '12px', fontFamily: TUI.FONT_BODY, fontStyle: 'bold', color: statusColor,
+    });
+    yOff += 18;
+
+    // Shift+click hint
+    let hintText = null;
+    if (isLearned && canDealloc) {
+      hintText = this.add.text(pad, yOff, 'Shift+Click to unlearn', {
+        fontSize: '11px', fontFamily: TUI.FONT_BODY, fontStyle: 'italic', color: '#cc6666',
+      });
+      yOff += 16;
+    } else if (isLearned && !canDealloc) {
+      hintText = this.add.text(pad, yOff, 'Cannot unlearn (dependents learned)', {
+        fontSize: '11px', fontFamily: TUI.FONT_BODY, fontStyle: 'italic', color: '#555577',
+      });
+      yOff += 16;
+    }
+
+    const ttH = yOff + pad;
+
+    // Background
+    const bgGfx = this.add.graphics();
+    bgGfx.fillStyle(Phaser.Display.Color.GetColor(22, 28, 46), 0.95);
+    bgGfx.fillRoundedRect(0, 0, ttW, ttH, 4);
+    bgGfx.lineStyle(1, TUI.GOLD, 0.5);
+    bgGfx.strokeRoundedRect(0, 0, ttW, ttH, 4);
+
+    container.add([bgGfx, nameText, descText, sepGfx, costText, statusText]);
+    if (hintText) container.add(hintText);
+
+    this._tooltip = container;
+    this._tooltipW = ttW;
+    this._tooltipH = ttH;
+    this._moveTooltip(pointer);
+  }
+
+  _moveTooltip(pointer) {
+    if (!this._tooltip) return;
+    const W = this.scale.width;
+    const H = this.scale.height;
+    let x = pointer.x + 16;
+    let y = pointer.y - 10;
+    // Clamp to screen
+    if (x + this._tooltipW > W - 10) x = pointer.x - this._tooltipW - 16;
+    if (y + this._tooltipH > H - 10) y = H - this._tooltipH - 10;
+    if (y < 10) y = 10;
+    this._tooltip.setPosition(x, y);
+  }
+
+  _hideTooltip() {
+    if (this._tooltip) {
+      this._tooltip.destroy();
+      this._tooltip = null;
     }
   }
 
-  _clearTooltip() {
-    this._tooltipName.setText('');
-    this._tooltipDesc.setText('');
-    this._tooltipRank.setText('');
-    this._tooltipHint.setText('Hover a talent for details');
-  }
-
-  // ── Points Display ───────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  //  POINTS DISPLAY
+  // ══════════════════════════════════════════════════════════
 
   _updatePoints() {
+    if (!this._pointsText) return;
     const remaining = getTalentPointsRemaining();
     const total = getTalentPointsTotal();
-    const spent = getTalentPointsSpent();
-    this._pointsText.setText('Skill Points Available: ' + remaining + ' / ' + total);
+    this._pointsText.setText('Skill Points: ' + remaining + ' / ' + total);
     this._pointsText.setColor(remaining > 0 ? '#88ffaa' : '#ff8888');
-    // Update green bar
+    // Update bar fill
     if (this._spBarFill && this._spBarMaxW) {
       const pct = total > 0 ? remaining / total : 0;
-      this._spBarFill.setSize(Math.max(1, pct * this._spBarMaxW), 14);
+      this._spBarFill.setSize(Math.max(1, pct * this._spBarMaxW), 12);
       this._spBarFill.setFillStyle(remaining > 20 ? 0x44aa44 : (remaining > 5 ? 0xaaaa44 : 0xaa4444));
     }
   }
 
-  // ── Respec ───────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  //  RESPEC
+  // ══════════════════════════════════════════════════════════
 
   _respecCurrent() {
     if (!this._selectedTree) return;
@@ -521,10 +841,13 @@ class TalentScene extends Phaser.Scene {
     this._afterChange(this._selectedTree);
   }
 
-  // ── Close ────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  //  CLOSE
+  // ══════════════════════════════════════════════════════════
 
   _close() {
     if (typeof GameAudio !== 'undefined') GameAudio.menuOpen();
+    this._hideTooltip();
     this.scene.stop();
     this.scene.resume('WorldScene');
   }
