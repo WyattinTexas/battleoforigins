@@ -47,7 +47,8 @@ class WorldScene extends Phaser.Scene {
       dark_castle: '#1a1020',
     };
 
-    this.cameras.main.fadeIn(600);
+    const _isFirstLoad = !G.tutorialComplete && G.tutorialStep === 0;
+    this.cameras.main.fadeIn(_isFirstLoad ? 1200 : 600);
     this.cameras.main.setBackgroundColor(zoneBgColors[G.currentZone] || '#d8e8f0');
 
     // ── Render the world map ──
@@ -502,6 +503,17 @@ class WorldScene extends Phaser.Scene {
     // Enable camera culling — only render objects within viewport + margin
     cam.useBounds = true;
 
+    // ── Cinematic zoom reveal on first world load ──
+    if (!G.tutorialComplete && G.tutorialStep === 0) {
+      cam.setZoom(4);
+      this.tweens.add({
+        targets: cam,
+        zoom: 1.5,
+        duration: 2000,
+        ease: 'Sine.easeOut',
+      });
+    }
+
     this._uiElements = [];
 
     // ── NPCs (zone-specific) ──
@@ -949,6 +961,8 @@ class WorldScene extends Phaser.Scene {
                 this._startQuestTracker();
                 // Fade in buildings, wisps, hostile NPCs that were hidden during tutorial
                 this._revealWorldAfterTutorial();
+                // Class-specific hint after a short delay
+                this._showClassHint();
               },
             });
           } else {
@@ -959,6 +973,8 @@ class WorldScene extends Phaser.Scene {
             this._applyChatInputVisibility();
             this._startQuestTracker();
             this._revealWorldAfterTutorial();
+            // Class-specific hint after a short delay
+            this._showClassHint();
           }
         });
       }
@@ -1030,6 +1046,11 @@ class WorldScene extends Phaser.Scene {
         this.sound.play('music_hub', { loop: true, volume: 0.3 });
       }
     } catch(e) { console.log('[Audio] Music skipped:', e.message); }
+
+    // ── Arrival chime (gentle ascending notes after cinematic / world load) ──
+    if (typeof GameAudio !== 'undefined') {
+      this.time.delayedCall(800, () => GameAudio.heal());
+    }
     console.log('[WorldScene] create: COMPLETE');
   }
 
@@ -5846,6 +5867,28 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
   //  BREADCRUMB QUEST TRACKER — guides first 10 minutes
   // ══════════════════════════════════════════════════════
+
+  _showClassHint() {
+    if (G._classHintShown) return;
+    G._classHintShown = true;
+    const hints = {
+      'Trainer':       "Your Trainer instinct sharpens your combat. You'll hit harder as you level up.",
+      'Cultivator':    "As a Cultivator, you can grow plants. Find a garden plot to start.",
+      'Fortune Teller':"Your Fortune Teller gift lets you see what's coming. Try using Fortune in battle.",
+      'Artisan':       "As an Artisan, you craft powerful gear. Visit the Workshop to begin.",
+      'Scientist':     "Your Scientist mind analyzes everything. Knowledge is your weapon.",
+    };
+    const cls = G.startingClass || '';
+    const hint = hints[cls];
+    if (!hint) return;
+    this.time.delayedCall(5000, () => {
+      if (typeof StarfoxComm !== 'undefined') {
+        StarfoxComm.play([{ char: 'elderFrost', text: hint }]);
+      } else if (typeof showComm === 'function') {
+        showComm('Elder Frost', hint, { duration: 3000, speed: 20 });
+      }
+    });
+  }
 
   _startQuestTracker() {
     this._questTrackerStartTime = Date.now();

@@ -840,6 +840,7 @@ class BootScene extends Phaser.Scene {
     let selectedCardBg = null;
     const allCardBgs = [];
     const allCardGlows = [];
+    const allCardContainers = []; // track all card objects for scale/alpha on select
 
     // Begin Journey button (initially hidden)
     const beginBtnW = 260, beginBtnH = 52;
@@ -963,11 +964,23 @@ class BootScene extends Phaser.Scene {
 
     classes.forEach((cls, i) => {
       const cx = startX + i * (cardW + gap);
+      const cardParts = []; // all visual parts of this card for scale/alpha
+
+      // "RECOMMENDED" badge above Trainer card
+      if (cls.key === 'trainer') {
+        const badgeText = this.add.text(cx, cardY - cardH / 2 - 18, '\u2B50 RECOMMENDED', {
+          fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffd54f',
+          shadow: { offsetX: 0, offsetY: 0, color: '#ffd54f', blur: 6, fill: true },
+        }).setOrigin(0.5).setDepth(104);
+        cardParts.push(badgeText);
+        this._classSelectGroup.push(badgeText);
+      }
 
       // Card glow (behind card, subtle pulse)
       const cardGlow = this.add.rectangle(cx, cardY, cardW + 8, cardH + 8, cls.color, 0.06)
         .setDepth(101);
       allCardGlows.push(cardGlow);
+      cardParts.push(cardGlow);
       this._classSelectGroup.push(cardGlow);
 
       // Card background
@@ -976,17 +989,20 @@ class BootScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true })
         .setDepth(102);
       allCardBgs.push(cardBg);
+      cardParts.push(cardBg);
       this._classSelectGroup.push(cardBg);
 
       // Top color accent bar
       const accentBar = this.add.rectangle(cx, cardY - cardH / 2 + 4, cardW - 4, 6, cls.color, 0.7)
         .setDepth(103);
+      cardParts.push(accentBar);
       this._classSelectGroup.push(accentBar);
 
       // Icon
       const icon = this.add.text(cx, cardY - 55, cls.icon, {
         fontSize: '40px',
       }).setOrigin(0.5).setDepth(103);
+      cardParts.push(icon);
       this._classSelectGroup.push(icon);
 
       // Class name
@@ -994,10 +1010,12 @@ class BootScene extends Phaser.Scene {
         fontSize: '18px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
         shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 3, fill: true },
       }).setOrigin(0.5).setDepth(103);
+      cardParts.push(nameText);
       this._classSelectGroup.push(nameText);
 
       // Divider line
       const divider = this.add.rectangle(cx, cardY + 12, cardW - 40, 1, cls.color, 0.3).setDepth(103);
+      cardParts.push(divider);
       this._classSelectGroup.push(divider);
 
       // Description
@@ -1005,7 +1023,10 @@ class BootScene extends Phaser.Scene {
         fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
         align: 'center', wordWrap: { width: cardW - 24 }, lineSpacing: 3,
       }).setOrigin(0.5, 0).setDepth(103);
+      cardParts.push(descText);
       this._classSelectGroup.push(descText);
+
+      allCardContainers.push({ parts: cardParts, cx, cy: cardY, cls });
 
       // Hover effects
       cardBg.on('pointerover', () => {
@@ -1038,6 +1059,21 @@ class BootScene extends Phaser.Scene {
         cardBg.setStrokeStyle(3, cls.color);
         cardBg.setFillStyle(0x1a1a44, 0.98);
         cardGlow.setAlpha(0.2);
+
+        // Scale selected card up, dim unselected cards
+        allCardContainers.forEach((container, ci) => {
+          const isSelected = ci === i;
+          container.parts.forEach(part => {
+            this.tweens.add({
+              targets: part,
+              scaleX: isSelected ? 1.05 : 1.0,
+              scaleY: isSelected ? 1.05 : 1.0,
+              alpha: isSelected ? (part === cardGlow ? 0.2 : 1.0) : 0.6,
+              duration: 200,
+              ease: 'Sine.easeOut',
+            });
+          });
+        });
 
         // Show begin button
         beginGlow.setVisible(true);
