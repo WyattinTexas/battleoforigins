@@ -104,6 +104,61 @@ class TalentScene extends Phaser.Scene {
     const firstTree = Object.keys(CLASS_TREES)[0];
     if (firstTree) this._selectTree(firstTree);
     this._updatePoints();
+
+    // ── First-visit intro overlay ──
+    if (!G._talentVisited) {
+      this._showFirstVisitOverlay();
+    }
+  }
+
+  _showFirstVisitOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'talent-intro-overlay';
+    overlay.style.cssText = `
+      position:fixed; inset:0; z-index:50000;
+      background:rgba(0,0,0,0.75);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      font-family:'Cinzel',Georgia,serif;
+      cursor:pointer; user-select:none;
+    `;
+
+    const title = document.createElement('div');
+    title.textContent = 'TALENT TREES';
+    title.style.cssText = `
+      font-size:28px; color:#d4a040; letter-spacing:3px;
+      margin-bottom:18px; text-shadow:0 2px 8px rgba(0,0,0,0.6);
+    `;
+    overlay.appendChild(title);
+
+    const body = document.createElement('div');
+    body.textContent = 'Spend points to unlock new abilities. Browse the trees on the left and click any talent to learn more.';
+    body.style.cssText = `
+      font-size:15px; color:#f0e8d4; max-width:420px; text-align:center;
+      line-height:1.5; font-family:Georgia,serif;
+      margin-bottom:28px;
+    `;
+    overlay.appendChild(body);
+
+    const hint = document.createElement('div');
+    hint.textContent = 'Click to continue';
+    hint.style.cssText = `
+      font-size:12px; color:#6a6a80; letter-spacing:2px;
+      animation: talentPulse 2s ease-in-out infinite;
+    `;
+    overlay.appendChild(hint);
+
+    // Pulse animation
+    const style = document.createElement('style');
+    style.textContent = `@keyframes talentPulse { 0%,100%{opacity:.5} 50%{opacity:1} }`;
+    overlay.appendChild(style);
+
+    overlay.addEventListener('click', () => {
+      overlay.remove();
+      G._talentVisited = true;
+      if (typeof saveGame === 'function') saveGame();
+    }, { once: true });
+
+    document.body.appendChild(overlay);
   }
 
   // ══════════════════════════════════════════════════════════
@@ -864,6 +919,10 @@ class TalentScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════════
 
   _close() {
+    // Clean up intro overlay if still showing
+    const introOverlay = document.getElementById('talent-intro-overlay');
+    if (introOverlay) introOverlay.remove();
+
     if (typeof GameAudio !== 'undefined') GameAudio.menuOpen();
     this._hideTooltip();
     this.scene.stop();

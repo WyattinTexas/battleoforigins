@@ -1324,7 +1324,9 @@ class BattleScene extends Phaser.Scene {
     } else {
       // Skip the default loss penalty inside dungeons — the dungeon's own
       // goldLossOnFail handles that (avoid double-tax). See DungeonScene.
-      if (!this.battleData.dungeon) {
+      // New players (< 3 wins) lose nothing — don't punish them for learning.
+      const wins = G.rep?.battlesWon || 0;
+      if (!this.battleData.dungeon && wins >= 3) {
         const pen = Math.min(G.coins, 2+Math.floor(Math.random()*3));
         if (pen > 0) { G.coins -= pen; coinChange = -pen; }
       }
@@ -1335,11 +1337,13 @@ class BattleScene extends Phaser.Scene {
     if (G.activeBuffs) { G.activeBuffs.forEach(b=>{if(b.fights>0)b.fights--;}); G.activeBuffs=G.activeBuffs.filter(b=>b.fights>0); }
     saveGame();
 
-    const text = won?'VICTORY!':'DEFEAT';
+    const winsForCallout = G.rep?.battlesWon || 0;
+    const text = won ? 'VICTORY!' : (winsForCallout < 5 ? "You'll get 'em next time!" : 'DEFEAT');
     const type = won?'ability':'ko';
     let sub = '';
     if (won) { sub = `+${xpGain} XP  +${coinChange} Gold`; if (leveledUp) sub += `  LEVEL ${G.level}!`; }
     else if (coinChange < 0) sub = `${coinChange} Gold`;
+    else if (winsForCallout < 3) sub = 'No gold lost — keep learning!';
 
     // ── Victory juice ──
     if (won) {

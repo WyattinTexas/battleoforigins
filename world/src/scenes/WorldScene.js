@@ -1289,8 +1289,9 @@ class WorldScene extends Phaser.Scene {
         this._blackingOut = true;
         console.log('[WorldScene] BLACKOUT — all team KO, healing + teleporting');
 
-        // Gold penalty
-        const penalty = Math.min(G.coins, 5 + G.level * 2);
+        // Gold penalty — waived for new players (< 3 wins)
+        const bWins = G.rep?.battlesWon || 0;
+        const penalty = bWins < 3 ? 0 : Math.min(G.coins, 5 + G.level * 2);
         if (penalty > 0) G.coins -= penalty;
 
         // Heal team to half HP immediately
@@ -1310,7 +1311,18 @@ class WorldScene extends Phaser.Scene {
         this._blackingOut = false;
 
         if (typeof this.showNotification === 'function') {
-          this.showNotification(`Team fainted! Woke up in ${nearest.name}. -${penalty} gold.`);
+          if (bWins < 3) {
+            this.showNotification(`Team fainted! Woke up in ${nearest.name}.`);
+          } else {
+            this.showNotification(`Team fainted! Woke up in ${nearest.name}. -${penalty} gold.`);
+          }
+        }
+
+        // Encouraging comm for new players after blackout recovery
+        if (bWins < 5 && typeof showComm === 'function') {
+          this.time.delayedCall(1200, () => {
+            showComm('Elder Frost', "Don't worry — your Spiritkin have been healed. Try again!", { duration: 3500, speed: 20 });
+          });
         }
         // Don't return — let the player move normally this frame
       }
