@@ -440,6 +440,7 @@ function ensurePlayerDefaults() {
   if (G.frostDungeonCleared === undefined) G.frostDungeonCleared = false; // intro/post cinematics auto-skip once true
   if (!G.materials) G.materials = {};
   if (!G.professionXP) G.professionXP = { combat: 0, exploration: 0, crafting: 0, trade: 0, charisma: 0 };
+  if (!G.talentXPSpent) G.talentXPSpent = { combat: 0, exploration: 0, crafting: 0, trade: 0, charisma: 0 };
   if (!G.professionSkills) G.professionSkills = {};
   if (G.skillPointsUsed === undefined) G.skillPointsUsed = 0;
   if (!G.achievements) G.achievements = [];

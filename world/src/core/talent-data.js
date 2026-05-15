@@ -15,6 +15,7 @@ const CLASS_TREES = {
     name: 'Fortune Teller',
     desc: 'Bestow fortunes upon other players. Mastery unlocks Shaman, Scholar & Enchanter.',
     color: '#44bbff',
+    xpType: 'charisma',
     branches: ['Bright Fortune', 'Fate\'s Balance', 'Dark Fortune'],
     talents: [
       // Branch 0: Bright Fortune (amplify good fortunes)
@@ -174,6 +175,7 @@ const CLASS_TREES = {
     name: 'Artisan',
     desc: 'Master crafting fundamentals. Mastery unlocks Architect, Armorsmith & Weaponsmith.',
     color: '#dd9933',
+    xpType: 'crafting',
     branches: ['Construction', 'Materials', 'Township'],
     talents: [
       // Branch 0: Construction (XP from crafting/building)
@@ -323,6 +325,7 @@ const CLASS_TREES = {
     name: 'Trainer',
     desc: 'Learn to recruit, bond with, and grow your spiritkin. Mastery unlocks Beastmaster, Gladiator & Ranger.',
     color: '#44dd66',
+    xpType: 'combat',
     branches: ['Training', 'Recruiting', 'Bonding'],
     talents: [
       // Branch 0: Training — level up spiritkin through training tiers
@@ -467,6 +470,7 @@ const CLASS_TREES = {
     name: 'Scientist',
     desc: 'Extract DNA, create mutations, supply components. Mastery unlocks Alchemist, Gene Splicer & Inventor.',
     color: '#aa55ff',
+    xpType: 'exploration',
     branches: ['Extraction', 'Mutations', 'Synthesis'],
     talents: [
       // Branch 0: Extraction — get DNA from spiritkin (XP from extracting)
@@ -613,6 +617,7 @@ const CLASS_TREES = {
     name: '???',
     desc: 'A mysterious force stirs within...',
     color: '#cc2244',
+    xpType: 'combat',
     hidden: 'darkRider',
     branches: ['Shadow', 'Dominion', 'Dread'],
     talents: [
@@ -647,6 +652,7 @@ const CLASS_TREES = {
     name: '???',
     desc: 'The wisdom of ages flows through you. Mastery unlocks Sage, Arbiter & Lorekeeper.',
     color: '#ddcc44',
+    xpType: 'charisma',
     hidden: 'elder',
     branches: ['Protection', 'Prosperity', 'Council'],
     talents: [
@@ -905,6 +911,7 @@ const CLASS_TREES = {
     name: 'Cultivator',
     desc: 'Tend the land, grow gardens, raise spirit pets. Mastery unlocks Botanist, Pet Keeper & Terraformer.',
     color: '#66cc66',
+    xpType: 'crafting',
     branches: ['Gardening', 'Spirit Pets', 'Self-Harmony'],
     talents: [
       // Branch 0: Gardening (XP from gardening)
@@ -1129,11 +1136,47 @@ function _allBranchTalentsMaxed(treeId) {
 
 // ══════════════════════════════════════════════════════════
 //  TALENT POINT CALCULATIONS & ALLOCATION LOGIC
-//  Scaling: T0=1, T1=2, T2=3, T3=4 per rank
-//  Per tree: (3×1+2×2+1×3+1×4)×3 + 2(app) + 5(mas) = 49 to fully master
-//  Cap: 135 = master 2 trees (98) + ~85% of a 3rd
+//  Talents cost profession XP of the tree's type.
+//  Cost = talent.cost × XP_PER_TALENT_POINT (default 100)
+//  Apprentice: 200 XP, Master: 500 XP
 // ══════════════════════════════════════════════════════════
 
+const XP_PER_TALENT_POINT = 100;
+
+// XP type icons and display names
+const XP_TYPE_INFO = {
+  combat:      { icon: '⚔', name: 'Combat',      color: '#e94560' },
+  exploration: { icon: '🧭', name: 'Exploration', color: '#4cc9f0' },
+  crafting:    { icon: '🔨', name: 'Crafting',    color: '#ffaa22' },
+  trade:       { icon: '💰', name: 'Trade',       color: '#44dd44' },
+  charisma:    { icon: '✨', name: 'Charisma',    color: '#cc88ff' },
+};
+
+// Resolve the XP type for any tree (sub-trees inherit from parent)
+function getTreeXPType(treeId) {
+  const tree = CLASS_TREES[treeId];
+  if (!tree) return 'combat';
+  if (tree.xpType) return tree.xpType;
+  if (tree.requiresTree) return getTreeXPType(tree.requiresTree);
+  return 'combat';
+}
+
+// Get available XP for a specific type (earned minus spent on talents)
+function getAvailableXP(xpType) {
+  const earned = (G.professionXP && G.professionXP[xpType]) || 0;
+  const spent = (G.talentXPSpent && G.talentXPSpent[xpType]) || 0;
+  return Math.max(0, earned - spent);
+}
+
+// Get XP cost for a talent in actual XP units
+function getTalentXPCost(treeId, talentId) {
+  if (talentId === '_app') return APPRENTICE_COST * XP_PER_TALENT_POINT;
+  if (talentId === '_mas') return MASTER_COST * XP_PER_TALENT_POINT;
+  const talent = _findTalent(treeId, talentId);
+  return talent ? talent.cost * XP_PER_TALENT_POINT : XP_PER_TALENT_POINT;
+}
+
+// Legacy compatibility — still works with old point system during transition
 const TALENT_POINT_CAP = 160;
 
 function getTalentPointsTotal() {
