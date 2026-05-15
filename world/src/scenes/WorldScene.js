@@ -19,8 +19,21 @@ class WorldScene extends Phaser.Scene {
     const T = 32;
     const MW = WORLD_W, MH = WORLD_H; // 110x85 from world-gen.js
 
+    // ═══ ZONE SYSTEM: generate world for current zone ═══
+    if (!G.currentZone) G.currentZone = 'frost_valley';
+    if (typeof _updateHubsForZone === 'function') _updateHubsForZone(G.currentZone);
+    generateWorld(G.currentZone);
+
+    // Zone-specific background colors
+    const zoneBgColors = {
+      frost_valley: '#d8e8f0',
+      rolling_hills: '#c8e8c0',
+      volcanic_isles: '#3a3030',
+      dark_castle: '#1a1020',
+    };
+
     this.cameras.main.fadeIn(600);
-    this.cameras.main.setBackgroundColor('#d8e8f0');
+    this.cameras.main.setBackgroundColor(zoneBgColors[G.currentZone] || '#d8e8f0');
 
     // ── Render the world map ──
     // Build the impassable lookup set once
@@ -353,11 +366,9 @@ class WorldScene extends Phaser.Scene {
     // ── ERW Animated Props — bring the world to life ──
     this._erwAnimSprites = [];
 
-    // Campfires at hub towns
+    // Campfires at current zone's hub town
     const campfireSpots = [
       { x: HUB.x + 4, y: HUB.y + 4 },
-      { x: HUB_MEADOW.x + 3, y: HUB_MEADOW.y + 3 },
-      { x: HUB_VOLCANIC.x + 2, y: HUB_VOLCANIC.y + 2 },
     ];
     if (this.textures.exists('erw_campfire')) {
       for (const spot of campfireSpots) {
@@ -375,13 +386,13 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Butterflies in Rolling Hills grass/flower areas ONLY (y >= 45)
-    if (this.textures.exists('erw_butterfly1')) {
+    // Butterflies in Rolling Hills grass/flower areas ONLY
+    if (G.currentZone === 'rolling_hills' && this.textures.exists('erw_butterfly1')) {
       for (let i = 0; i < 12; i++) {
         let bx, by, attempts = 0;
         do {
           bx = 5 + Math.floor(Math.random() * (MW - 10));
-          by = 46 + Math.floor(Math.random() * (MH - 50)); // Only Rolling Hills (y >= 45)
+          by = 5 + Math.floor(Math.random() * (MH - 10));
           attempts++;
         } while (attempts < 50 && worldMap[by]?.[bx] !== 9 && worldMap[by]?.[bx] !== 10 && worldMap[by]?.[bx] !== 11);
 
@@ -404,12 +415,12 @@ class WorldScene extends Phaser.Scene {
     }
 
     // Nature particles floating in Rolling Hills grassy areas ONLY
-    if (this.textures.exists('erw_particles')) {
+    if (G.currentZone === 'rolling_hills' && this.textures.exists('erw_particles')) {
       for (let i = 0; i < 8; i++) {
         let px, py, attempts = 0;
         do {
           px = 5 + Math.floor(Math.random() * (MW - 10));
-          py = 46 + Math.floor(Math.random() * (MH - 50)); // Only Rolling Hills
+          py = 5 + Math.floor(Math.random() * (MH - 10));
           attempts++;
         } while (attempts < 50 && worldMap[py]?.[px] !== 9 && worldMap[py]?.[px] !== 10);
 
@@ -432,12 +443,11 @@ class WorldScene extends Phaser.Scene {
     // Reset to hub if saved position is problematic (blocked OR far from any hub)
     const spawnTX = Math.floor(G.x);
     const spawnTY = Math.floor(G.y);
-    const nearAnyHub = [HUB, HUB_MEADOW, HUB_VOLCANIC, HUB_DARK].some(
-      h => Math.abs(spawnTX - h.x) < 20 && Math.abs(spawnTY - h.y) < 20
-    );
-    if (spawnTX < 0 || spawnTY < 0 || spawnTX >= MW || spawnTY >= MH ||
-        this._impassableSet.has(worldMap[spawnTY]?.[spawnTX]) || !nearAnyHub) {
-      console.log('[WorldScene] Resetting to Polaris Hub from', spawnTX, spawnTY);
+    // Check if spawn position is valid for current zone
+    const spawnBlocked = spawnTX < 0 || spawnTY < 0 || spawnTX >= MW || spawnTY >= MH ||
+        this._impassableSet.has(worldMap[spawnTY]?.[spawnTX]);
+    if (spawnBlocked) {
+      console.log('[WorldScene] Resetting to zone hub from', spawnTX, spawnTY, 'zone:', G.currentZone);
       G.x = HUB.x + 3;
       G.y = HUB.y + 2;
       saveGame();
@@ -479,29 +489,9 @@ class WorldScene extends Phaser.Scene {
 
     this._uiElements = [];
 
-    // ── NPCs (positions from npcs.js NPCS + HOSTILE_NPCS data) ──
+    // ── NPCs (zone-specific) ──
     this.npcSprites = [];
-    // Friendly — Frost Valley hub
-    this.spawnNPC('Elder Frost', (HUB.x + 2) * T, (HUB.y - 1) * T, 'npc_elder', 0xdaa520);
-    this.spawnNPC('Smith Ember', HUB.x * T, (HUB.y + 5) * T, 'npc_knight', 0xe07020);
-    this.spawnNPC('Crazy Lou', (HUB.x + 7) * T, (HUB.y + 1) * T, 'npc_hunter', 0xc0a040);
-    // Friendly — Rolling Hills
-    this.spawnNPC('Farmer Bea', 24 * T, 58 * T, 'npc_elder', 0x6a8a4a);
-    this.spawnNPC('Herbalist Sage', 28 * T, 60 * T, 'npc_knight', 0x4a8a6a);
-    // Friendly — Volcanic Isles
-    this.spawnNPC('Captain Flint', 74 * T, 16 * T, 'npc_hunter', 0xcc6644);
-    this.spawnNPC('Lava Tender', 76 * T, 14 * T, 'npc_knight', 0xff8844);
-    // Friendly — Dark Castle
-    this.spawnNPC('Shadow Warden', 93 * T, 20 * T, 'npc_hunter', 0x8a6aaa);
-    this.spawnNPC('Cursed Scholar', 95 * T, 22 * T, 'npc_elder', 0x6a4a8a);
-
-    // Hostile NPCs (from HOSTILE_NPCS positions)
-    this.spawnNPC('Brawler Jax', 30 * T, 20 * T, 'creature_bear', 0xcc4444, true);
-    this.spawnNPC('Ice Queen Vera', 40 * T, 15 * T, 'npc_knight', 0x6688cc, true);
-    this.spawnNPC('Bandit Marcus', 28 * T, 48 * T, 'creature_dragon', 0xa88844, true);
-    this.spawnNPC('Lava Raider Kira', 68 * T, 25 * T, 'npc_hunter', 0xee8844, true);
-    this.spawnNPC('Shadow Knight Vex', 92 * T, 18 * T, 'npc_elder', 0x8866aa, true);
-    this.spawnNPC('The Exile', 55 * T, 35 * T, 'npc_knight', 0x666666, true);
+    this._spawnZoneNPCs(T);
 
     // ── Enemies ──
     this.enemies = this.physics.add.group();
@@ -567,15 +557,39 @@ class WorldScene extends Phaser.Scene {
     // ── World bounds ──
     this.physics.world.setBounds(0, 0, MW * T, MH * T);
 
-    // ── Region labels on the map ──
-    const regionLabels = [
-      { text: 'FROST VALLEY', x: 25, y: 5, color: '#88bbff' },
-      { text: 'Polaris Hub', x: HUB.x + 3, y: HUB.y - 3, color: '#daa520' },
-      { text: 'ROLLING HILLS', x: 30, y: 47, color: '#88cc44' },
-      { text: 'Meadowbrook', x: 26, y: 56, color: '#6a8a4a' },
-      { text: 'VOLCANIC ISLES', x: 72, y: 7, color: '#ff8844' },
-      { text: 'DARK CASTLE', x: 98, y: 5, color: '#aa66cc' },
-    ];
+    // ── Region labels on the map (zone-specific) ──
+    const zoneLabels = {
+      frost_valley: [
+        { text: 'FROST VALLEY', x: 50, y: 5, color: '#88bbff' },
+        { text: 'Polaris Hub', x: HUB.x + 3, y: HUB.y - 3, color: '#daa520' },
+        { text: 'Snowpeak Outpost', x: 80, y: 28, color: '#88bbff' },
+        { text: 'Frostwatch Camp', x: 42, y: 58, color: '#88bbff' },
+        { text: '-> Rolling Hills', x: 50, y: WORLD_H - 5, color: '#88cc44' },
+        { text: '-> Volcanic Isles', x: WORLD_W - 12, y: 40, color: '#ff8844' },
+      ],
+      rolling_hills: [
+        { text: 'ROLLING HILLS', x: 50, y: 5, color: '#88cc44' },
+        { text: 'Meadowbrook', x: HUB.x + 3, y: HUB.y - 3, color: '#6a8a4a' },
+        { text: 'Harvest Village', x: 72, y: 53, color: '#6a8a4a' },
+        { text: '-> Frost Valley', x: 50, y: 3, color: '#88bbff' },
+        { text: '-> Volcanic Isles', x: WORLD_W - 12, y: 40, color: '#ff8844' },
+      ],
+      volcanic_isles: [
+        { text: 'VOLCANIC ISLES', x: 50, y: 8, color: '#ff8844' },
+        { text: 'Volcanic Settlement', x: HUB.x + 3, y: HUB.y - 3, color: '#ff8844' },
+        { text: 'Beach Village', x: 32, y: 61, color: '#e8d8a0' },
+        { text: '<- Frost Valley', x: 3, y: 40, color: '#88bbff' },
+        { text: '-> Dark Castle', x: WORLD_W - 12, y: 40, color: '#aa66cc' },
+      ],
+      dark_castle: [
+        { text: 'DARK CASTLE', x: 50, y: 5, color: '#aa66cc' },
+        { text: 'Shadow Outpost', x: HUB.x + 3, y: HUB.y - 3, color: '#aa66cc' },
+        { text: 'Grand Castle', x: 60, y: 6, color: '#cc88ee' },
+        { text: 'Crypt Ruins', x: 82, y: 53, color: '#8866aa' },
+        { text: '<- Volcanic Isles', x: 3, y: 40, color: '#ff8844' },
+      ],
+    };
+    const regionLabels = zoneLabels[G.currentZone] || zoneLabels.frost_valley;
     for (const rl of regionLabels) {
       this.add.text(rl.x * T, rl.y * T, rl.text, {
         fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: rl.color,
@@ -583,17 +597,9 @@ class WorldScene extends Phaser.Scene {
       }).setDepth(5);
     }
 
-    // ── Building labels in Polaris ──
-    const buildings = [
-      { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1 },
-      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1 },
-      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3 },
-      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3 },
-      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5 },
-      { name: 'Dungeons', x: HUB.x + 3, y: HUB.y + 7 },
-    ];
-    for (const b of buildings) {
-      // Building marker (slightly brighter square on top of tile)
+    // ── Building labels (zone-specific) ──
+    const zoneBuildings = this._getZoneBuildings();
+    for (const b of zoneBuildings) {
       this.add.rectangle(b.x * T + T/2, b.y * T + T/2, T - 2, T - 2, 0x8a7a5a)
         .setStrokeStyle(1, 0xaaa888).setDepth(3);
       this.add.text(b.x * T + T/2, b.y * T - 6, b.name, {
@@ -602,81 +608,90 @@ class WorldScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(6);
     }
 
-    // ── Frost Dungeon entrance (top of Frost Valley) ──
-    // Tiles 28 form a 3x3 patch centered at (38, 3); castle stands on the south edge.
-    const fdCenterX = 38 * T + T / 2;
-    const fdCenterY = 3 * T + T / 2;
-    const fdBaseY = fdCenterY + T * 1.5; // ground line: south edge of 3x3 footprint
-    // Ground shadow — anchors the structure to the snow
-    this.add.ellipse(fdCenterX, fdBaseY - 4, 110, 20, 0x1a3a5a, 0.35).setDepth(4);
-    // Castle sprite, bottom-center anchored so it "stands" on the snow
-    if (this.textures.exists('frost_dungeon')) {
-      this.add.image(fdCenterX, fdBaseY, 'frost_dungeon')
-        .setOrigin(0.5, 1)
-        .setDisplaySize(128, 96)
-        .setDepth(5);
-    } else {
-      this.add.rectangle(fdCenterX, fdBaseY - 48, 96, 96, 0x88bbdd, 0.9)
-        .setStrokeStyle(2, 0xccddff).setDepth(5);
+    // ── Frost Dungeon entrance (only in Frost Valley zone) ──
+    this._frostDungeon = null;
+    if (G.currentZone === 'frost_valley') {
+      const fdCenterX = 38 * T + T / 2;
+      const fdCenterY = 5 * T + T / 2;
+      const fdBaseY = fdCenterY + T * 1.5;
+      this.add.ellipse(fdCenterX, fdBaseY - 4, 110, 20, 0x1a3a5a, 0.35).setDepth(4);
+      if (this.textures.exists('frost_dungeon')) {
+        this.add.image(fdCenterX, fdBaseY, 'frost_dungeon')
+          .setOrigin(0.5, 1)
+          .setDisplaySize(128, 96)
+          .setDepth(5);
+      } else {
+        this.add.rectangle(fdCenterX, fdBaseY - 48, 96, 96, 0x88bbdd, 0.9)
+          .setStrokeStyle(2, 0xccddff).setDepth(5);
+      }
+      const fdShimmer = this.add.ellipse(fdCenterX, fdBaseY - 8, 90, 16, 0x88ccff, 0.22).setDepth(4);
+      this.tweens.add({
+        targets: fdShimmer, alpha: 0.08, scaleX: 1.15,
+        duration: 2200, yoyo: true, repeat: -1,
+      });
+      this.add.text(fdCenterX, fdBaseY - 110, 'FROST DUNGEON', {
+        fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#bfe4ff',
+        backgroundColor: '#00000099', padding: { x: 4, y: 2 },
+      }).setOrigin(0.5).setDepth(7);
+      this._frostDungeon = { x: fdCenterX, y: fdBaseY - 32 };
     }
-    // Subtle icy shimmer at the base
-    const fdShimmer = this.add.ellipse(fdCenterX, fdBaseY - 8, 90, 16, 0x88ccff, 0.22).setDepth(4);
-    this.tweens.add({
-      targets: fdShimmer, alpha: 0.08, scaleX: 1.15,
-      duration: 2200, yoyo: true, repeat: -1,
-    });
-    // Label above the spires
-    this.add.text(fdCenterX, fdBaseY - 110, 'FROST DUNGEON', {
-      fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#bfe4ff',
-      backgroundColor: '#00000099', padding: { x: 4, y: 2 },
-    }).setOrigin(0.5).setDepth(7);
-    this._frostDungeon = { x: fdCenterX, y: fdBaseY - 32 };
 
-    // ── Wave 3: Building Interactions ──
-    this._interactBuildings = [
-      // Frost Valley (Polaris Hub)
-      { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1, action: 'tradingPost' },
-      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1, action: 'arena', roomId: 'frost_arena' },
-      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3, action: 'workshop', roomId: 'frost_workshop' },
-      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3, action: 'inn', roomId: 'frost_inn' },
-      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5, action: 'cantina', roomId: 'frost_cantina' },
-      { name: 'Dungeons', x: HUB.x + 3, y: HUB.y + 7, action: 'dungeons' },
-      // Rolling Hills (Meadowbrook)
-      { name: 'Inn', x: HUB_MEADOW.x + 1, y: HUB_MEADOW.y + 1, action: 'inn', roomId: 'meadow_inn' },
-      { name: 'Herbalist', x: HUB_MEADOW.x + 3, y: HUB_MEADOW.y + 1, action: 'shop', roomId: 'meadow_herbalist' },
-      { name: 'Tavern', x: HUB_MEADOW.x + 1, y: HUB_MEADOW.y + 3, action: 'cantina', roomId: 'meadow_tavern' },
-      // Volcanic Isles
-      { name: 'Inn', x: HUB_VOLCANIC.x + 1, y: HUB_VOLCANIC.y + 1, action: 'inn', roomId: 'volcanic_inn' },
-      { name: 'Forge', x: HUB_VOLCANIC.x + 3, y: HUB_VOLCANIC.y + 1, action: 'workshop', roomId: 'volcanic_forge' },
-      { name: 'Crucible', x: HUB_VOLCANIC.x + 1, y: HUB_VOLCANIC.y + 3, action: 'arena', roomId: 'volcanic_arena' },
-      // Dark Castle
-      { name: 'Antechamber', x: HUB_DARK.x + 1, y: HUB_DARK.y + 1, action: 'cantina', roomId: 'dark_throne' },
-      { name: 'Shadow Market', x: HUB_DARK.x + 3, y: HUB_DARK.y + 1, action: 'shop', roomId: 'dark_merchant' },
-      { name: 'Undercrypt', x: HUB_DARK.x + 1, y: HUB_DARK.y + 3, action: 'dungeons', roomId: 'dark_dungeons' },
-    ];
+    // ── Wave 3: Building Interactions (zone-specific) ──
+    this._interactBuildings = this._getZoneInteractBuildings();
 
-    // ── Wave 3: Signposts ──
-    this._signposts = [
-      { x: HUB.x + 3, y: HUB.y - 2, text: 'Welcome to Polaris Hub! North: Frost Valley zones. South: Rolling Hills.' },
-      { x: 28, y: 42, text: 'CAUTION: Mountain pass ahead. Rolling Hills region beyond.' },
-      { x: 58, y: 20, text: 'Volcanic Isles passage. Beware lava flows and strong Spiritkin.' },
-      { x: 90, y: 20, text: 'Dark Castle entrance. Only the brave pass this threshold.' },
-      { x: 26, y: 56, text: 'Meadowbrook — a peaceful settlement among the rolling green hills.' },
-      { x: 74, y: 13, text: 'Volcanic Settlement — built on sand and ash. Trade and rest here.' },
-    ];
+    // ── Wave 3: Signposts (zone-specific) ──
+    const zoneSignposts = {
+      frost_valley: [
+        { x: HUB.x + 3, y: HUB.y - 2, text: 'Welcome to Polaris Hub! Explore the vast Frost Valley. South exit leads to Rolling Hills.' },
+        { x: 50, y: WORLD_H - 6, text: 'Southern passage — Rolling Hills beyond.' },
+        { x: WORLD_W - 8, y: 40, text: 'Eastern passage — Volcanic Isles beyond.' },
+        { x: 80, y: 28, text: 'Snowpeak Outpost — rest and resupply.' },
+      ],
+      rolling_hills: [
+        { x: HUB.x + 3, y: HUB.y - 2, text: 'Welcome to Meadowbrook! The heart of Rolling Hills.' },
+        { x: 50, y: 4, text: 'Northern passage — Frost Valley beyond.' },
+        { x: WORLD_W - 8, y: 40, text: 'Eastern passage — Volcanic Isles beyond.' },
+      ],
+      volcanic_isles: [
+        { x: HUB.x + 3, y: HUB.y - 2, text: 'Volcanic Settlement — built on sand and ash. Trade and rest here.' },
+        { x: 4, y: 40, text: 'Western passage — Frost Valley / Rolling Hills beyond.' },
+        { x: WORLD_W - 8, y: 40, text: 'Eastern passage — Dark Castle beyond.' },
+      ],
+      dark_castle: [
+        { x: HUB.x + 3, y: HUB.y - 2, text: 'Shadow Outpost — the last safe haven before the Dark Castle.' },
+        { x: 4, y: 40, text: 'Western passage — Volcanic Isles beyond.' },
+        { x: 60, y: 24, text: 'Grand Castle — only the brave enter.' },
+      ],
+    };
+    this._signposts = zoneSignposts[G.currentZone] || zoneSignposts.frost_valley;
     for (const sp of this._signposts) {
       this.add.text(sp.x * T + T/2, sp.y * T + T/2, '\u{1F4DC}', {
         fontSize: '16px',
       }).setOrigin(0.5).setDepth(6);
     }
 
-    // ── Wave 3: Lore Tablets ──
-    this._loreTablets = [
-      { id: 'lore_polaris', x: 20, y: 16, text: 'The first settlers named this land after the Polaris star, a beacon visible even through spirit storms. Frost Valley was where Spiritkin and humans first learned to coexist.' },
-      { id: 'lore_lake', x: 40, y: 20, text: 'The Frozen Lake was once a sacred pool where Spiritkin emerged from the spirit world. When the Great Frost came, the lake sealed shut — trapping hundreds of spirits beneath the ice.' },
-      { id: 'lore_hills', x: 30, y: 55, text: 'Rolling Hills was farmland before the Spiritkin arrived. Farmer Bea says the flowers here bloom in colors that don\'t exist anywhere else — fed by spirit energy seeping up from below.' },
-      { id: 'lore_castle', x: 98, y: 12, text: 'The Dark Castle was built by the Valkin, ancient spirit wardens who believed darkness could be harnessed. When they vanished, the castle remained — and something still stirs inside.' },
-    ];
+    // ── Wave 3: Lore Tablets (zone-specific) ──
+    const zoneLore = {
+      frost_valley: [
+        { id: 'lore_polaris', x: 20, y: 16, text: 'The first settlers named this land after the Polaris star, a beacon visible even through spirit storms. Frost Valley was where Spiritkin and humans first learned to coexist.' },
+        { id: 'lore_lake', x: 40, y: 22, text: 'The Frozen Lake was once a sacred pool where Spiritkin emerged from the spirit world. When the Great Frost came, the lake sealed shut — trapping hundreds of spirits beneath the ice.' },
+        { id: 'lore_snowpeak', x: 82, y: 32, text: 'Snowpeak Outpost was built by the Rangers of the North, guardians who patrol the frozen wastes beyond the valley. Their watchfires can be seen for miles on clear nights.' },
+        { id: 'lore_frostwatch', x: 44, y: 62, text: 'Frostwatch Camp sits on the southern frontier. The rangers here keep the mountain passes clear and warn travelers of avalanches and frost beasts.' },
+      ],
+      rolling_hills: [
+        { id: 'lore_hills', x: 30, y: 30, text: 'Rolling Hills was farmland before the Spiritkin arrived. Farmer Bea says the flowers here bloom in colors that don\'t exist anywhere else — fed by spirit energy seeping up from below.' },
+        { id: 'lore_harvest', x: 72, y: 58, text: 'The Harvest Festival draws travelers from every region. When the golden wheat sways in spirit winds, the fields themselves seem alive.' },
+      ],
+      volcanic_isles: [
+        { id: 'lore_volcano', x: 58, y: 28, text: 'The central volcano has been active since before recorded history. The Volcanic Spiritkin draw power from its magma — and some say a great fire spirit slumbers in its core.' },
+        { id: 'lore_beach', x: 32, y: 65, text: 'The beach settlements were founded by shipwrecked explorers who discovered that obsidian from the volcano could channel spirit energy unlike any other material.' },
+      ],
+      dark_castle: [
+        { id: 'lore_castle', x: 62, y: 15, text: 'The Dark Castle was built by the Valkin, ancient spirit wardens who believed darkness could be harnessed. When they vanished, the castle remained — and something still stirs inside.' },
+        { id: 'lore_crypt', x: 82, y: 58, text: 'The Crypt Ruins predate even the Dark Castle. Some believe the Valkin built their fortress to contain what lies buried beneath these ancient stones.' },
+      ],
+    };
+    this._loreTablets = zoneLore[G.currentZone] || zoneLore.frost_valley;
     this._loreTabletSprites = [];
     for (const lt of this._loreTablets) {
       if (G.loreCollected.includes(lt.id)) continue; // already collected
@@ -689,11 +704,13 @@ class WorldScene extends Phaser.Scene {
     }
 
     // ── Wave 3: Region transition tracking ──
-    this._lastRegion = getCurrentRegion(G.x, G.y);
+    // Don't set _lastRegion here — let checkRegionTransition detect the initial zone
+    // and show a banner + track the visit. It will fire once on first update tick.
+    this._lastRegion = undefined;
 
     // Spawn zone events for starting region on load
     if (typeof spawnZoneEvents === 'function') {
-      this.time.delayedCall(2000, () => spawnZoneEvents(this._lastRegion, this));
+      this.time.delayedCall(2000, () => spawnZoneEvents(G.currentZone, this));
     }
 
     // ── Encounter zone labels ──
@@ -902,6 +919,202 @@ class WorldScene extends Phaser.Scene {
     console.log('[WorldScene] create: COMPLETE');
   }
 
+  // ═══ ZONE HELPERS ═══
+
+  // Get building label data for the current zone
+  _getZoneBuildings() {
+    const z = G.currentZone;
+    if (z === 'frost_valley') return [
+      { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1 },
+      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1 },
+      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3 },
+      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3 },
+      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5 },
+      { name: 'Dungeons', x: HUB.x + 3, y: HUB.y + 7 },
+    ];
+    if (z === 'rolling_hills') return [
+      { name: 'Inn', x: HUB.x + 1, y: HUB.y + 1 },
+      { name: 'Seed Shop', x: HUB.x + 3, y: HUB.y + 1 },
+      { name: 'Meadow Hall', x: HUB.x + 5, y: HUB.y + 1 },
+      { name: 'Herbalist', x: HUB.x + 1, y: HUB.y + 3 },
+      { name: 'Greenhouse', x: HUB.x + 3, y: HUB.y + 3 },
+      { name: 'Workshop', x: HUB.x + 5, y: HUB.y + 3 },
+      { name: 'Tavern', x: HUB.x + 2, y: HUB.y + 5 },
+      { name: 'Market', x: HUB.x + 4, y: HUB.y + 5 },
+    ];
+    if (z === 'volcanic_isles') return [
+      { name: 'Forge', x: HUB.x + 1, y: HUB.y + 1 },
+      { name: 'Outpost', x: HUB.x + 5, y: HUB.y + 1 },
+      { name: 'Tavern', x: HUB.x + 1, y: HUB.y + 3 },
+      { name: 'Trading Post', x: HUB.x + 5, y: HUB.y + 3 },
+    ];
+    if (z === 'dark_castle') return [
+      { name: 'Shadow Outpost', x: HUB.x, y: HUB.y + 1 },
+      { name: 'Dark Armory', x: HUB.x + 4, y: HUB.y + 1 },
+      { name: 'Shadow Market', x: HUB.x + 1, y: HUB.y + 3 },
+      { name: 'Undercrypt', x: HUB.x + 3, y: HUB.y + 3 },
+      { name: 'Shadow Tavern', x: HUB.x + 5, y: HUB.y + 3 },
+    ];
+    return [];
+  }
+
+  // Get interactable building configs for the current zone
+  _getZoneInteractBuildings() {
+    const z = G.currentZone;
+    if (z === 'frost_valley') return [
+      { name: 'Trading Post', x: HUB.x + 1, y: HUB.y + 1, action: 'tradingPost' },
+      { name: 'Arena', x: HUB.x + 5, y: HUB.y + 1, action: 'arena', roomId: 'frost_arena' },
+      { name: 'Workshop', x: HUB.x + 1, y: HUB.y + 3, action: 'workshop', roomId: 'frost_workshop' },
+      { name: 'Inn', x: HUB.x + 5, y: HUB.y + 3, action: 'inn', roomId: 'frost_inn' },
+      { name: 'Cantina', x: HUB.x + 3, y: HUB.y + 5, action: 'cantina', roomId: 'frost_cantina' },
+      { name: 'Dungeons', x: HUB.x + 3, y: HUB.y + 7, action: 'dungeons' },
+    ];
+    if (z === 'rolling_hills') return [
+      { name: 'Inn', x: HUB.x + 1, y: HUB.y + 1, action: 'inn', roomId: 'meadow_inn' },
+      { name: 'Seed Shop', x: HUB.x + 3, y: HUB.y + 1, action: 'shop', roomId: 'meadow_herbalist' },
+      { name: 'Meadow Hall', x: HUB.x + 5, y: HUB.y + 1, action: 'arena', roomId: 'meadow_arena' },
+      { name: 'Herbalist', x: HUB.x + 1, y: HUB.y + 3, action: 'shop', roomId: 'meadow_herbalist' },
+      { name: 'Greenhouse', x: HUB.x + 3, y: HUB.y + 3, action: 'workshop', roomId: 'meadow_workshop' },
+      { name: 'Workshop', x: HUB.x + 5, y: HUB.y + 3, action: 'workshop', roomId: 'meadow_workshop' },
+      { name: 'Tavern', x: HUB.x + 2, y: HUB.y + 5, action: 'cantina', roomId: 'meadow_tavern' },
+      { name: 'Market', x: HUB.x + 4, y: HUB.y + 5, action: 'tradingPost' },
+    ];
+    if (z === 'volcanic_isles') return [
+      { name: 'Forge', x: HUB.x + 1, y: HUB.y + 1, action: 'workshop', roomId: 'volcanic_forge' },
+      { name: 'Outpost', x: HUB.x + 5, y: HUB.y + 1, action: 'inn', roomId: 'volcanic_inn' },
+      { name: 'Tavern', x: HUB.x + 1, y: HUB.y + 3, action: 'cantina', roomId: 'volcanic_tavern' },
+      { name: 'Trading Post', x: HUB.x + 5, y: HUB.y + 3, action: 'tradingPost' },
+    ];
+    if (z === 'dark_castle') return [
+      { name: 'Shadow Outpost', x: HUB.x, y: HUB.y + 1, action: 'inn', roomId: 'dark_inn' },
+      { name: 'Dark Armory', x: HUB.x + 4, y: HUB.y + 1, action: 'workshop', roomId: 'dark_armory' },
+      { name: 'Shadow Market', x: HUB.x + 1, y: HUB.y + 3, action: 'shop', roomId: 'dark_merchant' },
+      { name: 'Undercrypt', x: HUB.x + 3, y: HUB.y + 3, action: 'dungeons', roomId: 'dark_dungeons' },
+      { name: 'Shadow Tavern', x: HUB.x + 5, y: HUB.y + 3, action: 'cantina', roomId: 'dark_throne' },
+    ];
+    return [];
+  }
+
+  // Spawn zone-appropriate NPCs
+  _spawnZoneNPCs(T) {
+    const z = G.currentZone;
+    if (z === 'frost_valley') {
+      this.spawnNPC('Elder Frost', (HUB.x + 2) * T, (HUB.y - 1) * T, 'npc_elder', 0xdaa520);
+      this.spawnNPC('Smith Ember', HUB.x * T, (HUB.y + 5) * T, 'npc_knight', 0xe07020);
+      this.spawnNPC('Crazy Lou', (HUB.x + 7) * T, (HUB.y + 1) * T, 'npc_hunter', 0xc0a040);
+      this.spawnNPC('Ranger Kai', 80 * T, 32 * T, 'npc_hunter', 0x88aacc);
+      this.spawnNPC('Frost Hermit', 42 * T, 62 * T, 'npc_elder', 0x6688aa);
+      // Hostiles
+      this.spawnNPC('Brawler Jax', 30 * T, 20 * T, 'creature_bear', 0xcc4444, true);
+      this.spawnNPC('Ice Queen Vera', 50 * T, 15 * T, 'npc_knight', 0x6688cc, true);
+      this.spawnNPC('Frost Stalker', 70 * T, 45 * T, 'creature_dragon', 0x88bbee, true);
+      this.spawnNPC('The Exile', 90 * T, 55 * T, 'npc_knight', 0x666666, true);
+    } else if (z === 'rolling_hills') {
+      this.spawnNPC('Farmer Bea', (HUB.x + 2) * T, (HUB.y - 1) * T, 'npc_elder', 0x6a8a4a);
+      this.spawnNPC('Herbalist Sage', (HUB.x + 6) * T, (HUB.y + 2) * T, 'npc_knight', 0x4a8a6a);
+      this.spawnNPC('Shepherd Tom', 18 * T, 16 * T, 'npc_hunter', 0x8a8a4a);
+      this.spawnNPC('Miller Rose', 72 * T, 57 * T, 'npc_elder', 0xa88a4a);
+      // Hostiles
+      this.spawnNPC('Bandit Marcus', 40 * T, 48 * T, 'creature_dragon', 0xa88844, true);
+      this.spawnNPC('Wild Boar', 60 * T, 30 * T, 'creature_bear', 0x886644, true);
+      this.spawnNPC('Bramble Beast', 85 * T, 55 * T, 'creature_mushroom', 0x668844, true);
+    } else if (z === 'volcanic_isles') {
+      this.spawnNPC('Captain Flint', (HUB.x + 2) * T, (HUB.y - 1) * T, 'npc_hunter', 0xcc6644);
+      this.spawnNPC('Lava Tender', (HUB.x + 6) * T, (HUB.y + 2) * T, 'npc_knight', 0xff8844);
+      this.spawnNPC('Beach Elder', 32 * T, 64 * T, 'npc_elder', 0xe8d8a0);
+      // Hostiles
+      this.spawnNPC('Lava Raider Kira', 60 * T, 25 * T, 'npc_hunter', 0xee8844, true);
+      this.spawnNPC('Magma Golem', 40 * T, 50 * T, 'creature_slime', 0xff4400, true);
+      this.spawnNPC('Ash Serpent', 80 * T, 60 * T, 'creature_dragon', 0xcc6600, true);
+    } else if (z === 'dark_castle') {
+      this.spawnNPC('Shadow Warden', (HUB.x + 2) * T, (HUB.y - 1) * T, 'npc_hunter', 0x8a6aaa);
+      this.spawnNPC('Cursed Scholar', (HUB.x + 6) * T, (HUB.y + 2) * T, 'npc_elder', 0x6a4a8a);
+      this.spawnNPC('Crypt Keeper', 82 * T, 57 * T, 'npc_knight', 0x886688);
+      // Hostiles
+      this.spawnNPC('Shadow Knight Vex', 40 * T, 18 * T, 'npc_elder', 0x8866aa, true);
+      this.spawnNPC('Dark Wraith', 70 * T, 50 * T, 'creature_dragon', 0x664488, true);
+      this.spawnNPC('Bone Sentry', 18 * T, 55 * T, 'creature_bear', 0x888888, true);
+    }
+  }
+
+  // ═══ ZONE TRANSITION SYSTEM ═══
+  _checkZoneTransition() {
+    if (this._zoneTransitioning || G.inBattle) return;
+    const tx = Math.floor(G.x);
+    const ty = Math.floor(G.y);
+    const adjacency = (typeof ZONE_ADJACENCY !== 'undefined') ? ZONE_ADJACENCY[G.currentZone] : null;
+    if (!adjacency) return;
+
+    let targetZone = null;
+    let spawnEdge = null;
+
+    for (const adj of adjacency) {
+      if (adj.edge === 'south' && ty >= WORLD_H - 3) {
+        // Check the tile is walkable (passage gap)
+        if (!this._impassableSet.has(worldMap[WORLD_H-1]?.[tx]) || !this._impassableSet.has(worldMap[WORLD_H-2]?.[tx])) {
+          targetZone = adj.target; spawnEdge = adj.spawnEdge; break;
+        }
+      }
+      if (adj.edge === 'north' && ty <= 2) {
+        if (!this._impassableSet.has(worldMap[0]?.[tx]) || !this._impassableSet.has(worldMap[1]?.[tx])) {
+          targetZone = adj.target; spawnEdge = adj.spawnEdge; break;
+        }
+      }
+      if (adj.edge === 'east' && tx >= WORLD_W - 3) {
+        if (!this._impassableSet.has(worldMap[ty]?.[WORLD_W-1]) || !this._impassableSet.has(worldMap[ty]?.[WORLD_W-2])) {
+          targetZone = adj.target; spawnEdge = adj.spawnEdge; break;
+        }
+      }
+      if (adj.edge === 'west' && tx <= 2) {
+        if (!this._impassableSet.has(worldMap[ty]?.[0]) || !this._impassableSet.has(worldMap[ty]?.[1])) {
+          targetZone = adj.target; spawnEdge = adj.spawnEdge; break;
+        }
+      }
+    }
+
+    if (targetZone) {
+      this._performZoneTransition(targetZone, spawnEdge, tx, ty);
+    }
+  }
+
+  _performZoneTransition(targetZone, spawnEdge, fromTX, fromTY) {
+    this._zoneTransitioning = true;
+    console.log(`[ZoneTransition] ${G.currentZone} -> ${targetZone}, spawn at ${spawnEdge}`);
+
+    // Calculate spawn position in new zone
+    let newX, newY;
+    if (spawnEdge === 'north') { newX = Math.min(Math.max(fromTX, 5), WORLD_W - 5); newY = 4; }
+    else if (spawnEdge === 'south') { newX = Math.min(Math.max(fromTX, 5), WORLD_W - 5); newY = WORLD_H - 5; }
+    else if (spawnEdge === 'west') { newX = 4; newY = Math.min(Math.max(fromTY, 5), WORLD_H - 5); }
+    else if (spawnEdge === 'east') { newX = WORLD_W - 5; newY = Math.min(Math.max(fromTY, 5), WORLD_H - 5); }
+    else { newX = HUB.x + 3; newY = HUB.y + 2; }
+
+    // Freeze player
+    this.player.setVelocity(0, 0);
+
+    // Region transition banner
+    const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
+    const regionColors = { frost_valley: '#88bbff', rolling_hills: '#88cc44', volcanic_isles: '#ff8844', dark_castle: '#aa66cc' };
+
+    // Fade out
+    this.cameras.main.fadeOut(400, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      // Update zone
+      G.currentZone = targetZone;
+      G.x = newX;
+      G.y = newY;
+      saveGame();
+
+      // Restart the scene (regenerates the world)
+      this.scene.restart();
+    });
+
+    // Show transition text while fading
+    if (typeof this.showNotification === 'function') {
+      this.showNotification(`Traveling to ${regionNames[targetZone]}...`);
+    }
+  }
+
   // ── Tile collision helper (replaces 2270 static physics bodies) ──
   isTileBlocked(px, py) {
     const tx = Math.floor(px / this._tileSize);
@@ -941,16 +1154,9 @@ class WorldScene extends Phaser.Scene {
           g.hp = Math.max(1, Math.ceil((g.maxHp || 6) / 2));
         });
 
-        // Teleport to nearest hub
-        const px = G.x || 15, py = G.y || 20;
-        const hubs = [
-          { name: 'Frost Valley', x: HUB.x, y: HUB.y },
-          { name: 'Rolling Hills', x: (typeof HUB_MEADOW !== 'undefined' ? HUB_MEADOW.x : 28), y: (typeof HUB_MEADOW !== 'undefined' ? HUB_MEADOW.y : 52) },
-          { name: 'Volcanic Isles', x: (typeof HUB_VOLCANIC !== 'undefined' ? HUB_VOLCANIC.x : 68), y: (typeof HUB_VOLCANIC !== 'undefined' ? HUB_VOLCANIC.y : 28) },
-          { name: 'Dark Castle', x: (typeof HUB_DARK !== 'undefined' ? HUB_DARK.x : 92), y: (typeof HUB_DARK !== 'undefined' ? HUB_DARK.y : 15) },
-        ];
-        let nearest = hubs[0], bestDist = Infinity;
-        hubs.forEach(h => { const d = Math.abs(h.x - px) + Math.abs(h.y - py); if (d < bestDist) { bestDist = d; nearest = h; } });
+        // Teleport to current zone's hub
+        const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
+        const nearest = { name: regionNames[G.currentZone] || 'Frost Valley', x: HUB.x, y: HUB.y };
 
         G.x = nearest.x; G.y = nearest.y;
         if (this.player) this.player.setPosition(nearest.x * 32, nearest.y * 32);
@@ -1026,11 +1232,17 @@ class WorldScene extends Phaser.Scene {
           }
         }
       }
-      // If still stuck after 15-tile radius, warp to hub
+      // If still stuck after 15-tile radius, warp to current zone hub
       if (!escaped) {
         this.player.setPosition((HUB.x + 3) * T, (HUB.y + 2) * T);
         this.player.setVelocity(0, 0);
       }
+    }
+
+    // ═══ ZONE TRANSITION CHECK ═══
+    // If player is within 2 tiles of a map edge that has a passage, trigger zone transition
+    if (!this._zoneTransitioning) {
+      this._checkZoneTransition();
     }
 
     // Track player marker + fallback rect

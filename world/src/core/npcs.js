@@ -230,10 +230,7 @@ function triggerHostileNPCBattle(npc) {
 
   const playerGhosts = buildPlayerBattleTeam();
   // Scale trainer team size by region (early = fewer ghosts)
-  const trainerRegion =
-    npc.x > 88 && npc.y < 42 ? 'dark_castle' :
-    npc.x > 55 && npc.y < 76 && npc.x <= 88 ? 'volcanic_isles' :
-    npc.y >= 45 && npc.x <= 55 ? 'rolling_hills' : 'frost_valley';
+  const trainerRegion = (typeof getCurrentRegion === 'function') ? getCurrentRegion(G.x, G.y) : 'frost_valley';
   const trainerTeamSize = {
     frost_valley: 1,
     rolling_hills: 2,

@@ -82,7 +82,8 @@ function generateEssence(card, zoneIdx) {
     zoneMultiplier = getZoneQuality(zoneIdx, cycleId);
   }
 
-  const zoneName = zoneIdx >= 0 ? ENCOUNTER_ZONES[zoneIdx].name : (Math.floor(G.x) > 88 && Math.floor(G.y) < 42 ? 'Dark Castle' : Math.floor(G.x) > 60 ? 'Volcanic Isles' : Math.floor(G.y) >= 45 ? 'Rolling Hills' : 'Frost Valley');
+  const _regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
+  const zoneName = zoneIdx >= 0 ? ENCOUNTER_ZONES[zoneIdx].name : (_regionNames[(typeof getCurrentRegion === 'function') ? getCurrentRegion(G.x, G.y) : 'frost_valley'] || 'Frost Valley');
   const subtypeInfo = ZONE_ESSENCE_SUBTYPES[zoneName];
   const subtypeName = subtypeInfo ? subtypeInfo.subtype : '';
 

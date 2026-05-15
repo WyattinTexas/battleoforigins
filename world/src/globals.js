@@ -37,10 +37,24 @@ document.querySelectorAll = function(sel) {
 const TILE = 32;
 const WORLD_W = 110;
 const WORLD_H = 85; // Match 2D version exactly
-const HUB = { x: 15, y: 20 };
-const HUB_MEADOW = { x: 28, y: 52 };
-const HUB_VOLCANIC = { x: 68, y: 28 }; // centered in expanded volcanic island
-const HUB_DARK = { x: 92, y: 15 };
+
+// ═══ ZONE STATE ═══
+// G.currentZone tracks which zone the player is in (persisted in save).
+// HUB, HUB_MEADOW, etc. are now mutable — updated on zone transitions.
+let HUB = { x: 15, y: 20 };
+let HUB_MEADOW = { x: 28, y: 25 };
+let HUB_VOLCANIC = { x: 30, y: 28 };
+let HUB_DARK = { x: 25, y: 20 };
+
+// Update HUB constants to match the active zone's hub positions
+function _updateHubsForZone(zoneId) {
+  if (typeof ZONE_HUBS !== 'undefined') {
+    HUB = ZONE_HUBS[zoneId] || ZONE_HUBS.frost_valley;
+    HUB_MEADOW = ZONE_HUBS.rolling_hills;
+    HUB_VOLCANIC = ZONE_HUBS.volcanic_isles;
+    HUB_DARK = ZONE_HUBS.dark_castle;
+  }
+}
 
 // worldMap declared + populated by world-gen.js (generateWorld function)
 
@@ -90,15 +104,9 @@ function getCurrentZone(px, py) {
 }
 
 // getCurrentRegion returns the region name string (frost_valley, rolling_hills, etc.).
-// Used by WorldScene.js for region display and music.
+// Now each zone IS a region — the entire map is one region.
 function getCurrentRegion(px, py) {
-  const x = Math.floor(px);
-  const y = Math.floor(py);
-  // Priority: dark_castle > volcanic_isles > rolling_hills > frost_valley
-  if (x > 88 && y < 42) return 'dark_castle';
-  if (x > 55 && y < 76 && x <= 88) return 'volcanic_isles';
-  if (y >= 45 && x <= 55) return 'rolling_hills';
-  return 'frost_valley';
+  return (G && G.currentZone) ? G.currentZone : 'frost_valley';
 }
 
 // ── Notification system (Phaser scene handles display) ──
@@ -428,6 +436,7 @@ function ensurePlayerDefaults() {
   if (G.activeIdx === undefined) G.activeIdx = 0;
   G.inBattle = false; // never restore mid-battle state from save
   G.inDungeon = false; // never restore mid-dungeon state from save
+  if (!G.currentZone) G.currentZone = 'frost_valley'; // zone tracking
   if (G.frostDungeonCleared === undefined) G.frostDungeonCleared = false; // intro/post cinematics auto-skip once true
   if (!G.materials) G.materials = {};
   if (!G.professionXP) G.professionXP = { combat: 0, exploration: 0, crafting: 0, trade: 0, charisma: 0 };

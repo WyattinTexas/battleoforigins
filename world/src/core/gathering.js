@@ -242,8 +242,9 @@ function spawnRoamingEnemies() {
       if (dPlayer < 10) continue;
 
       // Pick a card based on region + deep wilderness danger zones
-      const inVI = sx > 55 && sy < 76 && sx <= 88;
-      const inRH = sy >= 45 && sx <= 55;
+      const _spawnRegion = (typeof getCurrentRegion === 'function') ? getCurrentRegion(sx, sy) : 'frost_valley';
+      const inVI = _spawnRegion === 'volcanic_isles';
+      const inRH = _spawnRegion === 'rolling_hills';
       const minHubDist = Math.min(dFH, dRH, dVI);
       const dangerFactor = Math.min(1, (minHubDist - ROAM_SAFE_RADIUS) / 17);
       const isDeepWild = minHubDist > 20; // deep wilderness = far from ALL hubs

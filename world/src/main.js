@@ -52,4 +52,6 @@ const G = {
   // Resources
   iceShards: 0, sacredFire: 0, healingSeeds: 0, luckyStones: 0,
   surge: 0, moonstone: 0, firefly: 0,
+  // Zone system
+  currentZone: 'frost_valley',
 };
