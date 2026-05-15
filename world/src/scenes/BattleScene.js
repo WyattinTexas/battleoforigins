@@ -347,9 +347,9 @@ class BattleScene extends Phaser.Scene {
     if (team === 'red') this._pSideline = s; else this._eSideline = s;
   }
 
-  // ── WILLPOWER STRIP + HEALTH BAR — stacked, aligned ─────
-  // Top: willpower color strip (front card highlighted, rest dimmed)
-  // Bottom: classic health bar directly below, same width
+  // ── WILLPOWER STRIP + HEALTH BAR ─────────────────────────
+  // Top: willpower segments (active card on RIGHT, bright + description)
+  // Bottom: health bar with gradient, same width, aligned
   _buildWPArea(team, cx, cy) {
     const c = this.add.container(cx, cy);
     const tKey = team === 'red' ? this._pt : this._et;
@@ -362,122 +362,148 @@ class BattleScene extends Phaser.Scene {
     const isAllHearts = hand.length > 0 && hand.every(id => id === 0);
     const wpUsed = B.wpUsedThisTurn && B.wpUsedThisTurn[tKey];
 
-    // ── Layout dimensions ──
-    const barW = Math.min(this._W * 0.28, 320);
-    const wpH = 18;       // willpower strip height
-    const hpH = 12;       // health bar height
-    const gapY = 3;       // gap between strip and bar
+    // ── Layout ──
+    const barW = Math.min(this._W * 0.30, 360);
+    const wpH = 22;       // willpower strip height
+    const hpH = 14;       // health bar height
+    const gapY = 2;
     const totalH = wpH + gapY + hpH;
     const topY = -totalH / 2;
     const segW = maxHp > 0 ? (barW - 2) / maxHp : barW;
     const segGap = 1.5;
 
-    // Willpower color map
+    // Colors
     const WP_FILLS = { red: 0xc0392b, blue: 0x2980b9, green: 0x27ae60, orange: 0xd4790e };
     const WP_BRIGHT = { red: 0xe94560, blue: 0x4cc9f0, green: 0x2ecc71, orange: 0xf39c12 };
+    const HEART_PINK = 0xd4577a;       // warm reddish-pink for hearts
+    const HEART_PINK_DIM = 0x8a3350;   // dimmed version
 
     // ════════════════════════════════════════════════════════
-    // TOP ROW: Willpower strip — colored segments, front highlighted
+    // TOP: Willpower strip — active card on RIGHT
+    // Rendered reversed: index 0 (active) is rightmost
     // ════════════════════════════════════════════════════════
     const wpTrack = this.add.graphics();
-    wpTrack.fillStyle(0x0a0a14, 0.85);
-    wpTrack.fillRoundedRect(-barW / 2, topY, barW, wpH, { tl: 5, tr: 5, bl: 0, br: 0 });
-    wpTrack.lineStyle(1, 0x222244, 0.4);
-    wpTrack.strokeRoundedRect(-barW / 2, topY, barW, wpH, { tl: 5, tr: 5, bl: 0, br: 0 });
+    wpTrack.fillStyle(0x080812, 0.9);
+    wpTrack.fillRoundedRect(-barW / 2, topY, barW, wpH, { tl: 6, tr: 6, bl: 0, br: 0 });
+    wpTrack.lineStyle(1, 0x333355, 0.5);
+    wpTrack.strokeRoundedRect(-barW / 2, topY, barW, wpH, { tl: 6, tr: 6, bl: 0, br: 0 });
     c.add(wpTrack);
 
+    // Draw segments reversed: last array slot on left, first (active) on right
     hand.forEach((cardId, i) => {
       const wp = typeof wpCardById === 'function' ? wpCardById(cardId) : null;
-      const sx = -barW / 2 + 1 + i * segW;
-      const isFirst = (i === 0);
+      const visualIdx = hand.length - 1 - i; // reverse: active (i=0) goes to rightmost
+      const sx = -barW / 2 + 1 + visualIdx * segW;
+      const isActive = (i === 0);
       const isSpecial = cardId !== 0;
-      const canActivate = isFirst && isSpecial && !wpUsed && team === 'red';
 
       const seg = this.add.graphics();
 
       if (isSpecial) {
-        // Colored segment — bright if first (activatable), dimmed otherwise
-        const fillCol = isFirst ? (WP_BRIGHT[wp?.color] || 0xd4a040) : (WP_FILLS[wp?.color] || 0x664488);
-        const alpha = isFirst ? 0.95 : 0.5;
-        seg.fillStyle(fillCol, alpha);
+        const fillCol = isActive ? (WP_BRIGHT[wp?.color] || 0xd4a040) : (WP_FILLS[wp?.color] || 0x664488);
+        seg.fillStyle(fillCol, isActive ? 1 : 0.4);
         seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
+        if (isActive) {
+          // Bright top accent
+          seg.fillStyle(0xffffff, 0.15);
+          seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, 3);
+        }
       } else {
-        // Heart — red, dimmed unless it's the front card
-        const fillCol = isFirst ? 0xaa2020 : 0x551515;
-        const alpha = isFirst ? 0.85 : 0.45;
-        seg.fillStyle(fillCol, alpha);
+        // Heart — warm reddish-pink
+        seg.fillStyle(isActive ? HEART_PINK : HEART_PINK_DIM, isActive ? 0.9 : 0.35);
         seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
+        if (isActive) {
+          seg.fillStyle(0xffffff, 0.1);
+          seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, 3);
+        }
       }
       c.add(seg);
 
-      // Pulsing glow on activatable first segment
-      if (canActivate) {
+      // Pulsing glow on activatable active segment (rightmost)
+      if (isActive && isSpecial && !wpUsed && team === 'red') {
         const glowCol = WP_BRIGHT[wp?.color] || 0xd4a040;
         const glow = this.add.graphics();
-        glow.fillStyle(glowCol, 0.25);
-        glow.fillRoundedRect(sx - 1, topY - 2, segW + 2, wpH + 4, 3);
+        glow.fillStyle(glowCol, 0.3);
+        glow.fillRoundedRect(sx - 2, topY - 3, segW + 4, wpH + 6, 4);
         c.add(glow);
-        this.tweens.add({ targets: glow, alpha: 0.5, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.tweens.add({ targets: glow, alpha: 0.55, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
     });
 
-    // Empty slots for lost willpower
+    // Empty slots for lost HP
     for (let i = hand.length; i < maxHp; i++) {
-      const sx = -barW / 2 + 1 + i * segW;
+      const visualIdx = maxHp - 1 - i; // also reversed
+      const sx = -barW / 2 + 1 + visualIdx * segW;
       const empty = this.add.graphics();
-      empty.fillStyle(0x110808, 0.3);
+      empty.fillStyle(0x110808, 0.25);
       empty.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
       c.add(empty);
     }
 
     // ════════════════════════════════════════════════════════
-    // BOTTOM ROW: Health bar — classic fill bar, same width
+    // ACTIVE CARD DESCRIPTION — 16pt, visible, right-aligned
+    // Shows what the active (rightmost) willpower card does
+    // ════════════════════════════════════════════════════════
+    if (hand.length > 0) {
+      const activeId = hand[0];
+      const activeCard = typeof wpCardById === 'function' ? wpCardById(activeId) : null;
+      if (activeCard) {
+        const descY = topY - 28;
+        const isHeart = activeId === 0;
+        const descText = isHeart ? '♥ Heart — No Effect' : `${activeCard.emoji} ${activeCard.name} — ${activeCard.desc}`;
+        const descCol = isHeart ? '#886666' : (wpUsed ? '#666688' : '#ddccaa');
+        c.add(this.add.text(barW / 2, descY, descText, {
+          fontFamily: 'Georgia, serif', fontSize: '14px', color: descCol,
+          wordWrap: { width: barW }, align: 'right',
+        }).setOrigin(1, 1));
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    // BOTTOM: Health bar — gradient fill with shine
     // ════════════════════════════════════════════════════════
     const hpY = topY + wpH + gapY;
     const hpTrack = this.add.graphics();
-    hpTrack.fillStyle(0x0a0a14, 0.9);
-    hpTrack.fillRoundedRect(-barW / 2, hpY, barW, hpH, { tl: 0, tr: 0, bl: 5, br: 5 });
+    hpTrack.fillStyle(0x080812, 0.9);
+    hpTrack.fillRoundedRect(-barW / 2, hpY, barW, hpH, { tl: 0, tr: 0, bl: 6, br: 6 });
     c.add(hpTrack);
 
-    // Health fill
     const hpPct = Math.max(0, ghost.hp / maxHp);
     if (hpPct > 0) {
-      const hpFill = this.add.graphics();
-      const fillCol = _hpHex(ghost.hp, ghost.maxHp);
-      hpFill.fillStyle(fillCol, 0.9);
       const fillW = (barW - 2) * hpPct;
-      hpFill.fillRoundedRect(-barW / 2 + 1, hpY + 1, fillW, hpH - 2, { tl: 0, tr: 0, bl: 4, br: hpPct > 0.95 ? 4 : 0 });
+      const fillCol = _hpHex(ghost.hp, ghost.maxHp);
+      const hpFill = this.add.graphics();
+      // Main fill
+      hpFill.fillStyle(fillCol, 0.9);
+      hpFill.fillRoundedRect(-barW / 2 + 1, hpY + 1, fillW, hpH - 2, { tl: 0, tr: 0, bl: 5, br: hpPct > 0.95 ? 5 : 0 });
+      // Top shine
+      hpFill.fillStyle(0xffffff, 0.18);
+      hpFill.fillRect(-barW / 2 + 1, hpY + 1, fillW, 3);
+      // Bottom darken
+      hpFill.fillStyle(0x000000, 0.15);
+      hpFill.fillRect(-barW / 2 + 1, hpY + hpH - 4, fillW, 3);
       c.add(hpFill);
-      // Bright top edge on health bar
-      hpFill.fillStyle(fillCol, 0.4);
-      hpFill.fillRect(-barW / 2 + 1, hpY + 1, fillW, 2);
     }
 
     // ════════════════════════════════════════════════════════
-    // LABELS + HP COUNT
+    // HP COUNT + LABEL
     // ════════════════════════════════════════════════════════
-    // HP number to the right
     const hpCol = _hpCol(ghost.hp, ghost.maxHp);
-    c.add(this.add.text(barW / 2 + 8, topY + totalH / 2, `${ghost.hp}/${maxHp}`, {
-      fontFamily: 'Cinzel, serif', fontSize: '14px', color: hpCol, fontStyle: 'bold',
+    c.add(this.add.text(barW / 2 + 10, topY + wpH / 2 + gapY / 2 + hpH / 2, `${ghost.hp}/${maxHp}`, {
+      fontFamily: 'Cinzel, serif', fontSize: '16px', color: hpCol, fontStyle: 'bold',
     }).setOrigin(0, 0.5));
 
-    // Label above
-    const labelY = topY - 11;
-    if (isAllHearts || hand.length === 0) {
-      c.add(this.add.text(0, labelY, '♥ HEALTH', {
-        fontFamily: 'Cinzel, Georgia, serif', fontSize: '9px', color: '#cc4444', letterSpacing: 2,
-      }).setOrigin(0.5));
-    } else {
-      c.add(this.add.text(0, labelY, '✦ WILLPOWER', {
-        fontFamily: 'Cinzel, Georgia, serif', fontSize: '9px', color: BC.GOLD, letterSpacing: 2,
-      }).setOrigin(0.5));
-    }
+    // Label left of bar
+    c.add(this.add.text(-barW / 2, topY - 4, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '✦ WILLPOWER', {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '9px',
+      color: isAllHearts || hand.length === 0 ? '#cc4444' : BC.GOLD, letterSpacing: 2,
+    }).setOrigin(0, 1));
 
-    // ── Click first segment to activate (player only) ──
+    // ── Click active segment (rightmost) to activate (player only) ──
     if (team === 'red' && hand.length > 0) {
-      const firstX = -barW / 2 + 1 + segW / 2;
-      const wpZone = this.add.zone(firstX, topY + wpH / 2, segW + 6, wpH + 6)
+      const activeVisualIdx = hand.length - 1;
+      const activeX = -barW / 2 + 1 + activeVisualIdx * segW + segW / 2;
+      const wpZone = this.add.zone(activeX, topY + wpH / 2, segW + 8, wpH + 8)
         .setOrigin(0.5).setInteractive({ useHandCursor: true });
       wpZone.on('pointerdown', () => {
         const topId = ghost.willpower && ghost.willpower[0];
@@ -666,8 +692,8 @@ class BattleScene extends Phaser.Scene {
   // ── ROLL BUTTON ─────────────────────────────────────────
   _buildRollBtn(cx, cy, label, color, onClick) {
     const c = this.add.container(cx, cy);
-    const w = Math.min(this._W * 0.22, 260);
-    const h = 54;
+    const w = Math.min(this._W * 0.28, 320);
+    const h = 62;
 
     // Outer glow ring
     const glow = this.add.graphics();
@@ -698,10 +724,10 @@ class BattleScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '20px',
     }).setOrigin(0.5));
 
-    // Label text — big and bold
+    // Label text — massive and bold
     c.add(this.add.text(0, -1, label, {
-      fontFamily: 'Cinzel, Georgia, serif', fontSize: '22px', color: '#fff', fontStyle: 'bold',
-      stroke: '#000', strokeThickness: 2,
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '28px', color: '#fff', fontStyle: 'bold',
+      stroke: '#000', strokeThickness: 3,
     }).setOrigin(0.5));
 
     if (onClick) {
