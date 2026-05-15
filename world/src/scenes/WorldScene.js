@@ -5014,41 +5014,10 @@ class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Build contextual buttons
+    // Build contextual buttons — ordered left→right as workflow: Dig → Plant → Water → Harvest
     const buttons = [];
 
-    if (harvestableCrops.length > 0) {
-      buttons.push({
-        icon: '\u2728', label: 'Harvest!',
-        color: '#ffcc00', bg: 'linear-gradient(180deg,#4a3a00,#2a2000)', border: '#ffdd44', pulse: true,
-        action: () => this._farmHarvestAll(harvestableCrops),
-      });
-    }
-
-    if (waterableCrops.length > 0) {
-      buttons.push({
-        icon: '\uD83D\uDCA7', label: 'Water',
-        color: '#66ccff', bg: 'linear-gradient(180deg,#003355,#001a33)', border: '#44aaee',
-        action: () => this._farmWaterAll(waterableCrops),
-      });
-    }
-
-    if (nearWell && waterableCrops.length > 0) {
-      buttons.push({
-        icon: '\uD83E\uDEA3', label: 'Use Well',
-        color: '#88ddff', bg: 'linear-gradient(180deg,#004466,#002233)', border: '#55bbee',
-        action: () => this._farmUseWell(),
-      });
-    }
-
-    if (emptyPlots.length > 0) {
-      buttons.push({
-        icon: '\uD83C\uDF31', label: 'Plant!',
-        color: '#88ff88', bg: 'linear-gradient(180deg,#1a4400,#0a2200)', border: '#44cc44',
-        action: () => this._showSeedSelectPanel(emptyPlots[0].tx, emptyPlots[0].ty),
-      });
-    }
-
+    // 1. DIG (first step: prepare the land)
     if (tillableTiles.length > 0 && nearGarden) {
       const soilCount = typeof getSoilCount === 'function' ? getSoilCount() : 0;
       const soilMax = typeof getMaxSoilTiles === 'function' ? getMaxSoilTiles() : 16;
@@ -5059,6 +5028,43 @@ class WorldScene extends Phaser.Scene {
       });
     }
 
+    // 2. PLANT (second step: put seeds in the ground)
+    if (emptyPlots.length > 0) {
+      buttons.push({
+        icon: '\uD83C\uDF31', label: 'Plant!',
+        color: '#88ff88', bg: 'linear-gradient(180deg,#1a4400,#0a2200)', border: '#44cc44',
+        action: () => this._showSeedSelectPanel(emptyPlots[0].tx, emptyPlots[0].ty),
+      });
+    }
+
+    // 3. WATER (third step: help them grow)
+    if (waterableCrops.length > 0) {
+      buttons.push({
+        icon: '\uD83D\uDCA7', label: 'Water',
+        color: '#66ccff', bg: 'linear-gradient(180deg,#003355,#001a33)', border: '#44aaee',
+        action: () => this._farmWaterAll(waterableCrops),
+      });
+    }
+
+    // 3b. USE WELL (faster watering — appears next to Water)
+    if (nearWell && waterableCrops.length > 0) {
+      buttons.push({
+        icon: '\uD83E\uDEA3', label: 'Use Well',
+        color: '#88ddff', bg: 'linear-gradient(180deg,#004466,#002233)', border: '#55bbee',
+        action: () => this._farmUseWell(),
+      });
+    }
+
+    // 4. HARVEST (final step: reap what you sowed!)
+    if (harvestableCrops.length > 0) {
+      buttons.push({
+        icon: '\u2728', label: 'Harvest!',
+        color: '#ffcc00', bg: 'linear-gradient(180deg,#4a3a00,#2a2000)', border: '#ffdd44', pulse: true,
+        action: () => this._farmHarvestAll(harvestableCrops),
+      });
+    }
+
+    // Passive: show growing status when nothing else to do
     if (growingCrops.length > 0 && buttons.length === 0) {
       const nearest = growingCrops[0].status;
       buttons.push({
