@@ -3241,7 +3241,7 @@ class WorldScene extends Phaser.Scene {
     const W = this.uiW;
     const H = this.uiH;
     const R = 50; // radius in pixels
-    return { cx: W - R - 8, cy: H - R - 8, R };
+    return { cx: W - R - 6, cy: H - R - 6, R };
   }
 
   _buildMinimap() {
