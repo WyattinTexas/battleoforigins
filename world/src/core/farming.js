@@ -254,16 +254,16 @@ const QUALITY = {
   GOLD:   { name: 'Gold',   star: '\u2B50\u2B50', mult: 1.5, color: '#ffcc00' },
 };
 
-// Soil limit per talent progression
+// Soil limit per talent progression — generous so farms feel big
 const SOIL_LIMITS = {
-  0: 16,   // Apprentice (4x4)
-  1: 36,   // cul_grd_1 (6x6)
-  2: 64,   // cul_grd_2 (8x8)
-  3: 100,  // cul_grd_3 (10x10)
-  4: 144,  // cul_grd_4 (12x12)
+  0: 36,   // Apprentice (6x6) — start with a real farm, not a window box
+  1: 64,   // cul_grd_1 (8x8)
+  2: 100,  // cul_grd_2 (10x10)
+  3: 144,  // cul_grd_3 (12x12)
+  4: 196,  // cul_grd_4 (14x14) — massive homestead
 };
 
-const SOIL_ANCHOR_RADIUS = 6; // tiles from garden structure
+const SOIL_ANCHOR_RADIUS = 10; // tiles from garden structure — big farms
 
 // ─── Farm State ─────────────────────────────────────────
 //

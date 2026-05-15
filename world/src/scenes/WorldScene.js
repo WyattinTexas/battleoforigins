@@ -537,6 +537,16 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
 
+    // ── Minimap (Phaser graphics, not DOM — must init here) ──
+    {
+      const { mmW, mmH, mmX, mmY } = this._minimapRect();
+      this.minimapBg = this.add.rectangle(mmX + mmW/2, mmY + mmH/2, mmW + 4, mmH + 4, 0x000000, 0.8)
+        .setStrokeStyle(1, 0x556688).setScrollFactor(0).setDepth(200);
+    }
+    this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(201);
+    this.minimapDot = this.add.circle(0, 0, 3, 0x44aaff).setScrollFactor(0).setDepth(202);
+    this.drawMinimap();
+
     // ── Render player structures ──
     this._structureSprites = [];
     this._renderStructures();
@@ -3792,6 +3802,9 @@ class WorldScene extends Phaser.Scene {
       scene.player._eventFrozen = true;
     }
 
+    // Safety net: unfreeze after 15s no matter what (in case comms fail)
+    setTimeout(() => { if (scene.player && scene.player._eventFrozen) scene.player._eventFrozen = false; }, 15000);
+
     // Text crawl already played in BootScene — go straight to Valkin comm
     if (typeof StarfoxComm !== 'undefined') {
         StarfoxComm.play([
@@ -5140,7 +5153,7 @@ class WorldScene extends Phaser.Scene {
       if (result.ok) {
         if (typeof playTillEffect === 'function') playTillEffect(this, t.tx, t.ty);
         count++;
-        if (count >= 4) break; // till up to 4 tiles per tap
+        if (count >= 9) break; // till a nice 3x3 chunk per tap
       }
     }
     if (count > 0) {
