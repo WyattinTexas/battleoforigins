@@ -2919,10 +2919,10 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#000000aa', padding: { x: 5, y: 2 },
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
 
-    // ── Minimap (bottom-right) ──
-    const mmW = 90, mmH = 65;
-    this.minimapBg = this.add.rectangle(W - mmW/2 - 8, H - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.7)
-      .setStrokeStyle(1, 0x444466).setScrollFactor(0).setDepth(200);
+    // ── Minimap (bottom-right) — bigger for full zone maps ──
+    const mmW = 120, mmH = 90;
+    this.minimapBg = this.add.rectangle(W - mmW/2 - 8, H - mmH/2 - 8, mmW + 4, mmH + 4, 0x000000, 0.8)
+      .setStrokeStyle(1, 0x556688).setScrollFactor(0).setDepth(200);
 
     // Minimap graphics
     this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(201);
@@ -2937,7 +2937,7 @@ class WorldScene extends Phaser.Scene {
   drawMinimap() {
     const W = this.uiW;
     const H = this.uiH;
-    const mmW = 90, mmH = 65;
+    const mmW = 120, mmH = 90;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
     const scaleX = mmW / WORLD_W;
@@ -3086,13 +3086,61 @@ class WorldScene extends Phaser.Scene {
       this.hudTitleText.setVisible(false);
     }
 
-    // Minimap player dot
+    // ── Minimap entity dots ──
     const W = this.uiW;
     const H = this.uiH;
-    const mmW = 90, mmH = 65;
+    const mmW = 120, mmH = 90;
     const mmX = W - mmW - 8;
     const mmY = H - mmH - 8;
+    const T = this._tileSize || 32;
+    const sX = mmW / (WORLD_W * T);
+    const sY = mmH / (WORLD_H * T);
+
+    // Player dot (blue-white)
     this.minimapDot.setPosition(mmX + G.x * (mmW / WORLD_W), mmY + G.y * (mmH / WORLD_H));
+
+    // Clear previous entity dots
+    if (this._mmDots) { this._mmDots.forEach(d => d.destroy()); }
+    this._mmDots = [];
+
+    // Hostile enemies — RED dots
+    if (this.enemies) {
+      this.enemies.getChildren().forEach(e => {
+        if (!e.active) return;
+        const dot = this.add.circle(
+          mmX + e.x * sX, mmY + e.y * sY,
+          e._isBlackRider ? 2.5 : 1.5, 0xff3333
+        ).setScrollFactor(0).setDepth(202);
+        this._mmDots.push(dot);
+      });
+    }
+
+    // Friendly NPCs — WHITE dots
+    if (this.npcSprites) {
+      this.npcSprites.forEach(npc => {
+        if (!npc.sprite || !npc.sprite.active || !npc.sprite.visible) return;
+        const col = npc.hostile ? 0xff3333 : 0xffffff;
+        const dot = this.add.circle(
+          mmX + npc.sprite.x * sX, mmY + npc.sprite.y * sY,
+          1.5, col
+        ).setScrollFactor(0).setDepth(202);
+        this._mmDots.push(dot);
+      });
+    }
+
+    // Other players (multiplayer) — BLUE dots
+    if (typeof onlinePlayers !== 'undefined') {
+      Object.values(onlinePlayers).forEach(op => {
+        if (!op || !op.x || op.id === G.odId) return;
+        const isParty = G.party && G.party.includes(op.id);
+        const col = isParty ? 0x44ff44 : 0x4488ff; // green for party, blue for others
+        const dot = this.add.circle(
+          mmX + op.x * (mmW / WORLD_W), mmY + op.y * (mmH / WORLD_H),
+          2, col
+        ).setScrollFactor(0).setDepth(202);
+        this._mmDots.push(dot);
+      });
+    }
   }
 
   // ═══════ WAVE 5: BLACK RIDERS (night-only enemies) ═══════
