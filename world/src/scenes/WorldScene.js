@@ -1208,6 +1208,15 @@ class WorldScene extends Phaser.Scene {
     }
 
     if (targetZone) {
+      // Block zone exits during early tutorial — new players should finish their first battle
+      if (!G.tutorialComplete && G.tutorialStep < 3) {
+        const now = this.time.now;
+        if (!this._tutorialEdgeNotifCooldown || now > this._tutorialEdgeNotifCooldown) {
+          this.showNotification('Finish your first battle before exploring further.');
+          this._tutorialEdgeNotifCooldown = now + 3000; // 3s cooldown
+        }
+        return;
+      }
       this._performZoneTransition(targetZone, spawnEdge, tx, ty);
     }
   }
@@ -2575,6 +2584,13 @@ class WorldScene extends Phaser.Scene {
   showTeamLineup() {
     if (this.panels.isOpen()) { this.panels.close(); return; }
     GameAudio.menuOpen();
+
+    // First-visit hint
+    if (!G._teamVisited && typeof showComm === 'function') {
+      G._teamVisited = true;
+      if (typeof saveGame === 'function') saveGame();
+      showComm('Elder Frost', "This is your team. Your Spiritkin fight for you in battle.", { duration: 3500, speed: 20 });
+    }
 
     const hasEssences = (G.essences?.length || 0) > 0;
 
