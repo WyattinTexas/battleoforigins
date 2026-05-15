@@ -464,7 +464,7 @@ class BattleScene extends Phaser.Scene {
       const activeCard = typeof wpCardById === 'function' ? wpCardById(activeId) : null;
       if (activeCard) {
         const isHeart = activeId === 0;
-        const labelText = isHeart ? '♥ Spirit' : `${activeCard.emoji} ${activeCard.name}`;
+        const labelText = isHeart ? 'Willpower' : `${activeCard.emoji} ${activeCard.name}`;
         const descText = isHeart ? '' : activeCard.desc;
         const labelCol = isHeart ? '#88bbdd' : '#ffffff';
         // Card name above flames
@@ -532,7 +532,7 @@ class BattleScene extends Phaser.Scene {
     // LABEL
     // ════════════════════════════════════════════════════════
     const leftFlameX = flameStartX - (Math.max(hand.length, maxHp) - 1) * flameStep;
-    c.add(this.add.text(leftFlameX - flameR, flameY - flameR - 8, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '♥ WILLPOWER', {
+    c.add(this.add.text(leftFlameX - flameR, flameY - flameR - 8, 'WILLPOWER', {
       fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px',
       color: '#dd66aa', letterSpacing: 2,
     }).setOrigin(0, 1));
