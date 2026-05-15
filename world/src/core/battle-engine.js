@@ -78,7 +78,8 @@ function makeTeam(ids, wpConfig) {
 //          trainerName, worldBoss, raidId, ... }
 function initBattle(redIds, blueIds, opts) {
   opts = opts || {};
-  const wpConfig = G && G.wpDeckConfig ? G.wpDeckConfig : null;
+  // All-Hearts for now — custom willpower decks coming later
+  const wpConfig = { 0: 15 };
 
   const red = makeTeam(redIds, wpConfig);
   const blue = makeTeam(blueIds, wpConfig);

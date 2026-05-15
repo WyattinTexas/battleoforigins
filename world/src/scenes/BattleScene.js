@@ -388,134 +388,119 @@ class BattleScene extends Phaser.Scene {
 
     // ── Layout ──
     const barW = Math.min(this._W * 0.30, 360);
-    const orbR = 14;            // orb radius
-    const orbD = orbR * 2;
-    const orbGap = 4;
-    const orbStep = orbD + orbGap;
+    const flameR = 12;          // flame base radius
+    const flameH = 28;          // total flame height
+    const flameGap = 4;
+    const flameStep = flameR * 2 + flameGap;
     const hpH = 16;
-    const orbY = 0;             // center of orb row
-    const hpBarY = orbR + 8;    // health bar top
+    const flameY = 0;           // center of flame row
 
-    // ── Bright color palette ──
-    const WP_BRIGHT = { red: 0xff5577, blue: 0x55ccff, green: 0x55ee88, orange: 0xffaa33 };
-    const WP_DIM    = { red: 0x883344, blue: 0x335577, green: 0x336644, orange: 0x885522 };
-    const HEART_BRIGHT = 0xee6688;
-    const HEART_DIM    = 0x774455;
+    // ── Spirit flame colors ──
+    const FLAME_BRIGHT = 0x55bbff;   // bright blue spirit fire
+    const FLAME_MID    = 0x3388cc;   // medium blue
+    const FLAME_DIM    = 0x224466;   // dim blue for inactive
+    const FLAME_CORE   = 0xaaddff;   // bright inner core
+    const FLAME_GHOST  = 0x112233;   // lost HP ghost flame
+
+    // Helper: draw a spirit flame shape at (0,0) pointing up
+    const drawFlame = (g, r, h, fillCol, alpha, isActive) => {
+      // Outer glow (soft)
+      if (isActive) {
+        g.fillStyle(fillCol, alpha * 0.2);
+        g.fillEllipse(0, 2, r * 2.4, h * 0.9);
+      }
+      // Main flame body (teardrop: circle bottom + triangle tip)
+      g.fillStyle(fillCol, alpha);
+      g.fillCircle(0, r * 0.3, r);                              // round bottom
+      g.fillTriangle(-r * 0.75, -r * 0.1, r * 0.75, -r * 0.1, 0, -h * 0.52); // flame tip
+      // Inner core (brighter, smaller)
+      const coreCol = isActive ? FLAME_CORE : fillCol;
+      g.fillStyle(coreCol, alpha * 0.6);
+      g.fillCircle(0, r * 0.3, r * 0.55);
+      g.fillTriangle(-r * 0.35, r * 0.05, r * 0.35, r * 0.05, 0, -h * 0.35);
+      // Top highlight spark
+      if (isActive) {
+        g.fillStyle(0xffffff, 0.4);
+        g.fillCircle(0, -h * 0.3, 2);
+      }
+    };
 
     // ════════════════════════════════════════════════════════
-    // WILLPOWER ORBS — reversed so active (index 0) is rightmost
+    // SPIRIT FLAMES — active (index 0) on the RIGHT
     // ════════════════════════════════════════════════════════
-    const orbRowW = hand.length > 0 ? (hand.length - 1) * orbStep + orbD : 0;
-    const orbStartX = barW / 2 - orbR; // rightmost orb at bar's right edge
+    const flameStartX = barW / 2 - flameR;
 
     hand.forEach((cardId, i) => {
-      const wp = typeof wpCardById === 'function' ? wpCardById(cardId) : null;
-      const ox = orbStartX - i * orbStep; // i=0 is rightmost
+      const fx = flameStartX - i * flameStep;
       const isActive = (i === 0);
-      const isSpecial = cardId !== 0;
-      const canActivate = isActive && isSpecial && !wpUsed && team === 'red';
 
-      // Wrap orb in a container so we can bob it
-      const orb = this.add.container(ox, orbY);
-
+      const flame = this.add.container(fx, flameY);
       const g = this.add.graphics();
-      let fillCol, borderCol;
 
-      if (isSpecial) {
-        fillCol = isActive ? (WP_BRIGHT[wp?.color] || 0xddaa44) : (WP_DIM[wp?.color] || 0x554433);
-        borderCol = isActive ? 0xffffff : (WP_BRIGHT[wp?.color] || 0x887766);
-      } else {
-        fillCol = isActive ? HEART_BRIGHT : HEART_DIM;
-        borderCol = isActive ? 0xffccdd : 0x665555;
-      }
+      const col = isActive ? FLAME_BRIGHT : FLAME_DIM;
+      const alpha = isActive ? 1 : (0.5 - i * 0.03);
+      drawFlame(g, flameR, flameH, col, Math.max(0.2, alpha), isActive);
+      flame.add(g);
+      c.add(flame);
 
-      // Orb shadow
-      g.fillStyle(0x000000, 0.3);
-      g.fillCircle(2, 2, orbR);
-      // Main orb
-      g.fillStyle(fillCol, isActive ? 1 : 0.6);
-      g.fillCircle(0, 0, orbR);
-      // Border
-      g.lineStyle(isActive ? 2.5 : 1, borderCol, isActive ? 0.9 : 0.4);
-      g.strokeCircle(0, 0, orbR);
-      // Highlight dot (top-left shine)
-      if (isActive) {
-        g.fillStyle(0xffffff, 0.35);
-        g.fillCircle(-4, -5, 4);
-      }
-      orb.add(g);
-
-      // Emoji inside active orb
-      if (isActive && isSpecial && wp) {
-        orb.add(this.add.text(0, 0, wp.emoji, {
-          fontFamily: 'sans-serif', fontSize: '16px',
-        }).setOrigin(0.5));
-      } else if (isActive && !isSpecial) {
-        orb.add(this.add.text(0, 1, '♥', {
-          fontFamily: 'Georgia, serif', fontSize: '14px', color: '#fff',
-        }).setOrigin(0.5));
-      }
-      c.add(orb);
-
-      // ── Gentle floating bob — each orb at a different rate ──
-      const bobAmt = isActive ? 4 : 2.5;
-      const bobDur = 1200 + i * 180; // staggered so they don't sync
+      // ── Floating bob — each flame at its own rhythm ──
+      const bobAmt = isActive ? 5 : 3;
+      const bobDur = 900 + i * 140;
       this.tweens.add({
-        targets: orb, y: orbY - bobAmt,
+        targets: flame, y: flameY - bobAmt,
         duration: bobDur, yoyo: true, repeat: -1,
-        ease: 'Sine.easeInOut', delay: i * 90,
+        ease: 'Sine.easeInOut', delay: i * 70,
       });
 
-      // Pulsing glow on activatable orb
-      if (canActivate) {
-        const glow = this.add.graphics();
-        glow.fillStyle(WP_BRIGHT[wp?.color] || 0xddaa44, 0.2);
-        glow.fillCircle(0, 0, orbR + 6);
-        orb.add(glow);
-        orb.sendToBack(glow);
-        this.tweens.add({ targets: glow, alpha: 0.45, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      // ── Flicker scale on active flame ──
+      if (isActive) {
+        this.tweens.add({
+          targets: flame, scaleX: 1.08, scaleY: 1.05,
+          duration: 400, yoyo: true, repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
       }
     });
 
-    // Empty orb slots (lost HP)
+    // Ghost flames for lost HP (dim, hollow)
     for (let i = hand.length; i < maxHp; i++) {
-      const ox = orbStartX - i * orbStep;
+      const fx = flameStartX - i * flameStep;
       const g = this.add.graphics();
-      g.fillStyle(0x1a1020, 0.4);
-      g.fillCircle(ox, orbY, orbR);
-      g.lineStyle(1, 0x332233, 0.3);
-      g.strokeCircle(ox, orbY, orbR);
+      g.fillStyle(FLAME_GHOST, 0.3);
+      g.fillCircle(fx, flameY + flameR * 0.3, flameR * 0.7);
+      g.fillTriangle(fx - flameR * 0.4, flameY, fx + flameR * 0.4, flameY, fx, flameY - flameH * 0.3);
       c.add(g);
     }
 
     // ════════════════════════════════════════════════════════
-    // ACTIVE CARD LABEL — right-aligned, 16pt, clear
+    // ACTIVE CARD LABEL — above the active flame
     // ════════════════════════════════════════════════════════
     if (hand.length > 0) {
       const activeId = hand[0];
       const activeCard = typeof wpCardById === 'function' ? wpCardById(activeId) : null;
       if (activeCard) {
         const isHeart = activeId === 0;
-        const labelText = isHeart ? '♥ Heart' : `${activeCard.emoji} ${activeCard.name}`;
-        const descText = isHeart ? 'No Effect' : activeCard.desc;
-        const labelCol = isHeart ? '#ee8899' : '#ffffff';
-        const descCol = wpUsed ? '#666677' : '#bbbbcc';
-        // Card name
-        c.add(this.add.text(orbStartX, orbY - orbR - 6, labelText, {
-          fontFamily: 'Cinzel, Georgia, serif', fontSize: '16px', color: labelCol, fontStyle: 'bold',
+        const labelText = isHeart ? '♥ Spirit' : `${activeCard.emoji} ${activeCard.name}`;
+        const descText = isHeart ? '' : activeCard.desc;
+        const labelCol = isHeart ? '#88bbdd' : '#ffffff';
+        // Card name above flames
+        c.add(this.add.text(flameStartX, flameY - flameH * 0.55 - 6, labelText, {
+          fontFamily: 'Cinzel, Georgia, serif', fontSize: '14px', color: labelCol, fontStyle: 'bold',
         }).setOrigin(1, 1));
-        // Description
-        c.add(this.add.text(orbStartX, orbY + orbR + 8, descText, {
-          fontFamily: 'Georgia, serif', fontSize: '13px', color: descCol,
-          wordWrap: { width: barW * 0.6 }, align: 'right',
-        }).setOrigin(1, 0));
+        // Description (only for non-hearts)
+        if (descText) {
+          c.add(this.add.text(flameStartX, flameY + flameR + 6, descText, {
+            fontFamily: 'Georgia, serif', fontSize: '12px', color: wpUsed ? '#556666' : '#99bbcc',
+            wordWrap: { width: barW * 0.6 }, align: 'right',
+          }).setOrigin(1, 0));
+        }
       }
     }
 
     // ════════════════════════════════════════════════════════
-    // HEALTH BAR — polished, below orbs
+    // HEALTH BAR — polished, below flames
     // ════════════════════════════════════════════════════════
-    const hbY = orbY + orbR + 28;
+    const hbY = flameY + flameR + 20;
     // Track
     const hpTrack = this.add.graphics();
     hpTrack.fillStyle(0x0c0c18, 0.9);
@@ -562,15 +547,15 @@ class BattleScene extends Phaser.Scene {
     // ════════════════════════════════════════════════════════
     // LABEL
     // ════════════════════════════════════════════════════════
-    const leftOrbX = orbStartX - (Math.max(hand.length, maxHp) - 1) * orbStep;
-    c.add(this.add.text(leftOrbX - orbR, orbY - orbR - 6, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '✦ WILLPOWER', {
+    const leftFlameX = flameStartX - (Math.max(hand.length, maxHp) - 1) * flameStep;
+    c.add(this.add.text(leftFlameX - flameR, flameY - flameH * 0.55 - 6, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '✦ WILLPOWER', {
       fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px',
       color: isAllHearts || hand.length === 0 ? '#cc6677' : BC.GOLD, letterSpacing: 2,
     }).setOrigin(0, 1));
 
     // ── Click active orb to activate (player only) ──
     if (team === 'red' && hand.length > 0) {
-      const wpZone = this.add.zone(orbStartX, orbY, orbD + 10, orbD + 10)
+      const wpZone = this.add.zone(flameStartX, flameY, flameR * 2 + 10, flameH + 10)
         .setOrigin(0.5).setInteractive({ useHandCursor: true });
       wpZone.on('pointerdown', () => {
         const topId = ghost.willpower && ghost.willpower[0];
