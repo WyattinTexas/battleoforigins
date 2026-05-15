@@ -521,6 +521,7 @@ class WorldScene extends Phaser.Scene {
     this.yKey = this.input.keyboard.addKey('Y');
     this.fKey = this.input.keyboard.addKey('F');
     this.bKey = this.input.keyboard.addKey('B');
+    this.gKey = this.input.keyboard.addKey('G'); // Farm hoe tool
 
     // ── HUD ──
     // this.buildHUD(); // DISABLED — DOM #hud-overlay handles all HUD elements
@@ -1352,12 +1353,40 @@ class WorldScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.bKey)) {
       this._showBuildMenu();
     }
+    // G key: toggle farm hoe mode (till soil for planting)
+    if (Phaser.Input.Keyboard.JustDown(this.gKey)) {
+      this._toggleFarmMode();
+    }
 
     // Tick buffs (slow — timer-based internally)
     if (slowTick && typeof tickBuffs === 'function') tickBuffs();
     // Garden growth + rendering (slow — visual)
     if (slowTick && typeof tickGarden === 'function') tickGarden();
     if (slowTick && typeof renderGardenPlants === 'function') renderGardenPlants(this);
+    // Farm system: soil + crops + season (slow — visual)
+    if (slowTick && typeof tickFarm === 'function') {
+      const farmEvents = tickFarm();
+      // Show harvest notifications
+      if (farmEvents.harvested) {
+        for (const h of farmEvents.harvested) {
+          if (typeof notify === 'function') notify('+' + h.amount + ' ' + h.resourceName + ' ' + (h.quality ? h.quality.star : ''));
+        }
+      }
+      // Show stage change particles
+      if (farmEvents.stageChanges) {
+        for (const sc of farmEvents.stageChanges) {
+          if (sc.newStage === 4 && typeof notify === 'function') notify(sc.name + ' is ready to harvest!');
+        }
+      }
+      // Show frost kills
+      if (farmEvents.killed) {
+        for (const k of farmEvents.killed) {
+          if (typeof notify === 'function') notify(k.name + ' withered from frost! \u2744\uFE0F');
+        }
+      }
+    }
+    if (slowTick && typeof renderFarm === 'function') renderFarm(this);
+    if (slowTick && typeof renderSeasonHUD === 'function') renderSeasonHUD(this);
     // Phaser HUD updates (slow — text rendering is expensive)
     if (slowTick) {
       if (this._actionButtons && this._actionButtons.length > 0) this._updateActionBar();
@@ -5069,7 +5098,7 @@ class WorldScene extends Phaser.Scene {
 
     // Time
     const time = document.getElementById('hud-time');
-    if (time && typeof getTimeOfDay === 'function') time.textContent = getTimeOfDay();
+    if (time && typeof getTimeOfDay === 'function') { const tod = getTimeOfDay(); time.textContent = typeof tod === 'string' ? tod : (tod?.phase || ''); }
 
     // Region — display in a dedicated element inside hud-top-right
     // (Do NOT set textContent on hud-top-right — it destroys the GUIDE button and time)
