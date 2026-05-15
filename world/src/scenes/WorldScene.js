@@ -4062,18 +4062,12 @@ class WorldScene extends Phaser.Scene {
 
     const scene = this;
 
-    // Freeze the player briefly
-    if (scene.player) {
-      if (scene.player.setVelocity) scene.player.setVelocity(0, 0);
-      scene.player._eventFrozen = true;
-    }
-
+    // Don't freeze the player — let them move while dialogue plays
     // Elder Frost: one line, then spawn the tutorial enemy
     const afterComm = () => {
       scene.spawnTutorialEnemy();
       G.tutorialStep = 3;
       scene._pendingIntroFirstBattle = true;
-      if (scene.player) scene.player._eventFrozen = false;
 
       // Arrow pointing to the enemy
       const nearestEnemy = scene.findNearestEnemy();
