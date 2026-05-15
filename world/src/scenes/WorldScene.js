@@ -521,7 +521,7 @@ class WorldScene extends Phaser.Scene {
     this.yKey = this.input.keyboard.addKey('Y');
     this.fKey = this.input.keyboard.addKey('F');
     this.bKey = this.input.keyboard.addKey('B');
-    this.gKey = this.input.keyboard.addKey('G'); // Farm hoe tool
+    // G key removed — farm uses contextual Putt-Putt style buttons instead
 
     // ── HUD ──
     // this.buildHUD(); // DISABLED — DOM #hud-overlay handles all HUD elements
@@ -1367,11 +1367,6 @@ class WorldScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.bKey)) {
       this._showBuildMenu();
     }
-    // G key: toggle farm hoe mode (till soil for planting)
-    if (Phaser.Input.Keyboard.JustDown(this.gKey)) {
-      this._toggleFarmMode();
-    }
-
     // Tick buffs (slow — timer-based internally)
     if (slowTick && typeof tickBuffs === 'function') tickBuffs();
     // Garden growth + rendering (slow — visual)
@@ -1401,6 +1396,8 @@ class WorldScene extends Phaser.Scene {
     }
     if (slowTick && typeof renderFarm === 'function') renderFarm(this);
     if (slowTick && typeof renderSeasonHUD === 'function') renderSeasonHUD(this);
+    // Putt-Putt farm buttons — auto-show/hide based on player position
+    if (slowTick) this._updateFarmButtons();
     // Phaser HUD updates (slow — text rendering is expensive)
     if (slowTick) {
       if (this._actionButtons && this._actionButtons.length > 0) this._updateActionBar();
@@ -3784,69 +3781,14 @@ class WorldScene extends Phaser.Scene {
 
     const scene = this;
 
-    // Step 1: Freeze the player
+    // Freeze the player
     if (scene.player) {
       if (scene.player.setVelocity) scene.player.setVelocity(0, 0);
       scene.player._eventFrozen = true;
     }
 
-    // Hide the Phaser canvas + HUD during cinematic so the overlay is visible
-    const phaserCanvas = document.querySelector('canvas');
-    const hudOverlay = document.getElementById('hud-overlay');
-    if (phaserCanvas) phaserCanvas.style.visibility = 'hidden';
-    if (hudOverlay) hudOverlay.style.visibility = 'hidden';
-
-    // Step 2: Dark cinematic overlay with dramatic text
-    const overlay = document.createElement('div');
-    overlay.id = 'cinematicIntroOverlay';
-    const os = overlay.style;
-    os.position = 'fixed';
-    os.top = '0'; os.left = '0'; os.width = '100vw'; os.height = '100vh';
-    os.zIndex = '99999';
-    os.background = 'rgba(0,0,0,0.95)';
-    os.display = 'flex'; os.alignItems = 'center'; os.justifyContent = 'center'; os.flexDirection = 'column';
-    os.opacity = '1';
-    os.transition = 'opacity 0.8s ease';
-    document.body.appendChild(overlay);
-
-    const textEl = document.createElement('div');
-    const ts = textEl.style;
-    ts.fontFamily = 'monospace';
-    ts.fontSize = '18px'; ts.color = '#ccd8e8'; ts.textAlign = 'center';
-    ts.lineHeight = '2.2'; ts.textShadow = '0 0 20px rgba(120,160,255,0.4)';
-    ts.opacity = '0'; ts.transition = 'opacity 1s ease';
-    overlay.appendChild(textEl);
-
-    // Line 1
-    setTimeout(() => {
-      textEl.textContent = 'The Overworld has been quiet...';
-      textEl.style.opacity = '1';
-    }, 600);
-
-    // Line 2
-    setTimeout(() => {
-      textEl.style.opacity = '0';
-    }, 3000);
-
-    setTimeout(() => {
-      textEl.textContent = '...until now.';
-      textEl.style.opacity = '1';
-    }, 3600);
-
-    // Fade out overlay
-    setTimeout(() => {
-      textEl.style.opacity = '0';
-      overlay.style.opacity = '0';
-    }, 5200);
-
-    setTimeout(() => {
-      overlay.remove();
-      // Restore canvas + HUD visibility
-      if (phaserCanvas) phaserCanvas.style.visibility = '';
-      if (hudOverlay) hudOverlay.style.visibility = '';
-
-      // Step 3: Valkin comm
-      if (typeof StarfoxComm !== 'undefined') {
+    // Text crawl already played in BootScene — go straight to Valkin comm
+    if (typeof StarfoxComm !== 'undefined') {
         StarfoxComm.play([
           { char: 'valkin', text: 'I sense a new presence in my domain... interesting.' },
           { char: 'valkin', text: 'Come. Let us see what you are made of.' },
@@ -3889,7 +3831,6 @@ class WorldScene extends Phaser.Scene {
         scene._pendingIntroFirstBattle = true;
         scene.spawnTutorialEnemy();
       }
-    }, 6000);
   }
 
   spawnTutorialEnemy() {
@@ -4827,12 +4768,6 @@ class WorldScene extends Phaser.Scene {
     if (!this._ePressed || this._eConsumed) return;
     if (this.panels.isOpen() || (this.comm && this.comm.isActive)) return;
 
-    // Check well interaction first
-    if (this._checkWellInteraction()) {
-      this._eConsumed = true;
-      return;
-    }
-
     const nearby = getStructuresNear(Math.floor(G.x), Math.floor(G.y), 2);
     for (const s of nearby) {
       if (s.type === 'garden') {
@@ -5003,185 +4938,320 @@ class WorldScene extends Phaser.Scene {
   }
 
   // ══════════════════════════════════════════════════════
-  //  FARM MODE (G key) — Stardew-style soil tilling + planting
+  //  FARM BUTTONS — Putt-Putt style contextual UI
+  //  Big, colorful, friendly buttons that auto-appear
+  //  when you walk near your farm. No hotkeys needed!
   // ══════════════════════════════════════════════════════
 
-  _toggleFarmMode() {
+  _initFarmButtons() {
+    let bar = document.getElementById('farm-buttons');
+    if (bar) bar.remove();
+
+    // Inject pulse animation
+    if (!document.getElementById('farm-btn-style')) {
+      const style = document.createElement('style');
+      style.id = 'farm-btn-style';
+      style.textContent = '@keyframes farmPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}';
+      document.head.appendChild(style);
+    }
+
+    bar = document.createElement('div');
+    bar.id = 'farm-buttons';
+    bar.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:5000;pointer-events:auto;transition:opacity 0.3s ease;opacity:0;';
+    document.body.appendChild(bar);
+    this._farmBar = bar;
+    this._farmBtnsVisible = false;
+  }
+
+  _updateFarmButtons() {
+    if (!this._farmBar) this._initFarmButtons();
     if (typeof isApprentice !== 'function' || !isApprentice('cultivator')) {
-      if (typeof notify === 'function') notify('Requires Cultivator class to farm!');
+      this._hideFarmButtons();
+      return;
+    }
+    if (G.inBattle || (this.panels && this.panels.isOpen())) {
+      this._hideFarmButtons();
       return;
     }
 
-    if (this._farmMode) {
-      // Exit farm mode — clean up listeners
-      this._farmMode = false;
-      if (this._farmGhost) { this._farmGhost.destroy(); this._farmGhost = null; }
-      if (this._farmModeLabel) { this._farmModeLabel.destroy(); this._farmModeLabel = null; }
-      if (this._farmPointerMove) { this.input.off('pointermove', this._farmPointerMove); this._farmPointerMove = null; }
-      if (this._farmPointerDown) { this.input.off('pointerdown', this._farmPointerDown); this._farmPointerDown = null; }
-      if (typeof notify === 'function') notify('Farm mode off');
-      return;
+    const ptx = Math.floor(G.x);
+    const pty = Math.floor(G.y);
+
+    // Scan area around player for farm context
+    let nearGarden = false;
+    let tillableTiles = [];
+    let emptyPlots = [];
+    let waterableCrops = [];
+    let harvestableCrops = [];
+    let growingCrops = [];
+    let nearWell = false;
+
+    if (typeof getStructuresNear === 'function') {
+      const nearby = getStructuresNear(ptx, pty, 3);
+      nearGarden = nearby.some(s => s.type === 'garden' && s.owner === G.playerId);
+      nearWell = nearby.some(s => s.type === 'well' && s.owner === G.playerId);
     }
 
-    // Enter farm mode — show hoe cursor
-    this._farmMode = true;
-    this._farmAction = 'till'; // default action
-    if (typeof notify === 'function') notify('Farm mode ON — Click to till soil. Press G again to exit.');
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -2; dy <= 2; dy++) {
+        const tx = ptx + dx;
+        const ty = pty + dy;
 
-    // Mode label
-    this._farmModeLabel = this.add.text(this.cameras.main.width / 2, 80,
-      '\uD83C\uDF3F Farm Mode: TILL', {
-      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold',
-      color: '#88ff88', stroke: '#000000', strokeThickness: 3,
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
-
-    // Ghost highlight that follows pointer
-    this._farmGhost = this.add.rectangle(0, 0, 32, 32, 0x88cc44, 0.3)
-      .setStrokeStyle(2, 0x88cc44).setDepth(10).setVisible(false);
-
-    // Pointer move — snap ghost to grid
-    this._farmPointerMove = (pointer) => {
-      if (!this._farmMode) return;
-      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      const tx = Math.floor(worldPoint.x / 32);
-      const ty = Math.floor(worldPoint.y / 32);
-      this._farmGhost.setPosition(tx * 32 + 16, ty * 32 + 16).setVisible(true);
-
-      // Color code: green = can till, red = can't, blue = has crop
-      if (typeof isSoilTilled === 'function' && isSoilTilled(tx, ty)) {
-        this._farmGhost.setFillStyle(0x4488cc, 0.3).setStrokeStyle(2, 0x4488cc); // blue = planted
-      } else {
-        this._farmGhost.setFillStyle(0x88cc44, 0.3).setStrokeStyle(2, 0x88cc44); // green = tillable
-      }
-    };
-    this.input.on('pointermove', this._farmPointerMove);
-
-    // Click — perform farm action
-    this._farmPointerDown = (pointer) => {
-      if (!this._farmMode) return;
-      const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-      const tx = Math.floor(worldPoint.x / 32);
-      const ty = Math.floor(worldPoint.y / 32);
-
-      if (typeof isSoilTilled === 'function' && isSoilTilled(tx, ty)) {
-        // Soil already tilled — show plant menu or water/harvest
-        this._showFarmTileMenu(tx, ty);
-      } else {
-        // Till the soil
-        if (typeof tillSoil === 'function') {
-          const result = tillSoil(tx, ty);
-          if (result.ok) {
-            if (typeof playTillEffect === 'function') playTillEffect(this, tx, ty);
-            if (typeof GameAudio !== 'undefined' && GameAudio.collect) GameAudio.collect();
-            // Re-render farm
-            if (typeof renderFarm === 'function') renderFarm(this);
-          } else {
-            if (typeof notify === 'function') notify(result.reason);
+        if (typeof isSoilTilled === 'function' && isSoilTilled(tx, ty)) {
+          const status = typeof getCropStatus === 'function' ? getCropStatus(tx, ty) : null;
+          if (!status) emptyPlots.push({ tx, ty });
+          else if (status.ready) harvestableCrops.push({ tx, ty, status });
+          else if (!status.watered) waterableCrops.push({ tx, ty, status });
+          else growingCrops.push({ tx, ty, status });
+        } else if (nearGarden) {
+          const tillable = new Set([0, 9, 10, 11, 17, 19, 20]);
+          if (typeof worldMap !== 'undefined' && worldMap[ty] && tillable.has(worldMap[ty][tx])) {
+            if (typeof isNearGardenStructure === 'function' && isNearGardenStructure(tx, ty)) {
+              tillableTiles.push({ tx, ty });
+            }
           }
         }
       }
-    };
-    this.input.on('pointerdown', this._farmPointerDown);
+    }
+
+    // Build contextual buttons
+    const buttons = [];
+
+    if (harvestableCrops.length > 0) {
+      buttons.push({
+        icon: '\u2728', label: 'Harvest!',
+        color: '#ffcc00', bg: 'linear-gradient(180deg,#4a3a00,#2a2000)', border: '#ffdd44', pulse: true,
+        action: () => this._farmHarvestAll(harvestableCrops),
+      });
+    }
+
+    if (waterableCrops.length > 0) {
+      buttons.push({
+        icon: '\uD83D\uDCA7', label: 'Water',
+        color: '#66ccff', bg: 'linear-gradient(180deg,#003355,#001a33)', border: '#44aaee',
+        action: () => this._farmWaterAll(waterableCrops),
+      });
+    }
+
+    if (nearWell && waterableCrops.length > 0) {
+      buttons.push({
+        icon: '\uD83E\uDEA3', label: 'Use Well',
+        color: '#88ddff', bg: 'linear-gradient(180deg,#004466,#002233)', border: '#55bbee',
+        action: () => this._farmUseWell(),
+      });
+    }
+
+    if (emptyPlots.length > 0) {
+      buttons.push({
+        icon: '\uD83C\uDF31', label: 'Plant!',
+        color: '#88ff88', bg: 'linear-gradient(180deg,#1a4400,#0a2200)', border: '#44cc44',
+        action: () => this._showSeedSelectPanel(emptyPlots[0].tx, emptyPlots[0].ty),
+      });
+    }
+
+    if (tillableTiles.length > 0 && nearGarden) {
+      const soilCount = typeof getSoilCount === 'function' ? getSoilCount() : 0;
+      const soilMax = typeof getMaxSoilTiles === 'function' ? getMaxSoilTiles() : 16;
+      buttons.push({
+        icon: '\u26CF\uFE0F', label: 'Dig! (' + soilCount + '/' + soilMax + ')',
+        color: '#ccaa66', bg: 'linear-gradient(180deg,#3a2a00,#1a1200)', border: '#aa8844',
+        action: () => this._farmTillNearby(tillableTiles),
+      });
+    }
+
+    if (growingCrops.length > 0 && buttons.length === 0) {
+      const nearest = growingCrops[0].status;
+      buttons.push({
+        icon: '\uD83C\uDF3F', label: nearest.name + ' ' + nearest.timeRemainingStr,
+        color: '#88aa88', bg: 'linear-gradient(180deg,#1a2a1a,#0a150a)', border: '#446644', passive: true,
+        action: () => {},
+      });
+    }
+
+    if (buttons.length === 0) {
+      this._hideFarmButtons();
+      return;
+    }
+
+    // Render the big Putt-Putt buttons
+    this._farmBar.innerHTML = '';
+    for (const btn of buttons) {
+      const el = document.createElement('button');
+      el.style.cssText = [
+        'font-family:Georgia,serif',
+        'font-size:15px',
+        'font-weight:bold',
+        'color:' + btn.color,
+        'background:' + btn.bg,
+        'border:3px solid ' + btn.border,
+        'border-radius:20px',
+        'padding:12px 24px',
+        'cursor:pointer',
+        'display:flex',
+        'align-items:center',
+        'gap:10px',
+        'box-shadow:0 6px 20px rgba(0,0,0,0.6),inset 0 2px 0 rgba(255,255,255,0.1)',
+        'transition:transform 0.12s ease,box-shadow 0.12s ease',
+        'white-space:nowrap',
+        'user-select:none',
+        '-webkit-user-select:none',
+        'outline:none',
+        btn.pulse ? 'animation:farmPulse 1.2s ease-in-out infinite' : '',
+      ].join(';');
+
+      el.innerHTML = '<span style="font-size:26px;line-height:1">' + btn.icon + '</span><span>' + btn.label + '</span>';
+
+      if (!btn.passive) {
+        el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.12)'; el.style.boxShadow = '0 8px 28px rgba(0,0,0,0.7),inset 0 2px 0 rgba(255,255,255,0.15)'; });
+        el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.6),inset 0 2px 0 rgba(255,255,255,0.1)'; });
+        el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); btn.action(); });
+      } else {
+        el.style.opacity = '0.6';
+        el.style.cursor = 'default';
+      }
+
+      this._farmBar.appendChild(el);
+    }
+
+    this._farmBar.style.opacity = '1';
+    this._farmBtnsVisible = true;
   }
 
-  _showFarmTileMenu(tileX, tileY) {
-    // Show a quick menu for a tilled tile: plant seed, water, or harvest
-    const cropStatus = typeof getCropStatus === 'function' ? getCropStatus(tileX, tileY) : null;
+  _hideFarmButtons() {
+    if (this._farmBar && this._farmBtnsVisible) {
+      this._farmBar.style.opacity = '0';
+      this._farmBtnsVisible = false;
+    }
+  }
 
-    if (cropStatus && cropStatus.ready) {
-      // Harvest!
-      if (typeof farmHarvest === 'function') {
-        const result = farmHarvest(tileX, tileY);
-        if (result) {
-          if (typeof playFarmHarvestEffect === 'function') playFarmHarvestEffect(this, tileX, tileY, result);
-          if (typeof notify === 'function') notify('+' + result.amount + ' ' + result.resourceName + ' ' + (result.quality ? result.quality.star : ''));
-          if (typeof GameAudio !== 'undefined' && GameAudio.collect) GameAudio.collect();
+  // ── Farm Actions (called by the big buttons) ──────────
+
+  _farmTillNearby(tiles) {
+    if (typeof tillSoil !== 'function') return;
+    let count = 0;
+    for (const t of tiles) {
+      const result = tillSoil(t.tx, t.ty);
+      if (result.ok) {
+        if (typeof playTillEffect === 'function') playTillEffect(this, t.tx, t.ty);
+        count++;
+        if (count >= 4) break; // till up to 4 tiles per tap
+      }
+    }
+    if (count > 0) {
+      if (typeof notify === 'function') notify('Tilled ' + count + ' tiles!');
+      if (typeof GameAudio !== 'undefined' && GameAudio.collect) GameAudio.collect();
+      if (typeof renderFarm === 'function') renderFarm(this);
+    }
+  }
+
+  _farmWaterAll(crops) {
+    if (typeof farmWater !== 'function') return;
+    let count = 0;
+    for (const c of crops) {
+      farmWater(c.tx, c.ty);
+      if (typeof playWaterEffect === 'function') playWaterEffect(this, c.tx, c.ty);
+      count++;
+    }
+    if (count > 0) {
+      if (typeof notify === 'function') notify('Watered ' + count + ' crops!');
+      if (typeof GameAudio !== 'undefined' && GameAudio.collect) GameAudio.collect();
+      if (typeof renderFarm === 'function') renderFarm(this);
+    }
+  }
+
+  _farmHarvestAll(crops) {
+    if (typeof farmHarvest !== 'function') return;
+    let total = 0;
+    for (const c of crops) {
+      const result = farmHarvest(c.tx, c.ty);
+      if (result) {
+        if (typeof playFarmHarvestEffect === 'function') playFarmHarvestEffect(this, c.tx, c.ty, result);
+        total++;
+      }
+    }
+    if (total > 0) {
+      if (typeof notify === 'function') notify('Harvested ' + total + ' crops!');
+      if (typeof GameAudio !== 'undefined' && GameAudio.victory) GameAudio.victory();
+      if (typeof renderFarm === 'function') renderFarm(this);
+    }
+  }
+
+  _farmUseWell() {
+    if (typeof getStructuresNear !== 'function' || typeof farmWaterArea !== 'function') return;
+    const nearby = getStructuresNear(Math.floor(G.x), Math.floor(G.y), 3);
+    for (const s of nearby) {
+      if (s.type === 'well' && s.owner === G.playerId) {
+        const count = farmWaterArea(s.x + 1, s.y + 1, 5);
+        if (count > 0) {
+          if (typeof playWellWaterEffect === 'function') playWellWaterEffect(this, s.x + 1, s.y + 1, 5);
+          if (typeof notify === 'function') notify('Well watered ' + count + ' crops!');
           if (typeof renderFarm === 'function') renderFarm(this);
         }
+        return;
       }
-      return;
     }
-
-    if (cropStatus && !cropStatus.ready) {
-      // Water if not watered
-      if (!cropStatus.watered && typeof farmWater === 'function') {
-        farmWater(tileX, tileY);
-        if (typeof playWaterEffect === 'function') playWaterEffect(this, tileX, tileY);
-        if (typeof notify === 'function') notify('Watered ' + cropStatus.name + '! Growth speed doubled.');
-        if (typeof renderFarm === 'function') renderFarm(this);
-      } else {
-        if (typeof notify === 'function') notify(cropStatus.name + ' — ' + cropStatus.stageName + ' (' + cropStatus.timeRemainingStr + ')');
-      }
-      return;
-    }
-
-    // Empty tilled soil — show seed selection panel
-    this._showSeedSelectPanel(tileX, tileY);
   }
 
   _showSeedSelectPanel(tileX, tileY) {
     if (typeof getAvailableSeeds !== 'function') return;
     const seeds = getAvailableSeeds();
     if (seeds.length === 0) {
-      if (typeof notify === 'function') notify('No seeds discovered yet! Explore zones to find seeds.');
+      if (typeof notify === 'function') notify('No seeds yet! Explore and battle to discover seeds!');
       return;
     }
 
     GameAudio.menuOpen();
-    this.panels.open('\uD83C\uDF31 Plant a Seed', (container, w, h) => {
+    this.panels.open('\uD83C\uDF31 Pick a Seed!', (container, w, h) => {
       let y = 8;
 
       // Season indicator
       if (typeof getSeason === 'function') {
         const season = getSeason();
-        container.add(this.add.text(w / 2, y, season.icon + ' ' + season.name + ' — ' + Math.round(season.progress * 100) + '%', {
-          fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: season.color,
+        container.add(this.add.text(w / 2, y, season.icon + ' ' + season.name, {
+          fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: season.color,
         }).setOrigin(0.5).setScrollFactor(0));
-        y += 20;
+        y += 24;
       }
 
-      // Catalog stats
+      // Catalog progress
       if (typeof getSeedCatalogStats === 'function') {
         const stats = getSeedCatalogStats();
-        container.add(this.add.text(w / 2, y, 'Seeds: ' + stats.discovered + '/' + stats.total + ' (' + stats.pct + '%)', {
-          fontSize: '10px', fontFamily: 'monospace', color: '#888888',
+        container.add(this.add.text(w / 2, y, stats.discovered + ' of ' + stats.total + ' seeds found!', {
+          fontSize: '10px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#aaaaaa',
         }).setOrigin(0.5).setScrollFactor(0));
-        y += 18;
+        y += 22;
       }
 
-      // Seed list
+      // Big seed cards
       for (const seed of seeds) {
         const growMin = Math.round(seed.growTime / 60000);
-        const bonusText = seed.seasonBonus ? ' (' + seed.seasonBonus + ' +50%)' : '';
-        const zoneText = seed.zone === 'any' ? '' : ' [' + seed.zone.replace(/_/g, ' ') + ']';
+        const hexColor = '#' + (seed.color & 0xffffff).toString(16).padStart(6, '0');
 
-        const row = this.add.rectangle(w / 2, y + 14, w - 20, 28, 0x1a2a1a, 0.9)
-          .setStrokeStyle(1, seed.color).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+        const row = this.add.rectangle(w / 2, y + 24, w - 16, 46, 0x1a2a1a, 0.92)
+          .setStrokeStyle(2, seed.color).setInteractive({ useHandCursor: true }).setScrollFactor(0);
         container.add(row);
 
         // Color dot
-        container.add(this.add.circle(18, y + 14, 4, seed.color, 0.9).setScrollFactor(0));
+        container.add(this.add.circle(24, y + 24, 9, seed.color, 0.9).setScrollFactor(0));
 
-        // Name
-        container.add(this.add.text(28, y + 14, seed.name, {
-          fontSize: '11px', fontFamily: 'Georgia, serif', fontStyle: 'bold',
-          color: '#' + (seed.color & 0xffffff).toString(16).padStart(6, '0'),
+        // Name (big)
+        container.add(this.add.text(42, y + 17, seed.name, {
+          fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: hexColor,
         }).setOrigin(0, 0.5).setScrollFactor(0));
 
-        // Time + zone
-        container.add(this.add.text(w - 14, y + 14, growMin + 'm' + bonusText + zoneText, {
-          fontSize: '8px', fontFamily: 'monospace', color: '#999999',
-        }).setOrigin(1, 0.5).setScrollFactor(0));
+        // Grow time
+        const bonus = seed.seasonBonus ? ' (' + seed.seasonBonus + ' boost!)' : '';
+        container.add(this.add.text(42, y + 33, growMin + ' min' + bonus, {
+          fontSize: '10px', fontFamily: 'Georgia, serif', color: '#888888',
+        }).setOrigin(0, 0.5).setScrollFactor(0));
 
-        // Rare badge
+        // Rare star
         if (seed.rare) {
-          container.add(this.add.text(w - 14, y + 4, '\u2605', {
-            fontSize: '8px', color: '#ffcc00',
-          }).setOrigin(1, 0.5).setScrollFactor(0));
+          container.add(this.add.text(w - 20, y + 24, '\u2B50', { fontSize: '16px' }).setOrigin(0.5).setScrollFactor(0));
         }
 
-        row.on('pointerover', () => row.setFillStyle(0x2a3a2a, 0.95));
-        row.on('pointerout', () => row.setFillStyle(0x1a2a1a, 0.9));
+        row.on('pointerover', () => { row.setFillStyle(0x2a4a2a, 0.95); row.setStrokeStyle(3, seed.color); });
+        row.on('pointerout', () => { row.setFillStyle(0x1a2a1a, 0.92); row.setStrokeStyle(2, seed.color); });
         row.on('pointerdown', () => {
           if (typeof farmPlant === 'function') {
             const result = farmPlant(tileX, tileY, seed.cropType);
@@ -5196,35 +5266,9 @@ class WorldScene extends Phaser.Scene {
           }
         });
 
-        y += 32;
+        y += 52;
       }
-    }, { width: 340, height: Math.min(420, 60 + seeds.length * 32) });
-  }
-
-  // ══════════════════════════════════════════════════════
-  //  WELL INTERACTION (E key near well)
-  // ══════════════════════════════════════════════════════
-
-  _checkWellInteraction() {
-    if (typeof getStructuresNear !== 'function') return false;
-    const nearby = getStructuresNear(Math.floor(G.x), Math.floor(G.y), 2);
-    for (const s of nearby) {
-      if (s.type === 'well' && s.owner === G.playerId) {
-        // Water all crops in radius
-        if (typeof farmWaterArea === 'function') {
-          const count = farmWaterArea(s.x + 1, s.y + 1, 5);
-          if (count > 0) {
-            if (typeof playWellWaterEffect === 'function') playWellWaterEffect(this, s.x + 1, s.y + 1, 5);
-            if (typeof notify === 'function') notify('Well watered ' + count + ' crops!');
-            if (typeof renderFarm === 'function') renderFarm(this);
-          } else {
-            if (typeof notify === 'function') notify('No unwatered crops nearby.');
-          }
-        }
-        return true;
-      }
-    }
-    return false;
+    }, { width: 320, height: Math.min(480, 60 + seeds.length * 52) });
   }
 
   // ══════════════════════════════════════════════════════
@@ -5332,7 +5376,6 @@ class WorldScene extends Phaser.Scene {
       { id: 'fortune', icon: '★', name: 'Fortune', color: '#44bbff', check: () => typeof canGiveFortune === 'function' && canGiveFortune(), action: () => this._useFortuneFromBar() },
       { id: 'build', icon: '⚒', name: 'Build', color: '#dd9933', check: () => typeof isApprentice === 'function' && isApprentice('artisan'), action: () => this._showBuildMenu() },
       { id: 'garden', icon: '❀', name: 'Garden', color: '#66cc66', check: () => typeof isApprentice === 'function' && isApprentice('cultivator'), action: () => this._placementMode && this._placementMode('garden') },
-      { id: 'farm', icon: '\uD83C\uDF3F', name: 'Farm', color: '#88cc44', check: () => typeof isApprentice === 'function' && isApprentice('cultivator'), action: () => this._toggleFarmMode() },
       { id: 'dna', icon: '⚗', name: 'DNA', color: '#aa55ff', check: () => typeof isApprentice === 'function' && isApprentice('scientist'), action: () => {} },
       { id: 'recruit', icon: '♥', name: 'Recruit', color: '#44dd66', check: () => typeof isApprentice === 'function' && isApprentice('trainer'), action: () => {} },
     ];
