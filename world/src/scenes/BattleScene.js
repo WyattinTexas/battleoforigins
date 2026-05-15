@@ -347,7 +347,9 @@ class BattleScene extends Phaser.Scene {
     if (team === 'red') this._pSideline = s; else this._eSideline = s;
   }
 
-  // ── WILLPOWER + RESOURCES AREA ──────────────────────────
+  // ── WILLPOWER CARDS — visual hand row ──────────────────
+  // New players (all Hearts): looks like simple health cards.
+  // Mixed decks: cards reveal their type, top card glows if activatable.
   _buildWPArea(team, cx, cy) {
     const c = this.add.container(cx, cy);
     const tKey = team === 'red' ? this._pt : this._et;
@@ -355,60 +357,135 @@ class BattleScene extends Phaser.Scene {
     const ghost = activeGhost(t);
     if (!ghost) return c;
 
-    // Willpower card icon
-    const topCard = ghost.willpower && ghost.willpower.length > 0 ? (typeof wpCardById === 'function' ? wpCardById(ghost.willpower[0]) : null) : null;
-    const wpIcon = this.add.graphics();
-    wpIcon.fillStyle(0x1a2040, 0.9);
-    wpIcon.fillRoundedRect(-22, -28, 44, 56, 6);
-    wpIcon.lineStyle(1, BC.GOLD_H, 0.6);
-    wpIcon.strokeRoundedRect(-22, -28, 44, 56, 6);
-    c.add(wpIcon);
-    c.add(this.add.text(0, -4, topCard ? topCard.emoji : '♥', {
-      fontFamily: 'sans-serif', fontSize: '22px',
-    }).setOrigin(0.5));
-    if (topCard) {
-      c.add(this.add.text(0, 18, topCard.name.toUpperCase(), {
-        fontFamily: 'Courier New, monospace', fontSize: '6px', color: BC.GOLD,
-      }).setOrigin(0.5));
+    const hand = ghost.willpower || [];
+    const isAllHearts = hand.length > 0 && hand.every(id => id === 0);
+    const wpUsed = B.wpUsedThisTurn && B.wpUsedThisTurn[tKey];
+
+    // ── Card sizing — BIG, bold, impossible to miss ──
+    const maxCards = Math.max(hand.length, 1);
+    const cardW = maxCards <= 6 ? 52 : maxCards <= 9 ? 44 : maxCards <= 12 ? 36 : 28;
+    const cardH = Math.round(cardW * 1.3);
+    const gap = Math.max(5, Math.round(cardW * 0.14));
+    const step = cardW + gap;
+    const totalW = hand.length > 0 ? cardW + (hand.length - 1) * step : 0;
+    const startX = -totalW / 2;
+
+    // Color map for willpower card borders
+    const WP_COLORS = { red: 0xe94560, blue: 0x4cc9f0, green: 0x27ae60, orange: 0xf39c12 };
+
+    // ── Draw each willpower card ──
+    hand.forEach((cardId, i) => {
+      const wp = typeof wpCardById === 'function' ? wpCardById(cardId) : null;
+      const x = startX + i * step;
+      const isTop = (i === 0);
+      const isSpecial = cardId !== 0;
+      const canActivate = isTop && isSpecial && !wpUsed && team === 'red';
+
+      const g = this.add.graphics();
+
+      if (isAllHearts) {
+        // ── BEGINNER MODE: clean red health cards ──
+        g.fillStyle(0x8b2020, 0.88);
+        g.fillRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+        g.lineStyle(1, 0xcc3333, 0.35);
+        g.strokeRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+      } else if (isSpecial) {
+        // ── SPECIAL CARD: colored border, dark interior ──
+        const borderCol = WP_COLORS[wp?.color] || 0xd4a040;
+        g.fillStyle(0x141828, 0.95);
+        g.fillRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+        g.lineStyle(canActivate ? 2.5 : 1.5, borderCol, canActivate ? 1 : 0.7);
+        g.strokeRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+        // Pulsing glow behind activatable top card
+        if (canActivate) {
+          const glow = this.add.graphics();
+          glow.fillStyle(borderCol, 0.18);
+          glow.fillRoundedRect(x - 3, -cardH / 2 - 3, cardW + 6, cardH + 6, 6);
+          c.add(glow);
+          this.tweens.add({ targets: glow, alpha: 0.3, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        }
+      } else {
+        // ── HEART in a mixed deck: subtle, quieter than specials ──
+        g.fillStyle(0x6b1818, 0.7);
+        g.fillRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+        g.lineStyle(1, 0x993333, 0.25);
+        g.strokeRoundedRect(x, -cardH / 2, cardW, cardH, 4);
+      }
+      c.add(g);
+
+      // ── Symbol on each card ──
+      if (isAllHearts) {
+        // Simple heart symbol — big, bold, unmistakable
+        c.add(this.add.text(x + cardW / 2, 0, '♥', {
+          fontFamily: 'Georgia, serif', fontSize: cardW >= 48 ? '28px' : cardW >= 40 ? '24px' : '18px', color: '#e04040',
+        }).setOrigin(0.5));
+      } else {
+        // Show card's unique emoji — large enough to read across the room
+        const emoji = wp ? wp.emoji : '♥';
+        c.add(this.add.text(x + cardW / 2, -3, emoji, {
+          fontFamily: 'sans-serif', fontSize: cardW >= 48 ? '26px' : cardW >= 40 ? '22px' : '16px',
+        }).setOrigin(0.5));
+        // Card name below emoji on special cards
+        if (isSpecial && wp) {
+          c.add(this.add.text(x + cardW / 2, cardH / 2 - 10, wp.name.split(' ').pop().substring(0, 6).toUpperCase(), {
+            fontFamily: 'Courier New, monospace', fontSize: cardW >= 44 ? '8px' : '6px', color: '#bbb',
+          }).setOrigin(0.5));
+        }
+      }
+    });
+
+    // ── HP count badge (right of cards) ──
+    const hpX = startX + totalW + 12;
+    const hpCol = _hpCol(ghost.hp, ghost.maxHp);
+    c.add(this.add.text(hpX, -4, `${ghost.hp}`, {
+      fontFamily: 'Cinzel, serif', fontSize: '24px', color: hpCol, fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+
+    // ── Deck info (only for mixed decks — beginners don't need this) ──
+    if (!isAllHearts) {
+      c.add(this.add.text(hpX, 12, `deck ${t.wpDeck ? t.wpDeck.length : 0}`, {
+        fontFamily: 'Courier New, monospace', fontSize: '7px', color: '#4a4a60',
+      }).setOrigin(0, 0.5));
     }
 
-    // WP count
-    c.add(this.add.text(40, -8, `${ghost.willpower ? ghost.willpower.length : ghost.hp}`, {
-      fontFamily: 'Cinzel, serif', fontSize: '20px', color: BC.TEXT, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
-    c.add(this.add.text(40, 8, 'WILLPOWER', {
-      fontFamily: 'Courier New, monospace', fontSize: '8px', color: BC.DIM,
-    }).setOrigin(0, 0.5));
-    c.add(this.add.text(40, 20, `cards: ${t.wpDeck ? t.wpDeck.length : 0} · discard: ${t.wpDiscard ? t.wpDiscard.length : 0}`, {
-      fontFamily: 'Courier New, monospace', fontSize: '7px', color: '#4a4a60',
-    }).setOrigin(0, 0.5));
+    // ── Click to activate top card (player only) ──
+    if (team === 'red' && hand.length > 0) {
+      const topCardW = cardW + 6;
+      const topCardH = cardH + 6;
+      const wpZone = this.add.zone(startX + cardW / 2, 0, topCardW, topCardH)
+        .setOrigin(0.5).setInteractive({ useHandCursor: true });
+      wpZone.on('pointerdown', () => {
+        const topId = ghost.willpower && ghost.willpower[0];
+        if (topId === 0) {
+          this._setStatus('♥ Heart — basic willpower, no effect');
+          return;
+        }
+        this._activateWillpower();
+      });
+      c.add(wpZone);
+    }
 
-    // Resources below — clickable for player to commit
+    // ── Resources below cards ──
     const res = t.resources || {};
     const RDISPLAY = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
-    const committable = ['ice', 'fire', 'surge']; // resources that can be committed pre-roll
-    const usable = ['moonstone', 'luckyStone', 'healingSeed']; // resources used via special actions
-    let rx = -20;
+    const committable = ['ice', 'fire', 'surge'];
+    let rx = startX;
     Object.entries(RDISPLAY).forEach(([key, cfg]) => {
       const count = res[key] || 0;
-      if (count <= 0) return; // Only show resources you actually have
-
-      // Show committed count if any
+      if (count <= 0) return;
       const committed = (B.committed && B.committed[tKey] && B.committed[tKey][key]) || 0;
       const label = committed > 0 ? `${cfg.emoji}${count}(${committed})` : `${cfg.emoji}${count}`;
 
-      const resTxt = this.add.text(rx, 38, label, {
-        fontFamily: 'sans-serif', fontSize: '13px', color: cfg.color || BC.TEXT,
+      const resTxt = this.add.text(rx, cardH / 2 + 14, label, {
+        fontFamily: 'sans-serif', fontSize: '12px', color: cfg.color || BC.TEXT,
         backgroundColor: committed > 0 ? '#2a1a00cc' : '#0a0a14aa',
-        padding: { x: 4, y: 2 },
+        padding: { x: 3, y: 1 },
       }).setOrigin(0, 0.5);
       c.add(resTxt);
 
-      // Make clickable for player side — use Zone for reliable hit detection in Container
       if (team === 'red') {
-        const resZone = this.add.zone(rx + 20, 38, 42, 22).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
+        const resZone = this.add.zone(rx + 18, cardH / 2 + 14, 40, 20).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
         resZone.on('pointerdown', () => {
-          console.log('[Battle] Resource clicked:', key, 'count:', res[key], 'rolling:', this._rolling);
           if (this._rolling) return;
           if (committable.includes(key) && typeof cycleCommit === 'function') {
             cycleCommit(tKey, key);
@@ -428,19 +505,8 @@ class BattleScene extends Phaser.Scene {
         });
         c.add(resZone);
       }
-
-      rx += 46;
+      rx += 42;
     });
-
-    // Click to activate willpower (player only) — use Zone for reliable hit detection
-    if (team === 'red') {
-      const wpZone = this.add.zone(0, 0, 50, 60).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      wpZone.on('pointerdown', () => {
-        console.log('[WP] Click detected on willpower card');
-        this._activateWillpower();
-      });
-      c.add(wpZone);
-    }
 
     return c;
   }
@@ -450,6 +516,107 @@ class BattleScene extends Phaser.Scene {
     if (this._eWPArea) this._eWPArea.destroy();
     this._pWPArea = this._buildWPArea('red', this._W * 0.18, this._H * 0.82);
     this._eWPArea = this._buildWPArea('blue', this._W * 0.82, this._H * 0.82);
+  }
+
+  // ── WILLPOWER CARD ANIMATIONS ───────────────────────────
+
+  // Cards fly off when damage is dealt — fire-and-forget overlay
+  _animateCardLoss(side, count) {
+    if (count <= 0) return;
+    const isPlayer = side === 'red' || side === this._pt;
+    const cx = isPlayer ? this._W * 0.18 : this._W * 0.82;
+    const cy = this._H * 0.82;
+    const flyDir = isPlayer ? -1 : 1; // fly left for player, right for enemy
+
+    for (let i = 0; i < count; i++) {
+      const card = this.add.graphics().setDepth(900);
+      card.fillStyle(0x8b2020, 0.9);
+      card.fillRoundedRect(-14, -19, 28, 38, 4);
+      card.lineStyle(1, 0xff4444, 0.6);
+      card.strokeRoundedRect(-14, -19, 28, 38, 4);
+      card.setPosition(cx + (i - count/2) * 12, cy);
+
+      const heart = this.add.text(cx + (i - count/2) * 12, cy - 2, '♥', {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#ff6666',
+      }).setOrigin(0.5).setDepth(901);
+
+      const delay = i * 60;
+      const driftX = flyDir * (30 + Math.random() * 40);
+      this.tweens.add({
+        targets: [card, heart],
+        y: cy - 50 - Math.random() * 25,
+        x: `+=${driftX}`,
+        alpha: 0,
+        angle: flyDir * (15 + Math.random() * 20),
+        scaleX: 0.4, scaleY: 0.4,
+        duration: 450,
+        delay,
+        ease: 'Cubic.easeOut',
+        onComplete: () => { card.destroy(); heart.destroy(); }
+      });
+    }
+  }
+
+  // Cards slide in when healing occurs
+  _animateCardGain(side, count) {
+    if (count <= 0) return;
+    const isPlayer = side === 'red' || side === this._pt;
+    const cx = isPlayer ? this._W * 0.18 : this._W * 0.82;
+    const cy = this._H * 0.82;
+
+    for (let i = 0; i < count; i++) {
+      const card = this.add.graphics().setDepth(900);
+      card.fillStyle(0x1a5c2a, 0.9);
+      card.fillRoundedRect(-14, -19, 28, 38, 4);
+      card.lineStyle(1, 0x4ade80, 0.6);
+      card.strokeRoundedRect(-14, -19, 28, 38, 4);
+      card.setPosition(cx + (i - count/2) * 12, cy + 50);
+      card.setAlpha(0);
+
+      const heart = this.add.text(cx + (i - count/2) * 12, cy + 48, '♥', {
+        fontFamily: 'Georgia, serif', fontSize: '13px', color: '#4ade80',
+      }).setOrigin(0.5).setDepth(901).setAlpha(0);
+
+      const delay = i * 70;
+      this.tweens.add({
+        targets: [card, heart],
+        y: cy,
+        alpha: 1,
+        duration: 350,
+        delay,
+        ease: 'Back.easeOut',
+        onComplete: () => {
+          this.tweens.add({ targets: [card, heart], alpha: 0, duration: 200, delay: 150, onComplete: () => { card.destroy(); heart.destroy(); } });
+        }
+      });
+    }
+  }
+
+  // Burst flash when a willpower card is activated
+  _animateActivation(emoji, color) {
+    const cx = this._W * 0.18;
+    const cy = this._H * 0.82;
+    const colorHex = color === 'red' ? 0xe94560 : color === 'blue' ? 0x4cc9f0 : color === 'green' ? 0x27ae60 : 0xf39c12;
+
+    // Ring burst
+    const ring = this.add.graphics().setDepth(950);
+    ring.lineStyle(3, colorHex, 0.8);
+    ring.strokeCircle(cx, cy, 8);
+    this.tweens.add({
+      targets: ring, scaleX: 3, scaleY: 3, alpha: 0,
+      duration: 400, ease: 'Cubic.easeOut',
+      onComplete: () => ring.destroy()
+    });
+
+    // Emoji flies up big
+    const emText = this.add.text(cx, cy, emoji, {
+      fontFamily: 'sans-serif', fontSize: '28px',
+    }).setOrigin(0.5).setDepth(951);
+    this.tweens.add({
+      targets: emText, y: cy - 45, scaleX: 1.5, scaleY: 1.5, alpha: 0,
+      duration: 600, ease: 'Cubic.easeOut',
+      onComplete: () => emText.destroy()
+    });
   }
 
   _activateWillpower() {
@@ -470,6 +637,7 @@ class BattleScene extends Phaser.Scene {
 
     if (card) {
       console.log('[WP] Activated:', card.name, '→', card.effect);
+      this._animateActivation(card.emoji, card.color);
       this._setStatus(`${this.pg.name} activated ${card.emoji} ${card.name}!`);
       if (typeof GameAudio !== 'undefined') GameAudio.collect();
       this._rebuildWP();
@@ -664,6 +832,7 @@ class BattleScene extends Phaser.Scene {
         const red = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._et, pRes) : 0;
         const fd = Math.max(1, dmg - red);
         wpDamage(this.eg, fd);
+        this._animateCardLoss(this._et, fd);
         if (this.eg.ko) this.eg.killedBy = this.pg.id;
         this._setStatus(`${this.pg.name} deals ${fd} damage! ${rollDesc}`);
         if (typeof GameAudio !== 'undefined') GameAudio.hit();
@@ -682,6 +851,7 @@ class BattleScene extends Phaser.Scene {
         const red = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._pt, eRes) : 0;
         const fd = Math.max(1, dmg - red);
         wpDamage(this.pg, fd);
+        this._animateCardLoss(this._pt, fd);
         this._setStatus(`${this.eg.name} deals ${fd} damage! ${rollDesc}`);
         if (typeof GameAudio !== 'undefined') GameAudio.hurt();
         this._showFloat(this._W*0.28, this._H*0.30, `-${fd}`, '#e94560');
@@ -708,6 +878,17 @@ class BattleScene extends Phaser.Scene {
   // ═══════════════════════════════════════════════════════
   syncUI() {
     this.pg = activeGhost(B[this._pt]); this.eg = activeGhost(B[this._et]);
+
+    // Detect heals since last sync — animate card gains
+    const prevP = this._lastSyncPHP || 0;
+    const prevE = this._lastSyncEHP || 0;
+    const curP = this.pg ? this.pg.hp : 0;
+    const curE = this.eg ? this.eg.hp : 0;
+    if (curP > prevP && prevP > 0) this._animateCardGain(this._pt, curP - prevP);
+    if (curE > prevE && prevE > 0) this._animateCardGain(this._et, curE - prevE);
+    this._lastSyncPHP = curP;
+    this._lastSyncEHP = curE;
+
     this._updateActiveCard(this._pActive, this.pg);
     this._updateActiveCard(this._eActive, this.eg);
     this._rebuildSideline('red');
