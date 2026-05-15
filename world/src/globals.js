@@ -499,6 +499,7 @@ function ensurePlayerDefaults() {
   if (G.tutorialStep === undefined) G.tutorialStep = 0;
   if (G.tutorialComplete === undefined) G.tutorialComplete = false;
   if (G.questStep === undefined) G.questStep = 0; // breadcrumb objective tracker (0-4)
+  if (G._firstWispCollected === undefined) G._firstWispCollected = false; // first wisp tutorial hint
   // Multiplayer buffs & party
   if (!G.activeBuffs) G.activeBuffs = [];
   if (!G.party) G.party = [];

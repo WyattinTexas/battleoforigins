@@ -800,10 +800,29 @@ class WorldScene extends Phaser.Scene {
     // ── Class Action Bar — DOM-based now, skip Phaser version ──
     // this._buildActionBar(); // DISABLED — DOM #hud-action-bar handles this
 
-    // ── Controls hint ──
-    this._controlsHint = this.add.text(6, hudH - 14, 'WASD: Move | E: Interact', {
-      fontSize: '8px', fontFamily: 'monospace', color: '#444444',
-    }).setScrollFactor(0).setDepth(200);
+    // ── Controls hint (new players only, auto-hides) ──
+    this._controlsHintVisible = false;
+    this._controlsHintHasMoved = false;
+    this._controlsHintHasInteracted = false;
+    if (!G.tutorialComplete) {
+      // Background pill
+      this._controlsHintBg = this.add.rectangle(
+        hudW / 2, hudH - 70, 210, 24, 0x000000, 0.55
+      ).setScrollFactor(0).setDepth(200).setOrigin(0.5);
+      this._controlsHintBg.setStrokeStyle(1, 0xffffff, 0.15);
+
+      // Text
+      this._controlsHint = this.add.text(hudW / 2, hudH - 70, 'WASD: Move  |  E: Interact', {
+        fontSize: '11px', fontFamily: 'monospace', color: '#cccccc',
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+      this._controlsHintVisible = true;
+
+      // Auto-hide after 30 seconds as a fallback
+      this._controlsHintTimer = this.time.delayedCall(30000, () => {
+        this._fadeOutControlsHint();
+      });
+    }
 
     // ── Resize handler — reposition HUD on window resize ──
     this.scale.on('resize', () => {
@@ -1458,10 +1477,22 @@ class WorldScene extends Phaser.Scene {
     }
     this._ePrevDown = eDown;
     this._eConsumed = false;
+
+    // ── Controls hint auto-hide: track movement + interaction ──
+    if (this._controlsHintVisible) {
+      if (vx !== 0 || vy !== 0) this._controlsHintHasMoved = true;
+      if (this._ePressed) this._controlsHintHasInteracted = true;
+      if (this._controlsHintHasMoved && this._controlsHintHasInteracted) {
+        this._fadeOutControlsHint();
+      }
+    }
+
+    // NPC + building interactions need every frame for E-press response
     this.checkNPCProximity();
-    this._updateBuildingHints();
     this.checkBuildingProximity();
-    this.checkFrostDungeonProximity();
+    // Hints are visual-only — throttle to medTick (~15x/sec)
+    if (medTick) this._updateBuildingHints();
+    if (medTick) this.checkFrostDungeonProximity();
     // Wild Spiritkin personality comms (on medium tick to avoid per-frame cost)
     if (medTick) this._checkEnemyProximityComm();
 
@@ -1621,13 +1652,16 @@ class WorldScene extends Phaser.Scene {
     if (this._eConsumed) return; // building already handled E this frame
     const ePressed = this._ePressed;
 
-    // NPC greeting lines — shown once per session when player walks near
-    const _greetLines = {
-      'Elder Frost': 'Press E to talk to me, young one.',
-      'Smith Ember': 'Need gear? Press E.',
-      'Frosty Peddler': 'Got wares! Press E to browse.',
-      'Crazy Lou': 'Heh... you look lost. Press E.',
-    };
+    // NPC greeting lines — hoisted to avoid per-frame allocation
+    if (!WorldScene._greetLines) {
+      WorldScene._greetLines = {
+        'Elder Frost': 'Press E to talk to me, young one.',
+        'Smith Ember': 'Need gear? Press E.',
+        'Frosty Peddler': 'Got wares! Press E to browse.',
+        'Crazy Lou': 'Heh... you look lost. Press E.',
+      };
+    }
+    const _greetLines = WorldScene._greetLines;
 
     for (const npc of this.npcSprites) {
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
@@ -2320,10 +2354,13 @@ class WorldScene extends Phaser.Scene {
     if (!this._failedArt) this._failedArt = new Set();
 
     // Load card art if not already loaded, use fallback creature sprite until ready
+    // Check BootScene preloaded key (card_<id>) first to avoid duplicate texture loads
     let enemy;
-    const artLoaded = artUrl && !this._failedArt.has(artKey) && this.textures.exists(artKey);
+    const preloadKey = 'card_' + wildCard.id;
+    const artLoaded = artUrl && !this._failedArt.has(artKey) && (this.textures.exists(artKey) || this.textures.exists(preloadKey));
+    const useKey = this.textures.exists(preloadKey) ? preloadKey : artKey;
     if (artLoaded) {
-      enemy = this.enemies.create(ex, ey, artKey, 0);
+      enemy = this.enemies.create(ex, ey, useKey, 0);
       // Scale to mini card size (~40px tall)
       const srcH = enemy.height || 100;
       enemy.setScale(40 / srcH);
@@ -3314,6 +3351,12 @@ class WorldScene extends Phaser.Scene {
       G.dailyChallenge.progress++;
     }
 
+    // First wisp tutorial hint
+    if (!G._firstWispCollected) {
+      G._firstWispCollected = true;
+      showComm('Elder Frost', "You found a spirit wisp! These give you battle resources. Collect them as you explore.", { duration: 4000, speed: 20 });
+    }
+
     this.showNotification(`Collected ${type.name}!`);
     saveGame();
   }
@@ -3666,9 +3709,26 @@ class WorldScene extends Phaser.Scene {
     // Player dot stays at center
     this.minimapDot.setPosition(cx, cy);
 
-    // Clear previous entity dots
-    if (this._mmDots) { this._mmDots.forEach(d => d.destroy()); }
-    this._mmDots = [];
+    // Reuse minimap dots from a pool instead of create/destroy every frame
+    if (!this._mmDots) this._mmDots = [];
+    let dotIdx = 0;
+
+    const _getDot = (x, y, radius, color) => {
+      let dot;
+      if (dotIdx < this._mmDots.length) {
+        dot = this._mmDots[dotIdx];
+        dot.setPosition(x, y);
+        dot.setRadius(radius);
+        dot.setFillStyle(color);
+        dot.setVisible(true);
+      } else {
+        dot = this.add.circle(x, y, radius, color)
+          .setScrollFactor(0).setDepth(202);
+        this._mmDots.push(dot);
+      }
+      dotIdx++;
+      return dot;
+    };
 
     // Hostile Spiritkin — RED dots
     if (this.enemies) {
@@ -3676,10 +3736,7 @@ class WorldScene extends Phaser.Scene {
         if (!e.active) return;
         const p = toMM(e.x, e.y);
         if (!p) return;
-        const dot = this.add.circle(p.x, p.y,
-          e._isBlackRider ? 3 : 2, 0xff3333
-        ).setScrollFactor(0).setDepth(202);
-        this._mmDots.push(dot);
+        _getDot(p.x, p.y, e._isBlackRider ? 3 : 2, 0xff3333);
       });
     }
 
@@ -3690,9 +3747,7 @@ class WorldScene extends Phaser.Scene {
         const p = toMM(npc.sprite.x, npc.sprite.y);
         if (!p) return;
         const col = npc.hostile ? 0xff3333 : 0xffffff;
-        const dot = this.add.circle(p.x, p.y, 2, col)
-          .setScrollFactor(0).setDepth(202);
-        this._mmDots.push(dot);
+        _getDot(p.x, p.y, 2, col);
       });
     }
 
@@ -3704,10 +3759,13 @@ class WorldScene extends Phaser.Scene {
         if (!p) return;
         const isParty = G.party && G.party.includes(op.id);
         const col = isParty ? 0x44ff44 : 0x4488ff;
-        const dot = this.add.circle(p.x, p.y, 2.5, col)
-          .setScrollFactor(0).setDepth(202);
-        this._mmDots.push(dot);
+        _getDot(p.x, p.y, 2.5, col);
       });
+    }
+
+    // Hide unused dots from pool
+    for (let i = dotIdx; i < this._mmDots.length; i++) {
+      this._mmDots[i].setVisible(false);
     }
   }
 
@@ -4995,10 +5053,26 @@ class WorldScene extends Phaser.Scene {
     // Buff HUD
     if (this._buffHudText) this._buffHudText.setPosition(W / 2, H - barH - 10);
 
-    // Controls hint
-    if (this._controlsHint) this._controlsHint.setPosition(6, H - barH - 6);
+    // Controls hint (centered, above action bar)
+    if (this._controlsHint) this._controlsHint.setPosition(W / 2, H - barH - 18);
+    if (this._controlsHintBg) this._controlsHintBg.setPosition(W / 2, H - barH - 18);
 
     // Minimap repositioning handled by _repositionMinimap() in resize handler
+  }
+
+  // ── Controls hint fade-out ──
+  _fadeOutControlsHint() {
+    if (!this._controlsHintVisible) return;
+    this._controlsHintVisible = false;
+    // Cancel the 30s fallback timer if still pending
+    if (this._controlsHintTimer) { this._controlsHintTimer.remove(false); this._controlsHintTimer = null; }
+    // Fade out text + background pill over 800ms then destroy
+    if (this._controlsHint) {
+      this.tweens.add({ targets: this._controlsHint, alpha: 0, duration: 800, onComplete: () => { this._controlsHint.destroy(); this._controlsHint = null; } });
+    }
+    if (this._controlsHintBg) {
+      this.tweens.add({ targets: this._controlsHintBg, alpha: 0, duration: 800, onComplete: () => { this._controlsHintBg.destroy(); this._controlsHintBg = null; } });
+    }
   }
 
   // ══════════════════════════════════════════════════════
