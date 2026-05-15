@@ -801,9 +801,53 @@ class BootScene extends Phaser.Scene {
       }
       this._classSelectGroup = [];
 
-      // Transition to world
+      // Cinematic intro before world loads
       this.cameras.main.fadeOut(600, 0, 0, 0);
-      this.time.delayedCall(600, () => this.scene.start('WorldScene'));
+      this.time.delayedCall(600, () => {
+        // Black screen — show cinematic text crawl
+        // Hide canvas entirely during cinematic
+        const cvs = document.querySelector('canvas');
+        if (cvs) cvs.style.display = 'none';
+        const hudOv = document.getElementById('hud-overlay');
+        if (hudOv) hudOv.style.display = 'none';
+
+        const overlay = document.createElement('div');
+        overlay.id = 'cinematicIntroOverlay';
+        const os = overlay.style;
+        os.position = 'fixed'; os.top = '0'; os.left = '0';
+        os.width = '100vw'; os.height = '100vh'; os.zIndex = '99999';
+        os.background = '#000'; os.display = 'flex';
+        os.alignItems = 'center'; os.justifyContent = 'center';
+        os.flexDirection = 'column';
+        document.body.appendChild(overlay);
+
+        const textEl = document.createElement('div');
+        const ts = textEl.style;
+        ts.fontFamily = 'monospace'; ts.fontSize = '20px';
+        ts.color = '#ccd8e8'; ts.textAlign = 'center';
+        ts.lineHeight = '2.2'; ts.textShadow = '0 0 20px rgba(120,160,255,0.4)';
+        ts.opacity = '0'; ts.transition = 'opacity 1s ease';
+        overlay.appendChild(textEl);
+
+        // Line 1
+        setTimeout(() => { textEl.textContent = 'The Overworld has been quiet...'; textEl.style.opacity = '1'; }, 600);
+        // Fade line 1
+        setTimeout(() => { textEl.style.opacity = '0'; }, 3000);
+        // Line 2
+        setTimeout(() => { textEl.textContent = '...until now.'; textEl.style.opacity = '1'; }, 3600);
+        // Fade out
+        setTimeout(() => { textEl.style.opacity = '0'; }, 5200);
+        // Remove overlay + start world
+        setTimeout(() => {
+          overlay.style.transition = 'opacity 0.5s ease';
+          overlay.style.opacity = '0';
+          // Restore canvas + HUD
+          if (cvs) cvs.style.display = '';
+          if (hudOv) hudOv.style.display = '';
+          setTimeout(() => { overlay.remove(); }, 500);
+          this.scene.start('WorldScene');
+        }, 6000);
+      });
     });
 
     classes.forEach((cls, i) => {
