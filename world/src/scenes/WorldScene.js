@@ -537,15 +537,8 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#000000aa', padding: { x: 6, y: 2 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
 
-    // ── Minimap (Phaser graphics, not DOM — must init here) ──
-    {
-      const { mmW, mmH, mmX, mmY } = this._minimapRect();
-      this.minimapBg = this.add.rectangle(mmX + mmW/2, mmY + mmH/2, mmW + 4, mmH + 4, 0x000000, 0.8)
-        .setStrokeStyle(1, 0x556688).setScrollFactor(0).setDepth(200);
-    }
-    this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(201);
-    this.minimapDot = this.add.circle(0, 0, 4, 0x00ffff).setStrokeStyle(1, 0x000000).setScrollFactor(0).setDepth(203);
-    this.drawMinimap();
+    // ── Circular Minimap (RPG-style) ──
+    this._buildMinimap();
 
     // ── Render player structures ──
     this._structureSprites = [];
@@ -900,7 +893,7 @@ class WorldScene extends Phaser.Scene {
         this.time.delayedCall(1000, () => {
           if (typeof StarfoxComm !== 'undefined') {
             StarfoxComm.play([
-              { char: 'elderFrost', text: 'Well fought, Warden. Your journey as a ' + className + ' begins now. Press T to view your talents.' },
+              { char: 'elderFrost', text: 'Not bad! The world is yours to explore. Press T to check your talents.' },
             ], {
               onComplete: () => {
                 G.tutorialComplete = true;
@@ -3050,79 +3043,127 @@ class WorldScene extends Phaser.Scene {
       backgroundColor: '#000000aa', padding: { x: 5, y: 2 },
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
 
-    // ── Minimap (bottom-right, above action bar) ──
-    {
-      const { mmW, mmH, mmX, mmY } = this._minimapRect();
-      this.minimapBg = this.add.rectangle(mmX + mmW/2, mmY + mmH/2, mmW + 4, mmH + 4, 0x000000, 0.8)
-        .setStrokeStyle(1, 0x556688).setScrollFactor(0).setDepth(200);
-    }
-
-    // Minimap graphics
-    this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(201);
-
-    // Player dot on minimap
-    this.minimapDot = this.add.circle(0, 0, 3, 0x44aaff)
-      .setScrollFactor(0).setDepth(202);
-
-    this.drawMinimap();
+    // Minimap handled by _buildMinimap() in create()
   }
 
-  _minimapRect() {
+  _minimapCenter() {
     const W = this.uiW;
     const H = this.uiH;
-    const mmW = 120, mmH = 90;
-    const mmX = W - mmW - 6;
-    const mmY = H - mmH - 6;
-    return { mmW, mmH, mmX, mmY };
+    const R = 60; // radius in pixels
+    return { cx: W - R - 10, cy: H - R - 10, R };
+  }
+
+  _buildMinimap() {
+    const { cx, cy, R } = this._minimapCenter();
+
+    // Dark circle background
+    this._mmBgGfx = this.add.graphics().setScrollFactor(0).setDepth(200);
+    this._mmBgGfx.fillStyle(0x111122, 0.85);
+    this._mmBgGfx.fillCircle(cx, cy, R + 2);
+
+    // Tile graphics — drawn manually clipped to circle (no GPU mask)
+    this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(201);
+
+    // Gold ornate border ring
+    this._mmBorderGfx = this.add.graphics().setScrollFactor(0).setDepth(204);
+    this._mmBorderGfx.lineStyle(3, 0xb8962e, 1);
+    this._mmBorderGfx.strokeCircle(cx, cy, R + 1);
+    this._mmBorderGfx.lineStyle(1, 0xdfc06a, 0.6);
+    this._mmBorderGfx.strokeCircle(cx, cy, R + 3);
+
+    // Compass lines (subtle crosshair)
+    this._mmCompassGfx = this.add.graphics().setScrollFactor(0).setDepth(202);
+    this._mmCompassGfx.lineStyle(1, 0xffffff, 0.15);
+    this._mmCompassGfx.lineBetween(cx, cy - R, cx, cy + R);
+    this._mmCompassGfx.lineBetween(cx - R, cy, cx + R, cy);
+
+    // Cardinal direction labels
+    const cs = { fontSize: '7px', fontFamily: 'monospace', color: '#ccaa44', fontStyle: 'bold' };
+    this._mmN = this.add.text(cx, cy - R + 4, 'N', cs).setOrigin(0.5).setScrollFactor(0).setDepth(205);
+    this._mmS = this.add.text(cx, cy + R - 4, 'S', cs).setOrigin(0.5).setScrollFactor(0).setDepth(205);
+    this._mmW = this.add.text(cx - R + 5, cy, 'W', cs).setOrigin(0.5).setScrollFactor(0).setDepth(205);
+    this._mmE = this.add.text(cx + R - 5, cy, 'E', cs).setOrigin(0.5).setScrollFactor(0).setDepth(205);
+
+    // Zone name (top of minimap)
+    this._mmZoneText = this.add.text(cx, cy - R - 8, '', {
+      fontSize: '8px', fontFamily: 'Georgia, serif', color: '#dfc06a',
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(205);
+
+    // Player dot (always at center)
+    this.minimapDot = this.add.circle(cx, cy, 3, 0x00ffff)
+      .setStrokeStyle(1.5, 0x000000).setScrollFactor(0).setDepth(203);
+
+    // Initial draw deferred until first updateHUD
+    this._mmLastX = -999;
+    this._mmLastY = -999;
   }
 
   drawMinimap() {
-    const { mmW, mmH, mmX, mmY } = this._minimapRect();
-    // Local radar: show ~60 tile radius around the player
-    const RADAR_R = 60; // tiles visible in each direction
+    const { cx, cy, R } = this._minimapCenter();
+    const RADAR_R = 50;
     const playerTX = G.x;
     const playerTY = G.y;
     const viewLeft = playerTX - RADAR_R;
     const viewTop = playerTY - RADAR_R;
     const viewW = RADAR_R * 2;
     const viewH = RADAR_R * 2;
-    const scaleX = mmW / viewW;
-    const scaleY = mmH / viewH;
+    const dia = R * 2;
+    const scaleX = dia / viewW;
+    const scaleY = dia / viewH;
+    const ox = cx - R;
+    const oy = cy - R;
+    const R2 = R * R;
 
     this.minimapGfx.clear();
 
-    // Structure tile types that should be highlighted
     const STRUCTURE_TILES = new Set([5, 8, 12, 19, 26, 27, 28]);
+    const structures = [];
 
-    // Draw tiles at minimap scale — only the visible radar area
-    const structures = []; // collect structures for second pass
-    for (let y = 0; y < viewH; y++) {
+    // Draw tiles — skip every other tile for performance, manually clip to circle
+    const step = 2;
+    const pxStep = Math.ceil(scaleX * step);
+    for (let y = 0; y < viewH; y += step) {
+      const py = oy + y * scaleY;
+      const dy = py - cy;
       const wy = viewTop + y;
       if (wy < 0 || wy >= WORLD_H) continue;
-      for (let x = 0; x < viewW; x++) {
+      for (let x = 0; x < viewW; x += step) {
+        const px = ox + x * scaleX;
+        const dx = px - cx;
+        // Circle clip
+        if (dx * dx + dy * dy > R2) continue;
         const wx = viewLeft + x;
         if (wx < 0 || wx >= WORLD_W) continue;
         const tile = worldMap[wy]?.[wx] || 0;
         const colorHex = TILE_COLORS[tile] || '#888888';
         const color = parseInt(colorHex.replace('#', ''), 16);
         this.minimapGfx.fillStyle(color, 1);
-        this.minimapGfx.fillRect(mmX + x * scaleX, mmY + y * scaleY, Math.ceil(scaleX), Math.ceil(scaleY));
-        if (STRUCTURE_TILES.has(tile)) structures.push({ x, y, tile });
+        this.minimapGfx.fillRect(px, py, pxStep, pxStep);
+        if (STRUCTURE_TILES.has(tile)) structures.push({ px, py });
       }
     }
 
-    // Second pass: draw structures as bright yellow squares so they pop
-    const sSize = Math.max(3, Math.ceil(scaleX * 2));
+    // Structures as bright gold squares
+    const sz = Math.max(3, pxStep);
     for (const s of structures) {
       this.minimapGfx.fillStyle(0xddaa22, 1);
-      this.minimapGfx.fillRect(
-        mmX + s.x * scaleX - 1, mmY + s.y * scaleY - 1,
-        sSize, sSize
-      );
+      this.minimapGfx.fillRect(s.px - 1, s.py - 1, sz, sz);
     }
 
-    // Store radar params for entity dot positioning in updateHUD
-    this._radarView = { viewLeft, viewTop, viewW, viewH, scaleX, scaleY };
+    // Update zone name
+    if (this._mmZoneText) {
+      const region = getCurrentRegion(playerTX, playerTY);
+      const names = {
+        frost_valley: 'Frost Valley',
+        rolling_hills: 'Rolling Hills',
+        volcanic_isles: 'Volcanic Isles',
+        dark_castle: 'Dark Castle',
+      };
+      this._mmZoneText.setText(names[region] || 'Unknown');
+    }
+
+    this._radarView = { viewLeft, viewTop, viewW, viewH, ox, oy, scaleX, scaleY, cx, cy, R };
   }
 
   updateHUD() {
@@ -3234,33 +3275,39 @@ class WorldScene extends Phaser.Scene {
   }
 
   _updateMinimapRadar() {
-    this.drawMinimap();
+    // Throttle tile redraw — only when player moves 2+ tiles
+    const lastX = this._mmLastX || 0;
+    const lastY = this._mmLastY || 0;
+    if (Math.abs(G.x - lastX) >= 2 || Math.abs(G.y - lastY) >= 2) {
+      this._mmLastX = G.x;
+      this._mmLastY = G.y;
+      this.drawMinimap();
+    }
 
-    const { mmW, mmH, mmX, mmY } = this._minimapRect();
     const rv = this._radarView;
     if (!rv) return;
+    const { ox, oy, scaleX, scaleY, cx, cy, R } = rv;
     const T = this._tileSize || 32;
+    const R2 = R * R; // for circle clipping
 
-    // Helper: convert world pixel pos to minimap pixel pos (returns null if off-radar)
+    // Helper: convert world pixel pos to minimap pos (null if outside circle)
     const toMM = (wx, wy) => {
       const tx = wx / T;
       const ty = wy / T;
-      const rx = tx - rv.viewLeft;
-      const ry = ty - rv.viewTop;
-      if (rx < 0 || rx >= rv.viewW || ry < 0 || ry >= rv.viewH) return null;
-      return { x: mmX + rx * rv.scaleX, y: mmY + ry * rv.scaleY };
+      const px = ox + (tx - rv.viewLeft) * scaleX;
+      const py = oy + (ty - rv.viewTop) * scaleY;
+      if ((px - cx) * (px - cx) + (py - cy) * (py - cy) > R2) return null;
+      return { x: px, y: py };
     };
-    // For tile-coord entities (G.x, onlinePlayers)
     const toMMTile = (tx, ty) => {
-      const rx = tx - rv.viewLeft;
-      const ry = ty - rv.viewTop;
-      if (rx < 0 || rx >= rv.viewW || ry < 0 || ry >= rv.viewH) return null;
-      return { x: mmX + rx * rv.scaleX, y: mmY + ry * rv.scaleY };
+      const px = ox + (tx - rv.viewLeft) * scaleX;
+      const py = oy + (ty - rv.viewTop) * scaleY;
+      if ((px - cx) * (px - cx) + (py - cy) * (py - cy) > R2) return null;
+      return { x: px, y: py };
     };
 
-    // Player dot (bright cyan, always center)
-    const pPos = toMMTile(G.x, G.y);
-    if (pPos) this.minimapDot.setPosition(pPos.x, pPos.y);
+    // Player dot stays at center
+    this.minimapDot.setPosition(cx, cy);
 
     // Clear previous entity dots
     if (this._mmDots) { this._mmDots.forEach(d => d.destroy()); }
@@ -3824,59 +3871,33 @@ class WorldScene extends Phaser.Scene {
 
     const scene = this;
 
-    // Freeze the player
+    // Freeze the player briefly
     if (scene.player) {
       if (scene.player.setVelocity) scene.player.setVelocity(0, 0);
       scene.player._eventFrozen = true;
     }
 
-    // Safety net: unfreeze after 15s no matter what (in case comms fail)
-    setTimeout(() => { if (scene.player && scene.player._eventFrozen) scene.player._eventFrozen = false; }, 15000);
+    // Elder Frost: one line, then spawn the tutorial enemy
+    const afterComm = () => {
+      scene.spawnTutorialEnemy();
+      G.tutorialStep = 3;
+      scene._pendingIntroFirstBattle = true;
+      if (scene.player) scene.player._eventFrozen = false;
 
-    // Text crawl already played in BootScene — go straight to Valkin comm
-    if (typeof StarfoxComm !== 'undefined') {
+      // Arrow pointing to the enemy
+      const nearestEnemy = scene.findNearestEnemy();
+      if (nearestEnemy) scene.showTutorialArrow(nearestEnemy.x, nearestEnemy.y);
+    };
+
+    this.time.delayedCall(800, () => {
+      if (typeof StarfoxComm !== 'undefined') {
         StarfoxComm.play([
-          { char: 'valkin', text: 'I sense a new presence in my domain... interesting.' },
-          { char: 'valkin', text: 'Come. Let us see what you are made of.' },
-        ], {
-          dark: true,
-          onComplete: () => {
-            // Step 4: Unfreeze player
-            if (scene.player) scene.player._eventFrozen = false;
-
-            // Step 5: Elder Frost blocking comms
-            setTimeout(() => {
-              StarfoxComm.play([
-                { char: 'elderFrost', text: 'Warden! You\'ve arrived. Valkin\'s forces grow stronger by the day.' },
-                { char: 'elderFrost', text: 'A wild Spiritkin is nearby. Walk into it to begin your first battle.' },
-              ], {
-                onComplete: () => {
-                  // Step 6: Spawn a scripted Dream Cat right in front of the player
-                  scene.spawnTutorialEnemy();
-
-                  // Step 7: Set tutorial step to 3 so arrow logic works
-                  G.tutorialStep = 3;
-
-                  // Track that we're waiting for first battle
-                  scene._pendingIntroFirstBattle = true;
-
-                  // Show arrow pointing to the spawned enemy
-                  const nearestEnemy = scene.findNearestEnemy();
-                  if (nearestEnemy) {
-                    scene.showTutorialArrow(nearestEnemy.x, nearestEnemy.y);
-                  }
-                },
-              });
-            }, 800);
-          },
-        });
+          { char: 'elderFrost', text: "You've arrived! Let's see what you can do. Walk into that spirit ahead." },
+        ], { onComplete: afterComm });
       } else {
-        // Fallback: no StarfoxComm available, just unfreeze and set tutorial step
-        if (scene.player) scene.player._eventFrozen = false;
-        G.tutorialStep = 3;
-        scene._pendingIntroFirstBattle = true;
-        scene.spawnTutorialEnemy();
+        afterComm();
       }
+    });
   }
 
   spawnTutorialEnemy() {
@@ -4584,12 +4605,7 @@ class WorldScene extends Phaser.Scene {
     // Controls hint
     if (this._controlsHint) this._controlsHint.setPosition(6, H - barH - 6);
 
-    // Minimap — above the action bar on the right
-    if (this.minimapBg) {
-      const { mmW, mmH, mmX, mmY } = this._minimapRect();
-      this.minimapBg.setPosition(mmX + mmW/2, mmY + mmH/2);
-      this.drawMinimap();
-    }
+    // Minimap repositioning handled by _updateMinimapRadar each frame
   }
 
   // ══════════════════════════════════════════════════════
