@@ -2017,25 +2017,54 @@ class WorldScene extends Phaser.Scene {
 
     const activeCards = typeof getActiveCards === 'function' ? getActiveCards() : ALL_CARDS.filter(c => !SHELVED_IDS || !SHELVED_IDS.has(c.id));
     const wildCard = activeCards[Math.floor(Math.random() * activeCards.length)];
+
+    // Use card art as the sprite — tiny card roaming the world
+    const artKey = 'wild_' + wildCard.id;
+    const artUrl = wildCard.art || '';
     const creatureKeys = ['creature_bear','creature_dragon','creature_axolot','creature_axolotblue','creature_butterfly','creature_butterflyblue','creature_bluebat','creature_slime','creature_mushroom','creature_bamboo'];
-    const creatureKey = creatureKeys[Math.floor(Math.random() * creatureKeys.length)];
-    const enemy = this.enemies.create(ex, ey, creatureKey, 0).setScale(1.8);
+    const fallbackKey = creatureKeys[Math.floor(Math.random() * creatureKeys.length)];
+
+    // Load card art if not already loaded, use fallback creature sprite until ready
+    let enemy;
+    if (artUrl && this.textures.exists(artKey)) {
+      enemy = this.enemies.create(ex, ey, artKey, 0);
+      // Scale to mini card size (~40px tall)
+      const srcH = enemy.height || 100;
+      enemy.setScale(40 / srcH);
+    } else {
+      enemy = this.enemies.create(ex, ey, fallbackKey, 0).setScale(1.8);
+      // Async load card art — swap when ready
+      if (artUrl && !this._loadingArt?.[artKey]) {
+        if (!this._loadingArt) this._loadingArt = {};
+        this._loadingArt[artKey] = true;
+        this.load.image(artKey, artUrl);
+        this.load.once('complete', () => {
+          if (enemy.active && this.textures.exists(artKey)) {
+            enemy.setTexture(artKey);
+            const srcH = enemy.height || 100;
+            enemy.setScale(40 / srcH);
+            enemy.setTint(0xffffff); // clear any tint
+          }
+        });
+        this.load.start();
+      }
+    }
+
     enemy.cardData = wildCard;
     enemy.setDepth(9);
-    enemy.setTint(wildCard.rarity === 'rare' ? 0xaa55ff : wildCard.rarity === 'uncommon' ? 0x5599ff : 0xffffff);
+    // Rarity border glow via tint (only for fallback sprites)
+    if (!this.textures.exists(artKey)) {
+      enemy.setTint(wildCard.rarity === 'rare' ? 0xaa55ff : wildCard.rarity === 'uncommon' ? 0x5599ff : 0xffffff);
+    }
 
     enemy.label = this.add.text(ex, ey - 28, wildCard.name, {
       fontSize: '9px', fontFamily: 'monospace', color: '#ffaaaa',
       backgroundColor: '#00000088', padding: { x: 2, y: 1 },
     }).setOrigin(0.5).setDepth(11);
 
-    // Wander with directional walk animations
-    const prefix = creatureKey + '_';
+    // Wander (no directional animations for card art — just move)
     enemy._lastX = ex;
     enemy._lastY = ey;
-    enemy._animPrefix = prefix;
-    // Start with a random walk anim
-    if (this.anims.exists(prefix + 'walk_down')) enemy.play(prefix + 'walk_down');
 
     this.tweens.add({
       targets: enemy, x: ex + Phaser.Math.Between(-60, 60), y: ey + Phaser.Math.Between(-60, 60),
