@@ -39,7 +39,7 @@ const DUNGEONS = {
     // stay dimly visible as "memory". Skipped in intro/post hallway phases.
     fog: {
       enabled: true,
-      radius: 5,               // tile radius around player
+      radius: 7,               // tile radius around player (was 5 — felt too tight 2026-05-15)
       dimAlpha: 0.55,          // alpha of visited-but-not-visible tiles (0=clear, 1=black)
     },
     // Test flag — when true, walking into ANY enemy (mob or boss)
