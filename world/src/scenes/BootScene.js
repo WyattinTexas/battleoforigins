@@ -5,14 +5,14 @@
 
 // Character sprite definitions — all 8 options
 const CHARACTER_SPRITES = [
-  { key: 'char_boy',          file: 'Boy_walk.png',          label: 'Boy' },
-  { key: 'char_girl',         file: 'Girl_walk.png',         label: 'Girl' },
-  { key: 'char_caveman',      file: 'Caveman_walk.png',      label: 'Caveman' },
-  { key: 'char_cavegirl',     file: 'Cavegirl_walk.png',     label: 'Cavegirl' },
-  { key: 'char_eskimo',       file: 'Eskimo_walk.png',       label: 'Eskimo' },
-  { key: 'char_flam',         file: 'Flam_walk.png',         label: 'Flam' },
-  { key: 'char_fighterred',   file: 'FighterRed_walk.png',   label: 'Fighter Red' },
-  { key: 'char_fighterwhite', file: 'FighterWhite_walk.png', label: 'Fighter White' },
+  { key: 'char_boy',          file: 'Boy_walk.png',          label: 'Youngster' },
+  { key: 'char_girl',         file: 'Girl_walk.png',         label: 'Bandit' },
+  { key: 'char_caveman',      file: 'Caveman_walk.png',      label: 'Monk' },
+  { key: 'char_cavegirl',     file: 'Cavegirl_walk.png',     label: 'Underclass' },
+  { key: 'char_eskimo',       file: 'Eskimo_walk.png',       label: 'Northerner' },
+  { key: 'char_flam',         file: 'Flam_walk.png',         label: 'Flamekin' },
+  { key: 'char_fighterred',   file: 'FighterRed_walk.png',   label: 'Westerner' },
+  { key: 'char_fighterwhite', file: 'FighterWhite_walk.png', label: 'Blackbelt' },
 ];
 
 class BootScene extends Phaser.Scene {
@@ -548,24 +548,20 @@ class BootScene extends Phaser.Scene {
     this._spriteSelectGroup.push(stepText);
 
     // Header with gold glow
-    const headerGlow = this.add.text(width / 2, height * 0.10, 'CHOOSE YOUR AVATAR', {
+    const headerGlow = this.add.text(width / 2, height * 0.10, "WHAT'S YOUR BACKGROUND?", {
       fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc44',
       shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 16, fill: true },
     }).setOrigin(0.5).setDepth(101).setAlpha(0.4);
     this.tweens.add({ targets: headerGlow, alpha: 0.25, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this._spriteSelectGroup.push(headerGlow);
 
-    const header = this.add.text(width / 2, height * 0.10, 'CHOOSE YOUR AVATAR', {
+    const header = this.add.text(width / 2, height * 0.10, "WHAT'S YOUR BACKGROUND?", {
       fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffe680',
       shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 6, fill: true },
       stroke: '#aa7700', strokeThickness: 1,
     }).setOrigin(0.5).setDepth(101);
     this._spriteSelectGroup.push(header);
 
-    const subtitle = this.add.text(width / 2, height * 0.17, 'Pick your adventurer', {
-      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
-    }).setOrigin(0.5).setDepth(101);
-    this._spriteSelectGroup.push(subtitle);
 
     // 4x2 grid of character options
     const cols = 4, rows = 2;
