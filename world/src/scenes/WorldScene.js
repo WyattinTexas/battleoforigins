@@ -544,7 +544,7 @@ class WorldScene extends Phaser.Scene {
         .setStrokeStyle(1, 0x556688).setScrollFactor(0).setDepth(200);
     }
     this.minimapGfx = this.add.graphics().setScrollFactor(0).setDepth(201);
-    this.minimapDot = this.add.circle(0, 0, 3, 0x44aaff).setScrollFactor(0).setDepth(202);
+    this.minimapDot = this.add.circle(0, 0, 4, 0x00ffff).setStrokeStyle(1, 0x000000).setScrollFactor(0).setDepth(203);
     this.drawMinimap();
 
     // ── Render player structures ──
@@ -3071,59 +3071,64 @@ class WorldScene extends Phaser.Scene {
     const W = this.uiW;
     const H = this.uiH;
     const mmW = 120, mmH = 90;
-    const btnSize = Math.min(40, Math.floor(W / 14));
-    const barH = btnSize + 14;
     const mmX = W - mmW - 6;
-    const mmY = H - barH - mmH - 4;
+    const mmY = H - mmH - 6;
     return { mmW, mmH, mmX, mmY };
   }
 
   drawMinimap() {
     const { mmW, mmH, mmX, mmY } = this._minimapRect();
-    const scaleX = mmW / WORLD_W;
-    const scaleY = mmH / WORLD_H;
+    // Local radar: show ~60 tile radius around the player
+    const RADAR_R = 60; // tiles visible in each direction
+    const playerTX = G.x;
+    const playerTY = G.y;
+    const viewLeft = playerTX - RADAR_R;
+    const viewTop = playerTY - RADAR_R;
+    const viewW = RADAR_R * 2;
+    const viewH = RADAR_R * 2;
+    const scaleX = mmW / viewW;
+    const scaleY = mmH / viewH;
 
     this.minimapGfx.clear();
 
-    // Draw tiles at minimap scale
-    for (let y = 0; y < WORLD_H; y += 2) {
-      for (let x = 0; x < WORLD_W; x += 2) {
-        const tile = worldMap[y]?.[x] || 0;
+    // Structure tile types that should be highlighted
+    const STRUCTURE_TILES = new Set([5, 8, 12, 19, 26, 27, 28]);
+
+    // Draw tiles at minimap scale — only the visible radar area
+    const structures = []; // collect structures for second pass
+    for (let y = 0; y < viewH; y++) {
+      const wy = viewTop + y;
+      if (wy < 0 || wy >= WORLD_H) continue;
+      for (let x = 0; x < viewW; x++) {
+        const wx = viewLeft + x;
+        if (wx < 0 || wx >= WORLD_W) continue;
+        const tile = worldMap[wy]?.[wx] || 0;
         const colorHex = TILE_COLORS[tile] || '#888888';
         const color = parseInt(colorHex.replace('#', ''), 16);
         this.minimapGfx.fillStyle(color, 1);
-        this.minimapGfx.fillRect(mmX + x * scaleX, mmY + y * scaleY, scaleX * 2, scaleY * 2);
+        this.minimapGfx.fillRect(mmX + x * scaleX, mmY + y * scaleY, Math.ceil(scaleX), Math.ceil(scaleY));
+        if (STRUCTURE_TILES.has(tile)) structures.push({ x, y, tile });
       }
     }
 
-    // Wave 5: Encounter zone colored fills
-    for (const zone of ENCOUNTER_ZONES) {
-      // Determine region color based on zone position
-      const zCenterX = zone.x + zone.w / 2;
-      const zCenterY = zone.y + zone.h / 2;
-      const zRegion = getCurrentRegion(zCenterX, zCenterY);
-      const regionFills = {
-        frost_valley: 0x4488ff,
-        rolling_hills: 0x44cc44,
-        volcanic_isles: 0xff8844,
-        dark_castle: 0x9944cc,
-      };
-      const fillColor = regionFills[zRegion] || 0x8866dd;
-      this.minimapGfx.fillStyle(fillColor, 0.2);
+    // Second pass: draw structures as bright yellow squares so they pop
+    const sSize = Math.max(3, Math.ceil(scaleX * 2));
+    for (const s of structures) {
+      this.minimapGfx.fillStyle(0xddaa22, 1);
       this.minimapGfx.fillRect(
-        mmX + zone.x * scaleX, mmY + zone.y * scaleY,
-        zone.w * scaleX, zone.h * scaleY
-      );
-      // Outline on top
-      this.minimapGfx.lineStyle(1, fillColor, 0.5);
-      this.minimapGfx.strokeRect(
-        mmX + zone.x * scaleX, mmY + zone.y * scaleY,
-        zone.w * scaleX, zone.h * scaleY
+        mmX + s.x * scaleX - 1, mmY + s.y * scaleY - 1,
+        sSize, sSize
       );
     }
+
+    // Store radar params for entity dot positioning in updateHUD
+    this._radarView = { viewLeft, viewTop, viewW, viewH, scaleX, scaleY };
   }
 
   updateHUD() {
+    // ── Minimap radar (always runs, even without DOM HUD) ──
+    if (this.minimapGfx) this._updateMinimapRadar();
+
     const wins = G.rep?.battlesWon || 0;
     const sideline = wins >= 5 ? 'UNLOCKED' : `${wins}/5 wins`;
 
@@ -3226,26 +3231,49 @@ class WorldScene extends Phaser.Scene {
       this.hudTitleText.setVisible(false);
     }
 
-    // ── Minimap entity dots ──
-    const { mmW, mmH, mmX, mmY } = this._minimapRect();
-    const T = this._tileSize || 32;
-    const sX = mmW / (WORLD_W * T);
-    const sY = mmH / (WORLD_H * T);
+  }
 
-    // Player dot (blue-white)
-    this.minimapDot.setPosition(mmX + G.x * (mmW / WORLD_W), mmY + G.y * (mmH / WORLD_H));
+  _updateMinimapRadar() {
+    this.drawMinimap();
+
+    const { mmW, mmH, mmX, mmY } = this._minimapRect();
+    const rv = this._radarView;
+    if (!rv) return;
+    const T = this._tileSize || 32;
+
+    // Helper: convert world pixel pos to minimap pixel pos (returns null if off-radar)
+    const toMM = (wx, wy) => {
+      const tx = wx / T;
+      const ty = wy / T;
+      const rx = tx - rv.viewLeft;
+      const ry = ty - rv.viewTop;
+      if (rx < 0 || rx >= rv.viewW || ry < 0 || ry >= rv.viewH) return null;
+      return { x: mmX + rx * rv.scaleX, y: mmY + ry * rv.scaleY };
+    };
+    // For tile-coord entities (G.x, onlinePlayers)
+    const toMMTile = (tx, ty) => {
+      const rx = tx - rv.viewLeft;
+      const ry = ty - rv.viewTop;
+      if (rx < 0 || rx >= rv.viewW || ry < 0 || ry >= rv.viewH) return null;
+      return { x: mmX + rx * rv.scaleX, y: mmY + ry * rv.scaleY };
+    };
+
+    // Player dot (bright cyan, always center)
+    const pPos = toMMTile(G.x, G.y);
+    if (pPos) this.minimapDot.setPosition(pPos.x, pPos.y);
 
     // Clear previous entity dots
     if (this._mmDots) { this._mmDots.forEach(d => d.destroy()); }
     this._mmDots = [];
 
-    // Hostile enemies — RED dots
+    // Hostile Spiritkin — RED dots
     if (this.enemies) {
       this.enemies.getChildren().forEach(e => {
         if (!e.active) return;
-        const dot = this.add.circle(
-          mmX + e.x * sX, mmY + e.y * sY,
-          e._isBlackRider ? 2.5 : 1.5, 0xff3333
+        const p = toMM(e.x, e.y);
+        if (!p) return;
+        const dot = this.add.circle(p.x, p.y,
+          e._isBlackRider ? 3 : 2, 0xff3333
         ).setScrollFactor(0).setDepth(202);
         this._mmDots.push(dot);
       });
@@ -3255,25 +3283,25 @@ class WorldScene extends Phaser.Scene {
     if (this.npcSprites) {
       this.npcSprites.forEach(npc => {
         if (!npc.sprite || !npc.sprite.active || !npc.sprite.visible) return;
+        const p = toMM(npc.sprite.x, npc.sprite.y);
+        if (!p) return;
         const col = npc.hostile ? 0xff3333 : 0xffffff;
-        const dot = this.add.circle(
-          mmX + npc.sprite.x * sX, mmY + npc.sprite.y * sY,
-          1.5, col
-        ).setScrollFactor(0).setDepth(202);
+        const dot = this.add.circle(p.x, p.y, 2, col)
+          .setScrollFactor(0).setDepth(202);
         this._mmDots.push(dot);
       });
     }
 
-    // Other players (multiplayer) — BLUE dots
+    // Other players — BLUE dots, party members — GREEN dots
     if (typeof onlinePlayers !== 'undefined') {
       Object.values(onlinePlayers).forEach(op => {
         if (!op || !op.x || op.id === G.odId) return;
+        const p = toMMTile(op.x, op.y);
+        if (!p) return;
         const isParty = G.party && G.party.includes(op.id);
-        const col = isParty ? 0x44ff44 : 0x4488ff; // green for party, blue for others
-        const dot = this.add.circle(
-          mmX + op.x * (mmW / WORLD_W), mmY + op.y * (mmH / WORLD_H),
-          2, col
-        ).setScrollFactor(0).setDepth(202);
+        const col = isParty ? 0x44ff44 : 0x4488ff;
+        const dot = this.add.circle(p.x, p.y, 2.5, col)
+          .setScrollFactor(0).setDepth(202);
         this._mmDots.push(dot);
       });
     }
