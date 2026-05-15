@@ -859,13 +859,38 @@ class WorldScene extends Phaser.Scene {
       this.comm = null;
     }
 
-    // ── Wave 6: Onboarding Tutorial ──
+    // ── Wave 6: Onboarding Tutorial (Cinematic Intro) ──
     this._isNewGame = (G.rep.battlesWon === 0 && !G.tutorialComplete);
     this._tutorialArrow = null;
     if (this._isNewGame && G.tutorialStep === 0) {
-      // Delay slightly so the scene fully renders before showing the first message
-      this.time.delayedCall(1500, () => this.startTutorial());
+      // Delay slightly so the scene fully renders before starting cinematic
+      this.time.delayedCall(1500, () => this.startCinematicIntro());
     }
+
+    // ── Post-first-battle Elder Frost comm ──
+    this.events.on('resume', () => {
+      if (this._pendingIntroFirstBattle && G.rep.battlesWon > 0) {
+        this._pendingIntroFirstBattle = false;
+        const className = G.startingClass || 'Warden';
+        this.time.delayedCall(1000, () => {
+          if (typeof StarfoxComm !== 'undefined') {
+            StarfoxComm.play([
+              { char: 'elderFrost', text: 'Well fought, Warden. Your journey as a ' + className + ' begins now. Press T to view your talents.' },
+            ], {
+              onComplete: () => {
+                G.tutorialComplete = true;
+                G.tutorialStep = 4;
+                saveGame();
+              },
+            });
+          } else {
+            G.tutorialComplete = true;
+            G.tutorialStep = 4;
+            saveGame();
+          }
+        });
+      }
+    });
 
     // ── Wave 6: Multiplayer Presence ──
     this._otherPlayerSprites = {};
@@ -3710,99 +3735,176 @@ class WorldScene extends Phaser.Scene {
 
   // ═══════ WAVE 6: ONBOARDING TUTORIAL ═══════
 
-  startTutorial() {
+  startCinematicIntro() {
     if (G.tutorialComplete || G.tutorialStep > 0) return;
     G.tutorialStep = 1;
-    this.showTutorialStep(1);
+
+    const scene = this;
+
+    // Step 1: Freeze the player
+    if (scene.player) {
+      if (scene.player.setVelocity) scene.player.setVelocity(0, 0);
+      scene.player._eventFrozen = true;
+    }
+
+    // Step 2: Dark cinematic overlay with dramatic text
+    const overlay = document.createElement('div');
+    overlay.id = 'cinematicIntroOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;transition:opacity 0.8s ease;';
+    document.body.appendChild(overlay);
+
+    const textEl = document.createElement('div');
+    textEl.style.cssText = 'font-family:"Press Start 2P",monospace;font-size:16px;color:#ccd8e8;text-align:center;line-height:2.2;text-shadow:0 0 20px rgba(120,160,255,0.4);opacity:0;transition:opacity 1s ease;';
+    overlay.appendChild(textEl);
+
+    // Fade in overlay
+    requestAnimationFrame(() => { overlay.style.opacity = '1'; });
+
+    // Line 1
+    setTimeout(() => {
+      textEl.textContent = 'The Overworld has been quiet...';
+      textEl.style.opacity = '1';
+    }, 600);
+
+    // Line 2
+    setTimeout(() => {
+      textEl.style.opacity = '0';
+    }, 3000);
+
+    setTimeout(() => {
+      textEl.textContent = '...until now.';
+      textEl.style.opacity = '1';
+    }, 3600);
+
+    // Fade out overlay
+    setTimeout(() => {
+      textEl.style.opacity = '0';
+      overlay.style.opacity = '0';
+    }, 5200);
+
+    setTimeout(() => {
+      overlay.remove();
+
+      // Step 3: Valkin comm
+      if (typeof StarfoxComm !== 'undefined') {
+        StarfoxComm.play([
+          { char: 'valkin', text: 'I sense a new presence in my domain... interesting.' },
+          { char: 'valkin', text: 'Come. Let us see what you are made of.' },
+        ], {
+          dark: true,
+          onComplete: () => {
+            // Step 4: Unfreeze player
+            if (scene.player) scene.player._eventFrozen = false;
+
+            // Step 5: Elder Frost blocking comms
+            setTimeout(() => {
+              StarfoxComm.play([
+                { char: 'elderFrost', text: 'Warden! You\'ve arrived. Valkin\'s forces grow stronger by the day.' },
+                { char: 'elderFrost', text: 'A wild Spiritkin is nearby. Walk into it to begin your first battle.' },
+              ], {
+                onComplete: () => {
+                  // Step 6: Spawn a scripted Dream Cat right in front of the player
+                  scene.spawnTutorialEnemy();
+
+                  // Step 7: Set tutorial step to 3 so arrow logic works
+                  G.tutorialStep = 3;
+
+                  // Track that we're waiting for first battle
+                  scene._pendingIntroFirstBattle = true;
+
+                  // Show arrow pointing to the spawned enemy
+                  const nearestEnemy = scene.findNearestEnemy();
+                  if (nearestEnemy) {
+                    scene.showTutorialArrow(nearestEnemy.x, nearestEnemy.y);
+                  }
+                },
+              });
+            }, 800);
+          },
+        });
+      } else {
+        // Fallback: no StarfoxComm available, just unfreeze and set tutorial step
+        if (scene.player) scene.player._eventFrozen = false;
+        G.tutorialStep = 3;
+        scene._pendingIntroFirstBattle = true;
+        scene.spawnTutorialEnemy();
+      }
+    }, 6000);
   }
 
-  showTutorialStep(step) {
-    if (!this.comm) return;
+  spawnTutorialEnemy() {
+    if (!this.enemies || !this.player) return;
 
-    // Clean up previous tutorial arrow
-    if (this._tutorialArrow) {
-      this._tutorialArrow.destroy();
-      this._tutorialArrow = null;
+    const T = 32;
+    // Spawn 3 tiles ahead of the player (below them)
+    const ex = this.player.x;
+    const ey = this.player.y + (3 * T);
+
+    // Use Dream Cat (card ID 28)
+    const dreamCat = (typeof ALL_CARDS !== 'undefined' ? ALL_CARDS : []).find(c => c.id === 28);
+    if (!dreamCat) return;
+
+    const artKey = 'wild_28';
+    const artUrl = dreamCat.art || '';
+    const fallbackKey = 'creature_axolot';
+
+    let enemy;
+    const artLoaded = artUrl && this.textures.exists(artKey);
+    if (artLoaded) {
+      enemy = this.enemies.create(ex, ey, artKey, 0);
+      const srcH = enemy.height || 100;
+      enemy.setScale(40 / srcH);
+    } else {
+      enemy = this.enemies.create(ex, ey, fallbackKey, 0).setScale(1.8);
+      // Async load card art
+      if (artUrl && !this._failedArt?.has(artKey)) {
+        if (!this._loadingArt) this._loadingArt = {};
+        if (!this._loadingArt[artKey]) {
+          this._loadingArt[artKey] = true;
+          this.load.image(artKey, artUrl);
+          this.load.once('complete', () => {
+            if (enemy.active && this.textures.exists(artKey)) {
+              enemy.setTexture(artKey);
+              const srcH = enemy.height || 100;
+              enemy.setScale(40 / srcH);
+            }
+          });
+          this.load.start();
+        }
+      }
     }
 
-    switch (step) {
-      case 1:
-        this.comm.show('Guide', 'Welcome to the Spirit World! Use WASD or arrow keys to move around.', { color: '#44ccff' });
-        break;
+    enemy.cardData = dreamCat;
+    enemy.setDepth(9);
+    enemy._isTutorialEnemy = true;
 
-      case 2: {
-        this.comm.show('Guide', 'See those glowing orbs? Walk into one to collect resources!', { color: '#44ccff' });
-        // Point an arrow toward the nearest wisp
-        const nearestWisp = this.findNearestWisp();
-        if (nearestWisp) {
-          this.showTutorialArrow(nearestWisp.x, nearestWisp.y);
+    enemy.label = this.add.text(ex, ey - 28, dreamCat.name, {
+      fontSize: '9px', fontFamily: 'monospace', color: '#ffaaaa',
+      backgroundColor: '#00000088', padding: { x: 2, y: 1 },
+    }).setOrigin(0.5).setDepth(11);
+
+    // NO wandering — stays in place, just a gentle bob
+    this.tweens.add({
+      targets: enemy,
+      y: ey + 4,
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+      onUpdate: () => {
+        if (enemy.active && enemy.label) {
+          enemy.label.setPosition(enemy.x, enemy.y - 28);
         }
-        break;
-      }
-
-      case 3: {
-        this.comm.show('Guide', 'Now find a wild spirit and touch it to start a battle!', { color: '#44ccff' });
-        // Point arrow toward nearest enemy
-        const nearestEnemy = this.findNearestEnemy();
-        if (nearestEnemy) {
-          this.showTutorialArrow(nearestEnemy.x, nearestEnemy.y);
-        }
-        break;
-      }
-
-      case 4:
-        this.comm.show('Guide', 'Great job! Press T to manage your team, I for inventory, C to craft. Good luck, adventurer!', { color: '#44ccff', duration: 6000 });
-        // Tutorial complete after this message auto-dismisses
-        this.time.delayedCall(6500, () => {
-          G.tutorialComplete = true;
-          G.tutorialStep = 4;
-          saveGame();
-        });
-        break;
-    }
+      },
+    });
   }
 
   updateTutorial(vx, vy) {
     if (G.tutorialComplete || !this._isNewGame) return;
 
-    switch (G.tutorialStep) {
-      case 1:
-        // Wait for player to move
-        if (vx !== 0 || vy !== 0) {
-          if (!this._tutorialMoveCount) this._tutorialMoveCount = 0;
-          this._tutorialMoveCount++;
-          // Require a few frames of movement to confirm intentional input
-          if (this._tutorialMoveCount > 30) {
-            G.tutorialStep = 2;
-            this._tutorialMoveCount = 0;
-            this.time.delayedCall(500, () => this.showTutorialStep(2));
-          }
-        }
-        break;
-
-      case 2:
-        // Wait for a wisp collection (battlesWon still 0, check resource gain)
-        // Track if any resource changed since tutorial started
-        if (!this._tutorialResourceSnapshot) {
-          this._tutorialResourceSnapshot = (G.iceShards || 0) + (G.sacredFire || 0) + (G.healingSeeds || 0) + (G.luckyStones || 0) + (G.surge || 0) + (G.moonstone || 0) + (G.firefly || 0);
-        }
-        const currentResources = (G.iceShards || 0) + (G.sacredFire || 0) + (G.healingSeeds || 0) + (G.luckyStones || 0) + (G.surge || 0) + (G.moonstone || 0) + (G.firefly || 0);
-        if (currentResources > this._tutorialResourceSnapshot) {
-          G.tutorialStep = 3;
-          this._tutorialResourceSnapshot = null;
-          this.time.delayedCall(1000, () => this.showTutorialStep(3));
-        }
-        break;
-
-      case 3:
-        // Wait for player to win (or enter) a battle
-        if (G.rep.battlesWon > 0) {
-          G.tutorialStep = 4;
-          this.time.delayedCall(1500, () => this.showTutorialStep(4));
-        }
-        break;
-
-      // Step 4 auto-completes after the message plays
+    // Step 3: waiting for first battle — show arrow to nearest enemy
+    if (G.tutorialStep === 3 && G.rep.battlesWon > 0) {
+      // Battle won — the resume handler takes care of Elder Frost's final comm
+      G.tutorialStep = 4;
     }
   }
 

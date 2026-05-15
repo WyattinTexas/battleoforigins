@@ -68,6 +68,8 @@ class BattleScene extends Phaser.Scene {
     B.battleStarted = true; this.roundNum = 0; this._rolling = false;
     this._raidId = this.battleData.raidId || null;
     this._logEntries = [];
+    this._isFirstBattle = !G.rep || G.rep.battlesWon === 0;
+    this._tutorialWPHintShown = false;
 
     this._loadArt(() => this._buildStage());
   }
@@ -161,6 +163,22 @@ class BattleScene extends Phaser.Scene {
     this._setStatus(header);
 
     this.cameras.main.fadeIn(300, 14, 21, 40);
+
+    // ── First-battle tutorial hints ──
+    if (this._isFirstBattle) {
+      this.time.delayedCall(1200, () => {
+        this._setStatus('Your first battle! Press ROLL to attack.');
+        // Pulse the ROLL button to draw attention
+        if (this._redBtn) {
+          this._tutorialPulse = this.tweens.add({
+            targets: this._redBtn,
+            scaleX: 1.12, scaleY: 1.12,
+            duration: 600, yoyo: true, repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+        }
+      });
+    }
   }
 
   // ── ACTIVE FIGHTER CARD (large) ─────────────────────────
@@ -876,6 +894,8 @@ class BattleScene extends Phaser.Scene {
     this.roundNum++;
     this._setFightEnabled(false);
     if (typeof GameAudio !== 'undefined') GameAudio.dice();
+    // Stop tutorial pulse on first roll
+    if (this._tutorialPulse) { this._tutorialPulse.stop(); this._tutorialPulse = null; if (this._redBtn) this._redBtn.setScale(1); }
 
     if (typeof triggerPreRoll === 'function') {
       triggerPreRoll(this._pt, (msg) => this._addLog(msg));
@@ -1114,6 +1134,21 @@ class BattleScene extends Phaser.Scene {
     this._rolling = false;
     this._setFightEnabled(true);
     this.pg = activeGhost(B[this._pt]); this.eg = activeGhost(B[this._et]);
+
+    // ── First-battle tutorial hints after roll ──
+    if (this._isFirstBattle && this.roundNum === 1) {
+      const outcome = pWin ? `You rolled higher and dealt damage!` : eWin ? `Enemy rolled higher — you took damage!` : `A tie — no damage this round!`;
+      this.time.delayedCall(1500, () => { if (this.scene.isActive()) this._setStatus(outcome); });
+      // Willpower hint (only if player has non-heart willpower cards)
+      if (!this._tutorialWPHintShown) {
+        const hand = this.pg?.willpower || [];
+        const hasActive = hand.length > 0 && hand[0] !== 0;
+        if (hasActive) {
+          this._tutorialWPHintShown = true;
+          this.time.delayedCall(3500, () => { if (this.scene.isActive()) this._setStatus('Click your active willpower card to use its ability!'); });
+        }
+      }
+    }
 
     if (this.eg && (this.eg.hp<=0||this.eg.ko)) { this._setFightEnabled(false); this.time.delayedCall(600, () => this.handleEnemyKO()); }
     else if (this.pg && (this.pg.hp<=0||this.pg.ko)) { this._setFightEnabled(false); this.time.delayedCall(600, () => this.checkKOSwap()); }
