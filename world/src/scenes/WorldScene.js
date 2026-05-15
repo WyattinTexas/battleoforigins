@@ -795,12 +795,20 @@ class WorldScene extends Phaser.Scene {
 
     // ── Resize handler — reposition HUD on window resize ──
     this.scale.on('resize', () => {
+      const W = this.uiW;
+      const H = this.uiH;
       // Raw canvas dimensions for scrollFactor(0) UI
-      this._repositionHUD(this.uiW, this.uiH);
+      this._repositionHUD(W, H);
+      // Reposition region text to center
+      if (this.regionText) this.regionText.setPosition(W / 2, 40);
+      // Rebuild minimap static elements at new position
+      this._repositionMinimap();
+      // Rebuild party sidebar at new position
+      if (typeof this.updatePartySidebar === 'function') this.updatePartySidebar();
     });
 
     // ── Region text ──
-    this.regionText = this.add.text(640, 40, '', {
+    this.regionText = this.add.text(this.uiW / 2, 40, '', {
       fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffffff',
       backgroundColor: '#00000066', padding: { x: 12, y: 4 },
     }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
@@ -1571,8 +1579,28 @@ class WorldScene extends Phaser.Scene {
     if (this._eConsumed) return; // building already handled E this frame
     const ePressed = this._ePressed;
 
+    // NPC greeting lines — shown once per session when player walks near
+    const _greetLines = {
+      'Elder Frost': 'Press E to talk to me, young one.',
+      'Smith Ember': 'Need gear? Press E.',
+      'Frosty Peddler': 'Got wares! Press E to browse.',
+      'Crazy Lou': 'Heh... you look lost. Press E.',
+    };
+
     for (const npc of this.npcSprites) {
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
+
+      // Auto-greeting: once per NPC per session, with global 8s cooldown
+      if (dist < 60 && !npc._hasGreeted && !npc.hostile && _greetLines[npc.name]) {
+        const now = Date.now();
+        const tutOk = G.tutorialComplete || G.tutorialStep >= 3;
+        const cooldownOk = !this._lastNPCGreetTime || (now - this._lastNPCGreetTime > 8000);
+        if (tutOk && cooldownOk && this.comm && !this.comm.isActive) {
+          npc._hasGreeted = true;
+          this._lastNPCGreetTime = now;
+          this.comm.show(npc.name, _greetLines[npc.name], { duration: 2500, speed: 25 });
+        }
+      }
 
       if (dist < 80) {
         npc.label.setColor(npc.hostile ? '#ffaa44' : '#ffdd44');
@@ -3244,6 +3272,50 @@ class WorldScene extends Phaser.Scene {
     return { cx: W - R - 6, cy: H - R - 6, R };
   }
 
+  _repositionMinimap() {
+    const { cx, cy, R } = this._minimapCenter();
+
+    // Redraw background circle
+    if (this._mmBgGfx) {
+      this._mmBgGfx.clear();
+      this._mmBgGfx.fillStyle(0x111122, 0.85);
+      this._mmBgGfx.fillCircle(cx, cy, R + 2);
+    }
+
+    // Redraw border rings
+    if (this._mmBorderGfx) {
+      this._mmBorderGfx.clear();
+      this._mmBorderGfx.lineStyle(3, 0xb8962e, 1);
+      this._mmBorderGfx.strokeCircle(cx, cy, R + 1);
+      this._mmBorderGfx.lineStyle(1, 0xdfc06a, 0.6);
+      this._mmBorderGfx.strokeCircle(cx, cy, R + 3);
+    }
+
+    // Redraw compass crosshair
+    if (this._mmCompassGfx) {
+      this._mmCompassGfx.clear();
+      this._mmCompassGfx.lineStyle(1, 0xffffff, 0.15);
+      this._mmCompassGfx.lineBetween(cx, cy - R, cx, cy + R);
+      this._mmCompassGfx.lineBetween(cx - R, cy, cx + R, cy);
+    }
+
+    // Reposition cardinal labels
+    if (this._mmN) this._mmN.setPosition(cx, cy - R + 4);
+    if (this._mmS) this._mmS.setPosition(cx, cy + R - 4);
+    if (this._mmW) this._mmW.setPosition(cx - R + 5, cy);
+    if (this._mmE) this._mmE.setPosition(cx + R - 5, cy);
+
+    // Reposition zone text
+    if (this._mmZoneText) this._mmZoneText.setPosition(cx, cy - R - 8);
+
+    // Reposition player dot
+    if (this.minimapDot) this.minimapDot.setPosition(cx, cy);
+
+    // Force a minimap tile redraw at new position
+    this._mmLastX = -999;
+    this._mmLastY = -999;
+  }
+
   _buildMinimap() {
     const { cx, cy, R } = this._minimapCenter();
 
@@ -4832,7 +4904,7 @@ class WorldScene extends Phaser.Scene {
     // Controls hint
     if (this._controlsHint) this._controlsHint.setPosition(6, H - barH - 6);
 
-    // Minimap repositioning handled by _updateMinimapRadar each frame
+    // Minimap repositioning handled by _repositionMinimap() in resize handler
   }
 
   // ══════════════════════════════════════════════════════
