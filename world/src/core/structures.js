@@ -20,6 +20,12 @@ const STRUCTURE_TYPES = {
   trellis:  { name: 'Garden Trellis',color: 0x558844, w: 1, h: 1, icon: '⌗', desc: 'Boosts nearby garden yield' },
   greenhouse:{ name: 'Greenhouse',   color: 0x44aa55, w: 3, h: 2, icon: '◻', desc: 'Gardens inside produce year-round' },
   fountain: { name: 'Spirit Fountain',color: 0x4488cc,w: 2, h: 2, icon: '♒', desc: 'Attracts spirits to settlement' },
+  // ── Farm structures ──
+  fence:     { name: 'Fence',         color: 0x8a6a3a, w: 1, h: 1, icon: '⌗', desc: 'Farm border, keeps the look tidy' },
+  well:      { name: 'Water Well',    color: 0x4488aa, w: 2, h: 2, icon: '⊙', desc: 'Water all crops within 5 tiles' },
+  flower_bed:{ name: 'Flower Bed',    color: 0xee88aa, w: 1, h: 1, icon: '✿', desc: 'Decorative flowers' },
+  lamp_post: { name: 'Lamp Post',     color: 0xddaa44, w: 1, h: 1, icon: '☀', desc: 'Night light, protects crops from frost' },
+  sprinkler: { name: 'Sprinkler',     color: 0x4488cc, w: 1, h: 1, icon: '❊', desc: 'Auto-waters nearby crops each season' },
 };
 
 function ensureStructureDefaults() {
@@ -44,6 +50,12 @@ function canBuildStructure(type) {
     trellis:   function() { return typeof getTalentRank === 'function' && getTalentRank('architect', 'arc_enh_1') >= 1; },
     greenhouse:function() { return typeof getTalentRank === 'function' && getTalentRank('architect', 'arc_enh_3') >= 1; },
     fountain:  function() { return typeof getTalentRank === 'function' && getTalentRank('architect', 'arc_enh_4') >= 1; },
+    // Farm structures
+    fence:     function() { return typeof isApprentice === 'function' && isApprentice('cultivator'); },
+    well:      function() { return typeof getTalentRank === 'function' && getTalentRank('cultivator', 'cul_grd_1') >= 1; },
+    flower_bed:function() { return true; }, // anyone can place flowers
+    lamp_post: function() { return typeof isApprentice === 'function' && isApprentice('artisan'); },
+    sprinkler: function() { return typeof getTalentRank === 'function' && getTalentRank('terraformer', 'ter_wat_1') >= 1; },
   };
   return checks[type] ? checks[type]() : false;
 }

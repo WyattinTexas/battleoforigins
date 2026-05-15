@@ -118,6 +118,20 @@ class BootScene extends Phaser.Scene {
     this.load.spritesheet('erw_lamp', 'assets/erw/props-animated/lamp-post-1.png', { frameWidth: 96, frameHeight: 96 });
     this.load.spritesheet('erw_dummy', 'assets/erw/props-animated/training-dummy-hit1.png', { frameWidth: 128, frameHeight: 128 });
 
+    // ── ERW farming assets ──
+    this.load.spritesheet('erw_soil', 'assets/erw/tilesets/fertilized-soil.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet('erw_crops', 'assets/erw/props-static/atlas-sheet4-crops.png', { frameWidth: 32, frameHeight: 32 });
+    this.load.image('erw_fence_curved', 'assets/erw/props-static/fence-curved.png');
+    this.load.image('erw_fence_straight', 'assets/erw/props-static/fence-straight.png');
+    this.load.spritesheet('erw_gate_open', 'assets/erw/props-animated/gate1-opening.png', { frameWidth: 128, frameHeight: 128 });
+    this.load.spritesheet('erw_well_up', 'assets/erw/props-animated/well-bucket-up.png', { frameWidth: 187, frameHeight: 187 });
+    this.load.spritesheet('erw_well_down', 'assets/erw/props-animated/well-bucket-down.png', { frameWidth: 187, frameHeight: 187 });
+    this.load.spritesheet('erw_lamp2', 'assets/erw/props-animated/lamp-post-2.png', { frameWidth: 96, frameHeight: 96 });
+    this.load.image('erw_flower1', 'assets/erw/flowers/flower1.png');
+    this.load.image('erw_flower2', 'assets/erw/flowers/flower2.png');
+    this.load.image('erw_flower3', 'assets/erw/flowers/flower3.png');
+    this.load.image('erw_flower4', 'assets/erw/flowers/flower4.png');
+
     // ── ERW static props (loaded as images) ──
     this.load.image('erw_pine', 'assets/erw/props-static/pine-tree.png');
     this.load.image('erw_props1', 'assets/erw/props-static/atlas-sheet1.png');

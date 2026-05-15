@@ -81,6 +81,29 @@ function getTimeOfDay() {
   return { phase, progress, nightFactor };
 }
 
+// ── Micro-seasons (mapped to day/night cycle) ──
+// Spring=dawn(0-2min), Summer=day(2-5min), Fall=dusk(5-7min), Winter=night(7-10min)
+const SEASONS = {
+  dawn:  { name: 'Spring', icon: '\uD83C\uDF31', color: '#88dd66', growthMult: 1.0 },
+  day:   { name: 'Summer', icon: '\u2600\uFE0F', color: '#ffcc22', growthMult: 1.5 },
+  dusk:  { name: 'Fall',   icon: '\uD83C\uDF42', color: '#dd8833', growthMult: 1.0 },
+  night: { name: 'Winter', icon: '\u2744\uFE0F', color: '#88bbff', growthMult: 0.5 },
+};
+
+function getSeason() {
+  const tod = getTimeOfDay();
+  const info = SEASONS[tod.phase];
+  return {
+    season: info.name.toLowerCase(),
+    name: info.name,
+    icon: info.icon,
+    color: info.color,
+    growthMult: info.growthMult,
+    progress: tod.progress,
+    phase: tod.phase,
+  };
+}
+
 // ── Skill system ──
 // NOTE: hasSkill() is also declared in professions.js with better logic.
 // The professions.js version will overwrite this one (function declarations hoist).
