@@ -5534,7 +5534,8 @@ class WorldScene extends Phaser.Scene {
           else if (!status.watered) waterableCrops.push({ tx, ty, status });
           else growingCrops.push({ tx, ty, status });
         } else if (nearGarden) {
-          const tillable = new Set([0, 9, 10, 11, 17, 19, 20]);
+          if (!WorldScene._tillableSet) WorldScene._tillableSet = new Set([0, 9, 10, 11, 17, 19, 20]);
+          const tillable = WorldScene._tillableSet;
           if (typeof worldMap !== 'undefined' && worldMap[ty] && tillable.has(worldMap[ty][tx])) {
             if (typeof isNearGardenStructure === 'function' && isNearGardenStructure(tx, ty)) {
               tillableTiles.push({ tx, ty });
@@ -5602,6 +5603,11 @@ class WorldScene extends Phaser.Scene {
       this._hideFarmButtons();
       return;
     }
+
+    // Skip DOM rebuild if buttons haven't changed (avoid 6x/sec churn)
+    const _farmFingerprint = buttons.map(b => b.icon + b.label).join('|');
+    if (this._lastFarmFingerprint === _farmFingerprint) return;
+    this._lastFarmFingerprint = _farmFingerprint;
 
     // Render the big Putt-Putt buttons
     this._farmBar.innerHTML = '';

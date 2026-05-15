@@ -166,11 +166,7 @@ class BootScene extends Phaser.Scene {
     this.load.image('erw_tree_snow_med', 'assets/erw/trees-snow/pine-snow-medium.png');
     this.load.image('erw_tree_snow_sm', 'assets/erw/trees-snow/pine-snow-small.png');
 
-    // ── ERW flower sprites (Rolling Hills) ──
-    this.load.image('erw_flower1', 'assets/erw/flowers/flower1.png');
-    this.load.image('erw_flower2', 'assets/erw/flowers/flower2.png');
-    this.load.image('erw_flower3', 'assets/erw/flowers/flower3.png');
-    this.load.image('erw_flower4', 'assets/erw/flowers/flower4.png');
+    // ── ERW flower sprites (Rolling Hills) — already loaded above with farming assets ──
 
     // ── ERW building sprites ──
     this.load.image('erw_cabin', 'assets/erw/buildings/cabin.png');
@@ -200,13 +196,13 @@ class BootScene extends Phaser.Scene {
     this.load.image('erw_rock2', 'assets/erw/scatter/rock2.png');
     this.load.image('erw_rock3', 'assets/erw/scatter/rock3.png');
 
-    // ── Card art (load ALL cards so every enemy has art) ──
+    // ── Card art — DEFERRED: only preload tutorial card (Dream Cat #28) ──
+    // All other card art is loaded on-demand by WorldScene.spawnEnemy().
+    // Loading 245+ images at boot caused a ~5-10s delay on first load.
+    const _preloadCardIds = [28]; // Dream Cat — used in tutorial spawn
     for (const card of ALL_CARDS) {
-      if (card.art) {
-        // Fix relative paths — card art paths start with ../testroom/
-        let artPath = card.art;
-        if (artPath.startsWith('../')) artPath = artPath; // keep relative
-        this.load.image(`card_${card.id}`, artPath);
+      if (card.art && _preloadCardIds.includes(card.id)) {
+        this.load.image(`card_${card.id}`, card.art);
       }
     }
 
@@ -559,18 +555,7 @@ class BootScene extends Phaser.Scene {
     });
     btnHit.on('pointerdown', () => {
       if (G.team.length === 0) {
-        // New game — give starter ghost, then proceed through onboarding flow
-        const starterIds = [39, 66, 91];
-        for (const id of starterIds) {
-          const card = ALL_CARDS.find(c => c.id === id);
-          if (card) {
-            G.team.push({ id: card.id, name: card.name, hp: card.maxHp, maxHp: card.maxHp,
-              ko: false, ability: card.ability, abilityDesc: card.desc, rarity: card.rarity,
-              usedOncePerGame: false, entryFired: false });
-            notify(`${card.name} joins your team!`);
-            break;
-          }
-        }
+        // New game — starter ghost assigned after class choice (see showClassChoice)
         saveGame();
         // Onboarding: Step 1 avatar select, Step 2 class choice, then world
         this.showSpriteSelect();
@@ -877,6 +862,25 @@ class BootScene extends Phaser.Scene {
       }
       // Now learn the chosen class apprentice
       G.talents[selectedClass.key]._app = 1;
+
+      // Give class-themed starter Spiritkin
+      const CLASS_STARTERS = {
+        trainer:        34,   // Grawr — Menace: deal 1 damage on entry (combat aggression)
+        cultivator:     11,   // Villager — Hospitality: sideline healing (nature/nurture)
+        fortune_teller: 37,   // Dealer — House Rules: straight = +3 dmg & negate (luck)
+        artisan:        39,   // Castle Guards — Flamethrower: 3's multiply damage (defense/building)
+        scientist:       3,   // Ancient Librarian — Knowledge: 2's add +1 damage (analysis)
+      };
+      const starterId = CLASS_STARTERS[selectedClass.key] || 39; // fallback: Castle Guards
+      if (G.team.length === 0) {
+        const card = ALL_CARDS.find(c => c.id === starterId);
+        if (card) {
+          G.team.push({ id: card.id, name: card.name, hp: card.maxHp, maxHp: card.maxHp,
+            ko: false, ability: card.ability, abilityDesc: card.desc, rarity: card.rarity,
+            usedOncePerGame: false, entryFired: false });
+          notify(`${card.name} joins your team!`);
+        }
+      }
 
       notify(`Path chosen: ${selectedClass.name}!`);
       saveGame();
