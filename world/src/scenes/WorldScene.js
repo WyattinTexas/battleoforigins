@@ -3793,15 +3793,12 @@ class WorldScene extends Phaser.Scene {
     // Step 2: Dark cinematic overlay with dramatic text
     const overlay = document.createElement('div');
     overlay.id = 'cinematicIntroOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;transition:opacity 0.8s ease;';
+    overlay.setAttribute('style', 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:99999;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:1;transition:opacity 0.8s ease;');
     document.body.appendChild(overlay);
 
     const textEl = document.createElement('div');
-    textEl.style.cssText = 'font-family:"Press Start 2P",monospace;font-size:16px;color:#ccd8e8;text-align:center;line-height:2.2;text-shadow:0 0 20px rgba(120,160,255,0.4);opacity:0;transition:opacity 1s ease;';
+    textEl.setAttribute('style', 'font-family:"Press Start 2P",monospace;font-size:18px;color:#ccd8e8;text-align:center;line-height:2.2;text-shadow:0 0 20px rgba(120,160,255,0.4);opacity:0;transition:opacity 1s ease;');
     overlay.appendChild(textEl);
-
-    // Fade in overlay
-    requestAnimationFrame(() => { overlay.style.opacity = '1'; });
 
     // Line 1
     setTimeout(() => {
