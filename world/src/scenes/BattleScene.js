@@ -169,6 +169,14 @@ class BattleScene extends Phaser.Scene {
       // Disable ROLL until tutorial completes
       this._setFightEnabled(false);
       this.time.delayedCall(800, () => this._showBattleTutorial());
+    } else {
+      // ── Brief hints for battles 2-3 (not full tutorial, just a one-liner) ──
+      const wins = G.rep?.battlesWon || 0;
+      if (wins === 1) {
+        this.time.delayedCall(600, () => this._showCallout('', 'ability', 'Roll high to deal damage!', 1800));
+      } else if (wins === 2) {
+        this.time.delayedCall(600, () => this._showCallout('', 'ability', 'This one looks tougher. Use your willpower wisely!', 2000));
+      }
     }
   }
 

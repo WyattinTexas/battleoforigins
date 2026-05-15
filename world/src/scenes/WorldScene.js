@@ -2164,7 +2164,24 @@ class WorldScene extends Phaser.Scene {
     const ey = py + Math.sin(angle) * dist;
 
     const activeCards = typeof getActiveCards === 'function' ? getActiveCards() : ALL_CARDS.filter(c => !SHELVED_IDS || !SHELVED_IDS.has(c.id));
-    const wildCard = activeCards[Math.floor(Math.random() * activeCards.length)];
+
+    // Early game rarity filter — keep first fights approachable
+    const wins = G.rep?.battlesWon || 0;
+    let pool = activeCards;
+    if (wins < 5) {
+      // battlesWon 0-4: mostly common, occasional uncommon, no rare/legendary
+      const earlyPool = activeCards.filter(c => c.rarity === 'common' || c.rarity === 'uncommon');
+      if (earlyPool.length > 0) {
+        // 75% common, 25% uncommon
+        const commons = earlyPool.filter(c => c.rarity === 'common');
+        pool = (commons.length > 0 && Math.random() < 0.75) ? commons : earlyPool;
+      }
+    } else if (wins < 15) {
+      // Mid game: filter out legendary/ghost-rare
+      const midPool = activeCards.filter(c => c.rarity !== 'legendary' && c.rarity !== 'ghost-rare');
+      if (midPool.length > 0) pool = midPool;
+    }
+    const wildCard = pool[Math.floor(Math.random() * pool.length)];
 
     // Use card art as the sprite — tiny card roaming the world
     const artKey = 'wild_' + wildCard.id;

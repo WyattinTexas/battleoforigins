@@ -25,6 +25,28 @@ const NPCS = [
 // ═══════ NPC DIALOGUE DATA ═══════
 
 function getElderFrostDialogue() {
+  const wins = (G.rep && G.rep.battlesWon) || 0;
+  const level = G.level || 1;
+  const visitedTradingPost = G.questStep >= 4; // step 3->4 triggers on trading post visit
+
+  // ── Contextual lines based on player progress ──
+  if (wins === 0) {
+    return "The Overworld is full of wild Spiritkin. Walk into one to challenge it!";
+  }
+  if (wins === 1) {
+    return "Your first win! Every battle makes you stronger. Keep exploring.";
+  }
+  if (wins >= 3 && !visitedTradingPost) {
+    return "Have you visited the Trading Post? You can find useful items there.";
+  }
+  if (level >= 3) {
+    return "I sense great potential in you. Valkin won't know what hit him.";
+  }
+  if (wins >= 5) {
+    return "You're becoming a real trainer. Try venturing beyond Frost Valley.";
+  }
+
+  // ── Veteran flavour lines (fallback) ──
   const cycleId = getZoneCycleId();
   // Find the best and worst zones
   let bestIdx = 0, worstIdx = 0, bestQ = 0, worstQ = 2;
