@@ -722,6 +722,62 @@ a:hover { color: var(--gold); }
 
 /* ─── RESOURCE ICONS ─────────────────────── */
 .res-icon { font-size: 16px; vertical-align: middle; margin-right: 4px; }
+
+/* ─── LIVE DATA INDICATOR ────────────────── */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(76,175,80,0.12);
+  border: 1px solid rgba(76,175,80,0.25);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #6c6;
+  letter-spacing: 1px;
+  margin-top: 12px;
+}
+.live-badge .live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #6c6;
+  animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(102,204,102,0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 6px 2px rgba(102,204,102,0.3); }
+}
+
+/* ─── DATA UNAVAILABLE ───────────────────── */
+.data-unavailable {
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-red);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-style: italic;
+  margin: 12px 0;
+}
+
+/* ─── SPIRITKIN CARD GRID ────────────────── */
+.spiritkin-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: border-color 0.2s;
+}
+.spiritkin-card:hover { border-color: var(--border-gold); }
+.spiritkin-card .sk-name { font-weight: 600; color: var(--text-bright); }
+.spiritkin-card .sk-hp { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); }
+.spiritkin-card .sk-ability { font-size: 13px; color: var(--gold-dim); margin-left: auto; }
+.spiritkin-card .sk-desc { font-size: 12px; color: var(--text-dim); flex-basis: 100%; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -740,6 +796,7 @@ a:hover { color: var(--gold); }
       THE CODEX
     </div>
     <div class="sidebar-subtitle">Battle of Origins Game Guide</div>
+    <div class="live-badge"><span class="live-dot"></span>LIVE DATA</div>
   </div>
   <div class="sidebar-search">
     <input type="text" id="searchInput" placeholder="Search the Codex..." autocomplete="off">
@@ -980,18 +1037,16 @@ a:hover { color: var(--gold); }
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 4: SPIRITKIN
+     SECTION 4: SPIRITKIN (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="spiritkin" data-nav="Spiritkin">
   <h2 class="section-title"><span class="section-num">CHAPTER IV</span>Spiritkin</h2>
 
-  <p>Spiritkin are the spirit creatures of the Overworld. There are <strong>160+ active cards</strong> across five rarity tiers. Each Spiritkin has unique abilities that trigger at different phases of combat.</p>
+  <p>Spiritkin are the spirit creatures of the Overworld. Each Spiritkin has unique abilities that trigger at different phases of combat.</p>
 
-  <div class="stat-grid">
-    <div class="stat-box"><div class="stat-val">160+</div><div class="stat-label">Active Cards</div></div>
-    <div class="stat-box"><div class="stat-val">5</div><div class="stat-label">Rarity Tiers</div></div>
-    <div class="stat-box"><div class="stat-val">4</div><div class="stat-label">Regions</div></div>
-    <div class="stat-box"><div class="stat-val">4</div><div class="stat-label">Ability Phases</div></div>
+  <!-- Dynamic stat grid -->
+  <div id="spiritkin-stats" class="stat-grid">
+    <!-- Rendered from ALL_CARDS -->
   </div>
 
   <h3>Rarity Tiers</h3>
@@ -1011,77 +1066,23 @@ a:hover { color: var(--gold); }
     <li><strong>Loss-Path Effects</strong> -- Activate when you lose a round (damage reduction, counterattacks, survival)</li>
   </ul>
 
-  <h3 id="frost-valley-spirits">Frost Valley Notables</h3>
-  <div class="info-card">
-    <ul>
-      <li><strong>Powder</strong> -- Starter Spiritkin. Reliable, balanced stats.</li>
-      <li><strong>Skylar</strong> -- Fan favorite with tactical versatility.</li>
-      <li><strong>Tyler</strong> -- Aggressive attacker with high damage output.</li>
-      <li><strong>King Jay</strong> <span class="badge legendary">Legendary</span> -- The Frozen Throne. World boss with 14 HP. Guards the Frost Dungeon entrance.</li>
-      <li><strong>Romy</strong> <span class="badge legendary">Legendary</span> -- Seer of the Frozen Vale. Frost Dungeon final boss. Requires Blue Flame.</li>
-    </ul>
+  <!-- Dynamic card listings by region -->
+  <div id="spiritkin-cards">
+    <!-- Rendered from ALL_CARDS grouped by set/region -->
   </div>
-
-  <h3 id="rolling-hills-spirits">Rolling Hills Notables</h3>
-  <div class="info-card">
-    <ul>
-      <li><strong>Laura</strong> -- Gentle but deceptively strong. Nature affinity.</li>
-      <li><strong>Selene</strong> -- Choice-based ability. Interactive play.</li>
-      <li><strong>Timber</strong> <span class="badge legendary">Legendary</span> -- Dances with Wolves. World boss with 18 HP.</li>
-    </ul>
-  </div>
-
-  <h3 id="volcanic-spirits">Volcanic Isles Notables</h3>
-  <div class="info-card">
-    <ul>
-      <li><strong>Nerina</strong> <span class="badge legendary">Legendary</span> -- Terror of the Depths. 35 HP world boss. The deadliest creature in the sea.</li>
-      <li><strong>Humar</strong> -- Herald of the Meteor. 16 HP world boss requiring the Ice Scepter.</li>
-      <li><strong>Pip</strong> -- The Living Ember. 15 HP boss. Also requires Ice Scepter.</li>
-      <li><strong>Carpenter &rarr; Welder &rarr; Foreman</strong> -- Evolution chain. Each form is stronger.</li>
-    </ul>
-  </div>
-
-  <h3 id="dark-castle-spirits">Dark Castle Notables</h3>
-  <div class="info-card">
-    <ul>
-      <li><strong>Lucy</strong> <span class="badge legendary">Legendary</span> -- Warden of the Blue Flame. 16 HP. Requires Dark Castle Key.</li>
-      <li><strong>Shade</strong> <span class="badge legendary">Legendary</span> -- The Endless Whisper. 12 HP. Special ability below 4 HP.</li>
-      <li><strong>Valkin the Grand</strong> <span class="badge legendary">Legendary</span> -- The Corruptor. 25 HP. Final world boss in the Dark Spire.</li>
-    </ul>
-  </div>
-
-  <h3 id="set-1-legendaries">Set 1 Legendaries</h3>
-  <div class="info-card gold-accent">
-    <ul>
-      <li><strong>Bo</strong> -- Core legendary. Powerful baseline stats.</li>
-      <li><strong>Mountain King</strong> -- The Immovable. 30 HP world boss. The tankiest creature in the game.</li>
-      <li><strong>Doom</strong> -- Evolved from Bigsby (The Omen Bearer). Ultimate power.</li>
-    </ul>
-  </div>
-
-  <h3 id="special-mechanics">Special Mechanics</h3>
-  <ul>
-    <li><strong>Toby's Pure Heart</strong> -- Unique narrative ability tied to the game's lore.</li>
-    <li><strong>Guardian Fairy's Wish</strong> -- Protective ability that can turn a loss into a win.</li>
-    <li><strong>Bubble Boys</strong> -- Defensive shell abilities that absorb hits.</li>
-    <li><strong>Bigsby &rarr; Doom</strong> -- The Omen Bearer transforms into the ultimate threat.</li>
-    <li><strong>Maisie's Lucky</strong> -- Lucky Stone synergy. More stones = more power.</li>
-  </ul>
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 5: TALENT TREES
+     SECTION 5: TALENT TREES (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="talents" data-nav="Talent Trees">
   <h2 class="section-title"><span class="section-num">CHAPTER V</span>Talent Trees</h2>
 
-  <p>The talent system defines your role in the world. There are <strong>5 base classes</strong>, each branching into <strong>3 advanced specializations</strong>, plus <strong>2 hidden classes</strong> with secret unlock conditions.</p>
+  <p>The talent system defines your role in the world. Scaling costs: Tier 0 = 1pt, Tier 1 = 2pt, Tier 2 = 3pt, Tier 3 = 4pt. Each tree has 3 branches with 4 tiers. Cap: 120 points.</p>
 
-  <div class="stat-grid">
-    <div class="stat-box"><div class="stat-val">22</div><div class="stat-label">Total Trees</div></div>
-    <div class="stat-box"><div class="stat-val">120</div><div class="stat-label">Point Cap</div></div>
-    <div class="stat-box"><div class="stat-val">42</div><div class="stat-label">Points to Max 1 Tree</div></div>
-    <div class="stat-box"><div class="stat-val">2</div><div class="stat-label">Hidden Classes</div></div>
+  <!-- Dynamic stat grid -->
+  <div id="talent-stats" class="stat-grid">
+    <!-- Rendered from CLASS_TREES -->
   </div>
 
   <div class="info-card">
@@ -1089,190 +1090,12 @@ a:hover { color: var(--gold); }
     <p>Tier 0 = 1 point, Tier 1 = 2 points, Tier 2 = 3 points, Tier 3 = 4 points. Each tree has 3 branches with 4 tiers. You can master ~2 full trees and get ~85% of a third with the 120-point cap.</p>
   </div>
 
-  <!-- FORTUNE TELLER -->
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title" style="color:#44bbff;">Fortune Teller</span>
-    <span class="ch-tag">Base Class &rarr; Shaman, Scholar, Enchanter</span>
-  </div>
-  <div class="collapse-body">
-    <p>Bestow fortunes upon other players. 50/50 Good/Bad base odds. Players give 10 Fortune XP, NPCs give 1.</p>
-    <div class="tree-branch">
-      <div class="branch-name">Bright Fortune</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Potent Fortune</span> <span class="talent-desc">-- Good Fortune gives +2 Lucky Stones instead of 1</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Blessed Touch</span> <span class="talent-desc">-- Good Fortune also heals target 3 HP</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Fortune's Favor</span> <span class="talent-desc">-- Good Fortune also gives +5% walk speed</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Radiant Blessing</span> <span class="talent-desc">-- +2 Lucky Stones AND +1 damage on first roll</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Fate's Balance</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Extended Fortune</span> <span class="talent-desc">-- Fortune lasts 5 minutes instead of 1 battle</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Enduring Aura</span> <span class="talent-desc">-- Fortune duration increased to 20 minutes</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Persistent Ward</span> <span class="talent-desc">-- Duration increased to 1 hour (max)</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Timeless Fortune</span> <span class="talent-desc">-- Fortune persists through KO</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Dark Fortune (Path to Dark Rider)</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Cruel Fortune</span> <span class="talent-desc">-- Bad Fortune takes -2 dice instead of -1</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Misfortune Mastery</span> <span class="talent-desc">-- Odds shift to 35/65 Good/Bad</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Hex</span> <span class="talent-desc">-- Dark Riders 20% more attracted to cursed targets</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Dark Profit</span> <span class="talent-desc">-- Gain 5 gold each time you give a Bad Fortune</span></div>
-    </div>
+  <!-- Dynamic talent tree collapsibles -->
+  <div id="talent-trees-container">
+    <!-- Rendered from CLASS_TREES -->
   </div>
 
-  <!-- SHAMAN -->
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title" style="color:#66cc88;">Shaman</span>
-    <span class="ch-tag">Advanced (Fortune Teller)</span>
-  </div>
-  <div class="collapse-body">
-    <p>Channel nature's power through gardens and spirit pets. Meditate for buffs, fight with spirits, empower your party.</p>
-    <div class="tree-branch">
-      <div class="branch-name">Garden Rites</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Garden Communion</span> <span class="talent-desc">-- Meditate at a garden: +1 die self-buff for 10 min</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Bloom Ritual</span> <span class="talent-desc">-- Meditating spawns rare spirits nearby</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Deep Communion</span> <span class="talent-desc">-- Garden buff extended to 30 minutes</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Sacred Grove</span> <span class="talent-desc">-- Meditating gives garden owner cultivation XP</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Battle Spirit</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Spirit Companion</span> <span class="talent-desc">-- Spirit pet adds +1 damage to all attacks</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">War Chant</span> <span class="talent-desc">-- +2 damage buff to next group battle ally</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Totemic Shield</span> <span class="talent-desc">-- Absorb 3 damage for a party member (once/battle)</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Spirit's Luck</span> <span class="talent-desc">-- Spirit pet gains +1 Lucky Stone per round</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Self-Attunement</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Nature's Pulse</span> <span class="talent-desc">-- Heal 1 HP every 2 min near any garden</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Elemental Skin</span> <span class="talent-desc">-- Take 1 less damage from first hit each battle</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Spirit Merge</span> <span class="talent-desc">-- Control your spirit pet as yourself</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Shared Meditation</span> <span class="talent-desc">-- Nearby party members receive your meditation buffs</span></div>
-    </div>
-  </div>
-
-  <!-- SCHOLAR -->
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title" style="color:#8888ff;">Scholar</span>
-    <span class="ch-tag">Advanced (Fortune Teller) &rarr; Path to Elder</span>
-  </div>
-  <div class="collapse-body">
-    <p>Study the ancient arts. Prepare allies, trade wisely, and unlock the secrets of DNA. The path to Elder.</p>
-    <div class="tree-branch">
-      <div class="branch-name">Insight</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Preparation</span> <span class="talent-desc">-- Give anyone +1 die on first roll (10 min, tavern only)</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Shrewd Trader</span> <span class="talent-desc">-- 20% discount at trading posts</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Deep Study</span> <span class="talent-desc">-- Preparation duration extended to 30 min</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Spirit Compass</span> <span class="talent-desc">-- Reveals path to nearest legendary Spiritkin</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Inner Power</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Quick Learner</span> <span class="talent-desc">-- +10% XP from all sources</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Mentor</span> <span class="talent-desc">-- Teach a skill to a party member for profession XP</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Ancient Reader</span> <span class="talent-desc">-- Decipher lore tablets (find all 4 &rarr; Elder path)</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Grand Tutor</span> <span class="talent-desc">-- Party members gain +15% XP near you</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Transcendence</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">DNA Insight</span> <span class="talent-desc">-- +1 damage against Spiritkin you have DNA of</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Refined Analysis</span> <span class="talent-desc">-- Extracted DNA has +1 quality tier</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Deep Knowledge</span> <span class="talent-desc">-- +2 damage against DNA targets (stacks)</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Residual Collection</span> <span class="talent-desc">-- 5% auto-collect DNA from defeated Spiritkin</span></div>
-    </div>
-  </div>
-
-  <!-- ARTISAN -->
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title" style="color:#dd9933;">Artisan</span>
-    <span class="ch-tag">Base Class &rarr; Architect, Armorsmith, Weaponsmith</span>
-  </div>
-  <div class="collapse-body">
-    <p>Master crafting fundamentals. Build houses, workshops, and settlements.</p>
-    <div class="tree-branch">
-      <div class="branch-name">Construction</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Foundation</span> <span class="talent-desc">-- Build a basic house (respawn point)</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Homestead</span> <span class="talent-desc">-- House grants a mini buff when you exit</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Workshop</span> <span class="talent-desc">-- +20% crafting success</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Housing Schematics</span> <span class="talent-desc">-- Unlock alternative house layouts</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Materials</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Resource Finder</span> <span class="talent-desc">-- +15% gathering yield</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Efficient Craft</span> <span class="talent-desc">-- 10% chance to not consume materials</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Rare Recipes</span> <span class="talent-desc">-- Unlock rare-tier schematics</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Master Refiner</span> <span class="talent-desc">-- All crafted items gain +1 quality</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Township</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Settlement</span> <span class="talent-desc">-- Designate an area as your settlement</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Tavern</span> <span class="talent-desc">-- Build a tavern (rest for buffs)</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Trade Post</span> <span class="talent-desc">-- Build a trade post for player trading</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Warehouse</span> <span class="talent-desc">-- Shared storage for settlement members</span></div>
-    </div>
-  </div>
-
-  <!-- TRAINER -->
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title" style="color:#44dd66;">Trainer</span>
-    <span class="ch-tag">Base Class &rarr; Beastmaster, Gladiator, Ranger</span>
-  </div>
-  <div class="collapse-body">
-    <p>Learn to recruit, bond with, and grow your Spiritkin.</p>
-    <div class="tree-branch">
-      <div class="branch-name">Training</div>
-      <div class="tree-node"><span class="tier">T0-3</span><span class="talent-name">Basic &rarr; Advanced &rarr; Elite &rarr; Master Training</span> <span class="talent-desc">-- Progressive training tiers for Spiritkin XP</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Recruiting</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Keen Eye</span> <span class="talent-desc">-- +10% recruit chance</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Spiritkin Whisperer</span> <span class="talent-desc">-- Wild Spiritkin less aggressive toward you</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Rare Seeker</span> <span class="talent-desc">-- +5% rare Spiritkin spawn rate</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Legendary Tracker</span> <span class="talent-desc">-- Flash indicator when a legendary is nearby</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Bonding</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">Kindred Spirit</span> <span class="talent-desc">-- Your Spiritkin trusts you</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Sideline Partner</span> <span class="talent-desc">-- UNLOCK 1st sideline slot</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Soul Bond</span> <span class="talent-desc">-- Spiritkin heals 1 HP between battles</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">True Companion</span> <span class="talent-desc">-- Your Spiritkin is your friend</span></div>
-    </div>
-  </div>
-
-  <!-- SCIENTIST -->
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title" style="color:#aa55ff;">Scientist</span>
-    <span class="ch-tag">Base Class &rarr; Alchemist, Gene Splicer, Inventor</span>
-  </div>
-  <div class="collapse-body">
-    <p>Extract DNA, create mutations, supply components. The Laboratory is your domain.</p>
-    <div class="tree-branch">
-      <div class="branch-name">Extraction</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">DNA Probe</span> <span class="talent-desc">-- Extract DNA from common Spiritkin</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Refined Extraction</span> <span class="talent-desc">-- +15% DNA success rate</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Consolation Gold</span> <span class="talent-desc">-- 1 gold on failed extraction</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Universal Probe</span> <span class="talent-desc">-- Extract from any rarity Spiritkin</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Mutations</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">DNA Cataloging</span> <span class="talent-desc">-- View collection stats in the lab</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Overload Risk</span> <span class="talent-desc">-- +20% overload chance (Spiritkin may come alive!)</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Selective Traits</span> <span class="talent-desc">-- Choose which parent ability a hybrid inherits</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Hybrid Fusion</span> <span class="talent-desc">-- Combine 2 DNA samples to breed a hybrid</span></div>
-    </div>
-    <div class="tree-branch">
-      <div class="branch-name">Synthesis</div>
-      <div class="tree-node"><span class="tier">T0</span><span class="talent-name">DNA Processing</span> <span class="talent-desc">-- Break down DNA into raw materials</span></div>
-      <div class="tree-node"><span class="tier">T1</span><span class="talent-name">Basic Synthesis</span> <span class="talent-desc">-- Process DNA into crafting components</span></div>
-      <div class="tree-node"><span class="tier">T2</span><span class="talent-name">Refined Components</span> <span class="talent-desc">-- Higher quality component output</span></div>
-      <div class="tree-node"><span class="tier">T3</span><span class="talent-name">Master Components</span> <span class="talent-desc">-- Rare-tier components for Artisans/Enchanters</span></div>
-    </div>
-  </div>
-
-  <!-- HIDDEN CLASSES -->
+  <!-- Hidden Classes (static prose + dynamic if available) -->
   <h3 id="hidden-classes">Hidden Classes</h3>
   <div class="info-card red-accent">
     <div class="card-title"><span class="icon">&#9760;</span> Dark Rider</div>
@@ -1297,7 +1120,7 @@ a:hover { color: var(--gold); }
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 6: PROFESSIONS
+     SECTION 6: PROFESSIONS (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="professions" data-nav="Professions">
   <h2 class="section-title"><span class="section-num">CHAPTER VI</span>Professions</h2>
@@ -1315,43 +1138,14 @@ a:hover { color: var(--gold); }
   </table>
 
   <h3 id="profession-tree">Profession Skill Trees</h3>
-  <p>Profession trees have a <strong>80 skill point cap</strong>. Each branch has 4 tiers requiring increasing XP thresholds.</p>
-
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title">Ranger &rarr; Spirit Ranger</span>
-    <span class="ch-tag">Exploration</span>
-  </div>
-  <div class="collapse-body">
-    <p><strong>Ranger:</strong> Pathfinder (+10% speed) &rarr; Tracker (rare enemies) &rarr; Region Walker (region crystals) &rarr; Warden (unlock Spirit Ranger)</p>
-    <p><strong>Spirit Ranger:</strong> Crystal Seeker (minimap crystals) &rarr; Ghost Tracker (+1 die, +10% recruit) &rarr; Spirit Breaker (+15% vs Ghost-Rare+) &rarr; Wilderness Master (auto-swap, reveal hidden zones)</p>
-  </div>
-
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title">Tinkerer &rarr; Blacksmith / Swordsmith / Blaster Engineering</span>
-    <span class="ch-tag">Crafting</span>
-  </div>
-  <div class="collapse-body">
-    <p><strong>Tinkerer:</strong> Apprentice (+1 experiment) &rarr; Assembler (+10 assembly) &rarr; Journeyman (craft commons anywhere) &rarr; Artisan (unlock specializations)</p>
-    <p><strong>Blacksmith:</strong> Forge Hand &rarr; Smith &rarr; Master Smith &rarr; Grand Smith (legendary armor). Sub-branch: <strong>Armorer</strong> (Plate Worker, Shield Master, Iron Wall).</p>
-    <p><strong>Swordsmith:</strong> Blade Apprentice &rarr; Swordsmith &rarr; Blade Master &rarr; Sword Master (unique blade schematics).</p>
-    <p><strong>Blaster Engineering:</strong> Tinkerer &rarr; Engineer &rarr; Blaster Smith &rarr; Grand Engineer.</p>
-  </div>
-
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title">Merchant / Socialite</span>
-    <span class="ch-tag">Trade & Charisma</span>
-  </div>
-  <div class="collapse-body">
-    <p><strong>Merchant:</strong> Haggler (better NPC prices) &rarr; Market Listing &rarr; Verified Badge &rarr; Trading Empire.</p>
-    <p><strong>Socialite:</strong> Charm &rarr; Persuasion &rarr; Influence &rarr; Celebrity. Charisma XP from NPC interactions and social activities.</p>
+  <!-- Dynamic profession trees -->
+  <div id="profession-trees-container">
+    <!-- Rendered from PROFESSION_TREE -->
   </div>
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 7: CRAFTING & GATHERING
+     SECTION 7: CRAFTING & GATHERING (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="crafting" data-nav="Crafting &amp; Gathering">
   <h2 class="section-title"><span class="section-num">CHAPTER VII</span>Crafting &amp; Gathering</h2>
@@ -1369,58 +1163,9 @@ a:hover { color: var(--gold); }
 
   <h3 id="schematics">Schematics</h3>
 
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title">Weapons</span>
-    <span class="ch-tag">weapon slot</span>
-  </div>
-  <div class="collapse-body">
-    <table>
-      <tr><th>Name</th><th>Tier</th><th>Essences</th><th>Effect</th></tr>
-      <tr><td>Frost Blaster</td><td><span class="badge rare">Rare</span></td><td>2</td><td>+1 damage on winning rolls</td></tr>
-      <tr><td>Spirit Bow</td><td><span class="badge rare">Rare</span></td><td>2</td><td>+1 die on first roll each battle</td></tr>
-      <tr><td>Ice Blade</td><td><span class="badge rare">Rare</span></td><td>2</td><td>+1 die while swinging. Wins grant +1 Ice Shard</td></tr>
-      <tr><td>Flame Blade</td><td><span class="badge rare">Rare</span></td><td>2</td><td>+1 die while swinging. Wins generate +5 Burn</td></tr>
-      <tr><td>Frostfire Blade</td><td><span class="badge legendary">Legendary</span></td><td>3</td><td>+2 damage, Ice Shards deal double</td></tr>
-      <tr><td>Golden Dice</td><td><span class="badge legendary">Legendary</span></td><td>3</td><td>+1 die on first roll of every fight</td></tr>
-    </table>
-  </div>
-
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title">Armor &amp; Masks</span>
-    <span class="ch-tag">head slot</span>
-  </div>
-  <div class="collapse-body">
-    <table>
-      <tr><th>Name</th><th>Tier</th><th>Essences</th><th>Effect</th></tr>
-      <tr><td>Ice Shield</td><td><span class="badge rare">Rare</span></td><td>2</td><td>-1 damage taken from doubles</td></tr>
-      <tr><td>Mask of Day</td><td><span class="badge rare">Rare</span></td><td>2</td><td>Gain 1 Burn for each 1 or 2 you roll</td></tr>
-      <tr><td>Mask of Night</td><td><span class="badge rare">Rare</span></td><td>2</td><td>Roll same dice as enemy +1. +1 damage on wins</td></tr>
-      <tr><td>Warden Cloak</td><td><span class="badge legendary">Legendary</span></td><td>3</td><td>Reduce all damage by 1</td></tr>
-      <tr><td>Shade's Cape</td><td><span class="badge legendary">Legendary</span></td><td>3</td><td>Active ghost gains +1 max HP</td></tr>
-    </table>
-  </div>
-
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title">Accessories &amp; Charms</span>
-    <span class="ch-tag">accessory slot</span>
-  </div>
-  <div class="collapse-body">
-    <table>
-      <tr><th>Name</th><th>Tier</th><th>Effect</th></tr>
-      <tr><td>Spirit Lens</td><td><span class="badge common">Common</span></td><td>Reveals enemy stats before battle</td></tr>
-      <tr><td>Lucky Charm</td><td><span class="badge common">Common</span></td><td>Start each fight with 1 Lucky Stone</td></tr>
-      <tr><td>Healing Root</td><td><span class="badge common">Common</span></td><td>Start each fight with 1 Healing Seed</td></tr>
-      <tr><td>Ember Stone</td><td><span class="badge common">Common</span></td><td>Start each fight with 1 Sacred Fire</td></tr>
-      <tr><td>Frost Shard</td><td><span class="badge common">Common</span></td><td>Start each fight with 1 Ice Shard</td></tr>
-      <tr><td>Surge Crystal</td><td><span class="badge common">Common</span></td><td>Start each fight with 1 Surge</td></tr>
-      <tr><td>Healer's Staff</td><td><span class="badge rare">Rare</span></td><td>Heal 1 HP after each winning roll</td></tr>
-      <tr><td>Firefly Lantern</td><td><span class="badge rare">Rare</span></td><td>Start with 1 Magic Firefly. Take 2 damage</td></tr>
-      <tr><td>Moonstone Ring</td><td><span class="badge legendary">Legendary</span></td><td>Start each fight with 1 Moonstone</td></tr>
-      <tr><td>Valkin's Crystal</td><td><span class="badge legendary">Legendary</span></td><td>Doubles deal +1 bonus damage</td></tr>
-    </table>
+  <!-- Dynamic schematics by type -->
+  <div id="schematics-container">
+    <!-- Rendered from SCHEMATICS -->
   </div>
 
   <h3 id="essence-subtypes">Essence Subtypes</h3>
@@ -1436,7 +1181,7 @@ a:hover { color: var(--gold); }
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 8: THE GARDEN
+     SECTION 8: THE GARDEN (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="garden" data-nav="The Garden">
   <h2 class="section-title"><span class="section-num">CHAPTER VIII</span>The Garden</h2>
@@ -1444,14 +1189,9 @@ a:hover { color: var(--gold); }
   <p>Gardens are player-placed structures where you grow plants for battle resources. Requires the Cultivator apprentice talent to build.</p>
 
   <h3 id="plant-types">Plant Types</h3>
-  <table>
-    <tr><th>Plant</th><th>Resource</th><th>Yield</th><th>Grow Time</th></tr>
-    <tr><td>Healing Herb</td><td>Healing Seeds</td><td>2</td><td>10 min</td></tr>
-    <tr><td>Fire Bloom</td><td>Sacred Fire</td><td>2</td><td>10 min</td></tr>
-    <tr><td>Frost Lily</td><td>Ice Shards</td><td>2</td><td>10 min</td></tr>
-    <tr><td>Moon Flower</td><td>Moonstone</td><td>1</td><td>Rare, slow growth</td></tr>
-    <tr><td>Lucky Clover</td><td>Lucky Stones</td><td>1</td><td>Rare, slow growth</td></tr>
-  </table>
+  <div id="plants-container">
+    <!-- Rendered from PLANT_TYPES -->
+  </div>
 
   <h3 id="growth-stages">Growth Stages</h3>
   <p>Plants progress through 5 stages mapped to 8 sprite frames:</p>
@@ -1467,29 +1207,15 @@ a:hover { color: var(--gold); }
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 9: BUILDING & HOUSING
+     SECTION 9: BUILDING & HOUSING (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="housing" data-nav="Building &amp; Housing">
   <h2 class="section-title"><span class="section-num">CHAPTER IX</span>Building &amp; Housing</h2>
 
   <h3 id="structure-types">Structure Types</h3>
-  <table>
-    <tr><th>Structure</th><th>Icon</th><th>Function</th><th>Requires</th></tr>
-    <tr><td>House</td><td>&#8962;</td><td>Respawn point</td><td>Artisan: Foundation</td></tr>
-    <tr><td>Garden</td><td>&#10048;</td><td>Grow plants, attract spirits</td><td>Cultivator apprentice</td></tr>
-    <tr><td>Tavern</td><td>&#9815;</td><td>Rest for buffs, cast Preparation</td><td>Artisan: Tavern</td></tr>
-    <tr><td>Workshop</td><td>&#9874;</td><td>+20% crafting success</td><td>Artisan: Workshop</td></tr>
-    <tr><td>Trade Post</td><td>&#9878;</td><td>Player trading</td><td>Artisan: Trade Post</td></tr>
-    <tr><td>Warehouse</td><td>&#9636;</td><td>Shared storage</td><td>Artisan: Warehouse</td></tr>
-    <tr><td>Laboratory</td><td>&#9879;</td><td>DNA mutations (Scientists)</td><td>Architect: Laboratory</td></tr>
-    <tr><td>Battle Arena</td><td>&#9876;</td><td>PvP battles</td><td>Architect: Battle Arena</td></tr>
-    <tr><td>Inn</td><td>&#9978;</td><td>Rest bonus for returning players</td><td>Architect: Inn</td></tr>
-    <tr><td>Train Station</td><td>&#9872;</td><td>Teleport to other stations</td><td>Architect: Train Station</td></tr>
-    <tr><td>Town Hall</td><td>&#9961;</td><td>Settlement on world map</td><td>Architect mastery</td></tr>
-    <tr><td>Garden Trellis</td><td>&#9003;</td><td>Boosts nearby garden yield</td><td>Architect: Garden Trellis</td></tr>
-    <tr><td>Greenhouse</td><td>&#9723;</td><td>Year-round garden production</td><td>Architect: Greenhouse</td></tr>
-    <tr><td>Spirit Fountain</td><td>&#9811;</td><td>Attracts spirits to settlement</td><td>Architect: Spirit Fountain</td></tr>
-  </table>
+  <div id="structures-container">
+    <!-- Rendered from STRUCTURE_TYPES -->
+  </div>
 
   <h3 id="house-plots">House Plots</h3>
   <p>There are <strong>7 claimable house plots</strong> across all regions. Each costs <strong>100 coins</strong> to claim. You can only own one house at a time. Demolishing refunds 50 coins.</p>
@@ -1499,32 +1225,21 @@ a:hover { color: var(--gold); }
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 10: NPCs & ENCOUNTERS
+     SECTION 10: NPCs & ENCOUNTERS (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="npcs" data-nav="NPCs &amp; Encounters">
   <h2 class="section-title"><span class="section-num">CHAPTER X</span>NPCs &amp; Encounters</h2>
 
   <h3 id="friendly-npcs">Friendly NPCs</h3>
-  <table>
-    <tr><th>Name</th><th>Location</th><th>Role</th></tr>
-    <tr><td><strong>Elder Frost</strong></td><td>Polaris</td><td>Zone quality reports, world lore, guidance</td></tr>
-    <tr><td><strong>Smith Ember</strong></td><td>Polaris</td><td>Crafting advice, workshop master</td></tr>
-    <tr><td><strong>Crazy Lou</strong></td><td>Polaris</td><td>Mysterious warnings. Talk to her 3 times to summon Valkin.</td></tr>
-    <tr><td><strong>Farmer Bea</strong></td><td>Meadowbrook</td><td>Hills gossip, spirit warnings</td></tr>
-    <tr><td><strong>Herbalist Sage</strong></td><td>Meadowbrook</td><td>Essence expertise, herb knowledge</td></tr>
-    <tr><td><strong>Captain Flint</strong></td><td>Volcanic Settlement</td><td>Island guide, Nerina lore</td></tr>
-    <tr><td><strong>Lava Tender</strong></td><td>Volcanic Settlement</td><td>Lava channels, Flame Core knowledge</td></tr>
-    <tr><td><strong>Shadow Warden</strong></td><td>Dark Castle Outpost</td><td>Passage guard, Valkin warnings</td></tr>
-    <tr><td><strong>Cursed Scholar</strong></td><td>Dark Castle Outpost</td><td>Mask of Destiny knowledge, Leon sighting</td></tr>
-  </table>
+  <div id="friendly-npcs-container">
+    <!-- Rendered from NPCS -->
+  </div>
 
   <h3 id="hostile-npcs">Hostile Trainers</h3>
   <p>Hostile NPCs roam encounter zones and patrol specific areas. They have full teams of Spiritkin and scale by region difficulty.</p>
-  <ul>
-    <li><strong>Brawler Jax</strong> -- Aggressive fighter, common in Frost Valley</li>
-    <li><strong>Ice Queen Vera</strong> -- Frost-themed specialist with ice synergies</li>
-    <li><strong>Bandit Marcus</strong> -- Ambushes players on paths between zones</li>
-  </ul>
+  <div id="hostile-npcs-container">
+    <!-- Rendered from HOSTILE_NPCS -->
+  </div>
 
   <h3 id="black-riders">Black Riders</h3>
   <div class="info-card red-accent">
@@ -1535,7 +1250,7 @@ a:hover { color: var(--gold); }
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 11: QUESTS & EVENTS
+     SECTION 11: QUESTS & EVENTS (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="quests" data-nav="Quests &amp; Events">
   <h2 class="section-title"><span class="section-num">CHAPTER XI</span>Quests &amp; Events</h2>
@@ -1557,40 +1272,15 @@ a:hover { color: var(--gold); }
 
   <h3 id="world-events">World Events</h3>
   <p>Random events trigger every 10 minutes with a 20% chance. Each lasts 5 minutes.</p>
-  <table>
-    <tr><th>Event</th><th>Effect</th></tr>
-    <tr><td><strong>Essence Rain</strong></td><td>All essences drop with +200 quality bonus</td></tr>
-    <tr><td><strong>Spirit Surge</strong></td><td>Encounter rate doubled</td></tr>
-    <tr><td><strong>Crafter's Blessing</strong></td><td>All experiment rolls get +20 bonus</td></tr>
-    <tr><td><strong>Peaceful Hour</strong></td><td>Roaming enemies stop chasing for 5 minutes</td></tr>
-  </table>
+  <div id="world-events-container">
+    <!-- Rendered from WORLD_EVENTS -->
+  </div>
 
   <h3 id="world-bosses">World Boss System</h3>
   <p>World bosses spawn on 30-minute cycles, backed by Firebase for real-time multiplayer. Multiple players contribute damage via atomic transactions. Boss drops include legendary schematics.</p>
 
-  <div class="collapse-header" onclick="toggleCollapse(this)">
-    <span class="ch-chevron">&#9654;</span>
-    <span class="ch-title">All 16 World Bosses</span>
-    <span class="ch-tag">by region</span>
-  </div>
-  <div class="collapse-body">
-    <table>
-      <tr><th>Boss</th><th>Title</th><th>HP</th><th>Players</th><th>Region</th></tr>
-      <tr><td>King Jay</td><td>The Frozen Throne</td><td>14</td><td>2</td><td>Frost Valley</td></tr>
-      <tr><td>Romy</td><td>Seer of the Frozen Vale</td><td>14</td><td>2-4</td><td>Frost Valley</td></tr>
-      <tr><td>The Mountain King</td><td>The Immovable</td><td>30</td><td>2-5</td><td>Frost Valley</td></tr>
-      <tr><td>Timber</td><td>Dances with Wolves</td><td>18</td><td>2-3</td><td>Rolling Hills</td></tr>
-      <tr><td>Dark Fang</td><td>The Unseen Predator</td><td>9</td><td>1-2</td><td>Rolling Hills</td></tr>
-      <tr><td>Jasper</td><td>The Restless Flame</td><td>18</td><td>2</td><td>Rolling Hills</td></tr>
-      <tr><td>Pip</td><td>The Living Ember</td><td>15</td><td>3</td><td>Volcanic Isles</td></tr>
-      <tr><td>Humar</td><td>Herald of the Meteor</td><td>16</td><td>3-5</td><td>Volcanic Isles</td></tr>
-      <tr><td>Nerina</td><td>Terror of the Depths</td><td>35</td><td>2-5</td><td>Volcanic Isles</td></tr>
-      <tr><td>Lucy</td><td>Warden of the Blue Flame</td><td>16</td><td>3</td><td>Dark Castle</td></tr>
-      <tr><td>Shade</td><td>The Endless Whisper</td><td>12</td><td>3</td><td>Dark Castle</td></tr>
-      <tr><td>Bigsby</td><td>The Omen Bearer</td><td>16</td><td>1-3</td><td>Dark Castle</td></tr>
-      <tr><td>Valkin the Grand</td><td>The Corruptor</td><td>25</td><td>2-3</td><td>Dark Spire</td></tr>
-    </table>
-    <p class="text-dim" style="margin-top:8px;">Some bosses require key items to challenge (Blue Flame, Ice Scepter, Dark Castle Key, Dark Spire Key).</p>
+  <div id="world-bosses-container">
+    <!-- Rendered from WORLD_BOSS_POOL -->
   </div>
 
   <h3 id="valkin-event">Valkin the Grand Event</h3>
@@ -1655,27 +1345,15 @@ a:hover { color: var(--gold); }
 </div>
 
 <!-- ════════════════════════════════════════════
-     SECTION 14: ACHIEVEMENTS & TITLES
+     SECTION 14: ACHIEVEMENTS & TITLES (DYNAMIC)
      ════════════════════════════════════════════ -->
 <div class="section" id="achievements" data-nav="Achievements &amp; Titles">
   <h2 class="section-title"><span class="section-num">CHAPTER XIV</span>Achievements &amp; Titles</h2>
 
-  <h3 id="all-achievements">All 12 Achievements</h3>
-  <table>
-    <tr><th>Achievement</th><th>Requirement</th></tr>
-    <tr><td><strong>First Victory</strong></td><td>Win your first battle</td></tr>
-    <tr><td><strong>Seasoned Fighter</strong></td><td>Win 10 battles</td></tr>
-    <tr><td><strong>Artisan</strong></td><td>Craft your first item</td></tr>
-    <tr><td><strong>Master Crafter</strong></td><td>Craft 20 items</td></tr>
-    <tr><td><strong>Explorer</strong></td><td>Visit all 4 regions (500+ tiles explored)</td></tr>
-    <tr><td><strong>Collector</strong></td><td>Own 6 Spiritkin</td></tr>
-    <tr><td><strong>Wealthy</strong></td><td>Have 500+ coins</td></tr>
-    <tr><td><strong>Social Butterfly</strong></td><td>Join a guild</td></tr>
-    <tr><td><strong>Homeowner</strong></td><td>Claim a house</td></tr>
-    <tr><td><strong>Curse Breaker</strong></td><td>Complete the Mask of Destiny</td></tr>
-    <tr><td><strong>Boss Slayer</strong></td><td>Contribute to a world boss defeat</td></tr>
-    <tr><td><strong>Lore Hunter</strong></td><td>Find all 14 lore tablets</td></tr>
-  </table>
+  <h3 id="all-achievements">Achievements</h3>
+  <div id="achievements-container">
+    <!-- Rendered from ACHIEVEMENTS -->
+  </div>
 
   <h3 id="titles">Titles</h3>
   <p>Titles are displayed next to your name. Some titles come from achievements, others from class mastery or special events:</p>
@@ -1799,6 +1477,518 @@ a:hover { color: var(--gold); }
 <!-- ═══ BACK TO TOP ═══ -->
 <button class="back-to-top" id="backToTop" aria-label="Back to top">&#8593;</button>
 
+<!-- ═══════════════════════════════════════════════════
+     STUBS — so game data files don't error on load
+     ═══════════════════════════════════════════════════ -->
+<script>
+// Stubs for game globals referenced by the data files
+const G = { rep:{}, team:[], coins:0, buffs:[], structures:[], house:null, guild:{}, professionXP:{}, visitedTiles:new Set(), loreCollected:[], titles:[], maskQuest:{}, learnedSchematics:[], discipline:null, achievements:[], professionSkills:{}, skillPointsUsed:0, x:0, y:0, activeWorldEvent:null, garden:{plots:{}}, houseBuff:null, placementMode:null };
+const HUB = { x: 15, y: 20 };
+
+// Stub functions referenced by data files
+function notify() {}
+function saveGame() {}
+function getTimeOfDay() { return { phase: 'day' }; }
+function updateWorldEventBanner() {}
+function isInParty() { return false; }
+function isApprentice() { return false; }
+function isMaster() { return false; }
+function getTalentRank() { return 0; }
+function getZoneCycleId() { return 0; }
+function getZoneQuality() { return 1; }
+
+// Suppress setInterval calls from game files
+const _origSetInterval = window.setInterval;
+let _blockIntervals = true;
+window.setInterval = function(fn, ms) {
+  if (_blockIntervals) return 0; // swallow game timers
+  return _origSetInterval.call(window, fn, ms);
+};
+</script>
+
+<!-- ═══════════════════════════════════════════════════
+     GAME DATA FILES — live source of truth
+     ═══════════════════════════════════════════════════ -->
+<script src="../world/src/core/cards-data.js"></script>
+<script src="../world/src/core/talent-data.js"></script>
+<script src="../world/src/core/crafting.js"></script>
+<script src="../world/src/core/structures.js"></script>
+<script src="../world/src/core/world-events.js"></script>
+<script src="../world/src/core/npcs.js"></script>
+<script src="../world/src/core/achievements.js"></script>
+<script src="../world/src/core/gardening.js"></script>
+<script src="../world/src/core/professions.js"></script>
+
+<!-- ═══════════════════════════════════════════════════
+     RESTORE setInterval & RENDER ALL DYNAMIC SECTIONS
+     ═══════════════════════════════════════════════════ -->
+<script>
+// Restore setInterval
+window.setInterval = _origSetInterval;
+_blockIntervals = false;
+
+(function() {
+  'use strict';
+
+  // ── Utility: escape HTML ──
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Utility: badge HTML ──
+  function badgeHTML(rarity) {
+    const r = (rarity || 'common').toLowerCase();
+    const label = r === 'ghost-rare' ? 'Ghost-Rare' : r.charAt(0).toUpperCase() + r.slice(1);
+    return '<span class="badge ' + r + '">' + label + '</span>';
+  }
+
+  // ── Utility: unavailable message ──
+  function unavailable(msg) {
+    return '<div class="data-unavailable">' + esc(msg || 'Data unavailable — source file could not be loaded.') + '</div>';
+  }
+
+  // ═══════════════════════════════════════════
+  //  SPIRITKIN SECTION
+  // ═══════════════════════════════════════════
+  (function renderSpiritkin() {
+    const statsEl = document.getElementById('spiritkin-stats');
+    const cardsEl = document.getElementById('spiritkin-cards');
+    if (typeof ALL_CARDS === 'undefined' || !ALL_CARDS.length) {
+      if (statsEl) statsEl.innerHTML = '';
+      if (cardsEl) cardsEl.innerHTML = unavailable('Spiritkin card data could not be loaded.');
+      return;
+    }
+
+    const active = typeof getActiveCards === 'function' ? getActiveCards() : ALL_CARDS;
+    const shelvedCount = ALL_CARDS.length - active.length;
+
+    // Rarity counts
+    const rarityCounts = {};
+    active.forEach(c => { rarityCounts[c.rarity] = (rarityCounts[c.rarity]||0) + 1; });
+    const rarityOrder = ['common','uncommon','rare','ghost-rare','legendary'];
+
+    // Regions/sets
+    const setNames = new Set();
+    active.forEach(c => setNames.add(c.set || 'Unknown'));
+
+    // Stats
+    if (statsEl) {
+      statsEl.innerHTML =
+        '<div class="stat-box"><div class="stat-val">' + active.length + '</div><div class="stat-label">Active Cards</div></div>' +
+        '<div class="stat-box"><div class="stat-val">' + rarityOrder.filter(r=>rarityCounts[r]).length + '</div><div class="stat-label">Rarity Tiers</div></div>' +
+        '<div class="stat-box"><div class="stat-val">' + setNames.size + '</div><div class="stat-label">Sets / Regions</div></div>' +
+        '<div class="stat-box"><div class="stat-val">4</div><div class="stat-label">Ability Phases</div></div>';
+    }
+
+    // Group by set
+    const bySet = {};
+    active.forEach(c => {
+      const s = c.set || 'Unknown';
+      if (!bySet[s]) bySet[s] = [];
+      bySet[s].push(c);
+    });
+
+    // Sort sets: Frost Valley, Rolling Hills, Volcanic Isles, Dark Castle, Set 1, then rest
+    const setOrder = ['Frost Valley', 'Rolling Hills', 'Volcanic Isles', 'Dark Castle', 'Set 1'];
+    const sortedSets = Object.keys(bySet).sort((a,b) => {
+      const ia = setOrder.indexOf(a), ib = setOrder.indexOf(b);
+      if (ia>=0 && ib>=0) return ia-ib;
+      if (ia>=0) return -1;
+      if (ib>=0) return 1;
+      return a.localeCompare(b);
+    });
+
+    let html = '';
+    sortedSets.forEach(setName => {
+      const cards = bySet[setName];
+      // Sort by rarity then name
+      cards.sort((a,b) => {
+        const ra = rarityOrder.indexOf(a.rarity), rb = rarityOrder.indexOf(b.rarity);
+        if (ra !== rb) return rb - ra; // legendaries first
+        return a.name.localeCompare(b.name);
+      });
+
+      // Notables (legendary + ghost-rare)
+      const notables = cards.filter(c => c.rarity === 'legendary' || c.rarity === 'ghost-rare');
+
+      // Region icon
+      const iconMap = { 'Frost Valley': '&#10052;', 'Rolling Hills': '&#127793;', 'Volcanic Isles': '&#127755;', 'Dark Castle': '&#127752;', 'Set 1': '&#9733;' };
+      const icon = iconMap[setName] || '&#9734;';
+
+      // Notables callout
+      if (notables.length) {
+        html += '<h3 id="' + setName.toLowerCase().replace(/\s+/g,'-') + '-spirits">' + icon + ' ' + esc(setName) + ' Notables</h3>';
+        html += '<div class="info-card">';
+        html += '<ul>';
+        notables.forEach(c => {
+          html += '<li><strong>' + esc(c.name) + '</strong> ' + badgeHTML(c.rarity) + ' <span class="text-dim">(' + c.maxHp + ' HP)</span> -- ' + esc(c.ability) + ': ' + esc(c.desc) + '</li>';
+        });
+        html += '</ul></div>';
+      }
+
+      // Collapsible full list
+      html += '<div class="collapse-header" onclick="toggleCollapse(this)">';
+      html += '<span class="ch-chevron">&#9654;</span>';
+      html += '<span class="ch-title">' + esc(setName) + ' &mdash; All Cards</span>';
+      html += '<span class="ch-tag">' + cards.length + ' cards</span>';
+      html += '</div>';
+      html += '<div class="collapse-body">';
+      html += '<table><tr><th>Name</th><th>Rarity</th><th>HP</th><th>Ability</th><th>Description</th></tr>';
+      cards.forEach(c => {
+        html += '<tr><td><strong>' + esc(c.name) + '</strong></td><td>' + badgeHTML(c.rarity) + '</td><td>' + c.maxHp + '</td><td>' + esc(c.ability) + '</td><td class="text-dim" style="font-size:13px;">' + esc(c.desc) + '</td></tr>';
+      });
+      html += '</table></div>';
+    });
+
+    if (cardsEl) cardsEl.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  TALENT TREES SECTION
+  // ═══════════════════════════════════════════
+  (function renderTalents() {
+    const statsEl = document.getElementById('talent-stats');
+    const treesEl = document.getElementById('talent-trees-container');
+    if (typeof CLASS_TREES === 'undefined') {
+      if (statsEl) statsEl.innerHTML = '';
+      if (treesEl) treesEl.innerHTML = unavailable('Talent tree data could not be loaded.');
+      return;
+    }
+
+    const treeIds = Object.keys(CLASS_TREES);
+    const baseTrees = treeIds.filter(id => !CLASS_TREES[id].requiresTree);
+    const advTrees = treeIds.filter(id => CLASS_TREES[id].requiresTree);
+
+    // Stats
+    if (statsEl) {
+      statsEl.innerHTML =
+        '<div class="stat-box"><div class="stat-val">' + treeIds.length + '</div><div class="stat-label">Total Trees</div></div>' +
+        '<div class="stat-box"><div class="stat-val">120</div><div class="stat-label">Point Cap</div></div>' +
+        '<div class="stat-box"><div class="stat-val">42</div><div class="stat-label">Points to Max 1 Tree</div></div>' +
+        '<div class="stat-box"><div class="stat-val">2</div><div class="stat-label">Hidden Classes</div></div>';
+    }
+
+    if (!treesEl) return;
+
+    let html = '';
+
+    // Render each tree as a collapsible
+    treeIds.forEach(treeId => {
+      const tree = CLASS_TREES[treeId];
+      const isBase = !tree.requiresTree;
+      const parentName = tree.requiresTree ? CLASS_TREES[tree.requiresTree]?.name : '';
+
+      // Find children
+      const children = treeIds.filter(id => CLASS_TREES[id].requiresTree === treeId).map(id => CLASS_TREES[id].name);
+      const tagText = isBase ? ('Base Class' + (children.length ? ' &rarr; ' + children.join(', ') : '')) : ('Advanced (' + esc(parentName) + ')');
+
+      html += '<div class="collapse-header" onclick="toggleCollapse(this)">';
+      html += '<span class="ch-chevron">&#9654;</span>';
+      html += '<span class="ch-title" style="color:' + (tree.color || 'var(--text-bright)') + ';">' + esc(tree.name) + '</span>';
+      html += '<span class="ch-tag">' + tagText + '</span>';
+      html += '</div>';
+      html += '<div class="collapse-body">';
+      html += '<p>' + esc(tree.desc) + '</p>';
+
+      // Group talents by branch
+      if (tree.branches && tree.talents) {
+        tree.branches.forEach((branchName, branchIdx) => {
+          const branchTalents = tree.talents.filter(t => t.branch === branchIdx).sort((a,b) => a.tier - b.tier);
+          if (!branchTalents.length) return;
+
+          html += '<div class="tree-branch">';
+          html += '<div class="branch-name">' + esc(branchName) + '</div>';
+          branchTalents.forEach(t => {
+            html += '<div class="tree-node">';
+            html += '<span class="tier">T' + t.tier + '</span>';
+            html += '<span class="talent-name">' + esc(t.name) + '</span>';
+            html += ' <span class="talent-desc">-- ' + esc(t.desc) + '</span>';
+            html += '</div>';
+          });
+          html += '</div>';
+        });
+      }
+
+      html += '</div>';
+    });
+
+    treesEl.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  PROFESSIONS SECTION
+  // ═══════════════════════════════════════════
+  (function renderProfessions() {
+    const container = document.getElementById('profession-trees-container');
+    if (!container) return;
+    if (typeof PROFESSION_TREE === 'undefined') {
+      container.innerHTML = unavailable('Profession data could not be loaded.');
+      return;
+    }
+
+    const capNote = typeof SKILL_POINT_CAP !== 'undefined' ? SKILL_POINT_CAP : 80;
+    let html = '<p>Profession trees have a <strong>' + capNote + ' skill point cap</strong>. Each branch has tiers requiring increasing XP thresholds.</p>';
+
+    const profIds = Object.keys(PROFESSION_TREE);
+
+    profIds.forEach(profId => {
+      const prof = PROFESSION_TREE[profId];
+      const parentName = prof.requires ? (function() {
+        // Find parent
+        for (const pid of profIds) {
+          const p = PROFESSION_TREE[pid];
+          const match = p.boxes.find(b => b.id === prof.requires);
+          if (match) return p.name;
+        }
+        return '';
+      })() : '';
+
+      const tierLabel = prof.tier === 1 ? 'Tier 1' : prof.tier === 2 ? 'Tier 2' : prof.tier === 3 ? 'Tier 3' : '';
+      const tagParts = [tierLabel, prof.xpType ? (prof.xpType.charAt(0).toUpperCase() + prof.xpType.slice(1)) : ''];
+      if (parentName) tagParts.push('Requires: ' + parentName);
+
+      html += '<div class="collapse-header" onclick="toggleCollapse(this)">';
+      html += '<span class="ch-chevron">&#9654;</span>';
+      html += '<span class="ch-title" style="color:' + (prof.color || 'var(--text-bright)') + ';">' + (prof.icon || '') + ' ' + esc(prof.name) + '</span>';
+      html += '<span class="ch-tag">' + tagParts.filter(Boolean).join(' | ') + '</span>';
+      html += '</div>';
+      html += '<div class="collapse-body">';
+      html += '<table><tr><th>Skill</th><th>Cost</th><th>XP Req</th><th>Description</th></tr>';
+      (prof.boxes || []).forEach(box => {
+        html += '<tr><td><strong>' + esc(box.name) + '</strong></td><td>' + box.cost + '</td><td>' + (box.xpReq || 0) + '</td><td>' + esc(box.desc) + '</td></tr>';
+      });
+      html += '</table></div>';
+    });
+
+    container.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  CRAFTING / SCHEMATICS SECTION
+  // ═══════════════════════════════════════════
+  (function renderSchematics() {
+    const container = document.getElementById('schematics-container');
+    if (!container) return;
+    if (typeof SCHEMATICS === 'undefined') {
+      container.innerHTML = unavailable('Schematic data could not be loaded.');
+      return;
+    }
+
+    // Group by type
+    const byType = {};
+    SCHEMATICS.forEach(s => {
+      const t = s.type || 'other';
+      if (!byType[t]) byType[t] = [];
+      byType[t].push(s);
+    });
+
+    const typeLabels = { weapon: 'Weapons', armor: 'Armor & Masks', accessory: 'Accessories & Charms', component: 'Sub-Components' };
+    const typeOrder = ['weapon', 'armor', 'accessory', 'component'];
+    const sortedTypes = Object.keys(byType).sort((a,b) => {
+      const ia = typeOrder.indexOf(a), ib = typeOrder.indexOf(b);
+      if (ia>=0 && ib>=0) return ia-ib;
+      if (ia>=0) return -1;
+      if (ib>=0) return 1;
+      return a.localeCompare(b);
+    });
+
+    let html = '';
+    sortedTypes.forEach(type => {
+      const items = byType[type];
+      const label = typeLabels[type] || (type.charAt(0).toUpperCase() + type.slice(1));
+
+      html += '<div class="collapse-header" onclick="toggleCollapse(this)">';
+      html += '<span class="ch-chevron">&#9654;</span>';
+      html += '<span class="ch-title">' + esc(label) + '</span>';
+      html += '<span class="ch-tag">' + items.length + ' schematics</span>';
+      html += '</div>';
+      html += '<div class="collapse-body">';
+      html += '<table><tr><th>Icon</th><th>Name</th><th>Tier</th><th>Essences</th><th>Effect</th></tr>';
+      items.forEach(s => {
+        html += '<tr><td>' + (s.icon || '') + '</td><td><strong>' + esc(s.name) + '</strong></td><td>' + badgeHTML(s.tier) + '</td><td>' + s.essencesNeeded + '</td><td>' + esc(s.desc) + '</td></tr>';
+      });
+      html += '</table></div>';
+    });
+
+    container.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  STRUCTURES SECTION
+  // ═══════════════════════════════════════════
+  (function renderStructures() {
+    const container = document.getElementById('structures-container');
+    if (!container) return;
+    if (typeof STRUCTURE_TYPES === 'undefined') {
+      container.innerHTML = unavailable('Structure data could not be loaded.');
+      return;
+    }
+
+    let html = '<table><tr><th>Icon</th><th>Structure</th><th>Size</th><th>Description</th></tr>';
+    for (const [key, s] of Object.entries(STRUCTURE_TYPES)) {
+      html += '<tr><td style="font-size:18px;">' + (s.icon || '') + '</td><td><strong>' + esc(s.name) + '</strong></td><td>' + s.w + 'x' + s.h + '</td><td>' + esc(s.desc) + '</td></tr>';
+    }
+    html += '</table>';
+    container.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  WORLD EVENTS SECTION
+  // ═══════════════════════════════════════════
+  (function renderWorldEvents() {
+    const container = document.getElementById('world-events-container');
+    if (!container) return;
+    if (typeof WORLD_EVENTS === 'undefined') {
+      container.innerHTML = unavailable('World event data could not be loaded.');
+      return;
+    }
+
+    let html = '<table><tr><th>Event</th><th>Effect</th><th>Duration</th></tr>';
+    WORLD_EVENTS.forEach(e => {
+      const dur = e.duration ? Math.round(e.duration / 60000) + ' min' : '--';
+      html += '<tr><td><strong>' + esc(e.name) + '</strong></td><td>' + esc(e.desc) + '</td><td>' + dur + '</td></tr>';
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  WORLD BOSSES SECTION
+  // ═══════════════════════════════════════════
+  (function renderWorldBosses() {
+    const container = document.getElementById('world-bosses-container');
+    if (!container) return;
+    if (typeof WORLD_BOSS_POOL === 'undefined') {
+      container.innerHTML = unavailable('World boss data could not be loaded.');
+      return;
+    }
+
+    const regionLabels = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle', dark_spire: 'Dark Spire' };
+
+    // Count total
+    let total = 0;
+    for (const r of Object.keys(WORLD_BOSS_POOL)) total += WORLD_BOSS_POOL[r].length;
+
+    let html = '<div class="collapse-header" onclick="toggleCollapse(this)">';
+    html += '<span class="ch-chevron">&#9654;</span>';
+    html += '<span class="ch-title">All ' + total + ' World Bosses</span>';
+    html += '<span class="ch-tag">by region</span>';
+    html += '</div>';
+    html += '<div class="collapse-body">';
+    html += '<table><tr><th>Boss</th><th>Title</th><th>HP</th><th>Players</th><th>Region</th><th>Requires</th></tr>';
+
+    for (const [region, bosses] of Object.entries(WORLD_BOSS_POOL)) {
+      bosses.forEach(b => {
+        html += '<tr><td><strong>' + esc(b.name) + '</strong></td><td>' + esc(b.title) + '</td><td>' + b.hp + '</td><td>' + esc(b.players) + '</td><td>' + (regionLabels[region] || esc(region)) + '</td><td>' + (b.requires ? esc(b.requires) : '--') + '</td></tr>';
+      });
+    }
+    html += '</table>';
+    html += '<p class="text-dim" style="margin-top:8px;">Some bosses require key items to challenge (Blue Flame, Ice Scepter, Dark Castle Key, Dark Spire Key).</p>';
+    html += '</div>';
+
+    container.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  ACHIEVEMENTS SECTION
+  // ═══════════════════════════════════════════
+  (function renderAchievements() {
+    const container = document.getElementById('achievements-container');
+    if (!container) return;
+    if (typeof ACHIEVEMENTS === 'undefined') {
+      container.innerHTML = unavailable('Achievement data could not be loaded.');
+      return;
+    }
+
+    let html = '<table><tr><th>Achievement</th><th>Requirement</th></tr>';
+    ACHIEVEMENTS.forEach(a => {
+      html += '<tr><td><strong>' + esc(a.name) + '</strong></td><td>' + esc(a.desc) + '</td></tr>';
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  PLANTS / GARDEN SECTION
+  // ═══════════════════════════════════════════
+  (function renderPlants() {
+    const container = document.getElementById('plants-container');
+    if (!container) return;
+    if (typeof PLANT_TYPES === 'undefined') {
+      container.innerHTML = unavailable('Plant data could not be loaded.');
+      return;
+    }
+
+    let html = '<table><tr><th>Plant</th><th>Resource</th><th>Yield</th><th>Grow Time</th><th>Type</th></tr>';
+    for (const [key, p] of Object.entries(PLANT_TYPES)) {
+      const growTime = p.growthStages && p.growthStages.length >= 5
+        ? Math.round(p.growthStages[4] / 60000) + ' min'
+        : '--';
+      const rareLabel = p.rare ? '<span class="badge ghost-rare">Rare</span>' : '<span class="badge common">Common</span>';
+      html += '<tr><td><strong>' + esc(p.name) + '</strong></td><td>' + esc(p.resourceName) + '</td><td>' + p.yield + '</td><td>' + growTime + '</td><td>' + rareLabel + '</td></tr>';
+    }
+    html += '</table>';
+    container.innerHTML = html;
+  })();
+
+  // ═══════════════════════════════════════════
+  //  NPCs SECTION
+  // ═══════════════════════════════════════════
+  (function renderNPCs() {
+    const friendlyEl = document.getElementById('friendly-npcs-container');
+    const hostileEl = document.getElementById('hostile-npcs-container');
+
+    // Friendly NPCs
+    if (friendlyEl) {
+      if (typeof NPCS === 'undefined') {
+        friendlyEl.innerHTML = unavailable('NPC data could not be loaded.');
+      } else {
+        // Map coordinates to region names
+        function guessRegion(npc) {
+          if (npc.name.includes('Elder') || npc.name.includes('Smith') || npc.name.includes('Lou')) return 'Polaris';
+          if (npc.name.includes('Farmer') || npc.name.includes('Herbalist')) return 'Meadowbrook';
+          if (npc.name.includes('Captain') || npc.name.includes('Lava')) return 'Volcanic Settlement';
+          if (npc.name.includes('Shadow') || npc.name.includes('Cursed')) return 'Dark Castle Outpost';
+          return '?';
+        }
+
+        let html = '<table><tr><th>Name</th><th>Location</th></tr>';
+        NPCS.forEach(npc => {
+          html += '<tr><td><strong>' + esc(npc.name) + '</strong></td><td>' + guessRegion(npc) + '</td></tr>';
+        });
+        html += '</table>';
+        friendlyEl.innerHTML = html;
+      }
+    }
+
+    // Hostile NPCs
+    if (hostileEl) {
+      if (typeof HOSTILE_NPCS === 'undefined') {
+        hostileEl.innerHTML = unavailable('Hostile NPC data could not be loaded.');
+      } else {
+        let html = '<table><tr><th>Name</th><th>Team IDs</th><th>Challenge</th></tr>';
+        HOSTILE_NPCS.forEach(npc => {
+          // Try to resolve team card names
+          let teamNames = (npc.team || []).map(id => {
+            if (typeof ALL_CARDS !== 'undefined') {
+              const card = ALL_CARDS.find(c => c.id === id);
+              if (card) return card.name;
+            }
+            return '#' + id;
+          }).join(', ');
+
+          html += '<tr><td><strong>' + esc(npc.name) + '</strong></td><td class="text-dim" style="font-size:13px;">' + esc(teamNames) + '</td><td style="font-size:13px;font-style:italic;">' + esc(npc.challenge) + '</td></tr>';
+        });
+        html += '</table>';
+        hostileEl.innerHTML = html;
+      }
+    }
+  })();
+
+})();
+</script>
+
 <script>
 // ═══════════════════════════════════════════════
 //  THE CODEX — Client-side Navigation & Search
@@ -1830,16 +2020,16 @@ a:hover { color: var(--gold); }
   // Render nav
   let navHTML = '';
   sectionMap.forEach(s => {
-    navHTML += `<div class="nav-category open">`;
-    navHTML += `<div class="nav-category-header" onclick="toggleNavCategory(this)">`;
-    navHTML += `<span class="chevron">&#9654;</span>${s.label}`;
-    navHTML += `</div>`;
-    navHTML += `<div class="nav-items">`;
-    navHTML += `<a class="nav-item" href="#${s.id}" data-section="${s.id}">Overview</a>`;
+    navHTML += '<div class="nav-category open">';
+    navHTML += '<div class="nav-category-header" onclick="toggleNavCategory(this)">';
+    navHTML += '<span class="chevron">&#9654;</span>' + s.label;
+    navHTML += '</div>';
+    navHTML += '<div class="nav-items">';
+    navHTML += '<a class="nav-item" href="#' + s.id + '" data-section="' + s.id + '">Overview</a>';
     s.subs.forEach(sub => {
-      navHTML += `<a class="nav-item" href="#${sub.id}" data-section="${s.id}">${sub.label}</a>`;
+      navHTML += '<a class="nav-item" href="#' + sub.id + '" data-section="' + s.id + '">' + sub.label + '</a>';
     });
-    navHTML += `</div></div>`;
+    navHTML += '</div></div>';
   });
   nav.innerHTML = navHTML;
 
@@ -1936,7 +2126,7 @@ a:hover { color: var(--gold); }
     });
   });
 
-  // ── Search ──
+  // ── Search (works with dynamically rendered content) ──
   const searchInput = document.getElementById('searchInput');
   searchInput.addEventListener('input', function() {
     const query = this.value.toLowerCase().trim();
