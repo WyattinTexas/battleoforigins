@@ -434,15 +434,31 @@ class BattleScene extends Phaser.Scene {
       }
     });
 
+    // ── Label above cards — context for what these cards mean ──
+    const labelY = -cardH / 2 - 14;
+    if (isAllHearts || hand.length === 0) {
+      // Beginners: simple, clear — "these are your health"
+      c.add(this.add.text(0, labelY, '♥ HEALTH', {
+        fontFamily: 'Cinzel, Georgia, serif', fontSize: '11px', color: '#cc4444',
+        letterSpacing: 2,
+      }).setOrigin(0.5));
+    } else {
+      // Mixed deck: they've graduated — introduce the real name
+      c.add(this.add.text(0, labelY, '✦ WILLPOWER', {
+        fontFamily: 'Cinzel, Georgia, serif', fontSize: '11px', color: BC.GOLD,
+        letterSpacing: 2,
+      }).setOrigin(0.5));
+    }
+
     // ── HP count badge (right of cards) ──
     const hpX = startX + totalW + 12;
     const hpCol = _hpCol(ghost.hp, ghost.maxHp);
-    c.add(this.add.text(hpX, -4, `${ghost.hp}`, {
-      fontFamily: 'Cinzel, serif', fontSize: '24px', color: hpCol, fontStyle: 'bold',
+    c.add(this.add.text(hpX, -6, `♥ ${ghost.hp}`, {
+      fontFamily: 'Cinzel, serif', fontSize: '22px', color: hpCol, fontStyle: 'bold',
     }).setOrigin(0, 0.5));
 
-    // ── Deck info (only for mixed decks — beginners don't need this) ──
-    if (!isAllHearts) {
+    // ── Deck info (only for mixed decks) ──
+    if (!isAllHearts && hand.length > 0) {
       c.add(this.add.text(hpX, 12, `deck ${t.wpDeck ? t.wpDeck.length : 0}`, {
         fontFamily: 'Courier New, monospace', fontSize: '7px', color: '#4a4a60',
       }).setOrigin(0, 0.5));
