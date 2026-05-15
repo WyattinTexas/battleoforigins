@@ -4897,6 +4897,13 @@ class WorldScene extends Phaser.Scene {
   // ══════════════════════════════════════════════════════
 
   _buildDomActionBar() {
+    // Wire up GUIDE button
+    const guideBtn = document.getElementById('hud-guide-btn');
+    if (guideBtn && !guideBtn._wired) {
+      guideBtn._wired = true;
+      guideBtn.addEventListener('click', () => { if (!G.inBattle) this.showHelpPanel(); });
+    }
+
     const bar = document.getElementById('hud-action-bar');
     if (!bar) return;
     bar.innerHTML = '';

@@ -38,8 +38,16 @@
       <div id="hud-player-info" class="hud-info"></div><br>
       <div id="hud-team-info" class="hud-team"></div>
     </div>
-    <div id="hud-top-right">
+    <div id="hud-top-right" style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
       <div id="hud-time" class="hud-info" style="color:#aac;font-size:10px;"></div>
+      <div id="hud-guide-btn" style="
+        background:#1a1a2eee; border:1.5px solid #d4a040; border-radius:6px;
+        padding:5px 12px; cursor:pointer; font-family:Cinzel,Georgia,serif;
+        font-size:11px; color:#d4a040; font-weight:bold; letter-spacing:1px;
+        transition:all 0.15s; user-select:none;
+      " onmouseover="this.style.background='#2a2a40';this.style.color='#ffcc55'" onmouseout="this.style.background='#1a1a2eee';this.style.color='#d4a040'">
+        📖 GUIDE
+      </div>
     </div>
     <div id="hud-chat">
       <div class="chat-header">Chat</div>
