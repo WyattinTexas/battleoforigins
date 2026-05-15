@@ -7,19 +7,72 @@
 
 function getCard(id) { return ALL_CARDS.find(c => c.id === id); }
 
+// Set 1 Spiritkin assigned to specific regions (no longer appear everywhere)
+const SET1_REGION = {
+  // — Frost Valley —
+  // Commons: Kodako, Puff, Shoo, Boo Brothers, Wanderer
+  1: 'Frost Valley', 5: 'Frost Valley', 13: 'Frost Valley', 17: 'Frost Valley', 4: 'Frost Valley',
+  // Uncommons: Bubble Boys, Hermit, Opa, Jackson
+  44: 'Frost Valley', 47: 'Frost Valley', 48: 'Frost Valley', 50: 'Frost Valley',
+  // Rares: Wim, Sonya, Katrina, Flora
+  65: 'Frost Valley', 69: 'Frost Valley', 70: 'Frost Valley', 75: 'Frost Valley',
+  // Ghost-Rare: Cyboo
+  100: 'Frost Valley',
+  // Legendary: The Mountain King
+  110: 'Frost Valley',
+
+  // — Dark Castle —
+  // Commons: Nikon, Buttons, Little Boo, Patrick, Winston
+  2: 'Dark Castle', 8: 'Dark Castle', 9: 'Dark Castle', 10: 'Dark Castle', 15: 'Dark Castle',
+  // Uncommons: Alucard, Castle Guards, Cave Dweller, Greg
+  38: 'Dark Castle', 39: 'Dark Castle', 46: 'Dark Castle', 49: 'Dark Castle',
+  // Rares: Raditz, Munch, Dark Jeff, Dark Wing
+  62: 'Dark Castle', 66: 'Dark Castle', 74: 'Dark Castle', 76: 'Dark Castle',
+  // Ghost-Rare: Splinter
+  101: 'Dark Castle',
+  // Legendary: Shade
+  111: 'Dark Castle',
+
+  // — Rolling Hills —
+  // Commons: Ancient Librarian, Villager, Dupy, Jeffery, Charlie
+  3: 'Rolling Hills', 11: 'Rolling Hills', 12: 'Rolling Hills', 14: 'Rolling Hills', 18: 'Rolling Hills',
+  // Uncommons: Dealer, Team Zippy, Guard Thomas, Doc, Cornelius
+  37: 'Rolling Hills', 40: 'Rolling Hills', 41: 'Rolling Hills', 42: 'Rolling Hills', 45: 'Rolling Hills',
+  // Rares: Doug, Admiral, Sky, City Cyboo
+  63: 'Rolling Hills', 71: 'Rolling Hills', 72: 'Rolling Hills', 77: 'Rolling Hills',
+  // Ghost-Rare: Jenkins
+  94: 'Rolling Hills',
+  // Legendary: Bo
+  109: 'Rolling Hills',
+
+  // — Volcanic Isles —
+  // Commons: Fang Outside, Fang Undercover, Chip, Grawr (uncommon but fits thematically)
+  6: 'Volcanic Isles', 7: 'Volcanic Isles', 16: 'Volcanic Isles',
+  // Uncommons: Grawr, Larry, Bill & Bob, Outlaw
+  34: 'Volcanic Isles', 35: 'Volcanic Isles', 36: 'Volcanic Isles', 43: 'Volcanic Isles',
+  // Rares: Sparky, Snorton, Kairan, Stone Cold
+  64: 'Volcanic Isles', 67: 'Volcanic Isles', 68: 'Volcanic Isles', 73: 'Volcanic Isles',
+  // Ghost-Rares: Tabitha, Guardian Fairy
+  95: 'Volcanic Isles', 99: 'Volcanic Isles',
+  // Legendary: Doom
+  112: 'Volcanic Isles',
+};
+
 function getWildEncounter() {
   // Determine which region the player is in
   const inDarkCastle = Math.floor(G.x) > 88 && Math.floor(G.y) < 42;
   const inRollingHills = Math.floor(G.y) >= 45;
   const inVolcanicIsles = Math.floor(G.x) > 60 && Math.floor(G.y) < 43;
-  const regionSets = inDarkCastle
-    ? ['Dark Castle', 'Set 1']
-    : inVolcanicIsles
-    ? ['Volcanic Isles', 'Set 1']
-    : inRollingHills
-    ? ['Rolling Hills', 'Set 1']
-    : ['Frost Valley', 'Set 1'];
-  const fvCards = ALL_CARDS.filter(c => regionSets.includes(c.set) && c.rarity !== 'legendary' && (!SHELVED_IDS || !SHELVED_IDS.has(c.id)));
+  const region = inDarkCastle ? 'Dark Castle'
+    : inVolcanicIsles ? 'Volcanic Isles'
+    : inRollingHills ? 'Rolling Hills'
+    : 'Frost Valley';
+  // Cards belong to this region if: their set matches, OR they're Set 1 assigned here
+  const regionCards = ALL_CARDS.filter(c =>
+    c.rarity !== 'legendary' &&
+    (!SHELVED_IDS || !SHELVED_IDS.has(c.id)) &&
+    (c.set === region || SET1_REGION[c.id] === region)
+  );
   const weights = { common: 50, uncommon: 25, rare: 10, 'ghost-rare': 3 };
 
   // Scout discipline finds rarer
@@ -35,7 +88,7 @@ function getWildEncounter() {
   }
 
   const weighted = [];
-  for (const c of fvCards) {
+  for (const c of regionCards) {
     const w = weights[c.rarity] || 10;
     for (let i = 0; i < w; i++) weighted.push(c);
   }
