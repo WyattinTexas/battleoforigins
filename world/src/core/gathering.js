@@ -638,14 +638,15 @@ function startSurvey() {
         // Extract an essence!
         const zone = ENCOUNTER_ZONES[zoneIdx];
         // Pick a random card from region
-        const regionSets = zone.name.includes('Shadow') || zone.name.includes('Throne')
-          ? ['Dark Castle', 'Set 1']
+        const gatherRegion = zone.name.includes('Shadow') || zone.name.includes('Throne')
+          ? 'Dark Castle'
           : zone.name.includes('Magma') || zone.name.includes('Obsidian')
-          ? ['Volcanic Isles', 'Set 1']
+          ? 'Volcanic Isles'
           : zone.name.includes('Sunlit') || zone.name.includes('Bramble')
-          ? ['Rolling Hills', 'Set 1']
-          : ['Frost Valley', 'Set 1'];
-        const pool = ALL_CARDS.filter(c => regionSets.includes(c.set) && c.rarity !== 'legendary');
+          ? 'Rolling Hills'
+          : 'Frost Valley';
+        const pool = ALL_CARDS.filter(c => c.rarity !== 'legendary' &&
+          (c.set === gatherRegion || (typeof SET1_REGION !== 'undefined' && SET1_REGION[c.id] === gatherRegion)));
         const card = pool[Math.floor(Math.random() * pool.length)] || ALL_CARDS[0];
         const essence = generateEssence(card, zoneIdx);
         G.essences.push(essence);
