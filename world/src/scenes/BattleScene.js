@@ -260,6 +260,30 @@ class BattleScene extends Phaser.Scene {
     r.hpFill.fillRoundedRect(-r.hpW/2, r.hpY - 4, r.hpW * pct, 8, 3);
   }
 
+  // ── CHARACTER REACTIONS ──────────────────────────────────
+  _shakeCard(card) {
+    if (!card) return;
+    this.tweens.add({
+      targets: card, x: card.x + 6, duration: 50, yoyo: true, repeat: 3,
+      ease: 'Sine.easeInOut',
+      onComplete: () => { card.x = Math.round(card.x); }
+    });
+  }
+  _jumpCard(card) {
+    if (!card) return;
+    this.tweens.add({
+      targets: card, y: card.y - 12, duration: 150, yoyo: true,
+      ease: 'Back.easeOut',
+    });
+  }
+  _squishCard(card) {
+    if (!card) return;
+    this.tweens.add({
+      targets: card, scaleX: 0.92, scaleY: 1.08, duration: 100, yoyo: true,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
   // ── SIDELINE STACK (vertical, 2 cards) ──────────────────
   _buildSidelineStack(team, cx, topY) {
     const tKey = team === 'red' ? this._pt : this._et;
@@ -391,6 +415,9 @@ class BattleScene extends Phaser.Scene {
       const isSpecial = cardId !== 0;
       const canActivate = isActive && isSpecial && !wpUsed && team === 'red';
 
+      // Wrap orb in a container so we can bob it
+      const orb = this.add.container(ox, orbY);
+
       const g = this.add.graphics();
       let fillCol, borderCol;
 
@@ -404,37 +431,48 @@ class BattleScene extends Phaser.Scene {
 
       // Orb shadow
       g.fillStyle(0x000000, 0.3);
-      g.fillCircle(ox + 2, orbY + 2, orbR);
+      g.fillCircle(2, 2, orbR);
       // Main orb
       g.fillStyle(fillCol, isActive ? 1 : 0.6);
-      g.fillCircle(ox, orbY, orbR);
+      g.fillCircle(0, 0, orbR);
       // Border
       g.lineStyle(isActive ? 2.5 : 1, borderCol, isActive ? 0.9 : 0.4);
-      g.strokeCircle(ox, orbY, orbR);
+      g.strokeCircle(0, 0, orbR);
       // Highlight dot (top-left shine)
       if (isActive) {
         g.fillStyle(0xffffff, 0.35);
-        g.fillCircle(ox - 4, orbY - 5, 4);
+        g.fillCircle(-4, -5, 4);
       }
-      c.add(g);
+      orb.add(g);
 
       // Emoji inside active orb
       if (isActive && isSpecial && wp) {
-        c.add(this.add.text(ox, orbY, wp.emoji, {
+        orb.add(this.add.text(0, 0, wp.emoji, {
           fontFamily: 'sans-serif', fontSize: '16px',
         }).setOrigin(0.5));
       } else if (isActive && !isSpecial) {
-        c.add(this.add.text(ox, orbY + 1, '♥', {
+        orb.add(this.add.text(0, 1, '♥', {
           fontFamily: 'Georgia, serif', fontSize: '14px', color: '#fff',
         }).setOrigin(0.5));
       }
+      c.add(orb);
+
+      // ── Gentle floating bob — each orb at a different rate ──
+      const bobAmt = isActive ? 4 : 2.5;
+      const bobDur = 1200 + i * 180; // staggered so they don't sync
+      this.tweens.add({
+        targets: orb, y: orbY - bobAmt,
+        duration: bobDur, yoyo: true, repeat: -1,
+        ease: 'Sine.easeInOut', delay: i * 90,
+      });
 
       // Pulsing glow on activatable orb
       if (canActivate) {
         const glow = this.add.graphics();
         glow.fillStyle(WP_BRIGHT[wp?.color] || 0xddaa44, 0.2);
-        glow.fillCircle(ox, orbY, orbR + 6);
-        c.add(glow);
+        glow.fillCircle(0, 0, orbR + 6);
+        orb.add(glow);
+        orb.sendToBack(glow);
         this.tweens.add({ targets: glow, alpha: 0.45, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
     });
@@ -506,6 +544,20 @@ class BattleScene extends Phaser.Scene {
       fontFamily: 'Cinzel, serif', fontSize: '11px', color: '#ffffff', fontStyle: 'bold',
       stroke: '#000000', strokeThickness: 2,
     }).setOrigin(0.5));
+
+    // ── Heartbeat pulse when low HP ──
+    if (hpPct > 0 && hpPct <= 0.25) {
+      const pulse = this.add.graphics();
+      pulse.fillStyle(_hpHex(ghost.hp, ghost.maxHp), 0.15);
+      pulse.fillRoundedRect(-barW / 2 - 3, hbY - 3, barW + 6, hpH + 6, 10);
+      c.add(pulse);
+      c.sendToBack(pulse);
+      this.tweens.add({
+        targets: pulse, alpha: 0.35, scaleX: 1.02, scaleY: 1.15,
+        duration: 400, yoyo: true, repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
 
     // ════════════════════════════════════════════════════════
     // LABEL
@@ -925,11 +977,14 @@ class BattleScene extends Phaser.Scene {
       if (dodged) {
         this._setStatus(`${this.eg.name} dodged! ${rollDesc}`);
         this._showFloat(this._W*0.70, this._H*0.30, 'DODGE!', '#44ddff');
+        this._squishCard(this._eActive);
       } else {
         const red = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._et, pRes) : 0;
         const fd = Math.max(1, dmg - red);
         wpDamage(this.eg, fd);
         this._animateCardLoss(this._et, fd);
+        this._shakeCard(this._eActive);   // enemy shakes on hit
+        this._jumpCard(this._pActive);    // player jumps on win
         if (this.eg.ko) this.eg.killedBy = this.pg.id;
         this._setStatus(`${this.pg.name} deals ${fd} damage! ${rollDesc}`);
         if (typeof GameAudio !== 'undefined') GameAudio.hit();
@@ -944,11 +999,14 @@ class BattleScene extends Phaser.Scene {
       if (pDodged) {
         this._setStatus(`${this.pg.name} dodged! ${rollDesc}`);
         this._showFloat(this._W*0.28, this._H*0.30, 'DODGE!', '#44ddff');
+        this._squishCard(this._pActive);
       } else {
         const red = typeof calculateDamageReduction === 'function' ? calculateDamageReduction(this._pt, eRes) : 0;
         const fd = Math.max(1, dmg - red);
         wpDamage(this.pg, fd);
         this._animateCardLoss(this._pt, fd);
+        this._shakeCard(this._pActive);   // player shakes on hit
+        this._jumpCard(this._eActive);    // enemy jumps on win
         this._setStatus(`${this.eg.name} deals ${fd} damage! ${rollDesc}`);
         if (typeof GameAudio !== 'undefined') GameAudio.hurt();
         this._showFloat(this._W*0.28, this._H*0.30, `-${fd}`, '#e94560');
