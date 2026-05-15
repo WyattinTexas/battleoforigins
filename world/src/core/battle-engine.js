@@ -31,6 +31,7 @@ function makeTeam(ids, wpConfig) {
       return {
         id,
         name: g.name,
+        art: g.art || '',
         hp: g.maxHp,
         maxHp: g.maxHp,
         ko: false,

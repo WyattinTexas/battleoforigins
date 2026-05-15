@@ -16,6 +16,17 @@ class WorldScene extends Phaser.Scene {
     G.inBattle = false;
     B = null;
 
+    // Safety: remove any stale DOM overlays that survive scene transitions
+    const staleOverlay = document.getElementById('cinematicIntroOverlay');
+    if (staleOverlay) staleOverlay.remove();
+    const staleKR = document.getElementById('kickstarter-reveal');
+    if (staleKR) staleKR.remove();
+    // Ensure canvas and HUD are visible (cinematic hides them)
+    const cvs = document.querySelector('canvas');
+    if (cvs && cvs.style.display === 'none') cvs.style.display = '';
+    const hudOv = document.getElementById('hud-overlay');
+    if (hudOv && hudOv.style.display === 'none') hudOv.style.display = '';
+
     const T = 32;
     const MW = WORLD_W, MH = WORLD_H; // 110x85 from world-gen.js
 
@@ -893,7 +904,7 @@ class WorldScene extends Phaser.Scene {
         this.time.delayedCall(1000, () => {
           if (typeof StarfoxComm !== 'undefined') {
             StarfoxComm.play([
-              { char: 'elderFrost', text: 'Not bad! The world is yours to explore. Press T to check your talents.' },
+              { char: 'elderFrost', text: "Well done! The whole world is open now. Press T to spend your talent points." },
             ], {
               onComplete: () => {
                 G.tutorialComplete = true;
@@ -1470,8 +1481,9 @@ class WorldScene extends Phaser.Scene {
     if (tint) npc.setTint(tint);
 
     const label = this.add.text(x, y - 40, name, {
-      fontSize: '10px', fontFamily: 'monospace', color: hostile ? '#ff8888' : '#88ff88',
-      backgroundColor: '#00000088', padding: { x: 3, y: 1 },
+      fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: hostile ? '#ff8888' : '#88ff88',
+      backgroundColor: '#000000bb', padding: { x: 4, y: 2 },
+      shadow: { offsetX: 0, offsetY: 1, color: '#000000', blur: 2, fill: true },
     }).setOrigin(0.5).setDepth(11);
 
     // Exclamation mark for hostile
@@ -2152,9 +2164,11 @@ class WorldScene extends Phaser.Scene {
       enemy.setTint(wildCard.rarity === 'rare' ? 0xaa55ff : wildCard.rarity === 'uncommon' ? 0x5599ff : 0xffffff);
     }
 
-    enemy.label = this.add.text(ex, ey - 28, wildCard.name, {
-      fontSize: '9px', fontFamily: 'monospace', color: '#ffaaaa',
-      backgroundColor: '#00000088', padding: { x: 2, y: 1 },
+    const rarityColors = { rare: '#cc88ff', uncommon: '#66bbff', common: '#ffbbaa' };
+    enemy.label = this.add.text(ex, ey - 30, wildCard.name, {
+      fontSize: '10px', fontFamily: 'monospace', color: rarityColors[wildCard.rarity] || '#ffbbaa',
+      backgroundColor: '#000000bb', padding: { x: 3, y: 2 },
+      shadow: { offsetX: 0, offsetY: 1, color: '#000000', blur: 2, fill: true },
     }).setOrigin(0.5).setDepth(11);
 
     // Wander (no directional animations for card art — just move)
@@ -2166,7 +2180,7 @@ class WorldScene extends Phaser.Scene {
       duration: Phaser.Math.Between(2000, 4000), yoyo: true, repeat: -1,
       onUpdate: () => {
         if (!enemy.active) return;
-        if (enemy.label) enemy.label.setPosition(enemy.x, enemy.y - 28);
+        if (enemy.label) enemy.label.setPosition(enemy.x, enemy.y - 30);
         // Update walk direction
         const dx = enemy.x - (enemy._lastX || enemy.x);
         const dy = enemy.y - (enemy._lastY || enemy.y);
@@ -3168,7 +3182,7 @@ class WorldScene extends Phaser.Scene {
 
   updateHUD() {
     // ── Minimap radar (always runs, even without DOM HUD) ──
-    if (this.minimapGfx) this._updateMinimapRadar();
+    try { if (this.minimapGfx) this._updateMinimapRadar(); } catch(e) { console.error('MINIMAP UPDATE ERROR:', e); }
 
     const wins = G.rep?.battlesWon || 0;
     const sideline = wins >= 5 ? 'UNLOCKED' : `${wins}/5 wins`;
@@ -3892,7 +3906,7 @@ class WorldScene extends Phaser.Scene {
     this.time.delayedCall(800, () => {
       if (typeof StarfoxComm !== 'undefined') {
         StarfoxComm.play([
-          { char: 'elderFrost', text: "You've arrived! Let's see what you can do. Walk into that spirit ahead." },
+          { char: 'elderFrost', text: "Welcome, Warden. See that Spiritkin ahead? Walk into it to start your first battle." },
         ], { onComplete: afterComm });
       } else {
         afterComm();
@@ -3913,25 +3927,38 @@ class WorldScene extends Phaser.Scene {
     if (!dreamCat) return;
 
     const artKey = 'wild_28';
+    const preloadKey = 'card_28'; // BootScene preloads card art as card_${id}
     const artUrl = dreamCat.art || '';
     const fallbackKey = 'creature_axolot';
 
     let enemy;
-    const artLoaded = artUrl && this.textures.exists(artKey);
-    if (artLoaded) {
-      enemy = this.enemies.create(ex, ey, artKey, 0);
+    // Check preloaded key first (BootScene loads as card_${id}), then wild_ key
+    const readyKey = this.textures.exists(preloadKey) ? preloadKey
+                   : (artUrl && this.textures.exists(artKey)) ? artKey : null;
+    if (readyKey) {
+      enemy = this.enemies.create(ex, ey, readyKey, 0);
       const srcH = enemy.height || 100;
       enemy.setScale(40 / srcH);
     } else {
       enemy = this.enemies.create(ex, ey, fallbackKey, 0).setScale(1.8);
-      // Async load card art
+      // Async load card art (with error handling to prevent black squares)
       if (artUrl && !this._failedArt?.has(artKey)) {
         if (!this._loadingArt) this._loadingArt = {};
         if (!this._loadingArt[artKey]) {
           this._loadingArt[artKey] = true;
+          const errorHandler = (file) => {
+            if (file.key === artKey) {
+              this._failedArt.add(artKey);
+              if (this.textures.exists(artKey)) this.textures.remove(artKey);
+              delete this._loadingArt[artKey];
+              this.load.off('loaderror', errorHandler);
+            }
+          };
+          this.load.on('loaderror', errorHandler);
           this.load.image(artKey, artUrl);
           this.load.once('complete', () => {
-            if (enemy.active && this.textures.exists(artKey)) {
+            this.load.off('loaderror', errorHandler);
+            if (enemy.active && !this._failedArt.has(artKey) && this.textures.exists(artKey)) {
               enemy.setTexture(artKey);
               const srcH = enemy.height || 100;
               enemy.setScale(40 / srcH);
@@ -3946,9 +3973,10 @@ class WorldScene extends Phaser.Scene {
     enemy.setDepth(9);
     enemy._isTutorialEnemy = true;
 
-    enemy.label = this.add.text(ex, ey - 28, dreamCat.name, {
-      fontSize: '9px', fontFamily: 'monospace', color: '#ffaaaa',
-      backgroundColor: '#00000088', padding: { x: 2, y: 1 },
+    enemy.label = this.add.text(ex, ey - 30, dreamCat.name, {
+      fontSize: '10px', fontFamily: 'monospace', color: '#ffbbaa',
+      backgroundColor: '#000000bb', padding: { x: 3, y: 2 },
+      shadow: { offsetX: 0, offsetY: 1, color: '#000000', blur: 2, fill: true },
     }).setOrigin(0.5).setDepth(11);
 
     // NO wandering — stays in place, just a gentle bob
@@ -3960,7 +3988,7 @@ class WorldScene extends Phaser.Scene {
       repeat: -1,
       onUpdate: () => {
         if (enemy.active && enemy.label) {
-          enemy.label.setPosition(enemy.x, enemy.y - 28);
+          enemy.label.setPosition(enemy.x, enemy.y - 30);
         }
       },
     });
@@ -5456,7 +5484,7 @@ class WorldScene extends Phaser.Scene {
   _updateDomHUD() {
     // Player info
     const el = document.getElementById('hud-player-info');
-    if (el) el.textContent = `${G.name} | LV ${G.level} (${G.xp}/${G.level*3} XP) | ${G.coins} Gold`;
+    if (el) el.textContent = `${G.name} \u2022 LV ${G.level} (${G.xp}/${G.level*3} XP) \u2022 \uD83E\uDE99 ${G.coins}`;
 
     // Team info
     const team = document.getElementById('hud-team-info');
@@ -5467,7 +5495,13 @@ class WorldScene extends Phaser.Scene {
 
     // Time
     const time = document.getElementById('hud-time');
-    if (time && typeof getTimeOfDay === 'function') { const tod = getTimeOfDay(); time.textContent = typeof tod === 'string' ? tod : (tod?.phase || ''); }
+    if (time && typeof getTimeOfDay === 'function') {
+      const tod = getTimeOfDay();
+      const phase = typeof tod === 'string' ? tod : (tod?.phase || '');
+      const icons = { dawn: '\u{1F305}', day: '\u2600\uFE0F', dusk: '\u{1F307}', night: '\u{1F319}' };
+      const label = phase.charAt(0).toUpperCase() + phase.slice(1);
+      time.textContent = (icons[phase] || '') + ' ' + label;
+    }
 
     // Region — display in a dedicated element inside hud-top-right
     // (Do NOT set textContent on hud-top-right — it destroys the GUIDE button and time)

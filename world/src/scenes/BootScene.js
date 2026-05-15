@@ -5,13 +5,13 @@
 
 // Character sprite definitions — all 8 options
 const CHARACTER_SPRITES = [
-  { key: 'char_boy',          file: 'Boy_walk.png',          label: 'Youngster' },
-  { key: 'char_girl',         file: 'Girl_walk.png',         label: 'Bandit' },
-  { key: 'char_caveman',      file: 'Caveman_walk.png',      label: 'Monk' },
-  { key: 'char_cavegirl',     file: 'Cavegirl_walk.png',     label: 'Underclass' },
+  { key: 'char_boy',          file: 'Boy_walk.png',          label: 'Wanderer' },
+  { key: 'char_girl',         file: 'Girl_walk.png',         label: 'Rogue' },
+  { key: 'char_caveman',      file: 'Caveman_walk.png',      label: 'Brawler' },
+  { key: 'char_cavegirl',     file: 'Cavegirl_walk.png',     label: 'Outcast' },
   { key: 'char_eskimo',       file: 'Eskimo_walk.png',       label: 'Northerner' },
   { key: 'char_flam',         file: 'Flam_walk.png',         label: 'Flamekin' },
-  { key: 'char_fighterred',   file: 'FighterRed_walk.png',   label: 'Westerner' },
+  { key: 'char_fighterred',   file: 'FighterRed_walk.png',   label: 'Duelist' },
   { key: 'char_fighterwhite', file: 'FighterWhite_walk.png', label: 'Blackbelt' },
 ];
 
@@ -431,7 +431,7 @@ class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Subtitle
-    this.add.text(width / 2, height * 0.21, 'Your Universe to Explore', {
+    this.add.text(width / 2, height * 0.21, 'Collect Spiritkin. Roll Dice. Win.', {
       fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5);
 
@@ -548,20 +548,24 @@ class BootScene extends Phaser.Scene {
     this._spriteSelectGroup.push(stepText);
 
     // Header with gold glow
-    const headerGlow = this.add.text(width / 2, height * 0.10, "WHAT'S YOUR BACKGROUND?", {
+    const headerGlow = this.add.text(width / 2, height * 0.10, "WHO ARE YOU?", {
       fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffcc44',
       shadow: { offsetX: 0, offsetY: 0, color: '#ffaa00', blur: 16, fill: true },
     }).setOrigin(0.5).setDepth(101).setAlpha(0.4);
     this.tweens.add({ targets: headerGlow, alpha: 0.25, duration: 2000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this._spriteSelectGroup.push(headerGlow);
 
-    const header = this.add.text(width / 2, height * 0.10, "WHAT'S YOUR BACKGROUND?", {
+    const header = this.add.text(width / 2, height * 0.10, "WHO ARE YOU?", {
       fontSize: '32px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ffe680',
       shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 6, fill: true },
       stroke: '#aa7700', strokeThickness: 1,
     }).setOrigin(0.5).setDepth(101);
     this._spriteSelectGroup.push(header);
 
+    const subtitle = this.add.text(width / 2, height * 0.17, 'Pick a look. This is purely cosmetic.', {
+      fontSize: '13px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#667799',
+    }).setOrigin(0.5).setDepth(101);
+    this._spriteSelectGroup.push(subtitle);
 
     // 4x2 grid of character options
     const cols = 4, rows = 2;
@@ -725,7 +729,7 @@ class BootScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(101);
     this._classSelectGroup.push(header);
 
-    const subtitle = this.add.text(width / 2, height * 0.17, 'Your starting class shapes your journey through the Spirit World', {
+    const subtitle = this.add.text(width / 2, height * 0.17, 'This unlocks your first talent. You can learn others later.', {
       fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#8899bb',
     }).setOrigin(0.5).setDepth(101);
     this._classSelectGroup.push(subtitle);
@@ -738,11 +742,11 @@ class BootScene extends Phaser.Scene {
 
     // Class definitions
     const classes = [
-      { key: 'trainer',        name: 'Trainer',        desc: 'Focused on combat and battle mastery',         color: 0x44dd66, accent: 0x33aa55, icon: '\u2694\uFE0F' },
-      { key: 'cultivator',     name: 'Cultivator',     desc: 'Focused on growing, gathering, and nature',    color: 0x66cc66, accent: 0x449944, icon: '\uD83C\uDF3F' },
-      { key: 'fortune_teller', name: 'Fortune Teller', desc: 'Focused on mystical abilities and fate',       color: 0x44bbff, accent: 0x3388cc, icon: '\uD83D\uDD2E' },
-      { key: 'artisan',        name: 'Artisan',        desc: 'Focused on crafting and building',             color: 0xdd9933, accent: 0xaa7722, icon: '\uD83D\uDD28' },
-      { key: 'scientist',      name: 'Scientist',      desc: 'Focused on knowledge and discovery',           color: 0xaa55ff, accent: 0x8833cc, icon: '\uD83E\uDDEA' },
+      { key: 'trainer',        name: 'Trainer',        desc: 'Hit harder. Roll better. Win fights others can\'t.',  color: 0x44dd66, accent: 0x33aa55, icon: '\u2694\uFE0F' },
+      { key: 'cultivator',     name: 'Cultivator',     desc: 'Grow rare plants. Brew healing items. Outlast everyone.',  color: 0x66cc66, accent: 0x449944, icon: '\uD83C\uDF3F' },
+      { key: 'fortune_teller', name: 'Fortune Teller', desc: 'Bend luck. See the future. Turn bad rolls into wins.',  color: 0x44bbff, accent: 0x3388cc, icon: '\uD83D\uDD2E' },
+      { key: 'artisan',        name: 'Artisan',        desc: 'Build gear. Upgrade your team. Make something powerful.',  color: 0xdd9933, accent: 0xaa7722, icon: '\uD83D\uDD28' },
+      { key: 'scientist',      name: 'Scientist',      desc: 'Unlock secrets. Analyze Spiritkin. Know what others miss.',  color: 0xaa55ff, accent: 0x8833cc, icon: '\uD83E\uDDEA' },
     ];
 
     // Card layout — 5 cards in a row
@@ -837,7 +841,7 @@ class BootScene extends Phaser.Scene {
 
         // Line 1 — slow fade in
         setTimeout(() => {
-          textEl.textContent = 'You enter a new land.';
+          textEl.textContent = 'A world full of Spiritkin awaits.';
           textEl.style.opacity = '1';
         }, 1200);
         // Hold... then fade
@@ -848,7 +852,7 @@ class BootScene extends Phaser.Scene {
           textEl.style.fontSize = '26px';
           textEl.style.color = '#bb88ee';
           textEl.style.textShadow = '0 0 40px rgba(160,80,255,0.5)';
-          textEl.textContent = 'Valkin the Grand senses your presence.';
+          textEl.textContent = 'Something ancient stirs. Valkin the Grand is watching.';
           textEl.style.opacity = '1';
         }, 5200);
         // Hold longer — let the name sink in
@@ -860,7 +864,7 @@ class BootScene extends Phaser.Scene {
           textEl.style.fontStyle = 'italic';
           textEl.style.color = '#ffe680';
           textEl.style.textShadow = '0 0 50px rgba(255,200,60,0.4)';
-          textEl.textContent = 'The Battle of Origins is about to unfold.';
+          textEl.textContent = 'Your battle begins now.';
           textEl.style.opacity = '1';
         }, 9800);
         // Final hold — let it land

@@ -167,8 +167,8 @@ class BattleScene extends Phaser.Scene {
     // ── First-battle tutorial hints ──
     if (this._isFirstBattle) {
       this.time.delayedCall(1200, () => {
-        this._setStatus('Your first battle! Press ROLL to attack.');
-        // Pulse the ROLL button to draw attention
+        this._setStatus('You and your opponent both roll dice. Highest roll deals damage. Press ROLL!');
+        // Pulse the ROLL button + glow to draw attention
         if (this._redBtn) {
           this._tutorialPulse = this.tweens.add({
             targets: this._redBtn,
@@ -176,7 +176,21 @@ class BattleScene extends Phaser.Scene {
             duration: 600, yoyo: true, repeat: -1,
             ease: 'Sine.easeInOut',
           });
+          // Add a bright glow ring that pulses with the button
+          if (this._redBtn._glow) {
+            this._tutorialGlowPulse = this.tweens.add({
+              targets: this._redBtn._glow,
+              alpha: 1.8, duration: 600, yoyo: true, repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+          }
         }
+        // Willpower circles hint after a short delay
+        this.time.delayedCall(4000, () => {
+          if (this.scene.isActive() && this._isFirstBattle && this.roundNum === 0) {
+            this._setStatus('Each pink circle is 1 HP. Lose them all and your Spiritkin gets knocked out!');
+          }
+        });
       });
     }
   }
@@ -896,6 +910,7 @@ class BattleScene extends Phaser.Scene {
     if (typeof GameAudio !== 'undefined') GameAudio.dice();
     // Stop tutorial pulse on first roll
     if (this._tutorialPulse) { this._tutorialPulse.stop(); this._tutorialPulse = null; if (this._redBtn) this._redBtn.setScale(1); }
+    if (this._tutorialGlowPulse) { this._tutorialGlowPulse.stop(); this._tutorialGlowPulse = null; }
 
     if (typeof triggerPreRoll === 'function') {
       triggerPreRoll(this._pt, (msg) => this._addLog(msg));
@@ -1137,7 +1152,11 @@ class BattleScene extends Phaser.Scene {
 
     // ── First-battle tutorial hints after roll ──
     if (this._isFirstBattle && this.roundNum === 1) {
-      const outcome = pWin ? `You rolled higher and dealt damage!` : eWin ? `Enemy rolled higher — you took damage!` : `A tie — no damage this round!`;
+      const outcome = pWin
+        ? `You rolled higher and dealt damage! Keep pressing ROLL.`
+        : eWin
+        ? `They rolled higher and hit you! Watch your pink circles — that's your HP.`
+        : `A tie! No damage. Press ROLL to go again.`;
       this.time.delayedCall(1500, () => { if (this.scene.isActive()) this._setStatus(outcome); });
       // Willpower hint (only if player has non-heart willpower cards)
       if (!this._tutorialWPHintShown) {
@@ -1145,7 +1164,7 @@ class BattleScene extends Phaser.Scene {
         const hasActive = hand.length > 0 && hand[0] !== 0;
         if (hasActive) {
           this._tutorialWPHintShown = true;
-          this.time.delayedCall(3500, () => { if (this.scene.isActive()) this._setStatus('Click your active willpower card to use its ability!'); });
+          this.time.delayedCall(4000, () => { if (this.scene.isActive()) this._setStatus('See the glowing pink circle? Click it to use your special ability!'); });
         }
       }
     }
@@ -1227,10 +1246,10 @@ class BattleScene extends Phaser.Scene {
     bd.fillRect(-this._W/2, -this._H/2, this._W, this._H);
     o.add(bd);
 
-    o.add(this.add.text(0, -this._H*0.35, 'YOUR SPIRITKIN HAS FALLEN', {
+    o.add(this.add.text(0, -this._H*0.35, 'YOUR SPIRITKIN WAS KNOCKED OUT', {
       fontFamily: 'Cinzel, serif', fontSize: '16px', color: '#ff5544', letterSpacing: 2,
     }).setOrigin(0.5));
-    o.add(this.add.text(0, -this._H*0.30, 'Choose a replacement', {
+    o.add(this.add.text(0, -this._H*0.30, 'Send in your next fighter', {
       fontFamily: 'Georgia, serif', fontSize: '14px', color: '#bbb',
     }).setOrigin(0.5));
 
@@ -1328,10 +1347,15 @@ class BattleScene extends Phaser.Scene {
     if (won) { sub = `+${xpGain} XP  +${coinChange} Gold`; if (leveledUp) sub += `  LEVEL ${G.level}!`; }
     else if (coinChange < 0) sub = `${coinChange} Gold`;
 
-    this._showCallout(text, type, sub, 2500);
+    // First win gets a bigger, longer callout
+    const isFirstWin = won && G.rep && G.rep.battlesWon === 1;
+    if (isFirstWin) {
+      this._showCallout('FIRST VICTORY!', type, sub + '  You\'re a natural.', 3200);
+    } else {
+      this._showCallout(text, type, sub, 2500);
+    }
 
     // ── Bridge Moment: first-win Kickstarter reveal ──
-    const isFirstWin = won && G.rep && G.rep.battlesWon === 1;
     const _doSceneExit = () => {
       if (typeof GameAudio !== 'undefined') { won?GameAudio.victory():GameAudio.defeat(); }
       this.cameras.main.fadeOut(300, 0, 0, 0, (cam, p) => {
@@ -1346,8 +1370,8 @@ class BattleScene extends Phaser.Scene {
     };
 
     if (isFirstWin && this.pg) {
-      // Show the card reveal after the VICTORY callout fades
-      this.time.delayedCall(2800, () => {
+      // Show the card reveal after the longer first-win callout fades
+      this.time.delayedCall(3500, () => {
         if (typeof GameAudio !== 'undefined') GameAudio.victory();
         this._showKickstarterReveal(this.pg, _doSceneExit);
       });
@@ -1411,7 +1435,7 @@ class BattleScene extends Phaser.Scene {
         opacity:0; transform:translateY(20px);
         transition:opacity 0.5s ease 0.9s, transform 0.5s ease 0.9s;
         text-align:center; line-height:1.5; max-width:400px;
-      ">This is a real card.<br>Back us on Kickstarter to hold it in your hands.</div>
+      ">This is a real card you can own.<br>Back us on Kickstarter and hold it in your hands.</div>
       <a id="kr-cta" href="https://www.kickstarter.com" target="_blank" rel="noopener" style="
         display:inline-block; margin-top:28px; padding:14px 36px;
         background:linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
