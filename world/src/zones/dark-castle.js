@@ -108,15 +108,8 @@ function generateDarkCastle(worldMap, W, H) {
     worldMap[y][W - 1] = 7; worldMap[y][W - 2] = 7;
   }
 
-  // Inner fortification wall (dark_wall ring at 4 tiles in)
-  for (let x = 3; x < W - 3; x++) {
-    worldMap[3][x] = 23; worldMap[4][x] = 23;
-    worldMap[H - 4][x] = 23; worldMap[H - 5][x] = 23;
-  }
-  for (let y = 3; y < H - 3; y++) {
-    worldMap[y][3] = 23; worldMap[y][4] = 23;
-    worldMap[y][W - 4] = 23; worldMap[y][W - 5] = 23;
-  }
+  // Inner fortification removed — outer mountain border + towers are enough
+  // The inner wall was creating invisible barriers throughout the city
 
   // Guard towers at corners (5x5 dark_wall with castle_floor interior)
   const towerPositions = [
@@ -160,22 +153,20 @@ function generateDarkCastle(worldMap, W, H) {
     }
   }
 
-  // Main gates — gaps in the inner wall
-  // South gate (main entrance, x center)
-  const gateX = Math.floor(W / 2) - 2;
-  for (let dx = 0; dx < 4; dx++) {
-    worldMap[3][gateX + dx] = 24;
-    worldMap[4][gateX + dx] = 24;
-    worldMap[H - 4][gateX + dx] = 24;
-    worldMap[H - 5][gateX + dx] = 24;
+  // Gate paths at the outer mountain border entries (widen to 6 tiles)
+  const gateX = Math.floor(W / 2) - 3;
+  for (let dx = 0; dx < 6; dx++) {
+    for (let dy = 0; dy < 3; dy++) {
+      worldMap[dy][gateX + dx] = 24;           // north gate
+      worldMap[H - 1 - dy][gateX + dx] = 24;   // south gate
+    }
   }
-  // East gate
-  const gateY = Math.floor(H / 2) - 1;
-  for (let dy = 0; dy < 3; dy++) {
-    worldMap[gateY + dy][3] = 24;
-    worldMap[gateY + dy][4] = 24;
-    worldMap[gateY + dy][W - 4] = 24;
-    worldMap[gateY + dy][W - 5] = 24;
+  const gateY = Math.floor(H / 2) - 2;
+  for (let dy = 0; dy < 5; dy++) {
+    for (let dx = 0; dx < 3; dx++) {
+      worldMap[gateY + dy][dx] = 24;           // west gate
+      worldMap[gateY + dy][W - 1 - dx] = 24;   // east gate
+    }
   }
 
   // ── 3. THE GRAND CASTLE — enormous centerpiece (22x16 tiles) ──
@@ -663,23 +654,50 @@ function generateDarkCastle(worldMap, W, H) {
     }
   }
 
-  // ── 16. CLEAR TREES FROM PATHS AND BUILDINGS (final pass) ──
-  // Same pattern as world-gen.js — ensure walkable tiles have breathing room
+  // ── 16. CLEANUP PASS — remove invisible walls and clear trees ──
+
+  // Pass A: Remove orphaned dark_wall tiles that aren't part of structures
+  // A dark_wall is "structural" if it's adjacent to castle_floor, building, or dungeon
+  for (let y = 3; y < H - 3; y++) {
+    for (let x = 3; x < W - 3; x++) {
+      if (worldMap[y][x] !== 23) continue;
+      let nearStructure = false;
+      for (let dy = -1; dy <= 1 && !nearStructure; dy++) {
+        for (let dx = -1; dx <= 1 && !nearStructure; dx++) {
+          const n = worldMap[y + dy]?.[x + dx];
+          if (n === 26 || n === 5 || n === 27) nearStructure = true;
+        }
+      }
+      if (!nearStructure) worldMap[y][x] = 22; // orphaned wall → walkable stone
+    }
+  }
+
+  // Pass B: Clear dead trees near any walkable tile
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const t = worldMap[y][x];
       if (t === 24 || t === 5 || t === 26 || t === 27) {
-        // Clear adjacent dead trees for breathing room
         for (let dy = -1; dy <= 1; dy++) {
           for (let dx = -1; dx <= 1; dx++) {
             const ny = y + dy, nx = x + dx;
             if (ny >= 0 && ny < H && nx >= 0 && nx < W) {
-              if (worldMap[ny][nx] === 25) {
-                worldMap[ny][nx] = 22; // dark_tree -> dark_stone
-              }
+              if (worldMap[ny][nx] === 25) worldMap[ny][nx] = 22;
             }
           }
         }
+      }
+    }
+  }
+
+  // Pass C: Ensure all paths are 2-wide (no single-tile paths that feel cramped)
+  for (let y = 2; y < H - 2; y++) {
+    for (let x = 2; x < W - 2; x++) {
+      if (worldMap[y][x] === 24) {
+        // If path tile has impassable neighbors on both sides, widen
+        if (worldMap[y][x - 1] === 25 || worldMap[y][x - 1] === 23) worldMap[y][x - 1] = 22;
+        if (worldMap[y][x + 1] === 25 || worldMap[y][x + 1] === 23) worldMap[y][x + 1] = 22;
+        if (worldMap[y - 1]?.[x] === 25 || worldMap[y - 1]?.[x] === 23) worldMap[y - 1][x] = 22;
+        if (worldMap[y + 1]?.[x] === 25 || worldMap[y + 1]?.[x] === 23) worldMap[y + 1][x] = 22;
       }
     }
   }
