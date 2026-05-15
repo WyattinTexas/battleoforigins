@@ -538,12 +538,15 @@ class TalentScene extends Phaser.Scene {
     }).setDepth(3);
     this._dyn.push(descLabel);
 
-    // Cost pill
+    // Cost pill — show XP type
     if (!isMaxed) {
-      const pillText = cost + ' pts';
+      const xpType = typeof getTreeXPType === 'function' ? getTreeXPType(treeId) : 'combat';
+      const xpInfo = (typeof XP_TYPE_INFO !== 'undefined' && XP_TYPE_INFO[xpType]) || { icon: '⚔', name: 'XP', color: '#e94560' };
+      const xpCost = cost * (typeof XP_PER_TALENT_POINT !== 'undefined' ? XP_PER_TALENT_POINT : 100);
+      const pillText = xpInfo.icon + ' ' + xpCost;
       const pill = this.add.text(cx + w/2 - 14, cy, pillText, {
         fontSize: '11px', fontFamily: TUI.FONT_BODY, fontStyle: 'bold',
-        color: canAlloc ? TUI.GOLD_S : TUI.DIM,
+        color: canAlloc ? xpInfo.color : TUI.DIM,
         backgroundColor: canAlloc ? '#1a1a30' : '#0e0e1e',
         padding: { x: 6, y: 3 },
       }).setOrigin(1, 0.5).setDepth(3);
@@ -621,11 +624,14 @@ class TalentScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(4);
     this._dyn.push(descLabel);
 
-    // Cost pill (bottom-right)
+    // Cost pill (bottom-right) — XP type
     if (!isMaxed) {
-      const pill = this.add.text(cx + w/2 - 8, cy + h/2 - 6, talent.cost + 'pt', {
+      const _xpT = typeof getTreeXPType === 'function' ? getTreeXPType(treeId) : 'combat';
+      const _xpI = (typeof XP_TYPE_INFO !== 'undefined' && XP_TYPE_INFO[_xpT]) || { icon: '⚔', color: '#e94560' };
+      const _xpC = talent.cost * (typeof XP_PER_TALENT_POINT !== 'undefined' ? XP_PER_TALENT_POINT : 100);
+      const pill = this.add.text(cx + w/2 - 8, cy + h/2 - 6, _xpI.icon + _xpC, {
         fontSize: '10px', fontFamily: TUI.FONT_BODY,
-        color: canAlloc ? TUI.GOLD_S : TUI.DIM,
+        color: canAlloc ? _xpI.color : TUI.DIM,
         backgroundColor: '#0e0e1e',
         padding: { x: 4, y: 2 },
       }).setOrigin(1, 1).setDepth(4);
@@ -718,7 +724,10 @@ class TalentScene extends Phaser.Scene {
     sepGfx.beginPath(); sepGfx.moveTo(pad, yOff); sepGfx.lineTo(ttW - pad, yOff); sepGfx.strokePath();
     yOff += 8;
 
-    const costText = this.add.text(pad, yOff, 'Costs ' + cost + ' Skill Points', {
+    const _ttXpT = typeof getTreeXPType === 'function' ? getTreeXPType(treeId) : 'combat';
+    const _ttXpI = (typeof XP_TYPE_INFO !== 'undefined' && XP_TYPE_INFO[_ttXpT]) || { icon: '⚔', name: 'XP', color: '#e94560' };
+    const _ttXpC = cost * (typeof XP_PER_TALENT_POINT !== 'undefined' ? XP_PER_TALENT_POINT : 100);
+    const costText = this.add.text(pad, yOff, `Costs ${_ttXpC} ${_ttXpI.icon} ${_ttXpI.name} XP`, {
       fontSize: '12px', fontFamily: TUI.FONT_BODY, color: TUI.DIM,
     });
     yOff += 18;
@@ -743,7 +752,7 @@ class TalentScene extends Phaser.Scene {
         } else if (tree && tree.hidden) {
           statusStr = 'Secret \u2014 unlock condition hidden';
         } else {
-          statusStr = 'Not enough skill points';
+          statusStr = 'Not enough ' + _ttXpI.name + ' XP';
         }
       } else if (talentInfo.prereq) {
         const pt = _findTalent(treeId, talentInfo.prereq);
@@ -819,7 +828,16 @@ class TalentScene extends Phaser.Scene {
     if (!this._pointsText) return;
     const remaining = getTalentPointsRemaining();
     const total = getTalentPointsTotal();
-    this._pointsText.setText('Skill Points: ' + remaining + ' / ' + total);
+    // Show XP for the selected tree's type
+    const _barXpT = this._selectedTree && typeof getTreeXPType === 'function' ? getTreeXPType(this._selectedTree) : null;
+    const _barXpI = _barXpT && typeof XP_TYPE_INFO !== 'undefined' ? XP_TYPE_INFO[_barXpT] : null;
+    if (_barXpI && typeof getAvailableXP === 'function') {
+      const avail = getAvailableXP(_barXpT);
+      const earned = (G.professionXP && G.professionXP[_barXpT]) || 0;
+      this._pointsText.setText(_barXpI.icon + ' ' + _barXpI.name + ' XP: ' + avail + ' available (' + earned + ' earned)');
+    } else {
+      this._pointsText.setText('Skill Points: ' + remaining + ' / ' + total);
+    }
     this._pointsText.setColor(remaining > 0 ? '#88ffaa' : '#ff8888');
     // Update bar fill
     if (this._spBarFill && this._spBarMaxW) {

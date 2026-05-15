@@ -775,6 +775,11 @@ class WorldScene extends Phaser.Scene {
     // ── DOM HUD (always anchored to screen edges) ──
     this._buildDomActionBar();
     this._updateDomHUD();
+    // Wire GUIDE button directly (must happen in create, not conditionally)
+    const _guideBtn = document.getElementById('hud-guide-btn');
+    if (_guideBtn) {
+      _guideBtn.onclick = () => { if (!G.inBattle) this.showHelpPanel(); };
+    }
     this._domHudTimer = this.time.addEvent({ delay: 500, callback: () => this._updateDomHUD(), loop: true });
     console.log('[WorldScene] create: HUD + UI done');
 
