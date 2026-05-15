@@ -1434,7 +1434,6 @@ class WorldScene extends Phaser.Scene {
     // Region detection (medium — needed for chat/spawns)
     const region = medTick ? getCurrentRegion(G.x, G.y) : (this._lastRegion || 'frost_valley');
     if (medTick) {
-      this._lastRegion = region;
       const regionNames = { frost_valley: 'Frost Valley', rolling_hills: 'Rolling Hills', volcanic_isles: 'Volcanic Isles', dark_castle: 'Dark Castle' };
       this.regionText.setText(regionNames[region] || '');
     }
@@ -2219,8 +2218,6 @@ class WorldScene extends Phaser.Scene {
     };
     const info = regionDisplay[currentRegion];
     if (!info) return;
-    if (!isFirstSet) GameAudio.levelUp();
-
     // Trigger Valkin event when entering Dark Castle (once per session)
     if (currentRegion === 'dark_castle' && !isFirstSet && !this._valkinEvent && typeof spawnValkinEvent === 'function') {
       this.time.delayedCall(3000, () => spawnValkinEvent(this));
@@ -2231,11 +2228,21 @@ class WorldScene extends Phaser.Scene {
       this.time.delayedCall(1500, () => spawnZoneEvents(currentRegion, this));
     }
 
-    // Large banner text — fade in, hold, fade out
-    const banner = this.add.text(640, 200, `Entering ${info.name}`, {
-      fontSize: '28px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: info.color,
-      backgroundColor: '#000000aa', padding: { x: 24, y: 12 },
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(400).setAlpha(0);
+    // Skip banner + sound for the starting region on first load
+    if (isFirstSet) return;
+
+    // Play transition sound
+    if (typeof GameAudio !== 'undefined') GameAudio.collect();
+
+    // Large centered region name announcement — Cinzel, gold, text shadow
+    const cx = this.cameras.main.width / 2;
+    const cy = this.cameras.main.height / 2;
+
+    const banner = this.add.text(cx, cy - 16, info.name.toUpperCase(), {
+      fontSize: '32px', fontFamily: 'Cinzel, Georgia, serif', fontStyle: 'bold',
+      color: '#f5c842',
+      shadow: { offsetX: 2, offsetY: 2, color: '#000000', blur: 6, fill: true },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
     // Subtitle with region flavor
     const flavors = {
@@ -2244,17 +2251,17 @@ class WorldScene extends Phaser.Scene {
       volcanic_isles: 'Fire and paradise intertwined',
       dark_castle: 'Shadows hold secrets',
     };
-    const subtitle = this.add.text(640, 240, flavors[currentRegion] || '', {
-      fontSize: '14px', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#999999',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(400).setAlpha(0);
+    const subtitle = this.add.text(cx, cy + 20, flavors[currentRegion] || '', {
+      fontSize: '14px', fontFamily: 'Cinzel, Georgia, serif', fontStyle: 'italic', color: '#ccaa77',
+      shadow: { offsetX: 1, offsetY: 1, color: '#000000', blur: 4, fill: true },
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(500).setAlpha(0);
 
-    // Fade in
+    // Fade in 500ms, hold 2s, fade out 500ms
     this.tweens.add({
-      targets: [banner, subtitle], alpha: 1, duration: 600,
+      targets: [banner, subtitle], alpha: 1, duration: 500,
       onComplete: () => {
-        // Hold then fade out
         this.tweens.add({
-          targets: [banner, subtitle], alpha: 0, y: '-=20', duration: 1200, delay: 2000,
+          targets: [banner, subtitle], alpha: 0, duration: 500, delay: 2000,
           onComplete: () => { banner.destroy(); subtitle.destroy(); }
         });
       }
