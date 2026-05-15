@@ -1482,15 +1482,20 @@ class WorldScene extends Phaser.Scene {
             this.showZaraMenu();
           } else if (this.comm) {
             console.log('[NPC] Calling comm.show for', npc.name);
+            const _dlgText = this.getNPCDialogue(npc.name);
             try {
-              this.comm.show(npc.name, this.getNPCDialogue(npc.name), { color: '#88ff88' });
+              this.comm.show(npc.name, _dlgText, { color: '#88ff88' });
             } catch(e) {
               console.error('[NPC] comm.show FAILED:', e);
-              this.showDialogue(npc.name, this.getNPCDialogue(npc.name));
+              this.showDialogue(npc.name, _dlgText);
             }
+            // Open dialogue editor for live editing
+            this.showDialogueEditor(npc.name, _dlgText);
           } else {
             console.log('[NPC] CommOverlay null — using fallback dialogue');
-            this.showDialogue(npc.name, this.getNPCDialogue(npc.name));
+            const _dlgText = this.getNPCDialogue(npc.name);
+            this.showDialogue(npc.name, _dlgText);
+            this.showDialogueEditor(npc.name, _dlgText);
           }
         }
       } else {
@@ -1502,6 +1507,11 @@ class WorldScene extends Phaser.Scene {
   }
 
   getNPCDialogue(name) {
+    // Check for custom saved dialogues first (from in-game editor)
+    const custom = JSON.parse(localStorage.getItem('boo_custom_dialogues') || '{}');
+    if (custom[name] && custom[name].length > 0) {
+      return custom[name][Math.floor(Math.random() * custom[name].length)];
+    }
     // Use the rich NPC_DIALOGUE_MAP from npcs.js if available
     if (typeof NPC_DIALOGUE_MAP !== 'undefined' && NPC_DIALOGUE_MAP[name] && NPC_DIALOGUE_MAP[name].getLine) {
       return NPC_DIALOGUE_MAP[name].getLine();
@@ -1522,6 +1532,104 @@ class WorldScene extends Phaser.Scene {
     this.dialogueContainer.setVisible(true);
     if (this._dialogueTimer) this._dialogueTimer.remove();
     this._dialogueTimer = this.time.delayedCall(4000, () => this.dialogueContainer.setVisible(false));
+  }
+
+  // ═══════ IN-GAME DIALOGUE EDITOR ═══════
+  // Press E near NPC → see dialogue → edit it live → Save persists to localStorage
+  showDialogueEditor(npcName, currentText) {
+    // Remove existing editor if open
+    if (this._dialogueEditor) { this._dialogueEditor.remove(); this._dialogueEditor = null; }
+
+    // Load any saved custom dialogue
+    const saved = JSON.parse(localStorage.getItem('boo_custom_dialogues') || '{}');
+    const savedLines = saved[npcName] || null;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'dialogue-editor';
+    overlay.style.cssText = `
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 420px; background: #0e1528ee; border: 2px solid #d4a040;
+      border-radius: 12px; padding: 20px; z-index: 9999;
+      font-family: Georgia, serif; color: #f0e8d4;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    `;
+
+    overlay.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="font-family:Cinzel,serif; font-size:18px; color:#d4a040; font-weight:bold;">
+          ${npcName}
+        </div>
+        <div style="font-size:11px; color:#667;">DIALOGUE EDITOR</div>
+      </div>
+      <div style="font-size:12px; color:#889; margin-bottom:8px;">
+        Current: <span style="color:#aab0c0; font-style:italic;">"${currentText}"</span>
+      </div>
+      <textarea id="de-lines" rows="5" style="
+        width:100%; background:#1a1a2e; border:1px solid #334; color:#f0e8d4;
+        border-radius:6px; padding:10px; font-family:Georgia,serif; font-size:14px;
+        resize:vertical; line-height:1.5;
+      " placeholder="One line per dialogue option...">${savedLines ? savedLines.join('\n') : currentText}</textarea>
+      <div style="font-size:11px; color:#556; margin:6px 0;">One line per dialogue option. Random line shown each interaction.</div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button id="de-save" style="
+          flex:1; padding:10px; background:#2a6040; color:#fff; border:none;
+          border-radius:6px; font-family:Cinzel,serif; font-size:14px; font-weight:bold;
+          cursor:pointer;
+        ">💾 Save</button>
+        <button id="de-reset" style="
+          padding:10px 16px; background:#553333; color:#ccc; border:none;
+          border-radius:6px; font-family:Cinzel,serif; font-size:12px; cursor:pointer;
+        ">Reset</button>
+        <button id="de-close" style="
+          padding:10px 16px; background:#333; color:#ccc; border:none;
+          border-radius:6px; font-family:Cinzel,serif; font-size:12px; cursor:pointer;
+        ">✕</button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    this._dialogueEditor = overlay;
+
+    // Focus textarea
+    const ta = overlay.querySelector('#de-lines');
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    // Save button
+    overlay.querySelector('#de-save').addEventListener('click', () => {
+      const lines = ta.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length === 0) return;
+      const all = JSON.parse(localStorage.getItem('boo_custom_dialogues') || '{}');
+      all[npcName] = lines;
+      localStorage.setItem('boo_custom_dialogues', JSON.stringify(all));
+      // Flash feedback
+      overlay.querySelector('#de-save').textContent = '✓ Saved!';
+      overlay.querySelector('#de-save').style.background = '#2a8050';
+      setTimeout(() => {
+        overlay.querySelector('#de-save').textContent = '💾 Save';
+        overlay.querySelector('#de-save').style.background = '#2a6040';
+      }, 1200);
+    });
+
+    // Reset button — clear custom, go back to default
+    overlay.querySelector('#de-reset').addEventListener('click', () => {
+      const all = JSON.parse(localStorage.getItem('boo_custom_dialogues') || '{}');
+      delete all[npcName];
+      localStorage.setItem('boo_custom_dialogues', JSON.stringify(all));
+      ta.value = currentText;
+    });
+
+    // Close button
+    overlay.querySelector('#de-close').addEventListener('click', () => {
+      overlay.remove();
+      this._dialogueEditor = null;
+    });
+
+    // ESC to close
+    const escHandler = (e) => {
+      if (e.key === 'Escape') { overlay.remove(); this._dialogueEditor = null; window.removeEventListener('keydown', escHandler); }
+    };
+    window.addEventListener('keydown', escHandler);
   }
 
   // ═══════ CRAZY LOU — Valkin Raid Trigger ═══════
