@@ -652,7 +652,7 @@ const VI_WILD_AMBUSH_SCRIPT = {
     ],
   },
 
-  spawnAt: { x: 82, y: 10 },  // Deep Volcanic Isles wilds, far from hub
+  spawnAt: { x: 60, y: 50 },  // Mid-map volcanic wilds, away from zone entry edges
 
   battle: {
     team: [

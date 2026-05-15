@@ -148,6 +148,15 @@
     if (scene.player) {
       if (scene.player.setVelocity) scene.player.setVelocity(0, 0);
       scene.player._eventFrozen = true;
+      // Safety: auto-unfreeze after 8s if still frozen (prevents permanent stuck)
+      if (scene.time) {
+        scene.time.delayedCall(8000, function () {
+          if (scene.player && scene.player._eventFrozen && !G.inBattle) {
+            console.warn('[EventEngine] Safety unfreeze — player was stuck');
+            scene.player._eventFrozen = false;
+          }
+        });
+      }
     }
     return 'done';
   });
