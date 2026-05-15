@@ -1281,6 +1281,9 @@ class BattleScene extends Phaser.Scene {
   // ═══════════════════════════════════════════════════════
   _exit(won) {
     if (typeof Dice3D !== 'undefined') Dice3D.destroy();
+    // Clean up any lingering DOM overlays from this scene
+    const btOverlay = document.getElementById('battle-tutorial-overlay');
+    if (btOverlay) btOverlay.remove();
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.style.display = '';
 

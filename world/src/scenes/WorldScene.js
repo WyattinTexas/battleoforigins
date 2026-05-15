@@ -21,6 +21,8 @@ class WorldScene extends Phaser.Scene {
     if (staleOverlay) staleOverlay.remove();
     const staleKR = document.getElementById('kickstarter-reveal');
     if (staleKR) staleKR.remove();
+    const staleBT = document.getElementById('battle-tutorial-overlay');
+    if (staleBT) staleBT.remove();
     // Ensure canvas and HUD are visible (cinematic hides them)
     const cvs = document.querySelector('canvas');
     if (cvs && cvs.style.display === 'none') cvs.style.display = '';
@@ -1398,6 +1400,8 @@ class WorldScene extends Phaser.Scene {
     this.checkNPCProximity();
     this.checkBuildingProximity();
     this.checkFrostDungeonProximity();
+    // Wild Spiritkin personality comms (on medium tick to avoid per-frame cost)
+    if (medTick) this._checkEnemyProximityComm();
 
     // Panel hotkeys — gated by progressive HUD (tutorial state)
     const _postBattle = G.tutorialComplete || (G.rep?.battlesWon > 0);
@@ -2305,6 +2309,87 @@ class WorldScene extends Phaser.Scene {
         trainerName: isBlackRider ? battleName : undefined,
       });
       this.scene.pause();
+    });
+  }
+
+  // ═══════ Wild Spiritkin Proximity Comms ═══════
+
+  _checkEnemyProximityComm() {
+    if (!this.player || !this.enemies || G.inBattle) return;
+    // Global cooldown — max 1 comm every 5 seconds
+    const now = Date.now();
+    if (this._lastWildCommTime && now - this._lastWildCommTime < 5000) return;
+    // Don't interrupt existing comms
+    if (typeof StarfoxComm !== 'undefined' && StarfoxComm.isActive()) return;
+
+    const px = this.player.x, py = this.player.y;
+    const PROXIMITY = 80;  // px — triggers comm
+    const BATTLE_RANGE = 40; // px — don't bother if about to collide
+
+    this.enemies.getChildren().forEach(enemy => {
+      if (!enemy.active || enemy._hasSpoken) return;
+      if (!enemy.cardData) return;
+
+      const dx = enemy.x - px, dy = enemy.y - py;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > PROXIMITY || dist < BATTLE_RANGE) return;
+
+      // Mark spoken — only once per enemy
+      enemy._hasSpoken = true;
+      this._lastWildCommTime = now;
+
+      const card = enemy.cardData;
+      const rarity = card.rarity || 'common';
+
+      // Personality lines by rarity
+      const lines = {
+        common: [
+          "Hmm? A trainer?",
+          "You look tough...",
+          "Come closer, I dare you.",
+          "Another one? Fine.",
+        ],
+        uncommon: [
+          "I've been waiting for a worthy opponent.",
+          "You won't beat me that easily.",
+          "Interesting...",
+          "Don't waste my time.",
+        ],
+        rare: [
+          "You have no idea what you're getting into.",
+          "Few have challenged me and survived.",
+          "This should be fun.",
+          "I can feel your fear.",
+        ],
+        legendary: [
+          "At last... someone worth my time.",
+          "You feel that? That's fear.",
+          "Kneel, or I'll make you.",
+          "The ground trembles beneath me.",
+        ],
+      };
+
+      const pool = lines[rarity] || lines.common;
+      const line = pool[Math.floor(Math.random() * pool.length)];
+
+      // Dynamic character registration for StarfoxComm
+      if (typeof StarfoxComm !== 'undefined') {
+        const charKey = 'wild_' + card.id;
+        const artUrl = card.art || '';
+        const rarityColors = { common: '#ffbbaa', uncommon: '#66bbff', rare: '#cc88ff', legendary: '#ffcc00' };
+        StarfoxComm.addCharacter(charKey, {
+          name: card.name,
+          color: rarityColors[rarity] || '#ffbbaa',
+          art: artUrl,
+          hp: card.maxHp || 6,
+          blipFreq: 300,
+          blipSpeed: 28,
+        });
+        StarfoxComm.playOne(charKey, line);
+      } else {
+        // Fallback to simple showComm
+        showComm(card.name, line, { duration: 2000, speed: 20 });
+      }
     });
   }
 
