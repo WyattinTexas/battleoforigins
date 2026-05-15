@@ -104,8 +104,8 @@ class BuildingScene extends Phaser.Scene {
     const H = this.scale.height;
 
     // Normalize room config (support both legacy BUILDING_LAYOUTS and ROOM_CONFIGS formats)
-    const npcName = npcName || (layout.npc && layout.npc.name) || 'NPC';
-    const npcTint = npcTint || (layout.npc && layout.npc.tint) || 0xffffff;
+    const npcName = (layout.npc && layout.npc.name) || 'NPC';
+    const npcTint = (layout.npc && layout.npc.tint) || 0xffffff;
     const roomName = layout.name || this.buildingType;
 
     // Center the room in viewport
