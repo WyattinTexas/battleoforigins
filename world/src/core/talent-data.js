@@ -1180,7 +1180,7 @@ function getTalentXPCost(treeId, talentId) {
 const TALENT_POINT_CAP = 160;
 
 function getTalentPointsTotal() {
-  const basePoints = 10; // 10 base points (5 apprentices pre-spent = 10, so starts at 0 free + level/XP gains)
+  const basePoints = 0; // no free points — starting apprentice is pre-learned, earn the rest
   const fromLevel = (G.level || 1) * 3;
   const profXP = G.professionXP || {};
   const totalProfXP = Object.values(profXP).reduce((s, v) => s + v, 0);
