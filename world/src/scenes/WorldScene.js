@@ -1451,6 +1451,7 @@ class WorldScene extends Phaser.Scene {
     this._ePrevDown = eDown;
     this._eConsumed = false;
     this.checkNPCProximity();
+    this._updateBuildingHints();
     this.checkBuildingProximity();
     this.checkFrostDungeonProximity();
     // Wild Spiritkin personality comms (on medium tick to avoid per-frame cost)
@@ -1935,6 +1936,43 @@ class WorldScene extends Phaser.Scene {
   }
 
   // ═══════ WAVE 3: BUILDING INTERACTIONS ═══════
+
+  _updateBuildingHints() {
+    if (!this.player || !this._interactBuildings) return;
+    const px = this.player.x;
+    const py = this.player.y;
+    const T = this._tileSize;
+    const HINT_DIST = 48;
+
+    let closestBld = null;
+    let closestDist = Infinity;
+
+    for (const bld of this._interactBuildings) {
+      const bx = bld.x * T + T / 2;
+      const by = bld.y * T + T / 2;
+      const dist = Phaser.Math.Distance.Between(px, py, bx, by);
+      if (dist < HINT_DIST && dist < closestDist) {
+        closestDist = dist;
+        closestBld = bld;
+      }
+    }
+
+    if (closestBld) {
+      const bx = closestBld.x * T + T / 2;
+      const by = closestBld.y * T + T / 2;
+      if (!this._buildingHint) {
+        this._buildingHint = this.add.text(bx, by - 20, '[E] Enter', {
+          fontSize: '11px', fontFamily: 'monospace', fontStyle: 'bold', color: '#ffffff',
+          backgroundColor: '#00000099', padding: { x: 5, y: 2 },
+        }).setOrigin(0.5).setDepth(12);
+      } else {
+        this._buildingHint.setPosition(bx, by - 20);
+        this._buildingHint.setVisible(true);
+      }
+    } else if (this._buildingHint) {
+      this._buildingHint.setVisible(false);
+    }
+  }
 
   checkBuildingProximity() {
     if (!this._ePressed) return;

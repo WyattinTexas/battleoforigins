@@ -512,6 +512,8 @@ function ensurePlayerDefaults() {
     if (!G.talents[_ct]) G.talents[_ct] = {};
   }
   if (!G.startingClass) G.startingClass = null;
+  if (G._classHintShown === undefined) G._classHintShown = false;
+  if (G._talentVisited === undefined) G._talentVisited = false;
   if (G.darkRiderUnlocked === undefined) G.darkRiderUnlocked = false;
   if (G.elderUnlocked === undefined) G.elderUnlocked = false;
   if (G.activeAmendment === undefined) G.activeAmendment = null; // Elder Council amendment id

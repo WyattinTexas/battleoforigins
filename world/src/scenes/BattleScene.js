@@ -1298,6 +1298,8 @@ class BattleScene extends Phaser.Scene {
     // Clean up any lingering DOM overlays from this scene
     const btOverlay = document.getElementById('battle-tutorial-overlay');
     if (btOverlay) btOverlay.remove();
+    const krOverlay = document.getElementById('kickstarter-reveal');
+    if (krOverlay) krOverlay.remove();
     const hud = document.getElementById('hud-overlay');
     if (hud) hud.style.display = '';
 
