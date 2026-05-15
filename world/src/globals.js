@@ -498,6 +498,7 @@ function ensurePlayerDefaults() {
   if (!G.playerId) G.playerId = Date.now().toString(36) + Math.random().toString(36).slice(2);
   if (G.tutorialStep === undefined) G.tutorialStep = 0;
   if (G.tutorialComplete === undefined) G.tutorialComplete = false;
+  if (G.questStep === undefined) G.questStep = 0; // breadcrumb objective tracker (0-4)
   // Multiplayer buffs & party
   if (!G.activeBuffs) G.activeBuffs = [];
   if (!G.party) G.party = [];

@@ -1332,7 +1332,8 @@ class BattleScene extends Phaser.Scene {
       this._showCallout(text, type, sub, 2500);
     }
 
-    // ── Bridge Moment: first-win Kickstarter reveal ──
+    // ── Bridge Moment: Kickstarter reveal after 3rd win ──
+    const isKickstarterMoment = won && G.rep && G.rep.battlesWon === 3 && this.pg;
     const _doSceneExit = () => {
       if (typeof GameAudio !== 'undefined') { won?GameAudio.victory():GameAudio.defeat(); }
       this.cameras.main.fadeOut(300, 0, 0, 0, (cam, p) => {
@@ -1346,14 +1347,14 @@ class BattleScene extends Phaser.Scene {
       });
     };
 
-    if (isFirstWin && this.pg) {
-      // Show the card reveal after the longer first-win callout fades
-      this.time.delayedCall(3500, () => {
+    if (isKickstarterMoment) {
+      // Show the card reveal after the callout fades
+      this.time.delayedCall(2800, () => {
         if (typeof GameAudio !== 'undefined') GameAudio.victory();
         this._showKickstarterReveal(this.pg, _doSceneExit);
       });
     } else {
-      this.time.delayedCall(2800, _doSceneExit);
+      this.time.delayedCall(isFirstWin ? 3500 : 2800, _doSceneExit);
     }
   }
 

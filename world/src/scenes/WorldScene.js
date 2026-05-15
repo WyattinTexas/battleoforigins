@@ -508,7 +508,9 @@ class WorldScene extends Phaser.Scene {
     this.enemies = this.physics.add.group();
     this._failedArt = new Set();   // Track card art that failed to load (404, etc.)
     this._loadingArt = {};          // Track card art currently being loaded
-    for (let i = 0; i < 8; i++) this.spawnEnemy();
+    // Fewer enemies during tutorial so new players aren't overwhelmed
+    const _initEnemyCount = G.tutorialComplete ? 8 : 2;
+    for (let i = 0; i < _initEnemyCount; i++) this.spawnEnemy();
     this._spawnTimer = this.time.addEvent({ delay: 4000, callback: this.spawnEnemy, callbackScope: this, loop: true });
     this.physics.add.overlap(this.player, this.enemies, this.onEnemyContact, null, this);
     // Grace period — no battles immediately after scene load (extended for tutorial flow)
@@ -516,9 +518,12 @@ class WorldScene extends Phaser.Scene {
     this.time.delayedCall(5000, () => { this._spawnGrace = false; });
 
     // ── Spirit Wisps (glowing collectible orbs) ──
+    // Hidden during tutorial (tutorialStep < 3) to reduce visual clutter for new players
     this.wisps = this.physics.add.group();
-    for (let i = 0; i < 5; i++) this.spawnWisp();
-    this.time.addEvent({ delay: 6000, callback: this.spawnWisp, callbackScope: this, loop: true });
+    if (G.tutorialComplete || G.tutorialStep >= 3) {
+      for (let i = 0; i < 5; i++) this.spawnWisp();
+    }
+    this._wispTimer = this.time.addEvent({ delay: 6000, callback: this.spawnWisp, callbackScope: this, loop: true });
     this.physics.add.overlap(this.player, this.wisps, this.onWispCollect, null, this);
 
     // ── Controls ──
@@ -616,13 +621,20 @@ class WorldScene extends Phaser.Scene {
 
     // ── Building labels (zone-specific) ──
     const zoneBuildings = this._getZoneBuildings();
+    this._buildingLabels = [];
+    const _hideBldgForTutorial = !G.tutorialComplete;
     for (const b of zoneBuildings) {
-      this.add.rectangle(b.x * T + T/2, b.y * T + T/2, T - 2, T - 2, 0x8a7a5a)
+      const rect = this.add.rectangle(b.x * T + T/2, b.y * T + T/2, T - 2, T - 2, 0x8a7a5a)
         .setStrokeStyle(1, 0xaaa888).setDepth(3);
-      this.add.text(b.x * T + T/2, b.y * T - 6, b.name, {
+      const txt = this.add.text(b.x * T + T/2, b.y * T - 6, b.name, {
         fontSize: '7px', fontFamily: 'monospace', color: '#eecc88',
         backgroundColor: '#00000066', padding: { x: 2, y: 1 },
       }).setOrigin(0.5).setDepth(6);
+      if (_hideBldgForTutorial) {
+        rect.setAlpha(0);
+        txt.setAlpha(0);
+      }
+      this._buildingLabels.push({ rect, txt });
     }
 
     // ── Frost Dungeon entrance (only in Frost Valley zone) ──
@@ -921,6 +933,10 @@ class WorldScene extends Phaser.Scene {
                 // Reveal all menu buttons + chat input now that tutorial is complete
                 this._applyMenuVisibility();
                 this._applyChatInputVisibility();
+                // Start breadcrumb objective tracker
+                this._startQuestTracker();
+                // Fade in buildings, wisps, hostile NPCs that were hidden during tutorial
+                this._revealWorldAfterTutorial();
               },
             });
           } else {
@@ -929,10 +945,22 @@ class WorldScene extends Phaser.Scene {
             saveGame();
             this._applyMenuVisibility();
             this._applyChatInputVisibility();
+            this._startQuestTracker();
+            this._revealWorldAfterTutorial();
           }
         });
       }
     });
+
+    // ── Wave 6b: Post-tutorial breadcrumb tracker ──
+    this._questTrackerEl = document.getElementById('quest-tracker');
+    this._questTrackerStartTime = null; // set when tutorialComplete fires
+    this._questStepTimer = null;        // timeout for timed transitions
+    // If returning to a game where tutorial is already done, resume tracker
+    if (G.tutorialComplete && G.questStep > 0 && G.questStep < 4) {
+      this._questTrackerStartTime = Date.now() - 60000; // assume some time passed
+      this._showQuestStep(G.questStep);
+    }
 
     // ── Wave 6: Multiplayer Presence ──
     this._otherPlayerSprites = {};
@@ -1483,6 +1511,9 @@ class WorldScene extends Phaser.Scene {
     // Wave 6: Tutorial progression checks (slow)
     if (slowTick) this.updateTutorial(vx, vy);
 
+    // Wave 6b: Breadcrumb quest tracker (slow)
+    if (slowTick) this._updateQuestTracker();
+
     // HUD text updates (slow — setText is expensive)
     if (slowTick) this.updateHUD();
     } catch (e) { console.error('[WorldScene] update error:', e); }
@@ -1507,6 +1538,14 @@ class WorldScene extends Phaser.Scene {
         fontSize: '16px', fontFamily: 'Georgia, serif', fontStyle: 'bold', color: '#ff4444',
       }).setOrigin(0.5).setDepth(11);
       this.tweens.add({ targets: marker, y: y - 58, duration: 800, yoyo: true, repeat: -1 });
+    }
+
+    // Hide hostile NPCs during tutorial — they confuse new players
+    if (hostile && !G.tutorialComplete) {
+      npc.setAlpha(0);
+      npc.body.enable = false; // disable collision so player can't bump into invisible hostiles
+      label.setAlpha(0);
+      if (marker) marker.setAlpha(0);
     }
 
     this.npcSprites.push({ sprite: npc, name, label, marker, hostile, x, y });
@@ -1842,6 +1881,8 @@ class WorldScene extends Phaser.Scene {
         // Trading post is open-air — use panel directly
         this.openTradingPost();
       } else {
+        // Breadcrumb: entering any building advances quest step 3 -> 4
+        if (G.questStep === 3) this._advanceQuestStep(4);
         // Enter building interior
         if (typeof GameAudio !== 'undefined') GameAudio.menuOpen();
         this.cameras.main.fadeOut(300);
@@ -2108,7 +2149,9 @@ class WorldScene extends Phaser.Scene {
   // ═══════ Enemies ═══════
 
   spawnEnemy() {
-    if (!this.enemies || this.enemies.getLength() >= 12) return;
+    // Cap at 3 enemies during tutorial to reduce visual clutter
+    const maxEnemies = G.tutorialComplete ? 12 : 3;
+    if (!this.enemies || this.enemies.getLength() >= maxEnemies) return;
     const px = this.player ? this.player.x : 800;
     const py = this.player ? this.player.y : 800;
     const angle = Math.random() * Math.PI * 2;
@@ -2653,6 +2696,8 @@ class WorldScene extends Phaser.Scene {
 
   openTradingPost() {
     if (this.panels.isOpen()) { this.panels.close(); return; }
+    // Breadcrumb: visiting trading post advances quest step 3 -> 4
+    if (G.questStep === 3) this._advanceQuestStep(4);
     this._marketTab = this._marketTab || 'buy';
 
     this.panels.open('TRADING POST', (container, w, h) => {
@@ -2965,6 +3010,8 @@ class WorldScene extends Phaser.Scene {
 
   spawnWisp() {
     if (!this.wisps || this.wisps.getLength() >= 8) return;
+    // Don't spawn wisps during early tutorial — reduces visual noise for new players
+    if (!G.tutorialComplete && G.tutorialStep < 3) return;
     const px = this.player ? this.player.x : 500;
     const py = this.player ? this.player.y : 500;
     const angle = Math.random() * Math.PI * 2;
@@ -4018,6 +4065,34 @@ class WorldScene extends Phaser.Scene {
       // Battle won — the resume handler takes care of Elder Frost's final comm
       G.tutorialStep = 4;
     }
+  }
+
+  // Fade in everything that was hidden during the tutorial:
+  // building labels, hostile NPCs, and start spawning wisps.
+  _revealWorldAfterTutorial() {
+    const fadeDur = 800;
+
+    // 1. Fade in building labels + rectangles
+    if (this._buildingLabels) {
+      for (const b of this._buildingLabels) {
+        this.tweens.add({ targets: b.rect, alpha: 1, duration: fadeDur });
+        this.tweens.add({ targets: b.txt, alpha: 1, duration: fadeDur });
+      }
+    }
+
+    // 2. Reveal hostile NPCs (sprite + label + marker)
+    if (this.npcSprites) {
+      for (const npc of this.npcSprites) {
+        if (!npc.hostile) continue;
+        this.tweens.add({ targets: npc.sprite, alpha: 1, duration: fadeDur });
+        if (npc.sprite.body) npc.sprite.body.enable = true;
+        this.tweens.add({ targets: npc.label, alpha: 1, duration: fadeDur });
+        if (npc.marker) this.tweens.add({ targets: npc.marker, alpha: 1, duration: fadeDur });
+      }
+    }
+
+    // 3. Start spawning wisps now that tutorial is done
+    for (let i = 0; i < 5; i++) this.spawnWisp();
   }
 
   findNearestWisp() {
@@ -5585,6 +5660,109 @@ class WorldScene extends Phaser.Scene {
     const chatInput = document.getElementById('hud-chat-input');
     if (chatInput) {
       chatInput.style.display = G.tutorialComplete ? '' : 'none';
+    }
+  }
+
+  // ══════════════════════════════════════════════════════
+  //  BREADCRUMB QUEST TRACKER — guides first 10 minutes
+  // ══════════════════════════════════════════════════════
+
+  _startQuestTracker() {
+    this._questTrackerStartTime = Date.now();
+    if (G.questStep === 0) {
+      G.questStep = 1;
+      saveGame();
+    }
+    this._showQuestStep(G.questStep);
+  }
+
+  _showQuestStep(step) {
+    const el = this._questTrackerEl;
+    if (!el) return;
+    const objectives = {
+      1: 'Explore Polaris \u2014 talk to Elder Frost',
+      2: 'Fight 2 more wild Spiritkin',
+      3: 'Visit the Trading Post',
+      4: 'The world is yours. Press GUIDE for help.',
+    };
+    const text = objectives[step];
+    if (!text) { this._hideQuestTracker(); return; }
+    el.textContent = text;
+    el.classList.remove('pulse');
+    el.classList.add('visible');
+    // Force reflow so pulse animation restarts
+    void el.offsetWidth;
+    el.classList.add('pulse');
+    // Clear any existing step timer
+    if (this._questStepTimer) clearTimeout(this._questStepTimer);
+    // Step 1: auto-advance after 60s if player hasn't talked to Elder Frost
+    if (step === 1) {
+      this._questStepTimer = setTimeout(() => {
+        if (G.questStep === 1) this._advanceQuestStep(2);
+      }, 60000);
+    }
+    // Step 3: auto-advance after 60s if player hasn't visited trading post
+    if (step === 3) {
+      this._questStepTimer = setTimeout(() => {
+        if (G.questStep === 3) this._advanceQuestStep(4);
+      }, 60000);
+    }
+    // Step 4: fade away after 10 seconds permanently
+    if (step === 4) {
+      this._questStepTimer = setTimeout(() => {
+        this._hideQuestTracker();
+        G.questStep = 5; // done forever
+        saveGame();
+      }, 10000);
+    }
+  }
+
+  _advanceQuestStep(newStep) {
+    if (G.questStep >= newStep) return;
+    G.questStep = newStep;
+    saveGame();
+    this._showQuestStep(newStep);
+  }
+
+  _hideQuestTracker() {
+    const el = this._questTrackerEl;
+    if (!el) return;
+    el.style.transition = 'opacity 1s ease';
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.classList.remove('visible');
+      el.style.opacity = '';
+      el.style.transition = '';
+    }, 1000);
+  }
+
+  _updateQuestTracker() {
+    if (!G.tutorialComplete || G.questStep === 0 || G.questStep >= 5) return;
+
+    // Auto-hide after 5 minutes — don't nag forever
+    if (this._questTrackerStartTime && Date.now() - this._questTrackerStartTime > 300000) {
+      this._hideQuestTracker();
+      G.questStep = 5;
+      saveGame();
+      return;
+    }
+
+    // Step 1 -> 2: player interacts with Elder Frost (E pressed near him)
+    if (G.questStep === 1 && this.npcSprites) {
+      for (const npc of this.npcSprites) {
+        if (npc.name === 'Elder Frost') {
+          const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y);
+          if (dist < 80 && this._eConsumed) {
+            this._advanceQuestStep(2);
+            return;
+          }
+        }
+      }
+    }
+
+    // Step 2 -> 3: win 3 total battles
+    if (G.questStep === 2 && (G.rep?.battlesWon || 0) >= 3) {
+      this._advanceQuestStep(3);
     }
   }
 }
