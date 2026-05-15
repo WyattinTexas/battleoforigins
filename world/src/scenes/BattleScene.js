@@ -816,6 +816,38 @@ class BattleScene extends Phaser.Scene {
   // ── STATUS BAR ──────────────────────────────────────────
   _setStatus(text) { if (this._statusBar) this._statusBar.setText(text); }
 
+  // ── TALENT TRIGGER CALLOUTS ──────────────────────────────
+  _showTalentTrigger(name, color, text) {
+    const cx = this._W * 0.28;
+    const cy = this._H * 0.60;
+    // Talent name + effect in tree color
+    const label = this.add.text(cx, cy, `⟐ ${name}`, {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '14px', color: color || '#d4a040',
+      fontStyle: 'bold', stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(600).setAlpha(0);
+    const desc = this.add.text(cx, cy + 18, text, {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#ddddcc',
+      stroke: '#000', strokeThickness: 1,
+    }).setOrigin(0.5).setDepth(600).setAlpha(0);
+
+    // Fade in, hold, float up and out
+    this.tweens.add({ targets: [label, desc], alpha: 1, duration: 200 });
+    this.tweens.add({
+      targets: [label, desc], y: `-=30`, alpha: 0,
+      duration: 800, delay: 1200, ease: 'Cubic.easeIn',
+      onComplete: () => { label.destroy(); desc.destroy(); }
+    });
+  }
+
+  _checkAndShowTalentEffects() {
+    if (typeof checkTalentBattleEffects !== 'function') return;
+    const effects = checkTalentBattleEffects(this._pt, this.pg, this.eg);
+    if (!effects || effects.length === 0) return;
+    effects.forEach((eff, i) => {
+      this.time.delayedCall(i * 400, () => this._showTalentTrigger(eff.name, eff.color, eff.text));
+    });
+  }
+
   // ── DICE (3D DOM) ───────────────────────────────────────
   _buildDiceArea() {} // handled by Dice3D DOM overlay
 
@@ -884,6 +916,8 @@ class BattleScene extends Phaser.Scene {
       triggerPreRoll(this._et, (msg) => this._addLog(msg));
       this.pg = activeGhost(B[this._pt]); this.eg = activeGhost(B[this._et]);
       this.syncUI();
+      // Show talent effect callouts
+      this._checkAndShowTalentEffects();
     }
 
     if (this.pg.hp <= 0 || this.pg.ko) { this._rolling = false; this.time.delayedCall(600, () => this.checkKOSwap()); return; }

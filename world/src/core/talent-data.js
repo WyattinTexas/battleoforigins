@@ -1351,3 +1351,63 @@ function isTreeVisible(treeId) {
   if (tree.requiresTree && !isMaster(tree.requiresTree)) return false;
   return true;
 }
+
+// ══════════════════════════════════════════════════════════
+//  BATTLE TALENT EFFECTS — check active talents, return callouts
+//  Called each round from BattleScene to show what talents are doing
+// ══════════════════════════════════════════════════════════
+function checkTalentBattleEffects(teamName, playerGhost, enemyGhost) {
+  const effects = [];
+  if (!G.talents) return effects;
+
+  // ── Fortune Teller talents ──
+  if (getTalentRank('fortune_teller', 'ft_brt_4') >= 1) {
+    effects.push({ name: 'Radiant Blessing', color: '#44bbff', text: '+1 damage on first roll' });
+  }
+  if (getTalentRank('fortune_teller', 'ft_bal_4') >= 1) {
+    effects.push({ name: 'Timeless Fortune', color: '#44bbff', text: 'Fortune persists through KO' });
+  }
+
+  // ── Shaman talents ──
+  if (getTalentRank('shaman', 'shm_bat_1') >= 1) {
+    effects.push({ name: 'Spirit Companion', color: '#66cc88', text: '+1 damage to attacks' });
+  }
+  if (getTalentRank('shaman', 'shm_bat_3') >= 1) {
+    effects.push({ name: 'Totemic Shield', color: '#66cc88', text: 'Can absorb 3 damage once' });
+  }
+
+  // ── Trainer talents ──
+  if (getTalentRank('trainer', 'tr_trn_2') >= 1) {
+    effects.push({ name: 'Battle Drills', color: '#44dd66', text: '+1 die on first round' });
+  }
+
+  // ── Gladiator talents ──
+  if (getTalentRank('gladiator', 'gld_off_1') >= 1) {
+    effects.push({ name: 'Keen Edge', color: '#ff8844', text: '+1 damage to winning rolls' });
+  }
+  if (getTalentRank('gladiator', 'gld_off_4') >= 1) {
+    effects.push({ name: 'Apex Predator', color: '#ff4444', text: '+3 damage vs lower HP enemies' });
+  }
+
+  // ── Ranger talents ──
+  if (getTalentRank('ranger', 'rng_fld_1') >= 1) {
+    effects.push({ name: 'Terrain Advantage', color: '#88cc44', text: '+1 die in home region' });
+  }
+
+  // ── Beastmaster talents ──
+  if (getTalentRank('beastmaster', 'bst_alp_2') >= 1) {
+    effects.push({ name: 'Pack Tactics', color: '#33bb55', text: '+1 damage per sideline ally' });
+  }
+
+  // ── Dark Rider talents ──
+  if (getTalentRank('dark_rider', 'dr_shd_1') >= 1) {
+    effects.push({ name: 'Shadow Strike', color: '#cc2244', text: '+2 damage at night' });
+  }
+
+  // ── Scientist talents ──
+  if (getTalentRank('scientist', 'sci_syn_3') >= 1) {
+    effects.push({ name: 'Unstable Compound', color: '#aa55ff', text: '+2 damage, 10% self-harm' });
+  }
+
+  return effects;
+}
