@@ -823,30 +823,58 @@ class BootScene extends Phaser.Scene {
 
         const textEl = document.createElement('div');
         const ts = textEl.style;
-        ts.fontFamily = 'monospace'; ts.fontSize = '20px';
+        ts.fontFamily = 'Georgia, serif'; ts.fontSize = '24px';
         ts.color = '#ccd8e8'; ts.textAlign = 'center';
-        ts.lineHeight = '2.2'; ts.textShadow = '0 0 20px rgba(120,160,255,0.4)';
-        ts.opacity = '0'; ts.transition = 'opacity 1s ease';
+        ts.lineHeight = '1.8'; ts.letterSpacing = '2px';
+        ts.textShadow = '0 0 30px rgba(120,160,255,0.3)';
+        ts.opacity = '0'; ts.transition = 'opacity 1.5s ease';
+        ts.maxWidth = '600px';
         overlay.appendChild(textEl);
 
-        // Line 1
-        setTimeout(() => { textEl.textContent = 'The Overworld has been quiet...'; textEl.style.opacity = '1'; }, 600);
-        // Fade line 1
-        setTimeout(() => { textEl.style.opacity = '0'; }, 3000);
-        // Line 2
-        setTimeout(() => { textEl.textContent = '...until now.'; textEl.style.opacity = '1'; }, 3600);
-        // Fade out
-        setTimeout(() => { textEl.style.opacity = '0'; }, 5200);
-        // Remove overlay + start world
+        // ── Theatrical delivery — let each line breathe ──
+
+        // Beat 1: silence. Just black. Let them sit in it.
+
+        // Line 1 — slow fade in
         setTimeout(() => {
-          overlay.style.transition = 'opacity 0.5s ease';
+          textEl.textContent = 'You enter a new land.';
+          textEl.style.opacity = '1';
+        }, 1200);
+        // Hold... then fade
+        setTimeout(() => { textEl.style.opacity = '0'; }, 4000);
+
+        // Line 2 — the threat. Purple glow, bigger
+        setTimeout(() => {
+          textEl.style.fontSize = '26px';
+          textEl.style.color = '#bb88ee';
+          textEl.style.textShadow = '0 0 40px rgba(160,80,255,0.5)';
+          textEl.textContent = 'Valkin the Grand senses your presence.';
+          textEl.style.opacity = '1';
+        }, 5200);
+        // Hold longer — let the name sink in
+        setTimeout(() => { textEl.style.opacity = '0'; }, 8500);
+
+        // Line 3 — the title drop. Gold. Italic. Big.
+        setTimeout(() => {
+          textEl.style.fontSize = '30px';
+          textEl.style.fontStyle = 'italic';
+          textEl.style.color = '#ffe680';
+          textEl.style.textShadow = '0 0 50px rgba(255,200,60,0.4)';
+          textEl.textContent = 'The Battle of Origins is about to unfold.';
+          textEl.style.opacity = '1';
+        }, 9800);
+        // Final hold — let it land
+        setTimeout(() => { textEl.style.opacity = '0'; }, 13000);
+
+        // Transition to world
+        setTimeout(() => {
+          overlay.style.transition = 'opacity 0.8s ease';
           overlay.style.opacity = '0';
-          // Restore canvas + HUD
           if (cvs) cvs.style.display = '';
           if (hudOv) hudOv.style.display = '';
-          setTimeout(() => { overlay.remove(); }, 500);
+          setTimeout(() => { overlay.remove(); }, 800);
           this.scene.start('WorldScene');
-        }, 6000);
+        }, 14000);
       });
     });
 
