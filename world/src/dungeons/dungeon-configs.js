@@ -95,44 +95,54 @@ const DUNGEONS = {
     // Chars: '#'=wall, '.'=floor, '|'=closed door, 'E'=entry spawn, 'S'=staircase spawn slot
     // The grid is parsed by DungeonScene into the D_TILE numeric grid.
     // Width/height auto-derived from this array.
+    //
+    // Multi-room layout, 20 wide × 24 tall, south-to-north flow.
+    //   r1 (Logey)  ──corridor──  r2 (Pelter)  ──antechamber──  r3 (boss)
+    // Each named room is separated from its corridor by a door that opens
+    // when the south-of-door room is cleared. The antechamber between r2
+    // and r3 is transit (no mob, no clear-tracking) — it exists so the
+    // boss reveal feels distinct from the Pelter fight. Designed to play
+    // well with fog-of-war later: each region is visually self-contained.
     mapAscii: [
-      '##############',  //  0
-      '#............#',  //  1   boss room
-      '#............#',  //  2
-      '#............#',  //  3
-      '#......S.....#',  //  4   <- staircase slot (hidden until boss dies)
-      '#............#',  //  5
-      '#............#',  //  6
-      '#............#',  //  7
-      '#............#',  //  8
-      '######|#######',  //  9   <- door between r2 and boss room
-      '#............#',  // 10   r2
-      '#............#',  // 11
-      '#............#',  // 12
-      '#............#',  // 13
-      '#............#',  // 14
-      '#............#',  // 15
-      '######|#######',  // 16   <- door between r1 and r2
-      '#............#',  // 17   r1
-      '#............#',  // 18
-      '#............#',  // 19
-      '#............#',  // 20
-      '#............#',  // 21
-      '#......E.....#',  // 22   <- player entry spawn
-      '##############',  // 23
+      '####################',  //  0
+      '####............####',  //  1   r3 BOSS ROOM
+      '###..............###',  //  2
+      '##.......S........##',  //  3   <- staircase slot (boss stands beside)
+      '###..............###',  //  4
+      '####............####',  //  5
+      '#########|##########',  //  6   <- door to r3, gated by r2 (Pelter)
+      '#########.##########',  //  7   corridor
+      '####............####',  //  8   antechamber (transit, no mob)
+      '####............####',  //  9
+      '####............####',  // 10
+      '#########.##########',  // 11   corridor
+      '#########.##########',  // 12
+      '##................##',  // 13   r2 PELTER ROOM
+      '#..................#',  // 14
+      '##................##',  // 15
+      '#########|##########',  // 16   <- door to r2, gated by r1 (Logey)
+      '#########.##########',  // 17   corridor
+      '##................##',  // 18   r1 LOGEY ROOM
+      '#..................#',  // 19
+      '#..................#',  // 20
+      '##................##',  // 21
+      '##........E.......##',  // 22   <- player entry spawn
+      '####################',  // 23
     ],
 
     // ── Rooms (used to detect "room cleared" → open door) ────
+    // Antechamber (rows 8-10) is intentionally NOT a tracked room — it has
+    // no mob and no gating logic depends on it.
     rooms: [
-      { id: 'r1', yMin: 17, yMax: 22, xMin: 1, xMax: 12, isBossRoom: false },
-      { id: 'r2', yMin: 10, yMax: 15, xMin: 1, xMax: 12, isBossRoom: false },
-      { id: 'r3', yMin: 1,  yMax:  8, xMin: 1, xMax: 12, isBossRoom: true  },
+      { id: 'r1', yMin: 18, yMax: 22, xMin: 1, xMax: 18, isBossRoom: false },
+      { id: 'r2', yMin: 13, yMax: 15, xMin: 1, xMax: 18, isBossRoom: false },
+      { id: 'r3', yMin: 1,  yMax:  5, xMin: 2, xMax: 17, isBossRoom: true  },
     ],
 
     // ── Doors — closed until `unlockedBy` room is fully cleared.
     doors: [
-      { x: 6, y: 16, unlockedBy: 'r1' },
-      { x: 6, y: 9,  unlockedBy: 'r2' },
+      { x: 9, y: 16, unlockedBy: 'r1' },
+      { x: 9, y: 6,  unlockedBy: 'r2' },
     ],
 
     // ── Mobs (non-boss). Position is tile coords. ────────────
@@ -140,8 +150,8 @@ const DUNGEONS = {
     // texture used to render the mob in the dungeon world (16x16
     // creature sprites, scaled up like overworld NPCs).
     mobs: [
-      { mobId: 'logey_1',  cardId: 26, room: 'r1', x: 6, y: 19, spriteKey: 'creature_slime'    }, // Logey "Heinous" common
-      { mobId: 'pelter_1', cardId: 86, room: 'r2', x: 6, y: 12, spriteKey: 'creature_mushroom' }, // Pelter "Snowball" rare
+      { mobId: 'logey_1',  cardId: 26, room: 'r1', x: 10, y: 19, spriteKey: 'creature_slime'    }, // Logey "Heinous" common
+      { mobId: 'pelter_1', cardId: 86, room: 'r2', x: 10, y: 14, spriteKey: 'creature_mushroom' }, // Pelter "Snowball" rare
     ],
 
     // ── Final boss ────────────────────────────────────────────
@@ -149,7 +159,7 @@ const DUNGEONS = {
       bossId: 'romy',
       cardId: 114, // Romy "Valley Guardian" legendary
       room: 'r3',
-      x: 6, y: 4,
+      x: 10, y: 3,
       spriteKey: 'creature_dragon',
     },
 
@@ -170,24 +180,37 @@ const DUNGEONS = {
     // 'd_prop_*' texture key loaded in BootScene. Position is tile
     // coords. Props render below player but above floor.
     props: [
-      // Room 1 (entry room)
+      // r1 LOGEY ROOM (rows 18-22) — entry foyer atmosphere
       { propKey: 'd_prop_crystals_small', x: 2,  y: 19 },
-      { propKey: 'd_prop_old_crate',      x: 11, y: 18 },
+      { propKey: 'd_prop_old_crate',      x: 17, y: 18 },
       { propKey: 'd_prop_broken_sword',   x: 4,  y: 21 },
-      { propKey: 'd_prop_stalagmite',     x: 9,  y: 20 },
-      { propKey: 'd_prop_frost_pile',     x: 3,  y: 17 },
-      // Room 2 (Pelter's room)
-      { propKey: 'd_prop_skull',          x: 2,  y: 14 },
-      { propKey: 'd_prop_frozen_barrel',  x: 11, y: 11 },
-      { propKey: 'd_prop_crystals_lg',    x: 3,  y: 11 },
-      { propKey: 'd_prop_stalagmite',     x: 10, y: 14 },
-      // Room 3 (boss room)
-      { propKey: 'd_prop_frozen_statue',  x: 2,  y: 2 },
-      { propKey: 'd_prop_frozen_statue',  x: 11, y: 2 },
-      { propKey: 'd_prop_crystals_lg',    x: 3,  y: 7 },
-      { propKey: 'd_prop_crystals_small', x: 10, y: 7 },
-      { propKey: 'd_prop_frost_pile',     x: 6,  y: 7 },
-      { propKey: 'd_prop_skull',          x: 9,  y: 5 },
+      { propKey: 'd_prop_stalagmite',     x: 15, y: 20 },
+      { propKey: 'd_prop_frost_pile',     x: 3,  y: 18 },
+      { propKey: 'd_prop_crystals_small', x: 16, y: 21 },
+      { propKey: 'd_prop_icicles',        x: 7,  y: 18 },   // hang under door above
+      { propKey: 'd_prop_icicles',        x: 12, y: 18 },
+      // r2 PELTER ROOM (rows 13-15)
+      { propKey: 'd_prop_crystals_lg',    x: 3,  y: 14 },
+      { propKey: 'd_prop_skull',          x: 16, y: 14 },
+      { propKey: 'd_prop_stalagmite',     x: 5,  y: 13 },
+      { propKey: 'd_prop_frost_pile',     x: 14, y: 13 },
+      { propKey: 'd_prop_frozen_barrel',  x: 15, y: 15 },
+      // Antechamber (rows 8-10) — flanking statues frame the boss approach
+      { propKey: 'd_prop_frozen_statue',  x: 5,  y: 9 },
+      { propKey: 'd_prop_frozen_statue',  x: 14, y: 9 },
+      { propKey: 'd_prop_crystals_small', x: 8,  y: 10 },
+      { propKey: 'd_prop_crystals_lg',    x: 11, y: 10 },
+      // r3 BOSS ROOM (rows 1-5) — most decorated, the throne arena
+      { propKey: 'd_prop_frozen_statue',  x: 4,  y: 2 },
+      { propKey: 'd_prop_frozen_statue',  x: 15, y: 2 },
+      { propKey: 'd_prop_ice_geode',      x: 6,  y: 4 },
+      { propKey: 'd_prop_ice_geode',      x: 13, y: 4 },
+      { propKey: 'd_prop_crystals_lg',    x: 5,  y: 5 },
+      { propKey: 'd_prop_crystals_small', x: 14, y: 5 },
+      { propKey: 'd_prop_frost_pile',     x: 8,  y: 5 },
+      { propKey: 'd_prop_skull',          x: 11, y: 5 },
+      { propKey: 'd_prop_icicles',        x: 7,  y: 1 },
+      { propKey: 'd_prop_icicles',        x: 12, y: 1 },
     ],
 
     // ── Lighting / vignette ──────────────────────────────────

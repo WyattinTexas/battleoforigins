@@ -75,7 +75,8 @@ class BootScene extends Phaser.Scene {
     for (let i = 1; i <= 2; i++) this.load.image(`d_wall_interior_${i}`, `assets/tiles/wall_interior_${i}.png`);
     // Decorative props (atmosphere, non-blocking) + snow particle
     for (const name of ['crystals_small','crystals_lg','stalagmite','frost_pile','old_crate',
-                        'broken_sword','skull','frozen_barrel','frozen_statue']) {
+                        'broken_sword','skull','frozen_barrel','frozen_statue',
+                        'ice_geode','icicles']) {
       this.load.image(`d_prop_${name}`, `assets/tiles/prop_${name}.png`);
     }
     this.load.image('d_snowflake', 'assets/tiles/snowflake.png');
