@@ -780,7 +780,7 @@ class WorldScene extends Phaser.Scene {
     // Wire GUIDE button directly (must happen in create, not conditionally)
     const _guideBtn = document.getElementById('hud-guide-btn');
     if (_guideBtn) {
-      _guideBtn.onclick = () => { if (!G.inBattle) this.showHelpPanel(); };
+      _guideBtn.onclick = () => { window.open('https://battleoforigins.com/codex/', '_blank'); };
     }
     this._domHudTimer = this.time.addEvent({ delay: 500, callback: () => this._updateDomHUD(), loop: true });
     console.log('[WorldScene] create: HUD + UI done');
@@ -4928,7 +4928,7 @@ class WorldScene extends Phaser.Scene {
     const guideBtn = document.getElementById('hud-guide-btn');
     if (guideBtn && !guideBtn._wired) {
       guideBtn._wired = true;
-      guideBtn.addEventListener('click', () => { if (!G.inBattle) this.showHelpPanel(); });
+      guideBtn.addEventListener('click', () => { window.open('https://battleoforigins.com/codex/', '_blank'); });
     }
 
     const bar = document.getElementById('hud-action-bar');

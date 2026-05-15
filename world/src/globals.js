@@ -391,9 +391,12 @@ function showComm(name, text, opts) {
 }
 
 // ── Save/Load (localStorage for now, Firebase later) ──
+// Bump this to force all players to start fresh
+const SAVE_VERSION = 2;
+
 function saveGame() {
   try {
-    const saveData = { playerData: G, timestamp: Date.now(), version: '1.0.0-phaser' };
+    const saveData = { playerData: G, timestamp: Date.now(), version: '1.0.0-phaser', saveVersion: SAVE_VERSION };
     localStorage.setItem('boo_phaser_save', JSON.stringify(saveData));
     console.log('[Save] Game saved');
   } catch (e) {
@@ -406,6 +409,12 @@ function loadGame() {
     const raw = localStorage.getItem('boo_phaser_save');
     if (!raw) return false;
     const data = JSON.parse(raw);
+    // Force reset if save version is outdated
+    if ((data.saveVersion || 0) < SAVE_VERSION) {
+      console.log('[Load] Save version outdated — resetting for new onboarding flow');
+      localStorage.removeItem('boo_phaser_save');
+      return false;
+    }
     if (data.playerData) {
       Object.assign(G, data.playerData);
       console.log('[Load] Game loaded');
