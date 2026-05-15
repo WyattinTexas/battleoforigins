@@ -347,9 +347,9 @@ class BattleScene extends Phaser.Scene {
     if (team === 'red') this._pSideline = s; else this._eSideline = s;
   }
 
-  // ── WILLPOWER STRIP + HEALTH BAR ─────────────────────────
-  // Top: willpower segments (active card on RIGHT, bright + description)
-  // Bottom: health bar with gradient, same width, aligned
+  // ── WILLPOWER + HEALTH BAR ───────────────────────────────
+  // Willpower: row of colored orbs, active on RIGHT (bright + labeled)
+  // Health bar: polished fill bar directly below, same width
   _buildWPArea(team, cx, cy) {
     const c = this.add.container(cx, cy);
     const tKey = team === 'red' ? this._pt : this._et;
@@ -364,146 +364,161 @@ class BattleScene extends Phaser.Scene {
 
     // ── Layout ──
     const barW = Math.min(this._W * 0.30, 360);
-    const wpH = 22;       // willpower strip height
-    const hpH = 14;       // health bar height
-    const gapY = 2;
-    const totalH = wpH + gapY + hpH;
-    const topY = -totalH / 2;
-    const segW = maxHp > 0 ? (barW - 2) / maxHp : barW;
-    const segGap = 1.5;
+    const orbR = 14;            // orb radius
+    const orbD = orbR * 2;
+    const orbGap = 4;
+    const orbStep = orbD + orbGap;
+    const hpH = 16;
+    const orbY = 0;             // center of orb row
+    const hpBarY = orbR + 8;    // health bar top
 
-    // Colors
-    const WP_FILLS = { red: 0xc0392b, blue: 0x2980b9, green: 0x27ae60, orange: 0xd4790e };
-    const WP_BRIGHT = { red: 0xe94560, blue: 0x4cc9f0, green: 0x2ecc71, orange: 0xf39c12 };
-    const HEART_PINK = 0xd4577a;       // warm reddish-pink for hearts
-    const HEART_PINK_DIM = 0x8a3350;   // dimmed version
+    // ── Bright color palette ──
+    const WP_BRIGHT = { red: 0xff5577, blue: 0x55ccff, green: 0x55ee88, orange: 0xffaa33 };
+    const WP_DIM    = { red: 0x883344, blue: 0x335577, green: 0x336644, orange: 0x885522 };
+    const HEART_BRIGHT = 0xee6688;
+    const HEART_DIM    = 0x774455;
 
     // ════════════════════════════════════════════════════════
-    // TOP: Willpower strip — active card on RIGHT
-    // Rendered reversed: index 0 (active) is rightmost
+    // WILLPOWER ORBS — reversed so active (index 0) is rightmost
     // ════════════════════════════════════════════════════════
-    const wpTrack = this.add.graphics();
-    wpTrack.fillStyle(0x080812, 0.9);
-    wpTrack.fillRoundedRect(-barW / 2, topY, barW, wpH, { tl: 6, tr: 6, bl: 0, br: 0 });
-    wpTrack.lineStyle(1, 0x333355, 0.5);
-    wpTrack.strokeRoundedRect(-barW / 2, topY, barW, wpH, { tl: 6, tr: 6, bl: 0, br: 0 });
-    c.add(wpTrack);
+    const orbRowW = hand.length > 0 ? (hand.length - 1) * orbStep + orbD : 0;
+    const orbStartX = barW / 2 - orbR; // rightmost orb at bar's right edge
 
-    // Draw segments reversed: last array slot on left, first (active) on right
     hand.forEach((cardId, i) => {
       const wp = typeof wpCardById === 'function' ? wpCardById(cardId) : null;
-      const visualIdx = hand.length - 1 - i; // reverse: active (i=0) goes to rightmost
-      const sx = -barW / 2 + 1 + visualIdx * segW;
+      const ox = orbStartX - i * orbStep; // i=0 is rightmost
       const isActive = (i === 0);
       const isSpecial = cardId !== 0;
+      const canActivate = isActive && isSpecial && !wpUsed && team === 'red';
 
-      const seg = this.add.graphics();
+      const g = this.add.graphics();
+      let fillCol, borderCol;
 
       if (isSpecial) {
-        const fillCol = isActive ? (WP_BRIGHT[wp?.color] || 0xd4a040) : (WP_FILLS[wp?.color] || 0x664488);
-        seg.fillStyle(fillCol, isActive ? 1 : 0.4);
-        seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
-        if (isActive) {
-          // Bright top accent
-          seg.fillStyle(0xffffff, 0.15);
-          seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, 3);
-        }
+        fillCol = isActive ? (WP_BRIGHT[wp?.color] || 0xddaa44) : (WP_DIM[wp?.color] || 0x554433);
+        borderCol = isActive ? 0xffffff : (WP_BRIGHT[wp?.color] || 0x887766);
       } else {
-        // Heart — warm reddish-pink
-        seg.fillStyle(isActive ? HEART_PINK : HEART_PINK_DIM, isActive ? 0.9 : 0.35);
-        seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
-        if (isActive) {
-          seg.fillStyle(0xffffff, 0.1);
-          seg.fillRect(sx + segGap / 2, topY + 1, segW - segGap, 3);
-        }
+        fillCol = isActive ? HEART_BRIGHT : HEART_DIM;
+        borderCol = isActive ? 0xffccdd : 0x665555;
       }
-      c.add(seg);
 
-      // Pulsing glow on activatable active segment (rightmost)
-      if (isActive && isSpecial && !wpUsed && team === 'red') {
-        const glowCol = WP_BRIGHT[wp?.color] || 0xd4a040;
+      // Orb shadow
+      g.fillStyle(0x000000, 0.3);
+      g.fillCircle(ox + 2, orbY + 2, orbR);
+      // Main orb
+      g.fillStyle(fillCol, isActive ? 1 : 0.6);
+      g.fillCircle(ox, orbY, orbR);
+      // Border
+      g.lineStyle(isActive ? 2.5 : 1, borderCol, isActive ? 0.9 : 0.4);
+      g.strokeCircle(ox, orbY, orbR);
+      // Highlight dot (top-left shine)
+      if (isActive) {
+        g.fillStyle(0xffffff, 0.35);
+        g.fillCircle(ox - 4, orbY - 5, 4);
+      }
+      c.add(g);
+
+      // Emoji inside active orb
+      if (isActive && isSpecial && wp) {
+        c.add(this.add.text(ox, orbY, wp.emoji, {
+          fontFamily: 'sans-serif', fontSize: '16px',
+        }).setOrigin(0.5));
+      } else if (isActive && !isSpecial) {
+        c.add(this.add.text(ox, orbY + 1, '♥', {
+          fontFamily: 'Georgia, serif', fontSize: '14px', color: '#fff',
+        }).setOrigin(0.5));
+      }
+
+      // Pulsing glow on activatable orb
+      if (canActivate) {
         const glow = this.add.graphics();
-        glow.fillStyle(glowCol, 0.3);
-        glow.fillRoundedRect(sx - 2, topY - 3, segW + 4, wpH + 6, 4);
+        glow.fillStyle(WP_BRIGHT[wp?.color] || 0xddaa44, 0.2);
+        glow.fillCircle(ox, orbY, orbR + 6);
         c.add(glow);
-        this.tweens.add({ targets: glow, alpha: 0.55, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.tweens.add({ targets: glow, alpha: 0.45, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       }
     });
 
-    // Empty slots for lost HP
+    // Empty orb slots (lost HP)
     for (let i = hand.length; i < maxHp; i++) {
-      const visualIdx = maxHp - 1 - i; // also reversed
-      const sx = -barW / 2 + 1 + visualIdx * segW;
-      const empty = this.add.graphics();
-      empty.fillStyle(0x110808, 0.25);
-      empty.fillRect(sx + segGap / 2, topY + 1, segW - segGap, wpH - 2);
-      c.add(empty);
+      const ox = orbStartX - i * orbStep;
+      const g = this.add.graphics();
+      g.fillStyle(0x1a1020, 0.4);
+      g.fillCircle(ox, orbY, orbR);
+      g.lineStyle(1, 0x332233, 0.3);
+      g.strokeCircle(ox, orbY, orbR);
+      c.add(g);
     }
 
     // ════════════════════════════════════════════════════════
-    // ACTIVE CARD DESCRIPTION — 16pt, visible, right-aligned
-    // Shows what the active (rightmost) willpower card does
+    // ACTIVE CARD LABEL — right-aligned, 16pt, clear
     // ════════════════════════════════════════════════════════
     if (hand.length > 0) {
       const activeId = hand[0];
       const activeCard = typeof wpCardById === 'function' ? wpCardById(activeId) : null;
       if (activeCard) {
-        const descY = topY - 28;
         const isHeart = activeId === 0;
-        const descText = isHeart ? '♥ Heart — No Effect' : `${activeCard.emoji} ${activeCard.name} — ${activeCard.desc}`;
-        const descCol = isHeart ? '#886666' : (wpUsed ? '#666688' : '#ddccaa');
-        c.add(this.add.text(barW / 2, descY, descText, {
-          fontFamily: 'Georgia, serif', fontSize: '14px', color: descCol,
-          wordWrap: { width: barW }, align: 'right',
+        const labelText = isHeart ? '♥ Heart' : `${activeCard.emoji} ${activeCard.name}`;
+        const descText = isHeart ? 'No Effect' : activeCard.desc;
+        const labelCol = isHeart ? '#ee8899' : '#ffffff';
+        const descCol = wpUsed ? '#666677' : '#bbbbcc';
+        // Card name
+        c.add(this.add.text(orbStartX, orbY - orbR - 6, labelText, {
+          fontFamily: 'Cinzel, Georgia, serif', fontSize: '16px', color: labelCol, fontStyle: 'bold',
         }).setOrigin(1, 1));
+        // Description
+        c.add(this.add.text(orbStartX, orbY + orbR + 8, descText, {
+          fontFamily: 'Georgia, serif', fontSize: '13px', color: descCol,
+          wordWrap: { width: barW * 0.6 }, align: 'right',
+        }).setOrigin(1, 0));
       }
     }
 
     // ════════════════════════════════════════════════════════
-    // BOTTOM: Health bar — gradient fill with shine
+    // HEALTH BAR — polished, below orbs
     // ════════════════════════════════════════════════════════
-    const hpY = topY + wpH + gapY;
+    const hbY = orbY + orbR + 28;
+    // Track
     const hpTrack = this.add.graphics();
-    hpTrack.fillStyle(0x080812, 0.9);
-    hpTrack.fillRoundedRect(-barW / 2, hpY, barW, hpH, { tl: 0, tr: 0, bl: 6, br: 6 });
+    hpTrack.fillStyle(0x0c0c18, 0.9);
+    hpTrack.fillRoundedRect(-barW / 2, hbY, barW, hpH, 8);
+    hpTrack.lineStyle(1, 0x333355, 0.5);
+    hpTrack.strokeRoundedRect(-barW / 2, hbY, barW, hpH, 8);
     c.add(hpTrack);
 
+    // Fill
     const hpPct = Math.max(0, ghost.hp / maxHp);
     if (hpPct > 0) {
-      const fillW = (barW - 2) * hpPct;
+      const fillW = Math.max(8, (barW - 2) * hpPct);
       const fillCol = _hpHex(ghost.hp, ghost.maxHp);
       const hpFill = this.add.graphics();
-      // Main fill
       hpFill.fillStyle(fillCol, 0.9);
-      hpFill.fillRoundedRect(-barW / 2 + 1, hpY + 1, fillW, hpH - 2, { tl: 0, tr: 0, bl: 5, br: hpPct > 0.95 ? 5 : 0 });
+      hpFill.fillRoundedRect(-barW / 2 + 1, hbY + 1, fillW, hpH - 2, 7);
       // Top shine
-      hpFill.fillStyle(0xffffff, 0.18);
-      hpFill.fillRect(-barW / 2 + 1, hpY + 1, fillW, 3);
-      // Bottom darken
-      hpFill.fillStyle(0x000000, 0.15);
-      hpFill.fillRect(-barW / 2 + 1, hpY + hpH - 4, fillW, 3);
+      hpFill.fillStyle(0xffffff, 0.2);
+      hpFill.fillRoundedRect(-barW / 2 + 2, hbY + 2, fillW - 2, (hpH - 2) * 0.4, { tl: 6, tr: 6, bl: 0, br: 0 });
       c.add(hpFill);
     }
 
-    // ════════════════════════════════════════════════════════
-    // HP COUNT + LABEL
-    // ════════════════════════════════════════════════════════
+    // HP text centered on bar
     const hpCol = _hpCol(ghost.hp, ghost.maxHp);
-    c.add(this.add.text(barW / 2 + 10, topY + wpH / 2 + gapY / 2 + hpH / 2, `${ghost.hp}/${maxHp}`, {
-      fontFamily: 'Cinzel, serif', fontSize: '16px', color: hpCol, fontStyle: 'bold',
-    }).setOrigin(0, 0.5));
+    c.add(this.add.text(0, hbY + hpH / 2, `${ghost.hp} / ${maxHp}`, {
+      fontFamily: 'Cinzel, serif', fontSize: '11px', color: '#ffffff', fontStyle: 'bold',
+      stroke: '#000000', strokeThickness: 2,
+    }).setOrigin(0.5));
 
-    // Label left of bar
-    c.add(this.add.text(-barW / 2, topY - 4, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '✦ WILLPOWER', {
-      fontFamily: 'Cinzel, Georgia, serif', fontSize: '9px',
-      color: isAllHearts || hand.length === 0 ? '#cc4444' : BC.GOLD, letterSpacing: 2,
+    // ════════════════════════════════════════════════════════
+    // LABEL
+    // ════════════════════════════════════════════════════════
+    const leftOrbX = orbStartX - (Math.max(hand.length, maxHp) - 1) * orbStep;
+    c.add(this.add.text(leftOrbX - orbR, orbY - orbR - 6, isAllHearts || hand.length === 0 ? '♥ HEALTH' : '✦ WILLPOWER', {
+      fontFamily: 'Cinzel, Georgia, serif', fontSize: '10px',
+      color: isAllHearts || hand.length === 0 ? '#cc6677' : BC.GOLD, letterSpacing: 2,
     }).setOrigin(0, 1));
 
-    // ── Click active segment (rightmost) to activate (player only) ──
+    // ── Click active orb to activate (player only) ──
     if (team === 'red' && hand.length > 0) {
-      const activeVisualIdx = hand.length - 1;
-      const activeX = -barW / 2 + 1 + activeVisualIdx * segW + segW / 2;
-      const wpZone = this.add.zone(activeX, topY + wpH / 2, segW + 8, wpH + 8)
+      const wpZone = this.add.zone(orbStartX, orbY, orbD + 10, orbD + 10)
         .setOrigin(0.5).setInteractive({ useHandCursor: true });
       wpZone.on('pointerdown', () => {
         const topId = ghost.willpower && ghost.willpower[0];
@@ -513,12 +528,12 @@ class BattleScene extends Phaser.Scene {
       c.add(wpZone);
     }
 
-    // ── Resources below ──
+    // ── Resources ──
     const res = t.resources || {};
     const RDISPLAY = typeof RESOURCE_DISPLAY !== 'undefined' ? RESOURCE_DISPLAY : {};
     const committable = ['ice', 'fire', 'surge'];
     let rx = -barW / 2;
-    const resY = topY + totalH + 10;
+    const resY = hbY + hpH + 8;
     Object.entries(RDISPLAY).forEach(([key, cfg]) => {
       const count = res[key] || 0;
       if (count <= 0) return;
