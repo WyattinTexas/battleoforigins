@@ -29,9 +29,19 @@ const DUNGEONS = {
     goldLossOnFail: 15,
     healBetweenFights: true,   // restore team HP after each non-final battle (testing flag)
     aggroOnContact: true,      // walk into a mob = battle starts
+    aggroRadius: 4,            // mobs start chasing when within this tile distance (Chebyshev)
+    mobStepIntervalMs: 480,    // mob takes one step every N ms while in aggro range
+    bossAggro: false,          // boss stays put as a chokepoint (true to make it chase too)
     bossHpMultiplier: 3,       // boss HP = card.maxHp * 3 (matches world boss scaling)
     mobHpMultiplier: 1,        // common mob HP scaling (1 = card default)
     bossRewardGold: 100,       // gold awarded on final boss defeat
+    // Fog of war — reveal tiles within LOS of the player; visited tiles
+    // stay dimly visible as "memory". Skipped in intro/post hallway phases.
+    fog: {
+      enabled: true,
+      radius: 5,               // tile radius around player
+      dimAlpha: 0.55,          // alpha of visited-but-not-visible tiles (0=clear, 1=black)
+    },
     // Test flag — when true, walking into ANY enemy (mob or boss)
     // instantly defeats it with no battle. Covers the full path:
     // mobs in r1/r2 + Romy in r3. Use this to verify the post-phase

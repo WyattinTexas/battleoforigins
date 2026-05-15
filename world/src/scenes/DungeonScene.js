@@ -62,6 +62,7 @@ class DungeonScene extends Phaser.Scene {
     this._spawnPlayer();
     this._setupInput();
     this._buildLighting();
+    this._initFog();
     this._setupResumeHandler();
 
     // Phase-specific setup (everything here lives on the MAIN camera).
@@ -924,10 +925,12 @@ class DungeonScene extends Phaser.Scene {
     if (this._state.koActive) return; // KO modal up — block movement
 
     this._handleMovement();
+    this._updateMobAggro();
     this._checkAggro();
     this._checkStaircase();
     this._checkTrapdoor();
     this._checkHallwayExit();
+    this._updateFog();
 
     if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
       this._confirmEscape();
@@ -937,6 +940,186 @@ class DungeonScene extends Phaser.Scene {
     if (this._marker && this.player) {
       this._marker.setPosition(this.player.x, this.player.y);
     }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  FOG OF WAR — circular reveal with line-of-sight + memory
+  //  Tunable via config.fog.{enabled, radius, dimAlpha}.
+  //  Tile-quantized: only recomputes when the player crosses a
+  //  tile boundary, so cost is amortized.
+  // ═══════════════════════════════════════════════════════════
+  _initFog() {
+    // Skip in intro/post hallway phases — those are short cinematics.
+    if (this.phase !== 'main') return;
+    const fog = (this.config.fog) || {};
+    if (fog.enabled === false) return;
+    this.fogRadius = fog.radius || 5;
+    this.fogDimAlpha = (fog.dimAlpha == null) ? 0.55 : fog.dimAlpha;
+    this.visible = [];
+    this.visited = [];
+    for (let y = 0; y < this.mapH; y++) {
+      this.visible[y] = new Array(this.mapW).fill(false);
+      this.visited[y] = new Array(this.mapW).fill(false);
+    }
+    // Depth 12 = above player(10)/mobs(8)/walls(2), below screen-locked
+    // vignette/tint (15+). Lives in world space so it scrolls with camera.
+    this._fogGfx = this.add.graphics().setDepth(12);
+    this._lastFogTileX = -999;
+    this._lastFogTileY = -999;
+  }
+
+  _hasLineOfSight(x0, y0, x1, y1) {
+    // Bresenham — return false if any intermediate tile is a wall.
+    // Endpoints excluded (the player tile and the target tile themselves
+    // don't block their own visibility).
+    const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1;
+    const sy = y0 < y1 ? 1 : -1;
+    let err = dx - dy;
+    let cx = x0, cy = y0;
+    while (cx !== x1 || cy !== y1) {
+      const e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; cx += sx; }
+      if (e2 < dx) { err += dx; cy += sy; }
+      if (cx === x1 && cy === y1) return true;
+      if (this.grid[cy] && this.grid[cy][cx] === D_TILE.WALL) return false;
+    }
+    return true;
+  }
+
+  _recomputeVisibility(px, py) {
+    // Clear current visible
+    for (let y = 0; y < this.mapH; y++) {
+      this.visible[y].fill(false);
+    }
+    const r = this.fogRadius;
+    const yMin = Math.max(0, py - r);
+    const yMax = Math.min(this.mapH - 1, py + r);
+    const xMin = Math.max(0, px - r);
+    const xMax = Math.min(this.mapW - 1, px + r);
+    for (let y = yMin; y <= yMax; y++) {
+      for (let x = xMin; x <= xMax; x++) {
+        const dx = x - px, dy = y - py;
+        if (dx * dx + dy * dy > r * r) continue;
+        if (this._hasLineOfSight(px, py, x, y)) {
+          this.visible[y][x] = true;
+          this.visited[y][x] = true;
+        }
+      }
+    }
+  }
+
+  _redrawFog() {
+    const T = this.T;
+    const g = this._fogGfx;
+    g.clear();
+    // Unvisited tiles — full black
+    g.fillStyle(0x000000, 1);
+    for (let y = 0; y < this.mapH; y++) {
+      for (let x = 0; x < this.mapW; x++) {
+        if (!this.visited[y][x]) g.fillRect(x * T, y * T, T, T);
+      }
+    }
+    // Visited-but-not-visible — dim
+    g.fillStyle(0x000000, this.fogDimAlpha);
+    for (let y = 0; y < this.mapH; y++) {
+      for (let x = 0; x < this.mapW; x++) {
+        if (this.visited[y][x] && !this.visible[y][x]) {
+          g.fillRect(x * T, y * T, T, T);
+        }
+      }
+    }
+  }
+
+  _updateFog() {
+    if (!this._fogGfx || !this.player) return;
+    const T = this.T;
+    const tx = Math.floor(this.player.x / T);
+    const ty = Math.floor(this.player.y / T);
+    if (tx === this._lastFogTileX && ty === this._lastFogTileY) return;
+    this._lastFogTileX = tx;
+    this._lastFogTileY = ty;
+    if (tx < 0 || ty < 0 || tx >= this.mapW || ty >= this.mapH) return;
+    this._recomputeVisibility(tx, ty);
+    this._redrawFog();
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  MOB AGGRO/CHASE — mobs step toward the player when nearby
+  //  Tunable via config.{aggroRadius, mobStepIntervalMs, bossAggro}.
+  //
+  //  NOTE — single-player only. For multiplayer, mob positions
+  //  would need to be host-authoritative and broadcast to peers;
+  //  this routine runs the AI locally for each client and would
+  //  desync. Wire MP-aware mob sim before turning chase on in MP.
+  // ═══════════════════════════════════════════════════════════
+  _updateMobAggro() {
+    if (this.phase !== 'main') return;
+    const aggroRadius = this.config.aggroRadius;
+    if (!aggroRadius) return; // chase disabled if not configured
+    const stepInterval = this.config.mobStepIntervalMs || 500;
+    const bossAggro = this.config.bossAggro === true;
+    const T = this.T;
+    const now = this.time.now;
+    const playerTileX = Math.floor(this.player.x / T);
+    const playerTileY = Math.floor(this.player.y / T);
+
+    for (const e of this.enemies) {
+      if (e.defeated) continue;
+      if (e.isBoss && !bossAggro) continue;
+      const dx = playerTileX - e.x;
+      const dy = playerTileY - e.y;
+      if (dx * dx + dy * dy > aggroRadius * aggroRadius) continue;
+      if (e._lastStepTime && now - e._lastStepTime < stepInterval) continue;
+      e._lastStepTime = now;
+
+      // Greedy step: prefer the axis with the bigger gap. If blocked,
+      // try the other axis.
+      let nx = e.x, ny = e.y;
+      if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) {
+        const tryX = e.x + Math.sign(dx);
+        if (this._mobCanEnter(tryX, e.y, e)) { nx = tryX; }
+        else if (dy !== 0) {
+          const tryY = e.y + Math.sign(dy);
+          if (this._mobCanEnter(e.x, tryY, e)) { ny = tryY; }
+        }
+      } else if (dy !== 0) {
+        const tryY = e.y + Math.sign(dy);
+        if (this._mobCanEnter(e.x, tryY, e)) { ny = tryY; }
+        else if (dx !== 0) {
+          const tryX = e.x + Math.sign(dx);
+          if (this._mobCanEnter(tryX, e.y, e)) { nx = tryX; }
+        }
+      }
+      if (nx === e.x && ny === e.y) continue;
+      e.x = nx; e.y = ny;
+      const tcx = nx * T + T / 2;
+      const tcy = ny * T + T / 2;
+      e.cx = tcx; e.cy = tcy;
+      const labelOffset = e.isBoss ? 38 : 28;
+      this.tweens.add({
+        targets: e.sprite, x: tcx, y: tcy,
+        duration: Math.min(stepInterval - 30, 220),
+        ease: 'Sine.easeInOut',
+        onUpdate: () => {
+          if (e.label) { e.label.x = e.sprite.x; e.label.y = e.sprite.y - labelOffset; }
+        },
+      });
+    }
+  }
+
+  _mobCanEnter(x, y, mob) {
+    if (x < 0 || y < 0 || x >= this.mapW || y >= this.mapH) return false;
+    const t = this.grid[y][x];
+    if (t === D_TILE.WALL) return false;
+    if (t === D_TILE.DOOR_CLOSED) return false;
+    // Stepping onto the player's tile is allowed — _checkAggro fires the
+    // battle on the next frame.
+    for (const other of this.enemies) {
+      if (other === mob || other.defeated) continue;
+      if (other.x === x && other.y === y) return false;
+    }
+    return true;
   }
 
   // ═══════════════════════════════════════════════════════════
