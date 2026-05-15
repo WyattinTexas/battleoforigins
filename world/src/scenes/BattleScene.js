@@ -1463,3 +1463,4 @@ class BattleScene extends Phaser.Scene {
     };
     overlay.addEventListener('click', dismiss);
   }
+}
