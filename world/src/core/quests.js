@@ -133,6 +133,7 @@ function tryMaskQuestInteract() {
             G.titles.push(phaseData.completion.reward.title);
           }
           notify('Quest complete! +200 coins. Title earned: Curse Breaker');
+          if (typeof GameAudio !== 'undefined') GameAudio.victory();
           SFX.notify();
           updateHUD();
           updateMaskQuestTracker();
@@ -543,6 +544,7 @@ function completeGatheringQuest(npcName) {
   G.coins += gq.reward;
   delete G.gatheringQuests[npcName];
   notify(`Gathering quest complete! +${gq.reward} coins`);
+  if (typeof GameAudio !== 'undefined') GameAudio.victory();
   addProfessionXP('trade', 5);
   updateHUD();
   saveGame();
@@ -610,6 +612,7 @@ function completeQuest(quest) {
     notify('Received: Quest Spirit Trap!');
   }
   notify(`Quest complete: ${quest.title} (+${quest.reward.coins} coins)`);
+  if (typeof GameAudio !== 'undefined') GameAudio.victory();
   // Move to completed
   if (!G.quests.completed) G.quests.completed = [];
   G.quests.completed.push(quest.id);
