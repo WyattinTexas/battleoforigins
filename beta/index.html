@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.34'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.35'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -270,16 +270,35 @@ body {
   flex-shrink: 0;
   font-size: 12px;
 }
-.sidebar-lb-rank.rank-gold { color: #f0c560; font-size: 14px; text-shadow: 0 0 8px rgba(240,197,96,0.6); }
-.sidebar-lb-rank.rank-silver { color: #d0d0d0; font-size: 14px; text-shadow: 0 0 8px rgba(192,192,192,0.5); }
-.sidebar-lb-rank.rank-bronze { color: #e0944a; font-size: 14px; text-shadow: 0 0 8px rgba(205,127,50,0.5); }
-.sidebar-lb-row:nth-child(1) { background: linear-gradient(90deg, rgba(240,197,96,0.15) 0%, rgba(240,197,96,0.04) 100%); border-left: 2px solid #f0c560; }
-.sidebar-lb-row:nth-child(2) { background: linear-gradient(90deg, rgba(192,192,192,0.12) 0%, rgba(192,192,192,0.03) 100%); border-left: 2px solid #c0c0c0; }
-.sidebar-lb-row:nth-child(3) { background: linear-gradient(90deg, rgba(205,127,50,0.12) 0%, rgba(205,127,50,0.03) 100%); border-left: 2px solid #cd7f32; }
-.sidebar-lb-row:nth-child(4) { background: linear-gradient(90deg, rgba(100,200,255,0.08) 0%, rgba(100,200,255,0.02) 100%); border-left: 2px solid #64c8ff; }
-.sidebar-lb-row:nth-child(5) { background: linear-gradient(90deg, rgba(160,100,255,0.08) 0%, rgba(160,100,255,0.02) 100%); border-left: 2px solid #a064ff; }
-.sidebar-lb-rank.rank-diamond { color: #64c8ff; font-size: 13px; text-shadow: 0 0 6px rgba(100,200,255,0.5); }
-.sidebar-lb-rank.rank-amethyst { color: #a064ff; font-size: 13px; text-shadow: 0 0 6px rgba(160,100,255,0.5); }
+/* Champion Aura — top 5 radial glow */
+.sidebar-lb-rank.rank-gold { color: #f0c560; font-size: 15px; font-weight: 900; text-shadow: 0 0 10px rgba(240,197,96,0.7); }
+.sidebar-lb-rank.rank-silver { color: #d0d0d0; font-size: 14px; font-weight: 800; text-shadow: 0 0 8px rgba(192,192,192,0.5); }
+.sidebar-lb-rank.rank-bronze { color: #e0944a; font-size: 14px; font-weight: 800; text-shadow: 0 0 8px rgba(205,127,50,0.5); }
+.sidebar-lb-rank.rank-diamond { color: #4a9aca; font-size: 13px; font-weight: 700; text-shadow: 0 0 6px rgba(74,154,202,0.5); }
+.sidebar-lb-rank.rank-amethyst { color: #22c55e; font-size: 13px; font-weight: 700; text-shadow: 0 0 6px rgba(34,197,94,0.5); }
+.sidebar-lb-row:nth-child(1) {
+  background: radial-gradient(ellipse at 20% 50%, rgba(240,197,96,0.18), transparent 65%), linear-gradient(90deg, rgba(240,197,96,0.08), transparent);
+  border-left: 3px solid #f0c560;
+  box-shadow: inset 0 0 20px rgba(240,197,96,0.06);
+}
+.sidebar-lb-row:nth-child(2) {
+  background: radial-gradient(ellipse at 20% 50%, rgba(192,192,192,0.14), transparent 65%), linear-gradient(90deg, rgba(192,192,192,0.06), transparent);
+  border-left: 3px solid #c0c0c0;
+  box-shadow: inset 0 0 16px rgba(192,192,192,0.04);
+}
+.sidebar-lb-row:nth-child(3) {
+  background: radial-gradient(ellipse at 20% 50%, rgba(205,127,50,0.12), transparent 65%), linear-gradient(90deg, rgba(205,127,50,0.06), transparent);
+  border-left: 3px solid #cd7f32;
+  box-shadow: inset 0 0 14px rgba(205,127,50,0.04);
+}
+.sidebar-lb-row:nth-child(4) {
+  background: radial-gradient(ellipse at 20% 50%, rgba(74,154,202,0.10), transparent 65%);
+  border-left: 2px solid #4a9aca;
+}
+.sidebar-lb-row:nth-child(5) {
+  background: radial-gradient(ellipse at 20% 50%, rgba(34,197,94,0.08), transparent 65%);
+  border-left: 2px solid #22c55e;
+}
 .sidebar-lb-medal { font-size: 14px; margin-right: 2px; flex-shrink: 0; }
 .sidebar-lb-delta {
   font-size: 10px;
@@ -6357,7 +6376,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.34';
+const BBN_VERSION = 'v2.35';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -7496,7 +7515,7 @@ async function renderLeaderboard(data) {
 
     // Medal color + emoji for top 3
     const rankClass = i === 0 ? 'rank-gold' : i === 1 ? 'rank-silver' : i === 2 ? 'rank-bronze' : i === 3 ? 'rank-diamond' : i === 4 ? 'rank-amethyst' : '';
-    const medalEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i === 3 ? '🧌' : i === 4 ? '🚡' : '';
+    const medalEmoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
     const medalHtml = medalEmoji ? `<span class="sidebar-lb-medal">${medalEmoji}</span>` : '';
 
     // Rise/fall delta
