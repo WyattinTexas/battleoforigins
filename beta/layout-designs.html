@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battle Layout — 8 Designs</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg: #0a0a1e;
+    --surface: rgba(20,16,32,0.95);
+    --border: rgba(212,160,64,0.22);
+    --text: #e8e4f0;
+    --text2: #888;
+    --accent: #e94560;
+    --rare: #3498db;
+    --moonstone: #7ee8fa;
+    --gold: #d4a040;
+    --gold-bright: #f0c560;
+    --legendary: #f39c12;
+    --common: #8b95a5;
+    --uncommon: #2ecc71;
+    --ghost-rare: #9b59b6;
+    --hp-green: #22c55e;
+    --magma: #ff6348;
+  }
+  body {
+    background: #111;
+    color: #e8e4f0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    color: var(--gold-bright);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--text2);
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 32px;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  .design-card {
+    background: #1a1a2e;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .design-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .design-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .design-header h2 {
+    font-size: 18px;
+    color: var(--gold-bright);
+  }
+  .design-header .tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .tag-saves { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+  .tag-risky { background: rgba(243,156,18,0.15); color: #f39c12; border: 1px solid rgba(243,156,18,0.3); }
+  .design-desc {
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .design-desc strong { color: var(--text); }
+  .phone-frame {
+    width: 390px;
+    height: 740px; /* viewport minus browser chrome */
+    margin: 20px auto;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 2px solid #333;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* =========================================
+     SHARED COMPONENT STYLES
+     ========================================= */
+  .mock-arena {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    gap: 4px;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(233,69,96,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(52,152,219,0.04) 0%, transparent 50%),
+      var(--bg);
+    overflow: hidden;
+  }
+  .mock-team { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .mock-fighter {
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+  .mock-fighter.red {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, #281620 0%, #100610 100%);
+    box-shadow: 0 0 12px rgba(233,69,96,0.18), 0 8px 20px rgba(0,0,0,0.5);
+  }
+  .mock-fighter.blue {
+    border-color: var(--rare);
+    background: linear-gradient(180deg, #16242e 0%, #060e16 100%);
+    box-shadow: 0 0 12px rgba(76,201,240,0.18), 0 8px 20px rgba(0,0,0,0.5);
+  }
+  .f-name {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .f-name.r-legendary { background: linear-gradient(135deg, rgba(243,156,18,0.4), rgba(243,156,18,0.15)); }
+  .f-name.r-ghost-rare { background: linear-gradient(135deg, rgba(155,89,182,0.4), rgba(155,89,182,0.2)); }
+  .f-name.r-rare { background: linear-gradient(135deg, rgba(52,152,219,0.4), rgba(52,152,219,0.2)); }
+  .f-name.r-uncommon { background: linear-gradient(135deg, rgba(46,204,113,0.4), rgba(46,204,113,0.2)); }
+  .f-name.r-common { background: linear-gradient(135deg, rgba(139,149,165,0.3), rgba(139,149,165,0.15)); }
+  .f-art {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    background: rgba(0,0,0,0.3);
+  }
+  .f-ability {
+    padding: 3px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    text-align: center;
+    background: linear-gradient(135deg, rgba(212,160,64,0.1), rgba(212,160,64,0.02));
+    border-top: 1px solid rgba(212,160,64,0.2);
+  }
+  .f-desc {
+    padding: 3px 6px;
+    font-size: 9px;
+    color: var(--text2);
+    line-height: 1.3;
+    text-align: center;
+  }
+  .mock-sl {
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(28,22,38,0.92), rgba(14,10,22,0.92));
+    opacity: 0.9;
+  }
+  .sl-name {
+    padding: 3px 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .sl-art {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    background: rgba(0,0,0,0.25);
+  }
+  .mock-hp {
+    width: 100%;
+    height: 7px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+    max-width: 200px;
+  }
+  .mock-hp-fill { height: 100%; border-radius: 4px; }
+  .mock-hp-fill.red { background: linear-gradient(90deg, #dc2626, #f87171); width: 75%; }
+  .mock-hp-fill.blue { background: linear-gradient(90deg, #0891b2, #67e8f9); width: 50%; }
+  .mock-hp-text { font-size: 8px; color: #666; font-weight: 700; }
+  .mock-res {
+    display: flex; gap: 4px; justify-content: center;
+  }
+  .mock-res-tile {
+    width: 32px; height: 38px;
+    border-radius: 6px;
+    border: 1px solid rgba(212,160,64,0.2);
+    background: rgba(20,16,32,0.9);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .mock-res-tile .rc { font-size: 10px; font-weight: 700; color: var(--rare); }
+  .mock-roll {
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-align: center;
+    width: 90%;
+    max-width: 250px;
+  }
+  .mock-roll.red {
+    background: linear-gradient(180deg, #e94560, #a02040);
+    border: 1px solid #f06080;
+    color: white;
+    box-shadow: 0 4px 12px rgba(233,69,96,0.4);
+  }
+  .mock-roll.blue {
+    background: linear-gradient(180deg, #4cc9f0, #2070a0);
+    border: 1px solid #6ddfff;
+    color: #04101a;
+    box-shadow: 0 4px 12px rgba(76,201,240,0.4);
+  }
+  .mock-dice-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .mock-round {
+    font-size: 10px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+  }
+  .mock-dice-tray {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(165deg, #2c1812, #1a0a05);
+    border-radius: 10px;
+    border: 1px solid rgba(140,80,35,0.4);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 4px 14px rgba(0,0,0,0.5);
+  }
+  .mock-dice-row { display: flex; gap: 6px; }
+  .mock-dice-row.left { justify-content: flex-start; }
+  .mock-dice-row.right { justify-content: flex-end; }
+  .mock-die {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800;
+  }
+  .mock-die.dr {
+    background: linear-gradient(165deg, #fce0d8, #d88878);
+    border: 1px solid rgba(233,69,96,0.5);
+    color: #4a0e1a;
+  }
+  .mock-die.db {
+    background: linear-gradient(165deg, #dcf0fc, #78a0c4);
+    border: 1px solid rgba(76,201,240,0.5);
+    color: #0a3050;
+  }
+  .mock-narrator {
+    background: rgba(10,10,25,0.92);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 5px 10px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ccc;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  .pros-cons {
+    padding: 12px 20px 16px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .pros-cons .pro { color: #22c55e; }
+  .pros-cons .con { color: #ef4444; }
+
+  /* =========================================
+     DESIGN-SPECIFIC OVERRIDES
+     ========================================= */
+
+  /* --- Design 1: Compact Classic --- */
+  .d1 .mock-fighter { width: 180px; }
+  .d1 .sl-row { display: flex; gap: 5px; justify-content: center; }
+  .d1 .mock-sl { width: 85px; }
+  .d1 .mock-die { width: 38px; height: 38px; font-size: 18px; }
+
+  /* --- Design 2: Sideline Flanks --- */
+  .d2 .battle-row { display: flex; align-items: center; gap: 6px; justify-content: center; }
+  .d2 .mock-fighter { width: 160px; }
+  .d2 .mock-sl { width: 70px; }
+  .d2 .mock-die { width: 36px; height: 36px; font-size: 17px; }
+
+  /* --- Design 3: Avatar Bench --- */
+  .d3 .mock-fighter { width: 170px; }
+  .d3 .avatar-row { display: flex; gap: 8px; justify-content: center; }
+  .d3 .avatar-card {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .d3 .avatar-circle {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    background: rgba(20,16,32,0.9);
+  }
+  .d3 .avatar-circle.ko { opacity: 0.3; }
+  .d3 .avatar-name { font-size: 8px; font-weight: 700; color: var(--text2); text-align: center; max-width: 50px; }
+  .d3 .mock-die { width: 36px; height: 36px; font-size: 17px; }
+
+  /* --- Design 4: Ribbon Bench --- */
+  .d4 .mock-fighter { width: 170px; }
+  .d4 .ribbon {
+    display: flex; gap: 4px; justify-content: center; align-items: center;
+    padding: 4px 8px;
+    background: rgba(20,16,32,0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(212,160,64,0.12);
+  }
+  .d4 .ribbon-card {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: rgba(28,22,38,0.9);
+    border: 1px solid var(--border);
+  }
+  .d4 .ribbon-art { font-size: 16px; }
+  .d4 .ribbon-name { font-size: 9px; font-weight: 700; color: var(--text); }
+  .d4 .mock-die { width: 36px; height: 36px; font-size: 17px; }
+
+  /* --- Design 5: Overlapping Fan --- */
+  .d5 .fan-row {
+    display: flex; justify-content: center; position: relative;
+    height: 90px;
+  }
+  .d5 .fan-card {
+    width: 70px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(28,22,38,0.95), rgba(14,10,22,0.95));
+    position: absolute;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  .d5 .fan-card:nth-child(1) { left: calc(50% - 80px); transform: rotate(-6deg); z-index: 1; }
+  .d5 .fan-card:nth-child(2) { left: calc(50% + 10px); transform: rotate(6deg); z-index: 1; }
+  .d5 .fan-art { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(0,0,0,0.25); }
+  .d5 .fan-name { font-size: 8px; font-weight: 700; text-align: center; padding: 2px; }
+  .d5 .mock-fighter { width: 160px; }
+  .d5 .mock-die { width: 36px; height: 36px; font-size: 17px; }
+
+  /* --- Design 6: Slim Dice Bar --- */
+  .d6 .mock-fighter { width: 180px; }
+  .d6 .sl-row { display: flex; gap: 5px; justify-content: center; }
+  .d6 .mock-sl { width: 85px; }
+  .d6 .slim-dice {
+    display: flex; justify-content: center; align-items: center; gap: 12px;
+    padding: 6px 12px;
+    background: linear-gradient(90deg, #2c1812, #1a0a05, #12182c);
+    border-radius: 8px;
+    border: 1px solid rgba(140,80,35,0.3);
+    width: 100%;
+  }
+  .d6 .slim-dice .mock-die { width: 34px; height: 34px; font-size: 16px; border-radius: 7px; }
+  .d6 .slim-vs {
+    font-size: 12px; font-weight: 900; color: rgba(255,255,255,0.3);
+    padding: 0 4px;
+  }
+
+  /* --- Design 7: Inline HP --- */
+  .d7 .fighter-with-hp {
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+  }
+  .d7 .mock-fighter { width: 160px; }
+  .d7 .hp-side {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    width: 50px;
+  }
+  .d7 .hp-vert {
+    width: 8px; height: 60px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .d7 .hp-vert-fill {
+    position: absolute; bottom: 0; width: 100%; border-radius: 4px;
+  }
+  .d7 .hp-vert-fill.red { background: linear-gradient(0deg, #dc2626, #f87171); height: 75%; }
+  .d7 .hp-vert-fill.blue { background: linear-gradient(0deg, #0891b2, #67e8f9); height: 50%; }
+  .d7 .hp-num { font-size: 9px; font-weight: 800; color: #888; }
+  .d7 .sl-row { display: flex; gap: 5px; justify-content: center; }
+  .d7 .mock-sl { width: 80px; }
+  .d7 .mock-die { width: 36px; height: 36px; font-size: 17px; }
+
+  /* --- Design 8: Max Compress --- */
+  .d8 .mock-fighter { width: 150px; }
+  .d8 .sl-row { display: flex; gap: 4px; justify-content: center; }
+  .d8 .mock-sl { width: 70px; }
+  .d8 .sl-art { font-size: 16px; }
+  .d8 .mock-die { width: 32px; height: 32px; font-size: 15px; border-radius: 6px; }
+  .d8 .mock-dice-tray { padding: 6px 12px; gap: 6px; }
+  .d8 .mock-narrator { font-size: 10px; padding: 4px 8px; }
+  .d8 .f-art { font-size: 26px; }
+  .d8 .mock-roll { padding: 6px 16px; font-size: 11px; }
+  .d8 .f-desc { font-size: 8px; padding: 2px 4px; }
+</style>
+</head>
+<body>
+
+<h1>MOBILE BATTLE LAYOUT</h1>
+<p class="subtitle">8 designs — goal: fit both teams + dice + narrator on one 390×740 phone screen (no scroll)</p>
+
+<div class="grid">
+
+<!-- ==================== DESIGN 1 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#1 — Compact Classic</h2>
+    <span class="tag tag-saves">~100px saved</span>
+  </div>
+  <div class="design-desc">
+    Same vertical stack but <strong>everything shrinks</strong>. Fighter 180px, sideline 85px, dice 38px, tighter gaps. The safe pick.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d1">
+      <div class="mock-team">
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-uncommon" style="background:rgba(46,204,113,0.25)">Miyako</div><div class="sl-art">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-rare" style="background:rgba(52,152,219,0.25)">Capt. Frost</div><div class="sl-art">👻</div></div>
+        </div>
+        <div class="mock-fighter red" style="width:180px">
+          <div class="f-name r-legendary">Sad Sal</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Toughness</div>
+          <div class="f-desc">Lose: gain 1 Ice Shard.</div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill red"></div></div>
+        <div class="mock-res"><div class="mock-res-tile">❄️<span class="rc">2</span></div></div>
+        <div class="mock-roll red">ROLL</div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="mock-dice-tray">
+          <div class="mock-dice-row left"><div class="mock-die dr">4</div><div class="mock-die dr">2</div><div class="mock-die dr">5</div></div>
+          <div class="mock-dice-row right"><div class="mock-die db">3</div><div class="mock-die db">3</div><div class="mock-die db">6</div></div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div class="mock-roll blue">ROLL</div>
+        <div class="mock-res"><div class="mock-res-tile">⚡<span class="rc" style="color:#a855f7">1</span></div></div>
+        <div class="mock-hp"><div class="mock-hp-fill blue"></div></div>
+        <div class="mock-fighter blue" style="width:180px">
+          <div class="f-name r-ghost-rare">Heavy Air</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Pressure</div>
+          <div class="f-desc">Spend 1 Surge to force reroll.</div>
+        </div>
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-common" style="background:rgba(139,149,165,0.2)">Pebble</div><div class="sl-art">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-legendary" style="background:rgba(243,156,18,0.25)">Spirit of Flames</div><div class="sl-art">👻</div></div>
+        </div>
+      </div>
+      <div class="mock-narrator">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ Safe, familiar layout</span><br>
+    <span class="pro">+ Easy to implement (just size tweaks)</span><br>
+    <span class="con">– Might still be tight on smaller phones</span>
+  </div>
+</div>
+
+<!-- ==================== DESIGN 2 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#2 — Sideline Flanks</h2>
+    <span class="tag tag-saves">~160px saved</span>
+  </div>
+  <div class="design-desc">
+    Sideline cards sit <strong>LEFT and RIGHT of the fighter</strong> in a horizontal row. Eliminates the entire sideline-stack vertical row.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d2">
+      <div class="mock-team">
+        <div class="battle-row">
+          <div class="mock-sl"><div class="sl-name r-uncommon" style="background:rgba(46,204,113,0.25)">Miyako</div><div class="sl-art">👻</div></div>
+          <div class="mock-fighter red">
+            <div class="f-name r-legendary">Sad Sal</div>
+            <div class="f-art">👻</div>
+            <div class="f-ability">Toughness</div>
+            <div class="f-desc">Lose: gain 1 Ice Shard.</div>
+          </div>
+          <div class="mock-sl"><div class="sl-name r-rare" style="background:rgba(52,152,219,0.25)">Capt. Frost</div><div class="sl-art">👻</div></div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill red"></div></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="mock-res"><div class="mock-res-tile">❄️<span class="rc">2</span></div></div>
+          <div class="mock-roll red" style="width:auto;padding:8px 30px;">ROLL</div>
+        </div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="mock-dice-tray">
+          <div class="mock-dice-row left"><div class="mock-die dr">4</div><div class="mock-die dr">2</div><div class="mock-die dr">5</div></div>
+          <div class="mock-dice-row right"><div class="mock-die db">3</div><div class="mock-die db">3</div><div class="mock-die db">6</div></div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="mock-roll blue" style="width:auto;padding:8px 30px;">ROLL</div>
+          <div class="mock-res"><div class="mock-res-tile">⚡<span class="rc" style="color:#a855f7">1</span></div></div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill blue"></div></div>
+        <div class="battle-row">
+          <div class="mock-sl"><div class="sl-name r-common" style="background:rgba(139,149,165,0.2)">Pebble</div><div class="sl-art">👻</div></div>
+          <div class="mock-fighter blue">
+            <div class="f-name r-ghost-rare">Heavy Air</div>
+            <div class="f-art">👻</div>
+            <div class="f-ability">Pressure</div>
+            <div class="f-desc">Spend 1 Surge to force reroll.</div>
+          </div>
+          <div class="mock-sl"><div class="sl-name r-legendary" style="background:rgba(243,156,18,0.25);font-size:7px;line-height:1.1;">Spirit of Flames</div><div class="sl-art">👻</div></div>
+        </div>
+      </div>
+      <div class="mock-narrator">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ Saves the most vertical space</span><br>
+    <span class="pro">+ Fighter is clearly the star</span><br>
+    <span class="pro">+ Looks like a real card game bench</span><br>
+    <span class="con">– Sideline cards are small (70px)</span>
+  </div>
+</div>
+
+<!-- ==================== DESIGN 3 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#3 — Avatar Bench</h2>
+    <span class="tag tag-saves">~180px saved</span>
+  </div>
+  <div class="design-desc">
+    Sideline cards become <strong>circular avatar bubbles</strong> (40px) with name below. Minimal footprint, game-UI feel.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d3">
+      <div class="mock-team">
+        <div class="avatar-row">
+          <div class="avatar-card"><div class="avatar-circle" style="border-color:var(--uncommon)">👻</div><div class="avatar-name">Miyako</div></div>
+          <div class="avatar-card"><div class="avatar-circle" style="border-color:var(--rare)">👻</div><div class="avatar-name">Capt. Frost</div></div>
+        </div>
+        <div class="mock-fighter red" style="width:170px">
+          <div class="f-name r-legendary">Sad Sal</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Toughness</div>
+          <div class="f-desc">Lose: gain 1 Ice Shard.</div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill red"></div></div>
+        <div class="mock-res"><div class="mock-res-tile">❄️<span class="rc">2</span></div></div>
+        <div class="mock-roll red">ROLL</div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="mock-dice-tray">
+          <div class="mock-dice-row left"><div class="mock-die dr">4</div><div class="mock-die dr">2</div><div class="mock-die dr">5</div></div>
+          <div class="mock-dice-row right"><div class="mock-die db">3</div><div class="mock-die db">3</div><div class="mock-die db">6</div></div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div class="mock-roll blue">ROLL</div>
+        <div class="mock-res"><div class="mock-res-tile">⚡<span class="rc" style="color:#a855f7">1</span></div></div>
+        <div class="mock-hp"><div class="mock-hp-fill blue"></div></div>
+        <div class="mock-fighter blue" style="width:170px">
+          <div class="f-name r-ghost-rare">Heavy Air</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Pressure</div>
+          <div class="f-desc">Spend 1 Surge to force reroll.</div>
+        </div>
+        <div class="avatar-row">
+          <div class="avatar-card"><div class="avatar-circle" style="border-color:var(--common)">👻</div><div class="avatar-name">Pebble</div></div>
+          <div class="avatar-card"><div class="avatar-circle" style="border-color:var(--legendary)">👻</div><div class="avatar-name">Spirit of Flames</div></div>
+        </div>
+      </div>
+      <div class="mock-narrator">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ Saves the MOST vertical space</span><br>
+    <span class="pro">+ Clean, modern game UI look</span><br>
+    <span class="pro">+ Rarity shown by border color</span><br>
+    <span class="con">– Loses the card feel for sideline</span>
+  </div>
+</div>
+
+<!-- ==================== DESIGN 4 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#4 — Ribbon Bench</h2>
+    <span class="tag tag-saves">~170px saved</span>
+  </div>
+  <div class="design-desc">
+    Sideline cards become a <strong>thin horizontal ribbon strip</strong> — small art icon + name inline. Like a TCG hand.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d4">
+      <div class="mock-team">
+        <div class="ribbon">
+          <div class="ribbon-card" style="border-color:var(--uncommon)"><span class="ribbon-art">👻</span><span class="ribbon-name">Miyako</span></div>
+          <div class="ribbon-card" style="border-color:var(--rare)"><span class="ribbon-art">👻</span><span class="ribbon-name">Capt. Frost</span></div>
+        </div>
+        <div class="mock-fighter red" style="width:170px">
+          <div class="f-name r-legendary">Sad Sal</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Toughness</div>
+          <div class="f-desc">Lose: gain 1 Ice Shard.</div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill red"></div></div>
+        <div class="mock-res"><div class="mock-res-tile">❄️<span class="rc">2</span></div></div>
+        <div class="mock-roll red">ROLL</div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="mock-dice-tray">
+          <div class="mock-dice-row left"><div class="mock-die dr">4</div><div class="mock-die dr">2</div><div class="mock-die dr">5</div></div>
+          <div class="mock-dice-row right"><div class="mock-die db">3</div><div class="mock-die db">3</div><div class="mock-die db">6</div></div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div class="mock-roll blue">ROLL</div>
+        <div class="mock-res"><div class="mock-res-tile">⚡<span class="rc" style="color:#a855f7">1</span></div></div>
+        <div class="mock-hp"><div class="mock-hp-fill blue"></div></div>
+        <div class="mock-fighter blue" style="width:170px">
+          <div class="f-name r-ghost-rare">Heavy Air</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Pressure</div>
+          <div class="f-desc">Spend 1 Surge to force reroll.</div>
+        </div>
+        <div class="ribbon">
+          <div class="ribbon-card" style="border-color:var(--common)"><span class="ribbon-art">👻</span><span class="ribbon-name">Pebble</span></div>
+          <div class="ribbon-card" style="border-color:var(--legendary)"><span class="ribbon-art">👻</span><span class="ribbon-name">Spirit of Flames</span></div>
+        </div>
+      </div>
+      <div class="mock-narrator">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ Extremely space efficient (1 row)</span><br>
+    <span class="pro">+ Names always readable</span><br>
+    <span class="con">– No card art visible on bench</span><br>
+    <span class="con">– Feels like a list, not cards</span>
+  </div>
+</div>
+
+<!-- ==================== DESIGN 5 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#5 — Overlapping Fan</h2>
+    <span class="tag tag-risky">Creative</span>
+  </div>
+  <div class="design-desc">
+    Sideline cards <strong>overlap each other like a fan</strong> — angled, stacked, saves space while keeping card art visible.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d5">
+      <div class="mock-team">
+        <div class="fan-row">
+          <div class="fan-card" style="border-color:var(--uncommon)"><div class="fan-name" style="background:rgba(46,204,113,0.25);font-size:8px;padding:2px;text-align:center;font-weight:700;">Miyako</div><div class="fan-art">👻</div></div>
+          <div class="fan-card" style="border-color:var(--rare)"><div class="fan-name" style="background:rgba(52,152,219,0.25);font-size:8px;padding:2px;text-align:center;font-weight:700;">Capt. Frost</div><div class="fan-art">👻</div></div>
+        </div>
+        <div class="mock-fighter red" style="width:160px">
+          <div class="f-name r-legendary">Sad Sal</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Toughness</div>
+          <div class="f-desc">Lose: gain 1 Ice Shard.</div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill red"></div></div>
+        <div class="mock-res"><div class="mock-res-tile">❄️<span class="rc">2</span></div></div>
+        <div class="mock-roll red">ROLL</div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="mock-dice-tray">
+          <div class="mock-dice-row left"><div class="mock-die dr">4</div><div class="mock-die dr">2</div><div class="mock-die dr">5</div></div>
+          <div class="mock-dice-row right"><div class="mock-die db">3</div><div class="mock-die db">3</div><div class="mock-die db">6</div></div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div class="mock-roll blue">ROLL</div>
+        <div class="mock-res"><div class="mock-res-tile">⚡<span class="rc" style="color:#a855f7">1</span></div></div>
+        <div class="mock-hp"><div class="mock-hp-fill blue"></div></div>
+        <div class="mock-fighter blue" style="width:160px">
+          <div class="f-name r-ghost-rare">Heavy Air</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Pressure</div>
+          <div class="f-desc">Spend 1 Surge to force reroll.</div>
+        </div>
+        <div class="fan-row">
+          <div class="fan-card" style="border-color:var(--common)"><div class="fan-name" style="background:rgba(139,149,165,0.2);font-size:8px;padding:2px;text-align:center;font-weight:700;">Pebble</div><div class="fan-art">👻</div></div>
+          <div class="fan-card" style="border-color:var(--legendary)"><div class="fan-name" style="background:rgba(243,156,18,0.25);font-size:7px;padding:2px;text-align:center;font-weight:700;">Spirit of Flames</div><div class="fan-art">👻</div></div>
+        </div>
+      </div>
+      <div class="mock-narrator">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ Looks cool and unique</span><br>
+    <span class="pro">+ Card art still visible</span><br>
+    <span class="con">– Harder to implement (absolute positioning)</span><br>
+    <span class="con">– Overlapping can feel cluttered</span>
+  </div>
+</div>
+
+<!-- ==================== DESIGN 6 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#6 — Slim Dice Bar</h2>
+    <span class="tag tag-saves">~80px saved</span>
+  </div>
+  <div class="design-desc">
+    Dice become a <strong>single horizontal bar</strong> — red dice left, blue dice right, no stacking. Saves the dice area height.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d6">
+      <div class="mock-team">
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-uncommon" style="background:rgba(46,204,113,0.25)">Miyako</div><div class="sl-art">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-rare" style="background:rgba(52,152,219,0.25)">Capt. Frost</div><div class="sl-art">👻</div></div>
+        </div>
+        <div class="mock-fighter red" style="width:180px">
+          <div class="f-name r-legendary">Sad Sal</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Toughness</div>
+          <div class="f-desc">Lose: gain 1 Ice Shard.</div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill red"></div></div>
+        <div class="mock-res"><div class="mock-res-tile">❄️<span class="rc">2</span></div></div>
+        <div class="mock-roll red">ROLL</div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="slim-dice">
+          <div class="mock-die dr" style="width:34px;height:34px;font-size:16px;">4</div>
+          <div class="mock-die dr" style="width:34px;height:34px;font-size:16px;">2</div>
+          <div class="mock-die dr" style="width:34px;height:34px;font-size:16px;">5</div>
+          <div class="slim-vs">VS</div>
+          <div class="mock-die db" style="width:34px;height:34px;font-size:16px;">3</div>
+          <div class="mock-die db" style="width:34px;height:34px;font-size:16px;">3</div>
+          <div class="mock-die db" style="width:34px;height:34px;font-size:16px;">6</div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div class="mock-roll blue">ROLL</div>
+        <div class="mock-res"><div class="mock-res-tile">⚡<span class="rc" style="color:#a855f7">1</span></div></div>
+        <div class="mock-hp"><div class="mock-hp-fill blue"></div></div>
+        <div class="mock-fighter blue" style="width:180px">
+          <div class="f-name r-ghost-rare">Heavy Air</div>
+          <div class="f-art">👻</div>
+          <div class="f-ability">Pressure</div>
+          <div class="f-desc">Spend 1 Surge to force reroll.</div>
+        </div>
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-common" style="background:rgba(139,149,165,0.2)">Pebble</div><div class="sl-art">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-legendary" style="background:rgba(243,156,18,0.25)">Spirit of Flames</div><div class="sl-art">👻</div></div>
+        </div>
+      </div>
+      <div class="mock-narrator">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ Dice comparison is instant (side by side)</span><br>
+    <span class="pro">+ Clean separation of concerns</span><br>
+    <span class="con">– Loses the "dice tray" depth feel</span><br>
+    <span class="con">– Tight with 5+ dice per side</span>
+  </div>
+</div>
+
+<!-- ==================== DESIGN 7 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#7 — Vertical HP Bars</h2>
+    <span class="tag tag-saves">~60px saved</span>
+  </div>
+  <div class="design-desc">
+    HP bar becomes a <strong>vertical bar beside the fighter card</strong>, with resources tucked next to it. Removes HP row.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d7">
+      <div class="mock-team">
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-uncommon" style="background:rgba(46,204,113,0.25)">Miyako</div><div class="sl-art">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-rare" style="background:rgba(52,152,219,0.25)">Capt. Frost</div><div class="sl-art">👻</div></div>
+        </div>
+        <div class="fighter-with-hp">
+          <div class="hp-side"><div class="hp-vert"><div class="hp-vert-fill red"></div></div><div class="hp-num">6/8</div><div class="mock-res-tile" style="width:28px;height:32px;font-size:12px;">❄️<span class="rc" style="font-size:9px;">2</span></div></div>
+          <div class="mock-fighter red" style="width:160px">
+            <div class="f-name r-legendary">Sad Sal</div>
+            <div class="f-art">👻</div>
+            <div class="f-ability">Toughness</div>
+            <div class="f-desc">Lose: gain 1 Ice Shard.</div>
+          </div>
+        </div>
+        <div class="mock-roll red">ROLL</div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="mock-dice-tray">
+          <div class="mock-dice-row left"><div class="mock-die dr">4</div><div class="mock-die dr">2</div><div class="mock-die dr">5</div></div>
+          <div class="mock-dice-row right"><div class="mock-die db">3</div><div class="mock-die db">3</div><div class="mock-die db">6</div></div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div class="mock-roll blue">ROLL</div>
+        <div class="fighter-with-hp">
+          <div class="mock-fighter blue" style="width:160px">
+            <div class="f-name r-ghost-rare">Heavy Air</div>
+            <div class="f-art">👻</div>
+            <div class="f-ability">Pressure</div>
+            <div class="f-desc">Spend 1 Surge to force reroll.</div>
+          </div>
+          <div class="hp-side"><div class="hp-vert"><div class="hp-vert-fill blue"></div></div><div class="hp-num">4/8</div><div class="mock-res-tile" style="width:28px;height:32px;font-size:12px;">⚡<span class="rc" style="font-size:9px;color:#a855f7;">1</span></div></div>
+        </div>
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-common" style="background:rgba(139,149,165,0.2)">Pebble</div><div class="sl-art">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-legendary" style="background:rgba(243,156,18,0.25)">Spirit of Flames</div><div class="sl-art">👻</div></div>
+        </div>
+      </div>
+      <div class="mock-narrator">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ HP always visible next to fighter</span><br>
+    <span class="pro">+ Resources consolidated</span><br>
+    <span class="con">– Vertical HP bar is unconventional</span><br>
+    <span class="con">– Asymmetric feel</span>
+  </div>
+</div>
+
+<!-- ==================== DESIGN 8 ==================== -->
+<div class="design-card">
+  <div class="design-header">
+    <h2>#8 — Max Compress</h2>
+    <span class="tag tag-saves">~200px saved</span>
+  </div>
+  <div class="design-desc">
+    <strong>Everything shrinks aggressively.</strong> Fighter 150px, sideline 70px, dice 32px, minimal padding. Maximum info density.
+  </div>
+  <div class="phone-frame">
+    <div class="mock-arena d8">
+      <div class="mock-team">
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-uncommon" style="background:rgba(46,204,113,0.25)">Miyako</div><div class="sl-art">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-rare" style="background:rgba(52,152,219,0.25)">Capt. Frost</div><div class="sl-art">👻</div></div>
+        </div>
+        <div class="mock-fighter red" style="width:150px">
+          <div class="f-name r-legendary">Sad Sal</div>
+          <div class="f-art" style="font-size:26px">👻</div>
+          <div class="f-ability">Toughness</div>
+          <div class="f-desc" style="font-size:8px;padding:2px 4px;">Lose: gain 1 Ice Shard.</div>
+        </div>
+        <div class="mock-hp"><div class="mock-hp-fill red"></div></div>
+        <div class="mock-res"><div class="mock-res-tile">❄️<span class="rc">2</span></div></div>
+        <div class="mock-roll red" style="padding:6px 16px;font-size:11px;">ROLL</div>
+      </div>
+      <div class="mock-dice-area">
+        <div class="mock-round">Round 3</div>
+        <div class="mock-dice-tray" style="padding:6px 12px;gap:6px;">
+          <div class="mock-dice-row left"><div class="mock-die dr" style="width:32px;height:32px;font-size:15px;">4</div><div class="mock-die dr" style="width:32px;height:32px;font-size:15px;">2</div><div class="mock-die dr" style="width:32px;height:32px;font-size:15px;">5</div></div>
+          <div class="mock-dice-row right"><div class="mock-die db" style="width:32px;height:32px;font-size:15px;">3</div><div class="mock-die db" style="width:32px;height:32px;font-size:15px;">3</div><div class="mock-die db" style="width:32px;height:32px;font-size:15px;">6</div></div>
+        </div>
+      </div>
+      <div class="mock-team">
+        <div class="mock-roll blue" style="padding:6px 16px;font-size:11px;">ROLL</div>
+        <div class="mock-res"><div class="mock-res-tile">⚡<span class="rc" style="color:#a855f7">1</span></div></div>
+        <div class="mock-hp"><div class="mock-hp-fill blue"></div></div>
+        <div class="mock-fighter blue" style="width:150px">
+          <div class="f-name r-ghost-rare">Heavy Air</div>
+          <div class="f-art" style="font-size:26px">👻</div>
+          <div class="f-ability">Pressure</div>
+          <div class="f-desc" style="font-size:8px;padding:2px 4px;">Spend 1 Surge to force reroll.</div>
+        </div>
+        <div class="sl-row">
+          <div class="mock-sl"><div class="sl-name r-common" style="background:rgba(139,149,165,0.2)">Pebble</div><div class="sl-art" style="font-size:16px">👻</div></div>
+          <div class="mock-sl"><div class="sl-name r-legendary" style="background:rgba(243,156,18,0.25)">Spirit of Flames</div><div class="sl-art" style="font-size:16px">👻</div></div>
+        </div>
+      </div>
+      <div class="mock-narrator" style="font-size:10px;padding:4px 8px;">Heavy Air activates <b style="color:var(--moonstone)">Pressure</b>!</div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <span class="pro">+ Everything fits guaranteed</span><br>
+    <span class="pro">+ All info visible at once</span><br>
+    <span class="con">– Everything is small</span><br>
+    <span class="con">– Dice might feel cramped for fat fingers</span>
+  </div>
+</div>
+
+</div><!-- /grid -->
+
+<div style="text-align:center;padding:40px 20px;color:var(--text2);font-size:13px;">
+  <p style="color:var(--gold-bright);font-size:16px;font-weight:700;margin-bottom:8px;">MIX & MATCH</p>
+  <p>These aren't mutually exclusive. Best result is probably combining 2-3 ideas:<br>
+  e.g. <strong>Sideline Flanks (#2)</strong> + <strong>Slim Dice (#6)</strong> = both teams + dice in one screen easy.</p>
+</div>
+
+</body>
+</html>
