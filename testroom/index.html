@@ -1995,6 +1995,20 @@ body.lite-mode .die.rolling { animation: none !important; }
   text-transform: uppercase !important;
 }
 
+/* FORCE red roll button always visible in compact mode */
+.compact-layout #rollRedBtn {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.compact-layout #rollRedBtn:disabled {
+  opacity: 0.4 !important;
+}
+.compact-layout #rollRedBtn.locked {
+  opacity: 0.5 !important;
+  background: linear-gradient(135deg, #8a6a30, #a08040) !important;
+}
+
 /* Resources compact */
 .compact-layout .res-tile { width: 32px !important; height: 36px !important; border-radius: 6px !important; }
 .compact-layout .res-tile .res-main { font-size: 14px !important; }
@@ -10207,6 +10221,11 @@ function resetRollButtons() {
     if (oppBtn) oppBtn.style.display = 'none';
     const myBtn = document.getElementById(PVP_SIDE === 'red' ? 'rollRedBtn' : 'rollBlueBtn');
     if (myBtn) myBtn.textContent = 'ROLL';
+  }
+  // Compact mobile: show READY on player's button, hide opponent's
+  if (COMPACT_LAYOUT) {
+    if (r) { r.textContent = 'READY'; r.style.display = 'block'; }
+    if (b) b.style.display = 'none';
   }
   // Clear dice display between rounds — no leftover numbers from last roll
   ['red', 'blue'].forEach(t => {
@@ -22081,6 +22100,76 @@ renderDice(null,null);
 <audio id="sfxSpecial" src="../boo/Special.mp3" preload="auto"></audio>
 <audio id="sfxShatter" src="../boo/Shatter.mp3" preload="auto"></audio>
 <audio id="sfxVictory" src="../boo/winningwhistle.mp3" preload="auto"></audio>
+<script>
+// DRAG TOOL — position sideline pills visually
+// Activate: call enableDragMode() from console, or add &drag=1 to URL
+function enableDragMode() {
+  const pills = document.querySelectorAll('.sideline-slot');
+  if (!pills.length) { console.log('[DRAG] No sideline slots found — start a battle first'); return; }
+  let overlay = document.getElementById('drag-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'drag-overlay';
+    overlay.style.cssText = 'position:fixed;top:28px;left:0;right:0;z-index:10000;background:rgba(0,0,0,0.85);color:#f0c560;font-size:11px;padding:6px 12px;text-align:center;font-weight:700;display:flex;gap:8px;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<span>DRAG MODE</span><button id="drag-copy" style="background:#d4a040;color:#0a0a1e;border:none;padding:4px 10px;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer;">COPY CSS</button><button id="drag-done" style="background:#e94560;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer;">DONE</button>';
+    document.body.appendChild(overlay);
+  }
+  const positions = {};
+  pills.forEach(pill => {
+    pill.style.position = 'relative';
+    pill.style.zIndex = '100';
+    pill.style.cursor = 'grab';
+    pill.style.touchAction = 'none';
+    pill.style.outline = '2px solid #f0c560';
+    const id = pill.id || pill.querySelector('.card-name')?.textContent || 'unknown';
+    let startX, startY, origLeft, origTop;
+    function onStart(e) {
+      e.preventDefault(); e.stopPropagation();
+      pill.style.cursor = 'grabbing';
+      const touch = e.touches ? e.touches[0] : e;
+      startX = touch.clientX; startY = touch.clientY;
+      origLeft = parseInt(pill.style.left) || 0;
+      origTop = parseInt(pill.style.top) || 0;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchmove', onMove, {passive:false});
+      document.addEventListener('touchend', onEnd);
+    }
+    function onMove(e) {
+      e.preventDefault();
+      const touch = e.touches ? e.touches[0] : e;
+      pill.style.left = (origLeft + touch.clientX - startX) + 'px';
+      pill.style.top = (origTop + touch.clientY - startY) + 'px';
+      positions[id] = { left: origLeft + touch.clientX - startX, top: origTop + touch.clientY - startY };
+    }
+    function onEnd() {
+      pill.style.cursor = 'grab';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      console.log('[DRAG] ' + id + ': left:' + (positions[id]?.left||0) + 'px, top:' + (positions[id]?.top||0) + 'px');
+    }
+    pill.addEventListener('mousedown', onStart);
+    pill.addEventListener('touchstart', onStart, {passive:false});
+  });
+  document.getElementById('drag-copy').onclick = () => {
+    let css = '/* Sideline positions from drag tool */\n';
+    Object.entries(positions).forEach(([id, pos]) => { css += '#' + id + ' { position:relative; left:' + pos.left + 'px; top:' + pos.top + 'px; }\n'; });
+    navigator.clipboard.writeText(css).then(() => { document.getElementById('drag-copy').textContent = 'COPIED!'; setTimeout(() => document.getElementById('drag-copy').textContent = 'COPY CSS', 1500); });
+    console.log('[DRAG] CSS:\n' + css);
+  };
+  document.getElementById('drag-done').onclick = () => {
+    pills.forEach(p => { p.style.cursor = ''; p.style.outline = ''; });
+    overlay.remove();
+    console.log('[DRAG] Final positions:', JSON.stringify(positions));
+  };
+  console.log('[DRAG] Drag mode enabled — move highlighted sideline pills, then COPY CSS');
+}
+if (new URLSearchParams(window.location.search).get('drag') === '1') {
+  window.addEventListener('load', () => setTimeout(enableDragMode, 3000));
+}
+</script>
 <script src="gary-system-prompt.js?v=v641"></script>
 <script src="gary-chat.js?v=v641"></script>
 
