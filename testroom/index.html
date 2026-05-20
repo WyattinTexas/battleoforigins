@@ -2132,7 +2132,8 @@ body.lite-mode .die.rolling { animation: none !important; }
 .compact-layout .ko-option .portrait-img { max-height: 60px !important; }
 
 /* ===== MP MODE — Versus Banner Fighting Game Layout ===== */
-body.mp-mode { overflow-x: hidden; }
+/* Uses .compact-layout prefix for specificity over compact layout rules */
+body.mp-mode { overflow-x: hidden !important; }
 body.mp-mode .tabs { display: none !important; }
 body.mp-mode .header { display: none !important; }
 body.mp-mode #browse-panel { display: none !important; }
@@ -2140,105 +2141,157 @@ body.mp-mode .willpower-stack,
 body.mp-mode .wp-stack-info,
 body.mp-mode .wp-pile,
 body.mp-mode [id*="willpower"] { display: none !important; }
+body.mp-mode .turn-indicator { display: none !important; }
 
 /* VS Banner */
 #vs-banner {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 16px; margin-bottom: 8px;
-  background: linear-gradient(90deg, rgba(180,60,60,0.15), rgba(20,15,30,0.9) 40%, rgba(20,15,30,0.9) 60%, rgba(60,80,180,0.15));
-  border-bottom: 1px solid rgba(212,160,64,0.15);
+  padding: 8px 14px; margin: 0 4px 4px;
+  background: linear-gradient(90deg, rgba(180,60,60,0.2), rgba(14,10,22,0.95) 35%, rgba(14,10,22,0.95) 65%, rgba(60,80,180,0.2));
+  border: 1px solid rgba(212,160,64,0.12);
   border-radius: 10px;
 }
 .vs-name {
   font-family: 'Creepster', cursive;
-  font-size: 1.1rem; letter-spacing: 1.5px;
+  font-size: 1rem; letter-spacing: 1.5px;
 }
 .vs-name.vs-red { color: #e85454; text-shadow: 0 0 8px rgba(232,84,84,0.3); }
 .vs-name.vs-blue { color: #5494e8; text-shadow: 0 0 8px rgba(84,148,232,0.3); }
 .vs-round {
-  font-size: 0.65rem; font-weight: 700; letter-spacing: 2px;
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 2px;
   color: var(--gold, #d4a040); text-transform: uppercase;
 }
 
-/* Arena → vertical layout in MP mode */
+/* Override compact layout for MP — bigger cards, better layout */
+.compact-layout body.mp-mode .arena-board,
 body.mp-mode .arena-board {
   flex-direction: column !important;
-  gap: 6px !important;
-  padding: 0 4px;
-}
-body.mp-mode #blue-team-column { order: -1; }
-body.mp-mode .team-column {
-  flex-direction: row !important;
-  width: 100%;
-  gap: 6px !important;
-  position: relative;
+  gap: 4px !important;
+  padding: 0 4px !important;
 }
 
-/* Fighter card — prominent */
+/* Blue (opponent) on top */
+.compact-layout body.mp-mode #blue-team-column,
+body.mp-mode #blue-team-column {
+  order: -1 !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  gap: 8px !important;
+  padding: 6px 8px !important;
+  background: rgba(59,130,246,0.06) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(59,130,246,0.12) !important;
+}
+
+/* Red (player) on bottom */
+.compact-layout body.mp-mode #red-team-column,
+body.mp-mode #red-team-column {
+  flex: 1 1 auto !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  gap: 8px !important;
+  padding: 6px 8px !important;
+  background: rgba(232,84,84,0.04) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(232,84,84,0.10) !important;
+}
+
+/* Team battle row — horizontal */
+.compact-layout body.mp-mode .team-battle-row,
+body.mp-mode .team-battle-row {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Fighter card — BIGGER in MP */
+.compact-layout body.mp-mode .fighter-slot,
 body.mp-mode .fighter-slot {
-  width: 200px !important;
-  min-width: 200px;
-  z-index: 2;
-  position: relative;
+  width: 140px !important;
+  min-width: 140px !important;
+  z-index: 2 !important;
+}
+.compact-layout body.mp-mode .fighter-slot .portrait-img,
+body.mp-mode .fighter-slot .portrait-img {
+  max-height: 100px !important;
+}
+.compact-layout body.mp-mode .fighter-slot .card-name,
+body.mp-mode .fighter-slot .card-name {
+  font-size: 0.7rem !important;
+}
+.compact-layout body.mp-mode .fighter-slot .card-ability,
+body.mp-mode .fighter-slot .card-ability {
+  display: block !important;
+  font-size: 0.6rem !important;
 }
 
-/* Sideline — peek from behind active card */
+/* Sideline — visible beside active */
+.compact-layout body.mp-mode .sideline-stack,
 body.mp-mode .sideline-stack {
-  flex-direction: row !important;
+  flex-direction: column !important;
   gap: 4px !important;
 }
+.compact-layout body.mp-mode .sideline-slot,
 body.mp-mode .sideline-slot {
-  width: 80px !important;
-  opacity: 0.7 !important;
-  transform: scale(0.88);
+  width: 60px !important;
+  min-width: 60px !important;
+  opacity: 0.75 !important;
 }
-body.mp-mode .sideline-slot:hover {
-  opacity: 1 !important;
-  transform: scale(0.94) !important;
+.compact-layout body.mp-mode .sideline-slot .card-name,
+body.mp-mode .sideline-slot .card-name {
+  font-size: 0.45rem !important;
 }
 
-/* Dice area compact */
+/* HP bar — visible */
+.compact-layout body.mp-mode .team-info,
+body.mp-mode .team-info {
+  flex: 1 !important;
+  width: auto !important;
+}
+.compact-layout body.mp-mode .hp-bar-wrap,
+body.mp-mode .hp-bar-wrap {
+  height: 8px !important;
+}
+
+/* Dice area */
+.compact-layout body.mp-mode .arena-center,
 body.mp-mode .arena-center {
-  flex: none !important;
-  width: 100%;
-  padding: 4px 0;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  padding: 2px 0 !important;
 }
-body.mp-mode .arena-mid { margin: 0 auto; }
 
-/* Hide blue roll in async (AI controls blue) */
+/* Hide blue roll in async */
 body.mp-mode:not(.live-pvp) #rollBlueBtn { display: none !important; }
 body.mp-mode:not(.live-pvp) #duelDoneBlueBtn { display: none !important; }
+body.mp-mode:not(.live-pvp) #blue-team-column .action-btn { display: none !important; }
+body.mp-mode:not(.live-pvp) #blue-team-column .ability-buttons { display: none !important; }
 
 /* Red roll button — full width gold */
+.compact-layout body.mp-mode #rollRedBtn,
 body.mp-mode #rollRedBtn {
   width: 100% !important;
-  max-width: 100%;
+  max-width: 100% !important;
+  display: block !important;
   font-size: 1.1rem !important;
   padding: 14px !important;
   background: linear-gradient(135deg, var(--gold, #d4a040), #f0c850) !important;
   color: #0e0a1a !important;
   font-weight: 800 !important;
   border-radius: 12px !important;
-  letter-spacing: 2px;
+  letter-spacing: 2px !important;
 }
 
-/* Team info (HP bar) — full width */
-body.mp-mode .team-info {
-  width: 100%;
-  flex: 1;
-}
-
-/* Turn indicator — hidden (VS banner handles it) */
-body.mp-mode .turn-indicator { display: none !important; }
-
-/* Ability callout — wider in MP */
+/* Ability callout — wider */
 body.mp-mode .ability-callout {
   max-width: 100% !important;
   width: 100% !important;
 }
 
-/* Resources row compact */
-body.mp-mode .resources { font-size: 0.7rem; }
+/* Resources compact */
+.compact-layout body.mp-mode .resources,
+body.mp-mode .resources { font-size: 0.7rem !important; }
 
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
