@@ -39,7 +39,7 @@ function renderRaidShop(points, collection, badges) {
   RAID_SHOP_ITEMS.forEach(item => {
     const canAfford = points >= item.cost;
     html += `<div class="raid-shop-item ${canAfford ? '' : 'cannot-afford'}">
-      <div class="raid-shop-item-icon">${item.type === 'pack' ? '&#x1F4E6;' : '&#x1F0CF;'}</div>
+      <div class="raid-shop-item-icon">${item.img ? `<img src="${item.img}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : (item.type === 'pack' ? '&#x1F4E6;' : '&#x1F0CF;')}</div>
       <div class="raid-shop-item-name">${item.name}</div>
       <div class="raid-shop-item-desc">${item.desc}</div>
       <div class="raid-shop-item-cost">
