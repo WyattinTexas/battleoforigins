@@ -828,7 +828,9 @@ const RAID_SHOP_ITEMS = [
   { id: 'pack_frost', name: 'Frost Valley Pack', type: 'pack', cost: 200, set: 'Frost Valley', desc: '5 Frost Valley cards' },
   { id: 'pack_volcanic', name: 'Volcanic Isles Pack', type: 'pack', cost: 200, set: 'Volcanic Isles', desc: '5 Volcanic Isles cards' },
   { id: 'pack_rolling', name: 'Rolling Hills Pack', type: 'pack', cost: 200, set: 'Rolling Hills', desc: '5 Rolling Hills cards' },
-  { id: 'pack_dark', name: 'Dark Castle Pack', type: 'pack', cost: 200, set: 'Dark Castle', desc: '5 Dark Castle cards' }
+  { id: 'pack_dark', name: 'Dark Castle Pack', type: 'pack', cost: 200, set: 'Dark Castle', desc: '5 Dark Castle cards' },
+  { id: 'playmat_origins', name: 'Battle of Origins Playmat', type: 'accessory', cost: 500, img: 'img/shop/playmat_placeholder.png', desc: 'Official Battle of Origins playmat' },
+  { id: 'super_set', name: 'Super Set Bundle', type: 'bundle', cost: 1200, img: 'img/shop/bundle_placeholder.png', desc: 'Premium collection bundle with exclusive cards' }
 ];
 
 // Helper: look up a ghost by ID (checks regular ghosts, boss minions, AND boss ghosts)
