@@ -1355,6 +1355,12 @@
   #raid-screen .vs-inner { display:none; }
   #raid-screen .triples-banner { font-size:2.5rem; letter-spacing:2px; }
 
+  /* Leave Raid button: reposition on mobile so it doesn't overlap */
+  #raid-screen #leaveRaidBtn {
+    top:28px !important; right:4px !important; font-size:0.65rem !important;
+    padding:4px 10px !important;
+  }
+
   /* --- OPPONENT: top of screen — CSS Grid layout --- */
   #raid-screen #blue-team-column {
     order:-1 !important; flex:0 0 auto !important;
@@ -1372,7 +1378,7 @@
   #raid-screen #blue-sl-right { grid-area:opp-sl-r !important; }
   #raid-screen #blue-team-column .fighter-slot {
     grid-area:opp-fighter !important;
-    width:160px !important; margin:0 !important;
+    width:200px !important; margin:0 auto !important;
   }
   #raid-screen #blue-team-column .team-info {
     grid-area:opp-info !important; min-width:0 !important; width:100% !important; text-align:center !important;
@@ -1440,8 +1446,7 @@
   #raid-screen #red-sl-right { grid-area:my-sl-r !important; }
   #raid-screen #red-team-column .fighter-slot {
     grid-area:my-fighter !important;
-    width:auto !important;
-    width:auto !important; margin:0 !important;
+    width:220px !important; margin:0 auto !important;
   }
   #raid-screen #red-team-column .team-info {
     grid-area:my-info !important; min-width:0 !important; width:100% !important; text-align:center !important;
