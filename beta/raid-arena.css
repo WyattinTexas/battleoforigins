@@ -1,0 +1,1395 @@
+/* ============================================================
+   RAID ARENA CSS — extracted from testroom, scoped to #raid-screen
+   ============================================================ */
+
+/* --- Arena Board --- */
+#raid-screen .arena-board {
+  max-width:1400px; margin:0 auto;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(233,69,96,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(52,152,219,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(15,20,60,0.9) 0%, transparent 100%),
+    linear-gradient(90deg, #04041a 0%, #080820 25%, #0a0a2e 50%, #080820 75%, #04041a 100%);
+  border-radius:20px; border:1px solid rgba(126,232,250,0.15); padding:16px; overflow:hidden;
+  display:flex; flex-direction:row; align-items:stretch; gap:12px; position:relative;
+  box-shadow:0 0 60px rgba(0,0,0,0.8), inset 0 0 120px rgba(126,232,250,0.04);
+  max-height:calc(100vh - 40px);
+}
+/* Subtle star field overlay */
+#raid-screen .arena-board::before {
+  content:''; position:absolute; inset:0; border-radius:20px; pointer-events:none;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 35%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 12%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 28%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 8%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 42% 68%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 20% 90%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 60%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 55%, rgba(255,255,255,0.3) 0%, transparent 100%);
+}
+
+/* --- Team Columns --- */
+#raid-screen .team-column {
+  flex:1; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center;
+  min-width:0;
+}
+#raid-screen .team-battle-row { display:flex; gap:12px; align-items:center; justify-content:center; }
+#raid-screen .sideline-stack { display:flex; flex-direction:column; gap:6px; }
+#raid-screen .team-info { display:flex; flex-direction:column; align-items:center; gap:6px; width:100%; }
+
+/* --- Arena Center --- */
+#raid-screen .arena-center {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  min-width:220px; padding:0 4px; flex-shrink:0;
+}
+#raid-screen .arena-mid { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; }
+
+/* --- Arena Card Base --- */
+#raid-screen .arena-card {
+  background:var(--surface); border:2px solid var(--border); border-radius:12px;
+  overflow:hidden; transition:all .3s; position:relative;
+}
+#raid-screen .arena-card.ko { opacity:0.25; }
+
+/* Rarity border colors */
+#raid-screen .arena-card.rarity-common { border-color:var(--common); }
+#raid-screen .arena-card.rarity-uncommon { border-color:var(--uncommon); box-shadow:0 0 8px rgba(46,204,113,0.2); }
+#raid-screen .arena-card.rarity-rare { border-color:var(--rare); box-shadow:0 0 10px rgba(52,152,219,0.25); }
+#raid-screen .arena-card.rarity-ghost-rare { border-color:var(--ghost-rare); box-shadow:0 0 14px rgba(155,89,182,0.35); }
+#raid-screen .arena-card.rarity-legendary { border-color:var(--legendary); box-shadow:0 0 18px rgba(243,156,18,0.45); animation:legendaryPulse 2s ease-in-out infinite; }
+
+/* --- Fighter Slot --- */
+#raid-screen .fighter-slot {
+  width:240px; flex-shrink:0;
+  position:relative;
+  overflow:visible !important;
+  background: linear-gradient(180deg, #1e1828 0%, #100a18 100%);
+  border-radius:14px;
+  border-width:2px;
+  margin-left:22px;
+  margin-right:22px;
+}
+#raid-screen .fighter-slot.team-red {
+  background: linear-gradient(180deg, #281620 0%, #100610 100%) !important;
+  box-shadow:
+    inset 0 0 80px rgba(233, 69, 96, 0.10),
+    0 0 12px rgba(233, 69, 96, 0.18),
+    0 18px 30px rgba(233, 69, 96, 0.18),
+    0 24px 50px rgba(0, 0, 0, 0.70) !important;
+}
+#raid-screen .fighter-slot.team-blue {
+  background: linear-gradient(180deg, #16242e 0%, #060e16 100%) !important;
+  box-shadow:
+    inset 0 0 80px rgba(76, 201, 240, 0.10),
+    0 0 12px rgba(76, 201, 240, 0.18),
+    0 18px 30px rgba(76, 201, 240, 0.16),
+    0 24px 50px rgba(0, 0, 0, 0.70) !important;
+}
+#raid-screen .fighter-slot .card-rarity-badge { display:none; }
+#raid-screen .fighter-slot .card-name-banner {
+  padding:8px 10px;
+  font-family: 'Inter', sans-serif;
+  letter-spacing:0.06em;
+}
+#raid-screen .fighter-slot .card-name-banner { font-size:15px; }
+#raid-screen .fighter-slot > .card-img,
+#raid-screen .fighter-slot > .card-img-placeholder { border-top-left-radius:12px; border-top-right-radius:12px; }
+#raid-screen .fighter-slot > .card-name-banner { border-top-left-radius:12px; border-top-right-radius:12px; }
+#raid-screen .fighter-slot .card-info .ci-name { font-size:16px; }
+#raid-screen .fighter-slot .card-info .ci-ability { font-size:12px; }
+#raid-screen .fighter-slot .card-info .ci-desc { font-size:11px; color:var(--text2); margin-top:2px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+#raid-screen .fighter-slot .ability-banner { font-size:11px; padding:5px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Fighter border glow */
+#raid-screen .fighter-slot.team-red { border-color:var(--accent); box-shadow:0 0 30px rgba(233,69,96,0.35), 0 0 60px rgba(233,69,96,0.1); }
+#raid-screen .fighter-slot.team-blue { border-color:var(--rare); box-shadow:0 0 30px rgba(52,152,219,0.35), 0 0 60px rgba(52,152,219,0.1); }
+
+/* Hit shake on fighter card */
+#raid-screen .fighter-slot.hit { animation:hitShake 0.5s ease-out; }
+
+/* Status tags on fighter */
+#raid-screen .fighter-status { display:flex; gap:4px; flex-wrap:wrap; padding:0 8px 6px; }
+#raid-screen .status-tag { font-size:9px; padding:1px 5px; border-radius:3px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 10px); }
+#raid-screen .status-tag.pressure { background:rgba(255,99,72,0.15); color:var(--magma); }
+#raid-screen .status-tag.streak { background:rgba(46,204,113,0.15); color:var(--win); }
+#raid-screen .status-tag.mimic { background:rgba(126,232,250,0.15); color:var(--moonstone); }
+#raid-screen .status-tag.overclock { background:rgba(126,232,250,0.12); color:var(--moonstone); border:1px solid rgba(126,232,250,0.35); animation:overclockTagPulse 1.4s ease-in-out infinite; }
+
+/* Card glow — fires on the active fighter slot when its ability triggers */
+#raid-screen .fighter-slot.ability-fire {
+  animation: abilityFireScale 1.2s ease-out forwards;
+}
+#raid-screen .fighter-slot.ability-fire-fire   { filter:brightness(1.1) drop-shadow(0 0 18px rgba(255,99,72,0.85)); }
+#raid-screen .fighter-slot.ability-fire-blue   { filter:brightness(1.1) drop-shadow(0 0 18px rgba(52,152,219,0.85)); }
+#raid-screen .fighter-slot.ability-fire-purple { filter:brightness(1.1) drop-shadow(0 0 18px rgba(192,132,252,0.85)); }
+#raid-screen .fighter-slot.ability-fire-green  { filter:brightness(1.1) drop-shadow(0 0 18px rgba(74,222,128,0.85)); }
+#raid-screen .fighter-slot.ability-fire-gold   { filter:brightness(1.1) drop-shadow(0 0 18px rgba(212,160,64,0.85)); }
+#raid-screen .fighter-slot.ability-fire-red    { filter:brightness(1.1) drop-shadow(0 0 18px rgba(233,69,96,0.85)); }
+#raid-screen .fighter-slot.ability-fire-default { filter:brightness(1.1) drop-shadow(0 0 18px rgba(240,197,96,0.85)); }
+
+/* --- Sideline Slot --- */
+#raid-screen .sideline-slot {
+  width:150px; flex-shrink:0;
+  transition:transform 0.3s, z-index 0s, opacity 0.25s;
+  background: linear-gradient(180deg, rgba(28, 22, 38, 0.92), rgba(14, 10, 22, 0.92));
+  border:1px solid rgba(212, 160, 64, 0.22) !important;
+  border-radius:9px;
+  opacity:0.88;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+#raid-screen .sideline-slot:hover { opacity:1; transform:translateY(-3px); }
+#raid-screen .sideline-slot.sideline-pop {
+  transform:scale(1.25);
+  z-index:50;
+  box-shadow:0 0 20px rgba(126,232,250,0.6), 0 0 40px rgba(126,232,250,0.3);
+  border-color:var(--moonstone) !important;
+  opacity:1;
+}
+#raid-screen .sideline-slot .card-rarity-badge { display:none; }
+#raid-screen .sideline-slot .card-name-banner { font-size:12px; padding:5px 8px; }
+#raid-screen .sideline-slot .ability-banner { font-size:10px; padding:4px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#raid-screen .sideline-slot .ci-desc { font-size:10px; color:var(--text2); line-height:1.4; padding:4px 6px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; transition:max-height 0.2s ease; }
+#raid-screen .sideline-slot:hover .ci-desc { -webkit-line-clamp:unset; overflow:visible; }
+#raid-screen .sideline-slot .card-info { padding:0; }
+
+/* --- Card Elements --- */
+#raid-screen .arena-card .card-img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--bg); }
+#raid-screen .arena-card .card-img-placeholder { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; background:var(--bg); font-size:48px; color:var(--border); }
+#raid-screen .arena-card .card-info { padding:8px 10px; }
+#raid-screen .arena-card .card-info .ci-name { font-size:13px; font-weight:800; }
+#raid-screen .arena-card .card-info .ci-ability { font-size:11px; color:var(--moonstone); font-weight:600; }
+#raid-screen .arena-card .card-info .ci-desc { font-size:11px; color:var(--text2); margin-top:2px; line-height:1.3; }
+
+/* Card name banner */
+#raid-screen .card-name-banner {
+  padding:8px 10px;
+  font-family:'Inter', sans-serif;
+  font-size:15px; font-weight:700;
+  color:var(--text);
+  letter-spacing:0.06em;
+  text-shadow:0 1px 4px rgba(0,0,0,0.75);
+  border-bottom:1px solid rgba(212,160,64,0.22);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  text-align:center;
+}
+#raid-screen .card-name-banner.rarity-common { background:linear-gradient(135deg, rgba(139,149,165,0.4), rgba(139,149,165,0.2)); }
+#raid-screen .card-name-banner.rarity-uncommon { background:linear-gradient(135deg, rgba(46,204,113,0.4), rgba(46,204,113,0.2)); }
+#raid-screen .card-name-banner.rarity-rare { background:linear-gradient(135deg, rgba(52,152,219,0.4), rgba(52,152,219,0.2)); }
+#raid-screen .card-name-banner.rarity-ghost-rare { background:linear-gradient(135deg, rgba(155,89,182,0.5), rgba(155,89,182,0.25)); }
+#raid-screen .card-name-banner.rarity-legendary { background:linear-gradient(135deg, rgba(243,156,18,0.5), rgba(243,156,18,0.25)); }
+
+/* Rarity badge */
+#raid-screen .card-rarity-badge {
+  position:absolute; top:8px; right:8px;
+  font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px;
+  padding:2px 6px; border-radius:4px; backdrop-filter:blur(4px);
+}
+#raid-screen .card-rarity-badge.rarity-common { background:rgba(139,149,165,0.3); color:var(--common); border:1px solid var(--common); }
+#raid-screen .card-rarity-badge.rarity-uncommon { background:rgba(46,204,113,0.2); color:var(--uncommon); border:1px solid var(--uncommon); }
+#raid-screen .card-rarity-badge.rarity-rare { background:rgba(52,152,219,0.2); color:var(--rare); border:1px solid var(--rare); }
+#raid-screen .card-rarity-badge.rarity-ghost-rare { background:rgba(155,89,182,0.25); color:var(--ghost-rare); border:1px solid var(--ghost-rare); }
+#raid-screen .card-rarity-badge.rarity-legendary { background:rgba(243,156,18,0.25); color:var(--legendary); border:1px solid var(--legendary); }
+
+/* HP badge */
+#raid-screen .card-hp-badge { display:none; }
+
+/* Ability banner */
+#raid-screen .ability-banner {
+  padding:6px 10px;
+  font-family: 'Inter', sans-serif;
+  font-size:10px; font-weight:700;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--gold-bright);
+  text-shadow:0 0 10px rgba(240, 197, 96, 0.35);
+  background:linear-gradient(135deg, rgba(212,160,64,0.12), rgba(212,160,64,0.02));
+  border-top:1px solid rgba(212,160,64,0.25);
+  border-bottom:1px solid rgba(212,160,64,0.15);
+  text-align:center;
+}
+
+/* --- HP Bars --- */
+#raid-screen .hp-bar-wrap {
+  width:100%; height:10px; background:rgba(255,255,255,0.06); border-radius:5px;
+  overflow:hidden; border:1px solid rgba(255,255,255,0.06); position:relative;
+}
+#raid-screen .hp-bar {
+  height:100%; border-radius:4px; transition:width 0.6s ease-out, background 0.4s;
+  position:relative; width:100%;
+}
+#raid-screen .hp-bar::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:50%;
+  background:linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+  border-radius:4px 4px 0 0;
+}
+#raid-screen .hp-bar.team-red { background:linear-gradient(90deg, #dc2626, #f87171); box-shadow:0 0 8px rgba(248,113,113,0.4); }
+#raid-screen .hp-bar.team-blue { background:linear-gradient(90deg, #0891b2, #67e8f9); box-shadow:0 0 8px rgba(103,232,249,0.4); }
+#raid-screen .hp-bar.hp-low { background:linear-gradient(90deg, #d97706, #fbbf24) !important; box-shadow:0 0 10px rgba(251,191,36,0.5) !important; }
+#raid-screen .hp-bar.hp-critical { background:linear-gradient(90deg, #b91c1c, #ef4444) !important; box-shadow:0 0 12px rgba(239,68,68,0.6) !important; animation:hpPulse 0.8s ease-in-out infinite; }
+#raid-screen .hp-bar.hp-overclock { background:linear-gradient(90deg, var(--moonstone-deep), var(--moonstone)) !important; box-shadow:0 0 14px rgba(126,232,250,0.6) !important; animation:overclockPulse 1.2s ease-in-out infinite; }
+#raid-screen .hp-text { display:flex; justify-content:space-between; font-size:0.6rem; font-weight:700; color:#666; margin-top:3px; }
+#raid-screen .hp-text .hp-num { color:#aaa; }
+
+/* --- Dice --- */
+#raid-screen .dice-stack {
+  display:flex; flex-direction:column; gap:14px; width:100%;
+  padding:18px 22px 16px;
+  position:relative;
+  background:
+    radial-gradient(ellipse at center 65%, rgba(120, 65, 25, 0.4), transparent 80%),
+    linear-gradient(165deg, #2c1812 0%, #1a0a05 55%, #0e0502 100%);
+  border-radius:14px;
+  border:1px solid rgba(140, 80, 35, 0.45);
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.7),
+    inset 0 -2px 6px rgba(180, 100, 40, 0.18),
+    0 8px 26px rgba(0, 0, 0, 0.65);
+}
+#raid-screen .dice-stack::before {
+  content:'';
+  position:absolute; inset:5px;
+  border:1px solid rgba(180, 120, 50, 0.22);
+  border-radius:11px;
+  pointer-events:none;
+  z-index:1;
+}
+#raid-screen .dice-stack::after {
+  content:'';
+  position:absolute; inset:0;
+  border-radius:14px;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='wg'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wg)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity:0.08;
+  mix-blend-mode:overlay;
+  pointer-events:none;
+}
+#raid-screen .dice-row { display:flex; gap:12px; position:relative; z-index:2; }
+#raid-screen .dice-row.dice-red { justify-content:flex-start; padding-left:8px; }
+#raid-screen .dice-row.dice-blue { justify-content:flex-end; padding-right:8px; }
+#raid-screen .die {
+  width:56px; height:56px;
+  background: linear-gradient(165deg, #f4ecd8 0%, #e8dcb8 35%, #d8c894 70%, #b8a878 100%);
+  border:1px solid rgba(120, 80, 30, 0.5);
+  border-radius:11px;
+  display:flex; align-items:center; justify-content:center;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size:28px; font-weight:800;
+  color:#3a1f08;
+  letter-spacing:-0.5px;
+  transition:all .3s; user-select:none;
+  box-shadow:
+    inset 0 -4px 8px rgba(120, 80, 30, 0.35),
+    inset 0 2px 3px rgba(255, 255, 240, 0.7),
+    inset 2px 0 4px rgba(255, 255, 240, 0.4),
+    inset -2px 0 4px rgba(120, 80, 30, 0.3),
+    0 4px 0 -1px rgba(0, 0, 0, 0.4),
+    0 8px 14px -2px rgba(0, 0, 0, 0.7),
+    0 14px 22px -8px rgba(0, 0, 0, 0.6),
+    0 18px 28px -10px rgba(120, 60, 20, 0.5);
+}
+/* Subtle rotation variation for an "on the wood" feel */
+#raid-screen .dice-row .die:nth-child(odd) { transform: rotate(-1.5deg); }
+#raid-screen .dice-row .die:nth-child(even) { transform: rotate(1deg); }
+#raid-screen .dice-row .die:nth-child(3n) { transform: rotate(-2deg); }
+#raid-screen .die.rolling { animation:shake .12s infinite; }
+/* Team tint overlays */
+#raid-screen .die.die-red {
+  border-color:rgba(233,69,96,0.55);
+  background: linear-gradient(165deg, #fce0d8 0%, #f4b8a8 35%, #d88878 70%, #a05050 100%);
+  color:#4a0e1a;
+}
+#raid-screen .die.die-blue {
+  border-color:rgba(76,201,240,0.55);
+  background: linear-gradient(165deg, #dcf0fc 0%, #a8d8ee 35%, #78a0c4 70%, #406088 100%);
+  color:#0a3050;
+}
+#raid-screen .die.rerollable { cursor:pointer; animation:rerollPulse 0.8s ease-in-out infinite; }
+#raid-screen .die.moonstone-active { border-color:var(--moonstone); box-shadow:0 0 16px var(--moonstone-glow); cursor:pointer; }
+#raid-screen .die.moonstone-active:hover { transform:scale(1.12); }
+#raid-screen .die.moonstone-changed { background:rgba(126,232,250,0.15); border-color:var(--moonstone); color:var(--moonstone); }
+#raid-screen .die.locked { opacity:0.5; }
+
+/* Dice highlighting — forged gold */
+#raid-screen .die.die-win,
+#raid-screen .die.die-win-doubles,
+#raid-screen .die.die-win-triples,
+#raid-screen .die.die-win-mega {
+  background: linear-gradient(158deg,
+    #fff6cc 0%,
+    #ffe27a 18%,
+    #ffc83a 42%,
+    #d79418 72%,
+    #7c4d08 100%) !important;
+  border: 1.5px solid #fff3a0 !important;
+  color: #3a1d02 !important;
+  text-shadow:
+    0 1px 0 rgba(255,255,220,0.85),
+    0 -1px 1px rgba(80,40,0,0.55) !important;
+  transform: rotate(0deg) translateY(-2px) scale(1.10) !important;
+  position: relative;
+  z-index: 3;
+  overflow: hidden;
+}
+
+/* Singles / tiebreaker kicker */
+#raid-screen .die.die-win {
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,220,0.95),
+    inset 0 -5px 10px rgba(120,70,0,0.55),
+    inset 2px 0 4px rgba(255,240,170,0.45),
+    inset -2px 0 4px rgba(95,50,0,0.4),
+    0 0 0 2px rgba(255,215,110,0.45),
+    0 0 14px rgba(255,200,60,0.8),
+    0 0 28px rgba(255,175,35,0.5),
+    0 6px 14px -4px rgba(150,85,0,0.6) !important;
+  animation: dieWinPulse 1.3s ease-in-out infinite;
+}
+
+/* Doubles */
+#raid-screen .die.die-win-doubles {
+  transform: rotate(0deg) translateY(-3px) scale(1.14) !important;
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,220,1),
+    inset 0 -6px 12px rgba(130,75,0,0.6),
+    inset 2px 0 4px rgba(255,240,170,0.5),
+    inset -2px 0 4px rgba(95,50,0,0.45),
+    0 0 0 2px rgba(255,220,120,0.55),
+    0 0 18px rgba(255,205,70,0.95),
+    0 0 40px rgba(255,180,45,0.6),
+    0 0 70px rgba(255,160,30,0.3),
+    0 8px 18px -4px rgba(160,90,0,0.65) !important;
+  animation: dieWinPulse 1.15s ease-in-out infinite;
+}
+
+/* Triples */
+#raid-screen .die.die-win-triples {
+  transform: rotate(0deg) translateY(-4px) scale(1.20) !important;
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,230,1),
+    inset 0 -6px 14px rgba(140,80,0,0.6),
+    inset 2px 0 5px rgba(255,240,170,0.55),
+    inset -2px 0 5px rgba(100,55,0,0.5),
+    0 0 0 2px rgba(255,225,130,0.65),
+    0 0 22px rgba(255,210,80,1),
+    0 0 50px rgba(255,185,50,0.7),
+    0 0 90px rgba(255,160,30,0.4),
+    0 10px 22px -4px rgba(170,95,0,0.7) !important;
+  animation: dieWinTriplesPulse 0.95s ease-in-out infinite;
+}
+
+/* Quads / Penta — coronal bloom */
+#raid-screen .die.die-win-mega {
+  background: linear-gradient(158deg,
+    #fffadd 0%,
+    #fff08a 16%,
+    #ffd448 40%,
+    #e39918 70%,
+    #854f08 100%) !important;
+  border-color: #fff7b0 !important;
+  transform: rotate(0deg) translateY(-6px) scale(1.28) !important;
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,240,1),
+    inset 0 -7px 16px rgba(150,85,0,0.65),
+    inset 2px 0 5px rgba(255,245,180,0.6),
+    inset -2px 0 5px rgba(110,60,0,0.55),
+    0 0 0 2px rgba(255,230,140,0.75),
+    0 0 28px rgba(255,215,85,1),
+    0 0 65px rgba(255,190,50,0.8),
+    0 0 120px rgba(255,160,30,0.5),
+    0 12px 26px -4px rgba(180,100,0,0.75) !important;
+  animation: dieWinMegaPulse 0.85s ease-in-out infinite;
+}
+
+/* Specular shine sweep across the gold plate */
+#raid-screen .die.die-win::before,
+#raid-screen .die.die-win-doubles::before,
+#raid-screen .die.die-win-triples::before,
+#raid-screen .die.die-win-mega::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg,
+    transparent 35%,
+    rgba(255,255,255,0.35) 48%,
+    rgba(255,255,255,0.75) 50%,
+    rgba(255,255,255,0.35) 52%,
+    transparent 65%);
+  background-size: 240% 240%;
+  background-position: 200% 200%;
+  mix-blend-mode: overlay;
+  animation: dieShineSweep 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Loser dice */
+#raid-screen .die.die-loser {
+  opacity: 0.42 !important;
+  transform: scale(0.94) !important;
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+/* Tiebreaker matched-pair glow */
+#raid-screen .die.die-win-secondary {
+  opacity: 0.82 !important;
+  filter: none !important;
+  border: 1.5px solid rgba(255,215,110,0.7) !important;
+  background: linear-gradient(158deg,
+    rgba(255,246,204,0.4) 0%,
+    rgba(255,226,122,0.3) 45%,
+    rgba(215,148,24,0.22) 100%) !important;
+  color: #5a2a08 !important;
+  text-shadow: 0 1px 0 rgba(255,255,220,0.5) !important;
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,220,0.55),
+    inset 0 -4px 8px rgba(120,70,0,0.35),
+    0 0 10px rgba(255,200,80,0.45),
+    0 0 22px rgba(255,175,40,0.28) !important;
+  transform: rotate(0deg) scale(1.05) !important;
+  transition: all 0.35s;
+}
+
+/* Triples celebration glow (flat dice) */
+#raid-screen .die.triples-glow { box-shadow:0 0 30px currentColor, 0 0 60px currentColor, 0 0 90px currentColor; transform:scale(1.25); animation:triplesPulse 0.6s ease-in-out infinite; }
+/* Doubles glow */
+#raid-screen .die.glow { box-shadow:0 0 24px currentColor, 0 0 48px currentColor; transform:scale(1.18); transition:box-shadow 0.3s, transform 0.3s; }
+
+/* Reroll countdown */
+#raid-screen .reroll-countdown {
+  position:absolute; top:-20px; left:50%; transform:translateX(-50%);
+  font-size:14px; font-weight:900; color:#fbbf24;
+  text-shadow:0 0 10px rgba(251,191,36,0.6);
+  pointer-events:none; animation:countdownPop 0.3s ease-out;
+}
+
+/* --- 3D Dice --- */
+#raid-screen .die-physics {
+  position: absolute;
+  z-index: 10;
+  perspective: 350px;
+}
+#raid-screen .die-cube {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+#raid-screen .die-face {
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 11px;
+  box-sizing: border-box;
+  backface-visibility: hidden;
+  background: linear-gradient(165deg, #f4ecd8 0%, #e8dcb8 35%, #d8c894 70%, #b8a878 100%);
+  border: 1px solid rgba(120, 80, 30, 0.5);
+  box-shadow: inset 0 -2px 4px rgba(120, 80, 30, 0.25), inset 0 1px 2px rgba(255, 255, 240, 0.5);
+}
+#raid-screen .die-face.face-red {
+  border-color: rgba(233,69,96,0.55);
+  background: linear-gradient(165deg, #fce0d8 0%, #f4b8a8 35%, #d88878 70%, #a05050 100%);
+}
+#raid-screen .die-face.face-blue {
+  border-color: rgba(76,201,240,0.55);
+  background: linear-gradient(165deg, #dcf0fc 0%, #a8d8ee 35%, #78a0c4 70%, #406088 100%);
+}
+/* Cube face transforms */
+#raid-screen .face-front  { transform: translateZ(var(--dh, 28px)); }
+#raid-screen .face-back   { transform: rotateY(180deg) translateZ(var(--dh, 28px)); }
+#raid-screen .face-right  { transform: rotateY(90deg) translateZ(var(--dh, 28px)); }
+#raid-screen .face-left   { transform: rotateY(-90deg) translateZ(var(--dh, 28px)); }
+#raid-screen .face-top    { transform: rotateX(-90deg) translateZ(var(--dh, 28px)); }
+#raid-screen .face-bottom { transform: rotateX(90deg) translateZ(var(--dh, 28px)); }
+/* Pips (dice dots) */
+#raid-screen .pip3d {
+  position: absolute;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #3a1f08;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.25), 0 1px 2px rgba(0,0,0,0.3);
+}
+#raid-screen .face-red .pip3d { background: #4a0e1a; }
+#raid-screen .face-blue .pip3d { background: #0a3050; }
+/* Settling */
+#raid-screen .die-physics.settling .die-cube {
+  transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+#raid-screen .die-physics.settling {
+  transition: left 0.7s cubic-bezier(0.25, 1.1, 0.5, 1),
+              top 0.7s cubic-bezier(0.25, 1.1, 0.5, 1);
+}
+/* 3D die shadow on the tray */
+#raid-screen .die-physics::after {
+  content: '';
+  position: absolute;
+  bottom: -6px; left: 8%;
+  width: 84%; height: 10px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.35), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+/* 3D Dice Highlight Effects */
+#raid-screen .die-physics.highlight-single {
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 8px rgba(251,191,36,0.5));
+  transition: transform 0.3s, filter 0.3s !important;
+}
+#raid-screen .die-physics.highlight-single .die-face { border-color: rgba(251,191,36,0.6) !important; }
+#raid-screen .die-physics.highlight-double {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 14px rgba(251,191,36,0.7)) drop-shadow(0 0 28px rgba(255,175,35,0.35));
+  transition: transform 0.3s, filter 0.3s !important;
+}
+#raid-screen .die-physics.highlight-double .die-face { border-color: #fbbf24 !important; }
+#raid-screen .die-physics.highlight-triple {
+  transform: scale(1.25);
+  filter: drop-shadow(0 0 20px rgba(251,191,36,0.9)) drop-shadow(0 0 40px rgba(255,175,35,0.5));
+  transition: transform 0.3s, filter 0.3s !important;
+}
+#raid-screen .die-physics.highlight-triple .die-face { border-color: #fbbf24 !important; }
+/* Smooth rotation update for rerolls */
+#raid-screen .die-physics.value-update .die-cube {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* 3D dice rerollable glow */
+#raid-screen .die-physics.rerollable-3d {
+  cursor: pointer;
+  animation: rerollPulse3d 0.8s ease-in-out infinite;
+  z-index: 12;
+}
+/* 3D die spinning during Lucky Stone reroll */
+#raid-screen .die-physics.rolling-3d .die-cube {
+  animation: spin3d 0.15s linear infinite;
+}
+/* 3D Dice Win/Lose Highlights */
+#raid-screen .die-physics.die-win-singles-3d {
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 12px rgba(255,200,60,0.8)) drop-shadow(0 0 24px rgba(255,175,35,0.4));
+  animation: dieWin3dPulse 1.3s ease-in-out infinite;
+}
+#raid-screen .die-physics.die-win-singles-3d .die-face {
+  border-color: #ffc83a !important;
+  background: linear-gradient(165deg, #fff6cc 0%, #ffe27a 35%, #ffc83a 70%, #d79418 100%) !important;
+}
+#raid-screen .die-physics.die-win-singles-3d .pip3d { background: #5a2a08 !important; }
+#raid-screen .die-physics.die-win-doubles-3d {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 16px rgba(255,205,70,0.95)) drop-shadow(0 0 36px rgba(255,180,45,0.55));
+  animation: dieWin3dPulse 1.15s ease-in-out infinite;
+}
+#raid-screen .die-physics.die-win-doubles-3d .die-face {
+  border-color: #ffd448 !important;
+  background: linear-gradient(165deg, #fff6cc 0%, #ffe27a 35%, #ffc83a 70%, #d79418 100%) !important;
+}
+#raid-screen .die-physics.die-win-doubles-3d .pip3d { background: #5a2a08 !important; }
+#raid-screen .die-physics.die-win-triples-3d {
+  transform: scale(1.24);
+  filter: drop-shadow(0 0 20px rgba(255,210,80,1)) drop-shadow(0 0 48px rgba(255,185,50,0.65)) drop-shadow(0 0 80px rgba(255,160,30,0.3));
+  animation: dieWin3dTriplesPulse 0.95s ease-in-out infinite;
+}
+#raid-screen .die-physics.die-win-triples-3d .die-face {
+  border-color: #fff3a0 !important;
+  background: linear-gradient(165deg, #fffadd 0%, #fff08a 30%, #ffd448 65%, #e39918 100%) !important;
+}
+#raid-screen .die-physics.die-win-triples-3d .pip3d { background: #4a1d02 !important; }
+#raid-screen .die-physics.die-win-mega-3d {
+  transform: scale(1.32);
+  filter: drop-shadow(0 0 26px rgba(255,215,85,1)) drop-shadow(0 0 60px rgba(255,190,50,0.8)) drop-shadow(0 0 110px rgba(255,160,30,0.45));
+  animation: dieWin3dMegaPulse 0.85s ease-in-out infinite;
+}
+#raid-screen .die-physics.die-win-mega-3d .die-face {
+  border-color: #fff7b0 !important;
+  background: linear-gradient(165deg, #fffadd 0%, #fff08a 25%, #ffd448 55%, #e39918 85%, #854f08 100%) !important;
+}
+#raid-screen .die-physics.die-win-mega-3d .pip3d { background: #3a1d02 !important; }
+#raid-screen .die-physics.die-win-secondary-3d {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 8px rgba(255,200,80,0.45)) drop-shadow(0 0 18px rgba(255,175,40,0.22));
+}
+#raid-screen .die-physics.die-win-secondary-3d .die-face {
+  border-color: rgba(255,215,110,0.6) !important;
+}
+#raid-screen .die-physics.die-loser-3d {
+  opacity: 0.42;
+  transform: scale(0.92);
+  filter: brightness(0.65) saturate(0.6);
+  transition: opacity 0.4s, transform 0.4s, filter 0.4s;
+}
+/* Triples celebration glow (3D) */
+#raid-screen .die-physics.triples-glow-3d {
+  filter: drop-shadow(0 0 30px rgba(255,200,60,0.9)) drop-shadow(0 0 60px rgba(255,175,35,0.6));
+  transform: scale(1.25);
+  animation: triplesCelebrate3d 0.6s ease-in-out infinite;
+}
+
+/* --- Resources --- */
+#raid-screen .resources { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
+#raid-screen .res-tile {
+  width:48px; height:56px;
+  border-radius:8px;
+  border:1px solid rgba(212, 160, 64, 0.28);
+  background: linear-gradient(180deg, rgba(28, 22, 38, 0.9), rgba(14, 10, 22, 0.9));
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  position:relative; cursor:default; transition:all 0.2s; backdrop-filter:blur(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+#raid-screen .res-tile .res-main { font-size:20px; line-height:1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.55)); }
+#raid-screen .res-tile .res-main img { width:26px; height:26px; object-fit:cover; border-radius:4px; }
+#raid-screen .res-tile .res-count {
+  font-family:'Inter', sans-serif;
+  font-size:15px; font-weight:700; line-height:1;
+  margin-top:2px;
+}
+#raid-screen .res-tile .res-label {
+  font-family:'Inter', sans-serif;
+  font-size:7px; font-weight:700;
+  color:var(--text-dim);
+  letter-spacing:0.18em;
+  text-transform:uppercase; margin-top:2px; line-height:1;
+}
+#raid-screen .res-tile.moonstone { border-color:rgba(126,232,250,0.4); box-shadow:0 0 8px rgba(126,232,250,0.15); }
+#raid-screen .res-tile.moonstone .res-count { color:var(--moonstone); }
+#raid-screen .res-tile.ice { border-color:rgba(52,152,219,0.4); box-shadow:0 0 8px rgba(52,152,219,0.15); }
+#raid-screen .res-tile.ice .res-count { color:var(--rare); }
+#raid-screen .res-tile.fire { border-color:rgba(243,156,18,0.4); box-shadow:0 0 8px rgba(243,156,18,0.15); }
+#raid-screen .res-tile.fire .res-count { color:#fb923c; }
+#raid-screen .res-tile.surge { border-color:rgba(168,85,247,0.4); box-shadow:0 0 8px rgba(168,85,247,0.15); }
+#raid-screen .res-tile.surge .res-count { color:#a855f7; }
+#raid-screen .res-tile.healingSeed { border-color:rgba(34,197,94,0.4); box-shadow:0 0 8px rgba(34,197,94,0.15); }
+#raid-screen .res-tile.healingSeed .res-count { color:#22c55e; }
+#raid-screen .res-tile.luckyStone { border-color:rgba(251,191,36,0.4); box-shadow:0 0 8px rgba(251,191,36,0.15); }
+#raid-screen .res-tile.luckyStone .res-count { color:#fbbf24; }
+#raid-screen .res-tile.burn { border-color:rgba(239,68,68,0.5); box-shadow:0 0 8px rgba(239,68,68,0.2); }
+#raid-screen .res-tile.burn .res-count { color:#ef4444; }
+#raid-screen .res-tile.firefly { border-color:rgba(255,215,0,0.5); box-shadow:0 0 10px rgba(255,215,0,0.25); }
+#raid-screen .res-tile.firefly .res-count { color:#ffd700; }
+#raid-screen .res-tile.firefly.clickable:hover { border-color:rgba(255,215,0,0.8); box-shadow:0 0 18px rgba(255,215,0,0.5); }
+#raid-screen .res-tile.clickable { cursor:pointer; }
+#raid-screen .res-tile.clickable:hover { transform:scale(1.08); border-color:rgba(255,255,255,0.4); }
+#raid-screen .res-tile.committed {
+  border-color:rgba(251,191,36,0.7); box-shadow:0 0 16px rgba(251,191,36,0.4);
+  animation:committedPulse 1s ease-in-out infinite;
+}
+#raid-screen .res-tile.rerollable {
+  cursor:pointer;
+  animation:rerollPulseRes 0.6s ease-in-out infinite;
+  border-color: #fbbf24 !important;
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+  z-index: 10;
+  position: relative;
+  transform: scale(1.15);
+}
+#raid-screen .res-tile.res-gained {
+  animation:resGained 0.5s ease-out;
+}
+#raid-screen .commit-bonus {
+  font-size:0.6rem; font-weight:900; padding:2px 6px; border-radius:5px;
+  white-space:nowrap; animation:bonusPop 0.3s ease-out;
+}
+#raid-screen .commit-bonus.dmg { background:rgba(248,113,113,0.15); color:#f87171; border:1px solid rgba(248,113,113,0.3); }
+#raid-screen .commit-bonus.dice { background:rgba(168,85,247,0.15); color:#c084fc; border:1px solid rgba(168,85,247,0.3); }
+#raid-screen .res-label.res-label-bonus { color:#fbbf24; font-size:8px; letter-spacing:0px; animation:bonusPop 0.3s ease-out; }
+
+/* Persistent permanent effect badges */
+#raid-screen .permanent-buff { display:inline-block; padding:2px 8px; margin:2px; border-radius:6px; font-size:11px; font-weight:700; background:rgba(34,197,94,0.15); color:#22c55a; border:1px solid rgba(34,197,94,0.3); }
+#raid-screen .permanent-debuff { display:inline-block; padding:2px 8px; margin:2px; border-radius:6px; font-size:11px; font-weight:700; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+#raid-screen .permanent-effects-row { display:flex; flex-direction:column; align-items:center; gap:2px; margin-top:4px; }
+
+/* --- Action Buttons --- */
+#raid-screen .actions { display:flex; gap:10px; justify-content:center; margin:8px 0; flex-wrap:wrap; }
+#raid-screen .action-btn {
+  padding:12px 26px;
+  border:1px solid var(--border); border-radius:8px; cursor:pointer;
+  font-family:'Inter', sans-serif;
+  font-size:12px; font-weight:700;
+  letter-spacing:0.28em; text-transform:uppercase;
+  background:var(--surface); color:var(--text); transition:all .15s;
+  text-shadow:0 1px 2px rgba(0,0,0,0.6);
+  position:relative; overflow:hidden;
+}
+#raid-screen .action-btn:hover { border-color:var(--moonstone); background:var(--surface2); }
+#raid-screen .action-btn.primary { background:linear-gradient(180deg, var(--magma), var(--accent)); border:none; color:white; }
+#raid-screen .action-btn.primary:hover { transform:translateY(-2px); }
+#raid-screen .action-btn.roll-red {
+  background: linear-gradient(180deg, #e94560 0%, #a02040 100%);
+  border: 1px solid #f06080;
+  color: white;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 8px 18px rgba(233, 69, 96, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.3);
+  animation: pulse-red 2.4s ease-in-out infinite;
+}
+#raid-screen .action-btn.roll-red:hover:not(:disabled) { transform:translateY(-2px); }
+#raid-screen .action-btn.roll-red.locked {
+  background:var(--surface); border:1px solid var(--accent); color:var(--accent);
+  opacity:0.65; pointer-events:none; animation:none; box-shadow:none;
+}
+#raid-screen .action-btn.roll-blue {
+  background: linear-gradient(180deg, #4cc9f0 0%, #2070a0 100%);
+  border: 1px solid #6ddfff;
+  color: #04101a;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 8px 18px rgba(76, 201, 240, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.2);
+  animation: pulse-blue 2.4s ease-in-out 1.2s infinite;
+}
+#raid-screen .action-btn.roll-blue:hover:not(:disabled) { transform:translateY(-2px); }
+#raid-screen .action-btn.roll-blue.locked {
+  background:var(--surface); border:1px solid var(--rare); color:var(--rare);
+  opacity:0.65; pointer-events:none; animation:none; box-shadow:none;
+}
+#raid-screen .action-btn.moonstone-btn { background:linear-gradient(135deg, var(--moonstone-deep), var(--moonstone)); border:none; color:var(--bg); }
+#raid-screen .action-btn.moonstone-btn:hover { transform:scale(1.03); }
+#raid-screen .action-btn:disabled { opacity:0.3; pointer-events:none; }
+
+/* Team roll buttons */
+#raid-screen .team-roll { width:90%; max-width:280px; margin-top:6px; padding:10px 20px; font-size:14px; }
+#raid-screen .ability-buttons { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:4px; }
+#raid-screen .ability-btn {
+  padding:6px 14px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700;
+  border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.05); color:var(--text);
+  transition:all 0.15s; text-transform:uppercase; letter-spacing:0.5px;
+}
+#raid-screen .ability-btn:hover { background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.3); transform:scale(1.05); }
+#raid-screen .ability-btn.pressure { border-color:rgba(255,99,72,0.5); color:var(--magma); background:rgba(255,99,72,0.1); }
+#raid-screen .ability-btn.pressure:hover { background:rgba(255,99,72,0.2); box-shadow:0 0 12px rgba(255,99,72,0.3); }
+
+#raid-screen .blackout-picker { display:flex; align-items:center; gap:4px; margin-top:4px; }
+#raid-screen .blackout-label { font-size:11px; color:var(--moonstone); font-weight:700; }
+#raid-screen .blackout-num { width:28px; height:28px; border-radius:6px; border:2px solid var(--border); background:var(--surface2); color:var(--text); font-weight:700; font-size:14px; cursor:pointer; transition:all .2s; }
+#raid-screen .blackout-num:hover { border-color:var(--moonstone); }
+#raid-screen .blackout-num.active { background:var(--magma); border-color:var(--magma); color:white; }
+
+/* Roll button pulse */
+#raid-screen #rollRedBtn.pulse { animation:rollPulse 1.5s ease-in-out infinite; }
+#raid-screen #rollBlueBtn.pulse { animation:rollPulse 1.5s ease-in-out infinite; }
+
+/* --- Duel Phase --- */
+#raid-screen .duel-done-btn {
+  background: linear-gradient(135deg, #fbbf24 0%, #d4a040 60%, #8a6b20 100%);
+  color: #0a0612 !important;
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 12px 28px;
+  border: 2px solid #fce598 !important;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.5), 0 8px 24px rgba(0, 0, 0, 0.5);
+  margin-top: 8px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  animation: duelDonePulse 1.8s ease-in-out infinite;
+}
+#raid-screen .duel-done-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 26px rgba(251, 191, 36, 0.8), 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+#raid-screen .team-column.duel-locked {
+  pointer-events: none;
+  opacity: 0.42;
+  filter: grayscale(0.35);
+  transition: opacity 0.3s, filter 0.3s;
+}
+#raid-screen .team-column.duel-locked .action-btn {
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* --- Turn Indicator --- */
+#raid-screen .turn-indicator { font-size:13px; color:var(--text2); text-transform:uppercase; letter-spacing:1.5px; font-weight:700; text-align:center; }
+
+/* --- Narrator --- */
+#raid-screen .narrator-box { width:100%; margin-top:4px; position:relative; z-index:200; }
+#raid-screen .narrator-inner {
+  background:rgba(10,10,25,0.92); border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px; padding:8px 14px; text-align:center; font-size:13px;
+  font-weight:700; color:#ccc; line-height:1.4; min-height:34px;
+  display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(8px); box-shadow:0 4px 16px rgba(0,0,0,0.5);
+  transition:opacity 0.3s;
+}
+#raid-screen .narrator-inner b.red-text { color:var(--accent); }
+#raid-screen .narrator-inner b.blue-text { color:var(--rare); }
+#raid-screen .narrator-inner b.gold { color:var(--legendary); }
+#raid-screen .narrator-inner b.ko-text { color:var(--accent); font-size:16px; }
+#raid-screen .narrator-inner.ability-active {
+  font-size:14px; font-weight:800;
+  border-color:rgba(212,160,64,0.45);
+  box-shadow:0 0 14px rgba(212,160,64,0.28), 0 4px 16px rgba(0,0,0,0.5);
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+
+/* --- Battle Log --- */
+#raid-screen .log-wrap {
+  background: linear-gradient(180deg, rgba(20, 14, 28, 0.94), rgba(10, 6, 18, 0.94));
+  border:1px solid rgba(212, 160, 64, 0.35);
+  border-radius:10px;
+  padding:14px 16px 12px;
+  max-height:200px; overflow-y:auto; margin-top:14px; scroll-behavior:smooth;
+  box-shadow: 0 0 32px rgba(212, 160, 64, 0.10), inset 0 1px 0 rgba(255,255,255,0.03);
+  position:relative;
+}
+#raid-screen .log-wrap::before {
+  content:'';
+  position:absolute; top:-1px; left:12px; right:12px; height:1px;
+  background: linear-gradient(90deg, transparent, var(--gilt), transparent);
+}
+#raid-screen .log-wrap h4 {
+  font-family:'Inter', sans-serif;
+  font-size:9px; font-weight:700;
+  color:var(--gold-bright);
+  margin-bottom:10px; padding-bottom:8px;
+  text-transform:uppercase; letter-spacing:0.4em;
+  text-align:center;
+  border-bottom:1px solid rgba(212, 160, 64, 0.25);
+}
+#raid-screen .log-wrap h4::before, #raid-screen .log-wrap h4::after {
+  content:'\2726';
+  font-size:7px;
+  color:var(--gilt);
+  margin:0 8px;
+  vertical-align:middle;
+  opacity:0.7;
+}
+#raid-screen .log-entry {
+  font-family:'Inter', sans-serif;
+  font-size:13px; padding:4px 0;
+  border-bottom:1px dotted rgba(255,255,255,0.05);
+  color:var(--text2); line-height:1.55;
+  font-style:italic;
+}
+#raid-screen .log-entry:last-child { border-bottom:none; }
+#raid-screen .log-dmg { color:var(--accent); font-weight:700; }
+#raid-screen .log-heal { color:var(--hp-green); font-weight:700; }
+#raid-screen .log-ms { color:var(--moonstone); font-weight:700; }
+#raid-screen .log-ability { color:var(--moonstone); font-weight:600; }
+#raid-screen .log-ko { color:var(--accent); font-weight:800; text-transform:uppercase; }
+#raid-screen .log-round { color:var(--text); font-weight:600; }
+
+/* --- Ability Callout --- */
+#raid-screen .ability-callout {
+  font-size:22px; font-weight:900; color:var(--moonstone); text-transform:uppercase;
+  text-shadow:0 0 30px var(--moonstone-glow), 0 0 60px rgba(126,232,250,0.2);
+  font-style:italic; letter-spacing:2px; text-align:center;
+  position:relative; z-index:70; margin-top:6px;
+  border-radius:8px;
+}
+#raid-screen .ability-callout:empty { display:none; }
+#raid-screen .ability-callout:not(:empty) { background:rgba(15,15,26,0.85); padding:4px 12px; min-height:28px; }
+#raid-screen .ability-callout.hype-pop { animation:hypePop 0.4s ease-out forwards; }
+
+/* Ability Splash (neutered per v407) */
+#raid-screen .ability-splash { display:none; position:fixed; z-index:900; opacity:0; pointer-events:none; }
+#raid-screen .ability-splash.active { opacity:0; pointer-events:none; }
+#raid-screen .ability-splash-inner { display:none; }
+#raid-screen .ability-splash-name { display:none; }
+#raid-screen .ability-splash-desc { display:none; }
+
+/* --- Overlays --- */
+/* Moonstone picker */
+#raid-screen .moonstone-picker {
+  display:none; background:rgba(0,0,0,0.7); position:fixed; inset:0; z-index:150;
+  align-items:center; justify-content:center;
+}
+#raid-screen .moonstone-picker.active { display:flex; }
+#raid-screen .moonstone-picker.step2-inline { display:none !important; }
+#raid-screen .ms-modal { background:var(--surface); border:2px solid var(--moonstone); border-radius:14px; padding:28px 36px; text-align:center; box-shadow:0 0 50px var(--moonstone-glow), 0 0 100px rgba(126,232,250,0.15); }
+#raid-screen .ms-inline-picker { display:none; position:fixed; left:50%; top:35%; transform:translate(-50%,-50%); z-index:200; background:var(--surface); border:2px solid var(--moonstone); border-radius:14px; padding:20px 28px; text-align:center; box-shadow:0 0 50px var(--moonstone-glow), 0 0 100px rgba(126,232,250,0.15); }
+#raid-screen .ms-inline-picker.active { display:block; }
+#raid-screen .ms-inline-picker h4 { color:var(--moonstone); font-size:13px; margin-bottom:10px; }
+#raid-screen .ms-inline-picker .ms-dice-options { display:flex; gap:8px; justify-content:center; }
+#raid-screen .ms-modal h3 { color:var(--moonstone); margin-bottom:4px; font-size:16px; }
+#raid-screen .ms-modal p { color:var(--text2); font-size:13px; margin-bottom:16px; }
+#raid-screen .ms-dice-options { display:flex; gap:8px; justify-content:center; }
+#raid-screen .ms-die-option {
+  width:52px; height:52px; background:var(--bg); border:2px solid var(--border); border-radius:8px;
+  display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800;
+  cursor:pointer; transition:all .15s; color:var(--text);
+}
+#raid-screen .ms-die-option:hover { border-color:var(--moonstone); color:var(--moonstone); transform:scale(1.1); }
+#raid-screen .ms-which-die { margin-bottom:12px; }
+#raid-screen .ms-which-die span { color:var(--moonstone); font-weight:700; }
+#raid-screen .ms-picker { /* alias */ }
+
+/* Swap Modal */
+#raid-screen .swap-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
+#raid-screen .swap-overlay.active { display:flex; }
+#raid-screen .swap-modal { background:var(--surface); border:1px solid var(--moonstone); border-radius:14px; padding:24px; max-width:420px; width:90%; box-shadow:0 0 40px var(--moonstone-glow); }
+#raid-screen .swap-modal h3 { margin-bottom:14px; font-size:16px; }
+#raid-screen .swap-option { padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer; transition:all .15s; }
+#raid-screen .swap-option:hover { border-color:var(--moonstone); }
+#raid-screen .swap-option.ko { opacity:0.25; pointer-events:none; }
+
+/* Selene overlay */
+#raid-screen .selene-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9500; align-items:flex-end; justify-content:center; padding-bottom:18px; }
+#raid-screen .selene-overlay.active { display:flex; }
+#raid-screen .selene-modal { background:var(--surface); border:2px solid #f39c12; border-radius:14px; padding:20px 22px; max-width:340px; width:90%; text-align:center; box-shadow:0 0 40px rgba(243,156,18,0.35); }
+#raid-screen .selene-banner { font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; padding:5px 12px; border-radius:6px; margin-bottom:10px; display:inline-block; background:rgba(243,156,18,.15); color:#f39c12; border:1px solid #f39c12; }
+#raid-screen .selene-banner.red  { background:rgba(235,87,87,.18);  color:#eb5757; border-color:#eb5757; }
+#raid-screen .selene-banner.blue { background:rgba(72,152,255,.18); color:#4898ff; border-color:#4898ff; }
+#raid-screen .selene-modal h3 { margin-bottom:4px; font-size:16px; color:#f39c12; }
+#raid-screen .selene-sub { font-size:12px; color:var(--text2); margin-bottom:16px; }
+#raid-screen .selene-options { display:flex; gap:10px; justify-content:center; }
+#raid-screen .selene-opt { padding:12px 16px; background:var(--bg); border:1px solid var(--border); border-radius:10px; cursor:pointer; font-size:14px; font-weight:700; transition:all .18s; flex:1; color:var(--text); }
+#raid-screen .selene-opt.seed:hover { border-color:#22c55e; box-shadow:0 0 14px rgba(34,197,94,0.3); color:#22c55e; }
+#raid-screen .selene-opt.ls:hover { border-color:#fbbf24; box-shadow:0 0 14px rgba(251,191,36,0.35); color:#fbbf24; }
+
+/* Pressure overlay */
+#raid-screen .pressure-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9500; align-items:flex-end; justify-content:center; padding-bottom:18px; }
+#raid-screen .pressure-overlay.active { display:flex; }
+#raid-screen .pressure-modal { background:var(--surface); border:1px solid var(--magma); border-radius:14px; padding:20px 22px; max-width:420px; width:90%; box-shadow:0 0 40px rgba(255,99,72,0.3); }
+#raid-screen .pm-who-banner { font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; padding:5px 10px; border-radius:6px; margin-bottom:10px; display:inline-block; }
+#raid-screen .pm-who-banner.red  { background:rgba(235,87,87,.18); color:#eb5757; border:1px solid #eb5757; }
+#raid-screen .pm-who-banner.blue { background:rgba(72,152,255,.18); color:#4898ff; border:1px solid #4898ff; }
+#raid-screen .pressure-modal h3 { margin-bottom:6px; font-size:16px; color:var(--magma); }
+#raid-screen .pressure-modal .pm-sub { font-size:12px; color:var(--text2); margin-bottom:14px; }
+#raid-screen .pressure-opt { padding:10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; cursor:pointer; transition:all .15s; display:flex; gap:10px; align-items:center; }
+#raid-screen .pressure-opt:hover { border-color:var(--magma); box-shadow:0 0 12px rgba(255,99,72,0.2); }
+
+/* Steal Modal */
+#raid-screen .steal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
+#raid-screen .steal-overlay.active { display:flex; }
+#raid-screen .steal-modal { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; max-width:360px; width:90%; text-align:center; }
+#raid-screen .steal-modal h3 { margin-bottom:12px; font-size:16px; color:var(--moonstone); }
+#raid-screen .steal-options { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+#raid-screen .steal-opt { padding:10px 18px; background:var(--bg); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:all .15s; }
+#raid-screen .steal-opt:hover { border-color:var(--moonstone); }
+
+/* --- Burn Badge --- */
+#raid-screen .burn-badge {
+  position:absolute; top:4px; right:4px; z-index:5;
+  background:linear-gradient(135deg,#b91c1c,#ef4444); color:#fff;
+  font-size:11px; font-weight:800; padding:2px 6px; border-radius:8px;
+  box-shadow:0 0 8px rgba(239,68,68,0.7); pointer-events:none;
+  display:flex; align-items:center; gap:2px;
+}
+#raid-screen .sideline-slot.burn-pick {
+  cursor:pointer !important;
+  border-color:#ef4444 !important;
+  box-shadow:0 0 0 2px #ef4444, 0 0 22px rgba(239,68,68,0.7) !important;
+  animation:burnPickPulse 0.75s ease-in-out infinite;
+  transform:scale(1.04); z-index:2;
+}
+#raid-screen .sideline-slot.burn-pick:hover { box-shadow:0 0 0 3px #ef4444, 0 0 36px rgba(239,68,68,1) !important; }
+
+/* --- KO Swap --- */
+#raid-screen .sideline-slot.ko-swap-pick {
+  cursor:pointer !important;
+  border-color:gold !important;
+  box-shadow:0 0 0 2px gold, 0 0 22px rgba(255,215,0,0.7) !important;
+  animation:koSwapPulse 0.75s ease-in-out infinite;
+  transform:scale(1.04);
+  z-index:2;
+}
+#raid-screen .sideline-slot.ko-swap-pick:hover { box-shadow:0 0 0 3px gold, 0 0 36px rgba(255,215,0,1) !important; }
+#raid-screen .so-name { font-weight:700; }
+#raid-screen .so-info { font-size:12px; color:var(--text2); }
+
+/* --- Game Over --- */
+#raid-screen .game-over { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:200; align-items:center; justify-content:center; overflow-y:auto; }
+#raid-screen .game-over.active { display:flex; }
+#raid-screen .go-box { text-align:center; padding:32px 24px; max-width:640px; width:100%; }
+#raid-screen .go-box h2 { font-size:38px; font-weight:900; margin-bottom:4px; text-transform:uppercase; letter-spacing:2px; }
+#raid-screen .go-box h2.red-win { color:var(--accent); text-shadow:0 0 30px rgba(233,69,96,0.5); }
+#raid-screen .go-box h2.blue-win { color:var(--rare); text-shadow:0 0 30px rgba(52,152,219,0.5); }
+#raid-screen .go-rounds { font-size:13px; color:var(--text2); margin-bottom:20px; font-weight:600; letter-spacing:1px; text-transform:uppercase; }
+#raid-screen .go-summary { display:flex; gap:16px; margin-bottom:24px; }
+#raid-screen .go-team-col { flex:1; background:var(--surface); border-radius:12px; padding:14px; border:1px solid var(--border); }
+#raid-screen .go-team-col h3 { font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+#raid-screen .go-team-col h3.red-label { color:var(--accent); }
+#raid-screen .go-team-col h3.blue-label { color:var(--rare); }
+#raid-screen .go-ghost-row { display:flex; align-items:center; gap:10px; padding:8px 6px; border-radius:8px; margin-bottom:4px; }
+#raid-screen .go-ghost-row.mvp { background:linear-gradient(135deg, rgba(243,156,18,0.15), rgba(243,156,18,0.05)); border:1px solid rgba(243,156,18,0.3); }
+#raid-screen .go-ghost-art { width:40px; height:40px; border-radius:8px; object-fit:cover; background:var(--bg); flex-shrink:0; }
+#raid-screen .go-ghost-art-placeholder { width:40px; height:40px; border-radius:8px; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+#raid-screen .go-ghost-info { flex:1; text-align:left; }
+#raid-screen .go-ghost-name { font-size:13px; font-weight:700; }
+#raid-screen .go-ghost-status { font-size:11px; margin-top:2px; }
+#raid-screen .go-ghost-status.survived { color:var(--win); }
+#raid-screen .go-ghost-status.ko { color:var(--lose); }
+#raid-screen .go-mvp-badge { font-size:10px; font-weight:800; color:var(--legendary); background:rgba(243,156,18,0.15); padding:2px 8px; border-radius:4px; letter-spacing:0.5px; white-space:nowrap; }
+#raid-screen .go-buttons { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+#raid-screen .go-buttons button { padding:12px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; transition:all .2s; }
+#raid-screen .go-buttons button:hover { transform:translateY(-2px); }
+#raid-screen .go-btn-rematch { background:linear-gradient(135deg, var(--moonstone-deep), var(--moonstone)); color:#0f0f1a; }
+#raid-screen .go-btn-newgame { background:var(--surface2); color:var(--text); border:1px solid var(--border) !important; }
+#raid-screen .go-btn-newgame:hover { border-color:var(--moonstone) !important; }
+
+/* --- VS Splash --- */
+#raid-screen .vs-splash {
+  position:fixed; inset:0; z-index:500; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(ellipse at center, rgba(10,10,40,0.97) 0%, rgba(0,0,0,0.99) 100%);
+  opacity:0; pointer-events:none;
+  transition:opacity 0.5s ease;
+}
+#raid-screen .vs-splash.active { opacity:1; pointer-events:auto; }
+#raid-screen .vs-inner {
+  display:flex; align-items:center; justify-content:center; gap:40px;
+  text-align:center; width:100%;
+}
+#raid-screen .vs-fighter-name {
+  font-size:2.4rem; font-weight:900; letter-spacing:2px; text-transform:uppercase;
+  text-shadow:0 0 30px currentColor; max-width:280px; line-height:1.2;
+}
+#raid-screen .vs-fighter-name.red { color:var(--accent); animation:vsNamePopLeft 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
+#raid-screen .vs-fighter-name.blue { color:var(--rare); animation:vsNamePopRight 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.35s both; }
+#raid-screen .vs-text {
+  font-size:5rem; font-weight:900; color:#fff; letter-spacing:6px;
+  text-shadow:0 0 40px rgba(255,255,255,0.5), 0 0 80px rgba(255,255,255,0.2);
+  animation:vsTextPop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.25s both;
+  flex-shrink:0;
+}
+
+/* Screen shake */
+#raid-screen .screen-shake { animation:screenShake 0.5s ease-out; }
+
+/* Triples/Quads/Penta Banner */
+#raid-screen .triples-banner {
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%, -50%) scale(0.3);
+  z-index:800; font-size:5rem; font-weight:900; letter-spacing:6px;
+  text-align:center; opacity:0; pointer-events:none; transition:none;
+  font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  text-transform:uppercase;
+}
+#raid-screen .triples-banner.red-triples { color:var(--accent); text-shadow:0 0 40px rgba(233,69,96,0.8), 0 0 80px rgba(233,69,96,0.4), 0 4px 8px rgba(0,0,0,0.6); }
+#raid-screen .triples-banner.blue-triples { color:var(--rare); text-shadow:0 0 40px rgba(52,152,219,0.8), 0 0 80px rgba(52,152,219,0.4), 0 4px 8px rgba(0,0,0,0.6); }
+#raid-screen .triples-banner.show { opacity:1; transform:translate(-50%, -50%) scale(1); transition:opacity 0.2s, transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+#raid-screen .triples-banner.fade { opacity:0; transform:translate(-50%, -50%) scale(1.3); transition:opacity 0.4s, transform 0.4s ease-in; }
+
+#raid-screen .triples-flash { position:fixed; inset:0; z-index:799; pointer-events:none; opacity:0; }
+#raid-screen .triples-flash.red-flash { background:radial-gradient(ellipse at center, rgba(233,69,96,0.3), transparent 70%); }
+#raid-screen .triples-flash.blue-flash { background:radial-gradient(ellipse at center, rgba(52,152,219,0.3), transparent 70%); }
+
+/* ============================================================
+   KEYFRAME ANIMATIONS (global — cannot be scoped)
+   ============================================================ */
+
+@keyframes legendaryPulse {
+  0%,100% { box-shadow:0 0 18px rgba(243,156,18,0.45); }
+  50% { box-shadow:0 0 30px rgba(243,156,18,0.7), 0 0 50px rgba(243,156,18,0.25); }
+}
+
+@keyframes hitShake {
+  0% { transform:translate(0,0) scale(1); }
+  10% { transform:translate(-8px, 4px) scale(0.97); }
+  25% { transform:translate(6px, -5px) scale(1.02); }
+  40% { transform:translate(-5px, 3px); }
+  55% { transform:translate(3px, -2px); }
+  70% { transform:translate(-2px, 1px); }
+  100% { transform:translate(0,0) scale(1); }
+}
+
+@keyframes hpPulse {
+  0%, 100% { opacity:1; }
+  50% { opacity:0.65; }
+}
+
+@keyframes overclockPulse {
+  0%, 100% { box-shadow:0 0 10px rgba(126,232,250,0.4); }
+  50% { box-shadow:0 0 22px rgba(126,232,250,0.8), 0 0 40px rgba(126,232,250,0.3); }
+}
+
+@keyframes overclockTagPulse {
+  0%,100% { box-shadow:0 0 4px rgba(126,232,250,0.25); }
+  50% { box-shadow:0 0 10px rgba(126,232,250,0.6); }
+}
+
+@keyframes shake {
+  0%,100% { transform:rotate(0); }
+  25% { transform:rotate(-8deg) scale(1.08); }
+  75% { transform:rotate(8deg) scale(1.08); }
+}
+
+@keyframes dieWinPulse {
+  0%,100% { filter: brightness(1); }
+  50%     { filter: brightness(1.14) saturate(1.05); }
+}
+
+@keyframes dieWinTriplesPulse {
+  0%,100% { filter: brightness(1); }
+  50%     { filter: brightness(1.2) saturate(1.12); }
+}
+
+@keyframes dieWinMegaPulse {
+  0%,100% { filter: brightness(1) saturate(1); }
+  50%     { filter: brightness(1.26) saturate(1.18); }
+}
+
+@keyframes dieShineSweep {
+  0%   { background-position: 200% 200%; opacity: 0; }
+  15%  { opacity: 1; }
+  55%  { background-position: -100% -100%; opacity: 1; }
+  100% { background-position: -100% -100%; opacity: 0; }
+}
+
+@keyframes resGained {
+  0% { transform:scale(1); box-shadow:0 0 0 transparent; }
+  30% { transform:scale(1.2); box-shadow:0 0 18px rgba(251,191,36,0.7); }
+  100% { transform:scale(1); }
+}
+
+@keyframes committedPulse {
+  0%, 100% { box-shadow:0 0 10px rgba(251,191,36,0.3); }
+  50% { box-shadow:0 0 24px rgba(251,191,36,0.6); }
+}
+
+@keyframes bonusPop {
+  0% { transform:scale(0.5); opacity:0; }
+  60% { transform:scale(1.15); }
+  100% { transform:scale(1); opacity:1; }
+}
+
+@keyframes rerollPulse {
+  0%,100% { box-shadow:0 0 8px rgba(251,191,36,0.3); }
+  50% { box-shadow:0 0 20px rgba(251,191,36,0.6); }
+}
+
+@keyframes rerollPulseRes {
+  0%,100% { box-shadow:0 0 12px rgba(251,191,36,0.5), 0 0 24px rgba(251,191,36,0.2); transform:scale(1.15); }
+  50% { box-shadow:0 0 24px rgba(251,191,36,0.9), 0 0 48px rgba(251,191,36,0.4); transform:scale(1.25); }
+}
+
+@keyframes pvpTimerPulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.7; transform:scale(1.05); }
+}
+
+@keyframes countdownPop {
+  0% { transform:translateX(-50%) scale(1.5); opacity:0; }
+  100% { transform:translateX(-50%) scale(1); opacity:1; }
+}
+
+@keyframes rerollPulse3d {
+  0%,100% { filter: drop-shadow(0 0 8px rgba(251,191,36,0.3)); }
+  50% { filter: drop-shadow(0 0 20px rgba(251,191,36,0.6)); }
+}
+
+@keyframes spin3d {
+  from { transform: rotateX(0deg) rotateY(0deg); }
+  to { transform: rotateX(180deg) rotateY(180deg); }
+}
+
+@keyframes dieWin3dPulse {
+  0%,100% { filter: drop-shadow(0 0 12px rgba(255,200,60,0.8)) drop-shadow(0 0 24px rgba(255,175,35,0.4)); }
+  50%     { filter: drop-shadow(0 0 18px rgba(255,210,80,1)) drop-shadow(0 0 36px rgba(255,185,50,0.6)); }
+}
+
+@keyframes dieWin3dTriplesPulse {
+  0%,100% { filter: drop-shadow(0 0 20px rgba(255,210,80,1)) drop-shadow(0 0 48px rgba(255,185,50,0.65)) drop-shadow(0 0 80px rgba(255,160,30,0.3)); }
+  50%     { filter: drop-shadow(0 0 28px rgba(255,220,100,1)) drop-shadow(0 0 60px rgba(255,195,60,0.8)) drop-shadow(0 0 100px rgba(255,170,40,0.45)); }
+}
+
+@keyframes dieWin3dMegaPulse {
+  0%,100% { filter: drop-shadow(0 0 26px rgba(255,215,85,1)) drop-shadow(0 0 60px rgba(255,190,50,0.8)) drop-shadow(0 0 110px rgba(255,160,30,0.45)); }
+  50%     { filter: drop-shadow(0 0 35px rgba(255,225,100,1)) drop-shadow(0 0 75px rgba(255,200,65,0.95)) drop-shadow(0 0 130px rgba(255,170,40,0.6)); }
+}
+
+@keyframes triplesCelebrate3d {
+  0%,100% { transform: scale(1.25); filter: drop-shadow(0 0 30px rgba(255,200,60,0.9)) drop-shadow(0 0 60px rgba(255,175,35,0.6)); }
+  50%     { transform: scale(1.35); filter: drop-shadow(0 0 40px rgba(255,210,80,1)) drop-shadow(0 0 80px rgba(255,185,50,0.8)); }
+}
+
+@keyframes sidelinePop {
+  0% { transform:scale(1); }
+  30% { transform:scale(1.25); }
+  100% { transform:scale(1); }
+}
+
+@keyframes triplesPulse {
+  0%,100% { box-shadow:0 0 30px currentColor, 0 0 60px currentColor; transform:scale(1.25); }
+  50% { box-shadow:0 0 40px currentColor, 0 0 80px currentColor, 0 0 120px currentColor; transform:scale(1.32); }
+}
+
+@keyframes rollPulse {
+  0%, 100% { box-shadow:0 0 8px var(--moonstone); transform:scale(1); }
+  50% { box-shadow:0 0 24px var(--moonstone), 0 0 48px rgba(126,232,250,0.3); transform:scale(1.05); }
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 8px 18px rgba(233, 69, 96, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 10px 28px rgba(233, 69, 96, 0.95),
+      0 0 24px rgba(233, 69, 96, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@keyframes pulse-blue {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 8px 18px rgba(76, 201, 240, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 10px 28px rgba(76, 201, 240, 0.95),
+      0 0 24px rgba(76, 201, 240, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -3px 6px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@keyframes duelDonePulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(251, 191, 36, 0.5), 0 8px 24px rgba(0, 0, 0, 0.5); }
+  50% { box-shadow: 0 0 30px rgba(251, 191, 36, 0.9), 0 8px 24px rgba(0, 0, 0, 0.5); }
+}
+
+@keyframes abilityFireScale {
+  0%   { transform:scale(1); }
+  30%  { transform:scale(1.025); }
+  80%  { transform:scale(1.01); }
+  100% { transform:scale(1); }
+}
+
+@keyframes hypePop {
+  0%   { transform:scale(0.5); opacity:0; text-shadow:0 0 0 transparent; }
+  60%  { transform:scale(1.15); opacity:1; text-shadow:0 0 40px var(--moonstone-glow), 0 0 80px rgba(126,232,250,0.4); }
+  100% { transform:scale(1.0); opacity:1; text-shadow:0 0 30px var(--moonstone-glow), 0 0 60px rgba(126,232,250,0.2); }
+}
+
+@keyframes damageFlash {
+  0%,100% { background:var(--surface); }
+  50% { background:rgba(231,76,60,0.35); }
+}
+
+@keyframes vsNamePopLeft {
+  0% { transform:translateX(-60px) scale(0.7); opacity:0; }
+  100% { transform:translateX(0) scale(1); opacity:1; }
+}
+
+@keyframes vsNamePopRight {
+  0% { transform:translateX(60px) scale(0.7); opacity:0; }
+  100% { transform:translateX(0) scale(1); opacity:1; }
+}
+
+@keyframes vsTextPop {
+  0% { transform:scale(0.3) rotate(-10deg); opacity:0; }
+  60% { transform:scale(1.2) rotate(3deg); opacity:1; }
+  100% { transform:scale(1) rotate(0deg); opacity:1; }
+}
+
+@keyframes screenShake {
+  0%, 100% { transform:translateX(0); }
+  10% { transform:translateX(-8px); }
+  30% { transform:translateX(8px); }
+  50% { transform:translateX(-4px); }
+  70% { transform:translateX(4px); }
+  90% { transform:translateX(-2px); }
+}
+
+@keyframes koSwapPulse {
+  0%,100% { box-shadow:0 0 0 2px gold, 0 0 18px rgba(255,215,0,0.6); }
+  50%      { box-shadow:0 0 0 3px gold, 0 0 32px rgba(255,215,0,0.95); }
+}
+
+@keyframes burnPickPulse {
+  0%,100% { box-shadow:0 0 0 2px #ef4444, 0 0 18px rgba(239,68,68,0.6); }
+  50%      { box-shadow:0 0 0 3px #ef4444, 0 0 32px rgba(239,68,68,0.95); }
+}
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+@media (max-width:900px) {
+  #raid-screen .arena-board { flex-direction:column; align-items:center; max-height:none; overflow:visible; padding:10px; gap:10px; }
+  #raid-screen .team-column { width:100%; }
+  #raid-screen .arena-center { min-width:auto; width:100%; }
+  #raid-screen .team-battle-row { flex-direction:column; align-items:center; gap:8px; }
+  #raid-screen .sideline-stack { flex-direction:row; gap:8px; }
+  #raid-screen .fighter-slot { width:200px; margin-left:0; margin-right:0; }
+  #raid-screen .sideline-slot { width:90px; }
+  #raid-screen .die { width:44px; height:44px; font-size:20px; }
+  #raid-screen .narrator-inner { font-size:12px; padding:8px 12px; min-height:30px; }
+  #raid-screen .log-wrap { max-height:120px !important; }
+  #raid-screen .vs-text { font-size:3.5rem; }
+  #raid-screen .vs-fighter-name { font-size:1.6rem; max-width:140px; }
+  #raid-screen .vs-inner { gap:20px; }
+  #raid-screen .triples-banner { font-size:3rem; letter-spacing:3px; }
+  #raid-screen .moonstone-picker,
+  #raid-screen .swap-overlay,
+  #raid-screen .pressure-overlay,
+  #raid-screen .selene-overlay,
+  #raid-screen .steal-overlay {
+    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  }
+}
+
+@media (min-width:1121px) and (max-width:1300px) {
+  #raid-screen .fighter-slot { width:200px; }
+  #raid-screen .sideline-slot { width:120px; }
+  #raid-screen .team-battle-row { gap:8px; }
+}
+
+@media (min-width:901px) and (max-width:1120px) {
+  #raid-screen .fighter-slot { width:180px; }
+  #raid-screen .sideline-slot { width:100px; }
+  #raid-screen .team-battle-row { gap:6px; }
+  #raid-screen .fighter-slot .card-name-banner { font-size:13px; padding:6px 8px; }
+}
+
+@media (max-width:440px) {
+  #raid-screen .arena-board { padding:6px; gap:4px; }
+  #raid-screen .fighter-slot { width:55vw; max-width:200px; margin:0; }
+  #raid-screen .sideline-slot { width:22vw; max-width:90px; }
+  #raid-screen .sideline-slot .card-img,
+  #raid-screen .sideline-slot .card-img-placeholder { aspect-ratio:1; }
+  #raid-screen .sideline-slot .ability-banner { font-size:8px; padding:2px 4px; }
+  #raid-screen .sideline-slot .card-name-banner { font-size:10px; padding:4px 5px; }
+  #raid-screen .die { width:44px; height:44px; font-size:20px; border-radius:8px; }
+  #raid-screen .die.rolling { will-change:transform; }
+  #raid-screen .dice-row { gap:3px; }
+  #raid-screen .res-tile { width:38px; height:44px; border-radius:8px; }
+  #raid-screen .res-tile .res-main { font-size:16px; }
+  #raid-screen .res-tile .res-main img { width:22px; height:22px; }
+  #raid-screen .res-tile .res-count { font-size:11px; }
+  #raid-screen .res-tile .res-label { font-size:7px; }
+  #raid-screen .team-roll { padding:10px 16px; font-size:13px; max-width:100%; width:100%; }
+  #raid-screen .ability-btn { padding:5px 10px; font-size:11px; }
+  #raid-screen .narrator-inner { font-size:11px; padding:6px 10px; }
+  #raid-screen .log-wrap { max-height:120px !important; }
+  #raid-screen .log-entry { font-size:11px; }
+  #raid-screen .hp-text { font-size:0.55rem; }
+  #raid-screen .resources { gap:4px; }
+}
+
+@media (max-height:500px) and (orientation:landscape) {
+  #raid-screen .arena-board { flex-direction:row !important; max-height:100dvh; overflow-y:auto; align-items:stretch; padding:6px; gap:6px; }
+  #raid-screen .team-column { width:auto; flex:1; min-width:0; gap:4px; }
+  #raid-screen .team-battle-row { flex-direction:row; gap:4px; }
+  #raid-screen .sideline-stack { flex-direction:column; gap:4px; }
+  #raid-screen .arena-center { min-width:80px; max-width:120px; gap:4px; }
+  #raid-screen .fighter-slot { width:100px; margin:0; }
+  #raid-screen .sideline-slot { width:56px; }
+  #raid-screen .die { width:36px; height:36px; font-size:16px; }
+  #raid-screen .dice-row { gap:2px; }
+  #raid-screen .team-roll { padding:6px 10px; font-size:11px; }
+  #raid-screen .ability-btn { padding:3px 6px; font-size:10px; }
+  #raid-screen .hp-bar-wrap { max-width:160px; }
+  #raid-screen .res-tile { width:30px; height:36px; }
+  #raid-screen .res-tile .res-main { font-size:13px; }
+  #raid-screen .res-tile .res-main img { width:16px; height:16px; }
+  #raid-screen .res-tile .res-count { font-size:9px; }
+  #raid-screen .res-tile .res-label { font-size:6px; }
+  #raid-screen .narrator-inner { font-size:10px; padding:4px 8px; min-height:20px; }
+  #raid-screen .turn-indicator { font-size:12px !important; }
+}

@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raid Experience Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0612;
+  --bg-warm: #14101e;
+  --bg-stage: #1a1228;
+  --surface: #14101c;
+  --surface2: #1c1828;
+  --surface3: #25202e;
+  --border: #2a2230;
+  --text: #f4ecd8;
+  --text2: #a09686;
+  --text-warm: #d4c4a0;
+  --text-dim: #6a6056;
+  --gold: #d4a040;
+  --gold-bright: #f0c560;
+  --gold-deep: #8a6b20;
+  --gilt: #b8862c;
+  --accent: #e94560;
+  --accent2: #ff6b6b;
+  --common: #8b95a5;
+  --uncommon: #2ecc71;
+  --rare: #3498db;
+  --ghost-rare: #9b59b6;
+  --legendary: #f39c12;
+  --carolina: #75BEEB;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Atmosphere */
+.atmosphere {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(212,160,64,0.08), transparent 60%),
+    radial-gradient(ellipse 50% 60% at 18% 50%, rgba(233,69,96,0.06), transparent 60%),
+    radial-gradient(ellipse 50% 60% at 82% 50%, rgba(76,201,240,0.06), transparent 60%),
+    linear-gradient(180deg, #0e0820 0%, #14101e 35%, #0a0612 100%);
+}
+
+/* ===== SLIDE SYSTEM ===== */
+.slide-container {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+}
+
+.slide-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(20,16,28,0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+}
+
+.slide-nav-title {
+  font-family: 'Creepster', cursive;
+  font-size: 1.1rem;
+  color: var(--gold-bright);
+  letter-spacing: 2px;
+}
+
+.slide-counter {
+  font-weight: 700;
+  color: var(--text2);
+  font-size: 0.9rem;
+}
+
+.slide-counter .current { color: var(--gold-bright); font-size: 1.1rem; }
+
+.slide-arrows {
+  display: flex; gap: 8px;
+}
+
+.slide-arrows button {
+  width: 40px; height: 40px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.slide-arrows button:hover:not(:disabled) {
+  background: var(--surface3);
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.slide-arrows button:disabled {
+  opacity: 0.3; cursor: not-allowed;
+}
+
+/* Dots */
+.slide-dots {
+  display: flex; gap: 6px; align-items: center;
+}
+
+.slide-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.slide-dot.active {
+  background: var(--gold);
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* Slide Content */
+.slides-viewport {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.slide {
+  display: none;
+  min-height: calc(100vh - 70px);
+  padding: 40px 32px 60px;
+  max-width: 960px;
+  margin: 0 auto;
+  animation: slideIn 0.35s ease;
+}
+
+.slide.active { display: block; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-number {
+  font-family: 'Creepster', cursive;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+.slide h2 {
+  font-family: 'Creepster', cursive;
+  font-size: clamp(2rem, 4vw, 3rem);
+  color: var(--gold-bright);
+  letter-spacing: 4px;
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.slide-desc {
+  color: var(--text2);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 28px;
+  max-width: 700px;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+
+.status-working { background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.3); color: #2ecc71; }
+.status-polish { background: rgba(243,156,18,0.12); border: 1px solid rgba(243,156,18,0.3); color: #f39c12; }
+.status-broken { background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #e74c3c; }
+
+/* Mockup Container */
+.mockup {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.mockup-label {
+  padding: 8px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.mockup-body {
+  padding: 20px;
+}
+
+/* Notes */
+.slide-notes {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: rgba(212,160,64,0.04);
+  border-left: 3px solid var(--gold-deep);
+  border-radius: 0 8px 8px 0;
+}
+
+.slide-notes h4 {
+  font-family: 'Creepster', cursive;
+  font-size: 0.9rem;
+  color: var(--gold);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.slide-notes ul {
+  list-style: none;
+  padding: 0;
+}
+
+.slide-notes li {
+  color: var(--text2);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  padding-left: 16px;
+  position: relative;
+}
+
+.slide-notes li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold-deep);
+}
+
+/* ===== MOCKUP-SPECIFIC STYLES ===== */
+
+/* Slide 1: RAIDS Button */
+.mock-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: rgba(20,16,28,0.8);
+  border-bottom: 1px solid var(--border);
+}
+
+.mock-topbar-left {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.mock-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: var(--surface2);
+}
+
+.mock-user-name { font-weight: 700; font-size: 0.95rem; }
+.mock-user-elo { color: var(--gold); font-size: 0.85rem; font-weight: 600; }
+
+.raid-header-btn {
+  position: relative;
+  font-family: 'Creepster', cursive;
+  font-size: 0.95rem;
+  letter-spacing: 1.5px;
+  padding: 7px 18px 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: linear-gradient(135deg, rgba(117,190,235,0.25), rgba(117,190,235,0.1));
+  border: 1px solid rgba(117,190,235,0.5);
+  color: #75BEEB;
+  animation: raid-btn-glow 2s ease-in-out infinite;
+  margin-left: auto;
+}
+
+@keyframes raid-btn-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(117,190,235,0.2); }
+  50% { box-shadow: 0 0 18px rgba(117,190,235,0.4), 0 0 30px rgba(117,190,235,0.15); }
+}
+
+.raid-header-new {
+  position: absolute; top: -8px; right: -8px;
+  background: var(--accent); color: #fff;
+  font-family: 'Inter', sans-serif; font-size: 0.55rem; font-weight: 900;
+  padding: 2px 5px; border-radius: 4px; letter-spacing: 0.5px;
+  animation: new-bounce 1.5s ease-in-out infinite;
+  line-height: 1.2;
+}
+
+@keyframes new-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.raid-side-tab-mock {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #0a1a2e, #0d2240);
+  border: 1px solid rgba(117,190,235,0.5);
+  border-right: none;
+  border-radius: 10px 0 0 10px;
+  padding: 10px 10px 10px 12px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: -2px 0 16px rgba(117,190,235,0.3);
+  writing-mode: vertical-lr;
+  font-family: 'Creepster', cursive;
+  font-size: 0.85rem;
+  color: #75BEEB;
+  letter-spacing: 2px;
+  line-height: 1.2;
+  animation: raid-tab-pulse 3s ease-in-out infinite;
+}
+
+@keyframes raid-tab-pulse {
+  0%, 100% { box-shadow: -2px 0 16px rgba(117,190,235,0.3); }
+  50% { box-shadow: -2px 0 24px rgba(117,190,235,0.5), -2px 0 40px rgba(117,190,235,0.15); }
+}
+
+.mock-screen-placeholder {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-style: italic;
+  position: relative;
+}
+
+/* Slide 2: Spirit World Book */
+.book-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.book-tab {
+  padding: 8px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-family: 'Creepster', cursive;
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.03);
+  transition: all 0.2s;
+}
+.book-tab.active {
+  color: var(--tab-color);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  font-size: 0.95rem;
+}
+
+.raid-book {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0 12px 12px 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 0 60px rgba(0,0,0,0.3);
+}
+.book-spine {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+  background: linear-gradient(180deg, rgba(212,160,64,0.3), rgba(212,160,64,0.1), rgba(212,160,64,0.3));
+}
+.book-page { padding: 24px 24px 16px 30px; }
+.book-page-header { padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.book-zone-name { font-family: 'Creepster', cursive; font-size: 1.8rem; letter-spacing: 4px; margin: 0; }
+.book-zone-desc { color: var(--text-dim); font-size: 0.85rem; font-style: italic; margin-top: 4px; }
+
+.book-bosses { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.book-boss {
+  border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.25s;
+  border: 2px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);
+}
+.book-boss:hover { transform: translateY(-4px); border-color: rgba(212,160,64,0.4); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+.book-boss.locked { opacity: 0.4; cursor: not-allowed; }
+.book-boss-art { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; }
+.book-boss-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+.book-boss-lock {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.65); font-size: 2.5rem;
+}
+.book-boss-check {
+  position: absolute; top: 8px; right: 8px; font-size: 1.2rem; color: #2ecc71;
+  background: rgba(0,0,0,0.7); width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.book-boss-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 12px 8px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.85));
+}
+.book-boss-name { font-family: 'Creepster', cursive; font-size: 1.25rem; color: #fff; letter-spacing: 1.5px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
+.book-boss-title { color: rgba(255,255,255,0.6); font-size: 0.75rem; font-style: italic; }
+.book-boss-bar { padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+.book-boss-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.book-hp, .book-players {
+  font-size: 0.65rem; padding: 2px 7px; border-radius: 8px; font-weight: 700; letter-spacing: 0.5px;
+}
+.book-hp { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.book-players { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.book-boss-req { font-size: 0.7rem; color: var(--accent); }
+
+.book-champion {
+  display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 16px;
+  background: rgba(212,160,64,0.05); border: 1px dashed rgba(212,160,64,0.2);
+  border-radius: 10px; font-size: 0.85rem;
+}
+.book-champion-name { font-weight: 700; color: var(--gold-bright); flex: 1; }
+.book-champion-icon { font-size: 1.4rem; }
+.book-champion-locked { color: var(--text-dim); font-size: 0.75rem; font-style: italic; }
+
+/* Slide 3: Queue */
+.raid-queue-view { max-width: 600px; margin: 0 auto; }
+.raid-queue-header { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
+.raid-queue-boss-art { width: 120px; height: 120px; border-radius: 12px; object-fit: cover; border: 2px solid var(--gold-deep); }
+.raid-queue-boss-info h2 { font-family: 'Creepster', cursive; font-size: 1.6rem; color: var(--gold-bright); margin: 0; }
+.raid-boss-title-text { color: var(--text2); font-size: 0.9rem; font-style: italic; }
+.raid-boss-personality { color: var(--text2); font-size: 0.8rem; margin-top: 4px; }
+.raid-boss-desc { color: var(--text); font-size: 0.85rem; margin-top: 8px; line-height: 1.4; }
+
+.raid-team-slots { display: flex; gap: 10px; justify-content: center; }
+.raid-team-slot {
+  width: 80px; height: 100px; border-radius: 10px; border: 2px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden; background: var(--surface); text-align: center;
+}
+.raid-team-slot img { width: 100%; height: 60px; object-fit: cover; }
+.raid-team-slot span { font-size: 0.7rem; padding: 4px; }
+.raid-team-slot.legendary { border-color: var(--legendary); }
+.raid-team-slot.rare { border-color: var(--rare); }
+.raid-team-slot.ghost-rare { border-color: var(--ghost-rare); }
+
+.raid-join-btn {
+  width: 100%; padding: 14px; font-family: 'Creepster', cursive; font-size: 1.2rem; letter-spacing: 2px;
+  background: linear-gradient(135deg, #d4a040, #8a6b20); color: #fff; border: none; border-radius: 10px;
+  cursor: pointer; transition: all 0.2s;
+}
+.raid-join-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(212,160,64,0.4); }
+
+/* Slide 4: Queue Status */
+.raid-queue-status { padding: 16px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
+.raid-queue-num { font-size: 1.5rem; font-weight: 900; color: var(--gold-bright); }
+.raid-queue-players { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.raid-queue-player { display: flex; gap: 6px; align-items: center; padding: 4px 10px; background: var(--surface2); border-radius: 6px; font-size: 0.8rem; }
+.raid-queue-slot { color: var(--gold); font-weight: 700; }
+
+/* Slide 5: Boss HP Bar */
+.raid-boss-hp-container { padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); border-radius: 10px; }
+.raid-boss-hp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.raid-boss-hp-name { font-family: 'Creepster', cursive; font-size: 1.3rem; color: var(--gold-bright); letter-spacing: 2px; }
+.raid-boss-hp-personality { color: var(--ghost-rare); font-weight: 700; font-size: 0.75rem; letter-spacing: 1.5px; }
+.raid-boss-hp-phase { font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
+.raid-boss-hp-bar-bg { position: relative; height: 28px; background: rgba(255,255,255,0.05); border-radius: 14px; overflow: hidden; }
+.raid-boss-hp-bar-fill { height: 100%; border-radius: 14px; transition: width 0.6s ease; position: relative; }
+.raid-boss-hp-bar-glow { position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); animation: hp-glow 2s infinite; }
+@keyframes hp-glow { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.raid-boss-hp-markers { position: absolute; inset: 0; }
+.raid-boss-hp-marker { position: absolute; top: 0; width: 2px; height: 100%; background: rgba(255,255,255,0.15); }
+.raid-boss-hp-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.85rem; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+
+/* Raider Lineup */
+.raid-lineup-scroll { display: flex; gap: 6px; padding: 10px 0; overflow-x: auto; }
+.raid-lineup-slot {
+  min-width: 80px; padding: 8px; border-radius: 8px; text-align: center;
+  background: var(--surface); border: 2px solid var(--border); flex-shrink: 0;
+}
+.raid-lineup-slot.current { border-color: var(--gold); box-shadow: 0 0 12px rgba(212,160,64,0.3); animation: raid-pulse 1.5s infinite; }
+.raid-lineup-slot.done { border-color: rgba(46,204,113,0.4); opacity: 0.8; }
+.raid-lineup-slot.waiting { border-color: var(--border); }
+.raid-lineup-num { font-weight: 900; font-size: 0.7rem; color: var(--gold); }
+.raid-lineup-name { font-size: 0.75rem; color: var(--text); margin: 2px 0; }
+.raid-lineup-status { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; }
+.raid-lineup-slot.current .raid-lineup-status { color: var(--accent); }
+.raid-lineup-slot.done .raid-lineup-status { color: #2ecc71; }
+.raid-lineup-slot.waiting .raid-lineup-status { color: var(--text-dim); }
+
+@keyframes raid-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+/* Slide 6: VS Splash */
+.vs-splash {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px; text-align: center;
+}
+.vs-splash-swords { font-size: 4rem; margin-bottom: 8px; }
+.vs-splash-name {
+  font-family: 'Creepster', cursive; font-size: 3.5rem;
+  color: var(--gold-bright); letter-spacing: 6px;
+  text-shadow: 0 0 40px rgba(240,197,96,0.4);
+  animation: vs-scale 0.6s ease-out;
+}
+@keyframes vs-scale { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.vs-splash-title { color: var(--text2); font-style: italic; font-size: 1.1rem; margin-top: 8px; }
+.vs-splash-dialogue { color: var(--accent); font-style: italic; font-size: 1rem; margin-top: 16px; }
+
+/* Slide 8: Game Over */
+.game-over-mockup {
+  text-align: center; padding: 40px 20px;
+}
+.game-over-title {
+  font-family: 'Creepster', cursive; font-size: 2.5rem;
+  letter-spacing: 5px;
+}
+.game-over-title.victory { color: var(--gold-bright); }
+.game-over-title.defeat { color: var(--accent); }
+.game-over-boss { font-family: 'Creepster', cursive; font-size: 1.4rem; color: var(--text2); margin-top: 8px; }
+.game-over-quote { color: var(--text2); font-style: italic; margin-top: 12px; }
+
+/* Slide 9: Celebration */
+.celebration-mockup {
+  text-align: center; padding: 30px 20px;
+}
+.celebration-stats { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+.celebration-stat {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 20px; text-align: center; min-width: 130px;
+}
+.celebration-stat.highlight { border-color: var(--gold); }
+.celebration-stat-label { display: block; font-size: 0.7rem; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 4px; }
+.celebration-stat-value { font-size: 1.2rem; font-weight: 900; color: var(--text); }
+
+.celebration-leaderboard { max-width: 500px; margin: 20px auto 0; text-align: left; }
+.celebration-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-radius: 8px; background: var(--surface); margin-bottom: 4px;
+}
+.celebration-row.is-me { border: 1px solid var(--gold-deep); background: rgba(212,160,64,0.05); }
+.celebration-row.is-mvp { border: 1px solid var(--gold); }
+.celebration-rank { font-weight: 900; color: var(--gold); min-width: 30px; }
+.celebration-name { flex: 1; color: var(--text); font-size: 0.9rem; }
+.mvp-badge { background: var(--gold); color: #000; padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 900; }
+.kb-badge { background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 0.65rem; font-weight: 900; }
+.celebration-damage { font-weight: 700; color: var(--accent); font-size: 0.85rem; }
+.celebration-survived { color: var(--text-dim); font-size: 0.75rem; }
+
+/* Slide 10: Badge Grid */
+.raid-badge-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.raid-badge {
+  display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font-size: 0.8rem;
+}
+.raid-badge.earned { border-color: var(--gold); background: rgba(212,160,64,0.08); }
+.raid-badge.locked { opacity: 0.4; }
+.raid-badge-icon { font-size: 1.1rem; }
+.raid-badge-name { color: var(--text); }
+.raid-badge-check { color: #2ecc71; margin-left: 4px; }
+
+/* Slide 11: Audit Summary */
+.audit-section {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.audit-section h3 {
+  font-family: 'Creepster', cursive;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.audit-section h3.green { color: #2ecc71; }
+.audit-section h3.yellow { color: #f39c12; }
+.audit-section h3.red { color: #e74c3c; }
+.audit-section h3.blue { color: var(--carolina); }
+
+.audit-list {
+  list-style: none;
+  padding: 0;
+}
+
+.audit-list li {
+  color: var(--text2);
+  font-size: 0.9rem;
+  line-height: 1.8;
+  padding-left: 24px;
+  position: relative;
+}
+
+.audit-list li::before {
+  position: absolute;
+  left: 0;
+  font-size: 0.85rem;
+}
+
+.audit-list.check li::before { content: '\2705'; }
+.audit-list.warn li::before { content: '\26A0\FE0F'; }
+.audit-list.x li::before { content: '\274C'; }
+.audit-list.arrow li::before { content: '\27A1\FE0F'; }
+
+/* Progression Map */
+.progression-map {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+}
+
+.prog-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.prog-row.tier1 { background: rgba(46,204,113,0.06); border-left: 3px solid #2ecc71; }
+.prog-row.tier2 { background: rgba(117,190,235,0.06); border-left: 3px solid #75BEEB; }
+.prog-row.tier3 { background: rgba(231,76,60,0.06); border-left: 3px solid #e74c3c; }
+.prog-row.tier4 { background: rgba(155,89,182,0.06); border-left: 3px solid #9b59b6; }
+.prog-row.tier5 { background: rgba(192,57,43,0.06); border-left: 3px solid #c0392b; }
+
+.prog-zone { font-weight: 700; min-width: 140px; }
+.prog-bosses { color: var(--text2); flex: 1; }
+.prog-badge { color: var(--gold); font-size: 0.8rem; }
+.prog-arrow { color: var(--text-dim); }
+
+/* Mobile */
+@media (max-width: 700px) {
+  .slide { padding: 24px 16px 40px; }
+  .slide h2 { font-size: 1.8rem; }
+  .book-bosses { grid-template-columns: 1fr 1fr; }
+  .slide-nav { padding: 10px 12px; }
+  .slide-nav-title { display: none; }
+  .celebration-stats { flex-direction: column; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="atmosphere"></div>
+
+<div class="slide-container">
+  <!-- Navigation Bar -->
+  <div class="slide-nav">
+    <div class="slide-nav-title">RAID WALKTHROUGH</div>
+    <div class="slide-dots" id="slide-dots"></div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="slide-counter"><span class="current" id="slide-current">1</span> / <span id="slide-total">15</span></div>
+      <div class="slide-arrows">
+        <button id="btn-prev" onclick="prevSlide()">&#9664;</button>
+        <button id="btn-next" onclick="nextSlide()">&#9654;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slides Viewport -->
+  <div class="slides-viewport">
+
+    <!-- ============ SLIDE 1: THE RAIDS BUTTON ============ -->
+    <div class="slide active" data-slide="1">
+      <div class="slide-number">STEP 01</div>
+      <h2>The RAIDS Button</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        Two entry points draw the player into raids: a Carolina blue button in the top bar header, and a glowing side tab fixed to the right edge of the screen. Both pulse with a soft blue glow to signal something new. A bouncing "NEW" badge on the header button creates urgency.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Header Button (Top Bar)</div>
+        <div class="mockup-body">
+          <div class="mock-topbar">
+            <div class="mock-topbar-left">
+              <div class="mock-avatar"></div>
+              <div>
+                <div class="mock-user-name">DrBango</div>
+                <div class="mock-user-elo">1247 ELO</div>
+              </div>
+            </div>
+            <button class="raid-header-btn">
+              &#x2694; RAIDS
+              <span class="raid-header-new">NEW</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-label">Side Tab (Right Edge)</div>
+        <div class="mockup-body">
+          <div class="mock-screen-placeholder" style="min-height:160px;">
+            <span style="color:var(--text-dim);">[ Main multiplayer screen content ]</span>
+            <div class="raid-side-tab-mock">
+              <span style="writing-mode:horizontal-tb;font-size:1.2rem;margin-bottom:4px;display:block;">&#x2694;</span>
+              Raids
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>Carolina blue (#75BEEB) makes the raid CTA instantly distinguishable from the gold palette</li>
+          <li>The glow animation runs on a 2-3s loop -- subtle enough to not be annoying, strong enough to catch the eye</li>
+          <li>"NEW" badge bounces on a 1.5s cycle, will need a mechanism to dismiss once player has visited raids</li>
+          <li>Side tab is always visible, even while scrolling collection -- persistent reminder</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 2: SPIRIT WORLD BOOK ============ -->
+    <div class="slide" data-slide="2">
+      <div class="slide-number">STEP 02</div>
+      <h2>Spirit World Book</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        Clicking RAIDS opens a full-screen modal with a book metaphor. Five zone tabs across the top correspond to the five tiers of progression. Each page shows boss cards with art, HP, player requirements, and lock status. A gold spine on the left sells the "ancient tome" feeling. The whole thing lives inside a dramatic modal with purple radial gradients.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Spirit World Book -- Rolling Hills</div>
+        <div class="mockup-body" style="padding:16px;">
+          <div style="text-align:center;margin-bottom:6px;">
+            <span style="font-family:'Creepster',cursive;font-size:2.2rem;letter-spacing:5px;background:linear-gradient(90deg,var(--gold),#e9d5ff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">SPIRIT WORLD</span>
+          </div>
+          <div style="text-align:center;color:var(--text-dim);font-size:0.85rem;letter-spacing:1px;margin-bottom:20px;">Enter the Spirit World and challenge its guardians</div>
+
+          <div class="book-tabs">
+            <button class="book-tab active" style="--tab-color:#2ecc71">Rolling Hills</button>
+            <button class="book-tab" style="--tab-color:#75BEEB">Frost Valley</button>
+            <button class="book-tab" style="--tab-color:#e74c3c">Volcanic Isles</button>
+            <button class="book-tab" style="--tab-color:#9b59b6">Dark Castle</button>
+            <button class="book-tab" style="--tab-color:#c0392b">The Dark Spire</button>
+          </div>
+
+          <div class="raid-book" style="background:linear-gradient(135deg, #0a1a0e, #142810);">
+            <div class="book-spine"></div>
+            <div class="book-page">
+              <div class="book-page-header" style="border-bottom-color:#2ecc71;">
+                <h3 class="book-zone-name" style="color:#2ecc71;">Rolling Hills</h3>
+                <p class="book-zone-desc">Where the wild packs roam and wanderers never rest.</p>
+              </div>
+              <div class="book-bosses">
+                <!-- Dark Fang -->
+                <div class="book-boss">
+                  <div class="book-boss-art">
+                    <img src="../testroom/art/originals/DarkFang.png" alt="Dark Fang" onerror="this.style.background='linear-gradient(135deg,#1a1a2e,#2a1a3e)';this.style.height='100%';this.alt='[Art]'">
+                    <div class="book-boss-overlay">
+                      <div class="book-boss-name">Dark Fang</div>
+                      <div class="book-boss-title">The Unseen Predator</div>
+                    </div>
+                  </div>
+                  <div class="book-boss-bar">
+                    <div class="book-boss-meta">
+                      <span class="book-hp">9 HP</span>
+                      <span class="book-players">1-2 players</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Jasper -->
+                <div class="book-boss">
+                  <div class="book-boss-art">
+                    <img src="../testroom/art/originals/Pickwick.png" alt="Jasper" onerror="this.style.background='linear-gradient(135deg,#2a1a0e,#3a2810)';this.style.height='100%';this.alt='[Art]'">
+                    <div class="book-boss-overlay">
+                      <div class="book-boss-name">Jasper</div>
+                      <div class="book-boss-title">The Restless Flame</div>
+                    </div>
+                  </div>
+                  <div class="book-boss-bar">
+                    <div class="book-boss-meta">
+                      <span class="book-hp">10 HP</span>
+                      <span class="book-players">2 players</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Timber (locked) -->
+                <div class="book-boss locked">
+                  <div class="book-boss-art">
+                    <img src="../testroom/art/timber.jpg" alt="Timber" onerror="this.style.background='linear-gradient(135deg,#1a1a1a,#2a2a2a)';this.style.height='100%';this.alt='[Art]'">
+                    <div class="book-boss-lock">&#x1F512;</div>
+                    <div class="book-boss-overlay">
+                      <div class="book-boss-name">Timber</div>
+                      <div class="book-boss-title">Dances with Wolves</div>
+                    </div>
+                  </div>
+                  <div class="book-boss-bar">
+                    <div class="book-boss-meta">
+                      <span class="book-hp">18 HP</span>
+                      <span class="book-players">3 players</span>
+                    </div>
+                    <div class="book-boss-req">Requires: Fang</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="book-champion">
+                <span class="book-champion-icon">&#x1F33F;</span>
+                <span class="book-champion-name">Heart of the Hills</span>
+                <span class="book-champion-locked">Defeat all bosses</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>Book metaphor is strong -- spine, page texture, zone-colored headers make each tier feel distinct</li>
+          <li>Boss cards with real art are the star -- hover zoom on art is a nice touch</li>
+          <li>Locked bosses at 40% opacity with padlock clearly communicate progression gating</li>
+          <li>Champion badge at the bottom incentivizes clearing all bosses in a zone</li>
+          <li>Art fallback (timber.jpg) should be a generic "unknown boss" silhouette instead</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 3: BOSS DETAIL / QUEUE ============ -->
+    <div class="slide" data-slide="3">
+      <div class="slide-number">STEP 03</div>
+      <h2>Boss Detail & Queue</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        After clicking a boss, the book transforms into a detailed queue view. Boss art at full size, ability description, personality type, and player requirements are shown. Below: YOUR TEAM display (pulled from the player's existing multiplayer team selection), a queue status panel, and the golden JOIN RAID button.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Queue View -- Dark Fang Selected</div>
+        <div class="mockup-body" style="padding:20px;">
+          <div class="raid-queue-view">
+            <div class="raid-queue-header">
+              <img class="raid-queue-boss-art" src="../testroom/art/originals/DarkFang.png" alt="Dark Fang" onerror="this.style.background='var(--surface2)';this.style.borderRadius='12px'">
+              <div class="raid-queue-boss-info">
+                <h2>Dark Fang</h2>
+                <div class="raid-boss-title-text">The Unseen Predator</div>
+                <div class="raid-boss-personality">TRICKSTER &bull; 60 HP &bull; Tier 1 &bull; 2 players</div>
+                <p class="raid-boss-desc">Enemy cannot heal. Win: deal +1 damage for each KO'd ghost this game. Forces enemy swap before rolling.</p>
+              </div>
+            </div>
+
+            <div style="margin:16px 0;">
+              <h3 style="font-family:'Creepster',cursive;font-size:1rem;color:var(--text-warm);letter-spacing:2px;margin-bottom:10px;">YOUR TEAM</h3>
+              <div class="raid-team-slots">
+                <div class="raid-team-slot legendary">
+                  <img src="../testroom/art/originals/DarkFang.png" alt="Timber" onerror="this.parentElement.innerHTML='<span style=font-size:1.5rem>&#x1F43A;</span><span>Timber</span>'">
+                  <span>Timber</span>
+                </div>
+                <div class="raid-team-slot rare">
+                  <img src="../testroom/art/originals/romy.jpg" alt="Romy" onerror="this.parentElement.innerHTML='<span style=font-size:1.5rem>&#x1F52E;</span><span>Romy</span>'">
+                  <span>Romy</span>
+                </div>
+                <div class="raid-team-slot ghost-rare">
+                  <img src="../testroom/art/originals/king_jay.jpg" alt="King Jay" onerror="this.parentElement.innerHTML='<span style=font-size:1.5rem>&#x1F451;</span><span>K. Jay</span>'">
+                  <span>King Jay</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:16px;">
+              <button class="raid-join-btn">JOIN RAID</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>Team reuse is smart -- no separate picker needed if player already has a multiplayer team set</li>
+          <li>Clear "SELECT A TEAM FIRST" disabled state when no team is selected</li>
+          <li>Back button returns to book view smoothly</li>
+          <li>Personality type (TRICKSTER) displayed prominently -- teaches players what to expect</li>
+          <li>Consider: add a "Recommended team" hint based on boss weakness</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 4: QUEUE FILLING ============ -->
+    <div class="slide" data-slide="4">
+      <div class="slide-number">STEP 04</div>
+      <h2>Queue Filling</h2>
+      <div class="status-badge status-polish">Needs Polish</div>
+      <p class="slide-desc">
+        After joining, the JOIN RAID button swaps to LEAVE QUEUE. The queue status panel shows real-time count from Firebase, with named player slots filling in. Once the minimum player count is reached, the status flips to green "RAID LAUNCHING..." text. The queue auto-fires via Firebase transaction -- first player to detect threshold creates the instance.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Queue Status -- Waiting</div>
+        <div class="mockup-body">
+          <div class="raid-queue-status" style="margin-bottom:16px;">
+            <div><span class="raid-queue-num">1</span> / <span class="raid-queue-num">2</span> raiders needed to start</div>
+            <div class="raid-queue-players">
+              <div class="raid-queue-player"><span class="raid-queue-slot">#1</span><span>DrBango</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-label">Queue Status -- Ready!</div>
+        <div class="mockup-body">
+          <div class="raid-queue-status">
+            <div><span class="raid-queue-num">2</span> Raiders ready! <span style="color:#2ecc71;font-weight:700;">RAID LAUNCHING...</span></div>
+            <div class="raid-queue-players">
+              <div class="raid-queue-player"><span class="raid-queue-slot">#1</span><span>DrBango</span></div>
+              <div class="raid-queue-player"><span class="raid-queue-slot">#2</span><span>SkylarNYC</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>Firebase real-time listener keeps the count synced instantly across clients</li>
+          <li>Transaction-based instance creation prevents race conditions when multiple players detect threshold</li>
+          <li>Stale queue cleanup runs on 30min timeout -- entries auto-expire</li>
+          <li>NEEDS POLISH: no loading animation or countdown timer between "LAUNCHING" and actual redirect</li>
+          <li>NEEDS POLISH: no sound effect or screen shake on "RAID LAUNCHING" -- should feel like an event</li>
+          <li>Consider: show other players' teams as they join for pre-raid strategy</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 5: TESTROOM REDIRECT ============ -->
+    <div class="slide" data-slide="5">
+      <div class="slide-number">STEP 05</div>
+      <h2>Testroom Redirect</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        When the raid fires, the player is redirected to the testroom with raid parameters in the URL. The testroom loads in boss mode -- a persistent HP bar sits at the top showing the boss name, personality, current phase, and a draining HP pool shared across all raiders. Phase markers at 75%, 50%, and 25% indicate transition points. A glowing fill animation makes the bar feel alive.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Boss HP Bar (top of testroom)</div>
+        <div class="mockup-body">
+          <div class="raid-boss-hp-container">
+            <div class="raid-boss-hp-header">
+              <span class="raid-boss-hp-name">Dark Fang</span>
+              <span class="raid-boss-hp-personality">TRICKSTER</span>
+              <span class="raid-boss-hp-phase" style="color:#2ecc71">OPENING GAMBIT</span>
+            </div>
+            <div class="raid-boss-hp-bar-bg">
+              <div class="raid-boss-hp-bar-fill" style="width:100%;background:#2ecc71">
+                <div class="raid-boss-hp-bar-glow"></div>
+              </div>
+              <div class="raid-boss-hp-markers">
+                <div class="raid-boss-hp-marker" style="left:75%"></div>
+                <div class="raid-boss-hp-marker" style="left:50%"></div>
+                <div class="raid-boss-hp-marker" style="left:25%"></div>
+              </div>
+              <div class="raid-boss-hp-text">90 / 90</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-label">Boss HP Bar (mid-fight, Phase 2)</div>
+        <div class="mockup-body">
+          <div class="raid-boss-hp-container">
+            <div class="raid-boss-hp-header">
+              <span class="raid-boss-hp-name">Dark Fang</span>
+              <span class="raid-boss-hp-personality">TRICKSTER</span>
+              <span class="raid-boss-hp-phase" style="color:#f39c12">ESCALATION</span>
+            </div>
+            <div class="raid-boss-hp-bar-bg">
+              <div class="raid-boss-hp-bar-fill" style="width:62%;background:#f39c12">
+                <div class="raid-boss-hp-bar-glow"></div>
+              </div>
+              <div class="raid-boss-hp-markers">
+                <div class="raid-boss-hp-marker" style="left:75%"></div>
+                <div class="raid-boss-hp-marker" style="left:50%"></div>
+                <div class="raid-boss-hp-marker" style="left:25%"></div>
+              </div>
+              <div class="raid-boss-hp-text">56 / 90</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-label">Raider Lineup (below HP bar)</div>
+        <div class="mockup-body">
+          <div class="raid-lineup-scroll">
+            <div class="raid-lineup-slot done">
+              <div class="raid-lineup-num">#1</div>
+              <div class="raid-lineup-name">DrBango</div>
+              <div class="raid-lineup-status" style="color:#2ecc71">18 DMG</div>
+            </div>
+            <div class="raid-lineup-slot current">
+              <div class="raid-lineup-num">#2</div>
+              <div class="raid-lineup-name">SkylarNYC</div>
+              <div class="raid-lineup-status" style="color:var(--accent)">FIGHTING</div>
+            </div>
+            <div class="raid-lineup-slot waiting">
+              <div class="raid-lineup-num">#3</div>
+              <div class="raid-lineup-name">EJFilms</div>
+              <div class="raid-lineup-status" style="color:var(--text-dim)">WAITING</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>URL-based redirect is clean -- testroom reads params and enters boss mode automatically</li>
+          <li>HP bar phase colors (green/yellow/red/purple) give immediate combat feedback</li>
+          <li>Phase markers at 75/50/25% create natural "chapter breaks" in the fight</li>
+          <li>Glow animation on HP fill makes the bar feel like a living thing</li>
+          <li>Raider lineup shows who already fought, who's fighting, who's waiting -- great situational awareness</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 6: VS SPLASH ============ -->
+    <div class="slide" data-slide="6">
+      <div class="slide-number">STEP 06</div>
+      <h2>VS Splash</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        Before battle begins, a full-screen boss intro splash appears: boss art in a glowing circle, the boss name in huge Creepster text, title subtitle, personality label, and an opening dialogue quote in red italic. The art scales in from 30% with a 0.8s entrance animation. Holds for 3 seconds, then fades. This is the "Dark Souls boss nameplate" moment.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Boss Intro Splash</div>
+        <div class="mockup-body" style="background:rgba(0,0,0,0.9);padding:0;">
+          <div class="vs-splash">
+            <div style="width:160px;height:160px;border-radius:50%;border:4px solid var(--gold);box-shadow:0 0 60px rgba(212,160,64,0.5);overflow:hidden;margin-bottom:16px;">
+              <img src="../testroom/art/originals/DarkFang.png" alt="Dark Fang" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.background='linear-gradient(135deg,#1a1a2e,#2a1a3e)'">
+            </div>
+            <div class="vs-splash-name">Dark Fang</div>
+            <div class="vs-splash-title">The Unseen Predator</div>
+            <div style="color:var(--ghost-rare);font-weight:700;font-size:0.9rem;letter-spacing:2px;margin-top:4px;">TRICKSTER</div>
+            <div class="vs-splash-dialogue">"I smell fear..."</div>
+            <div style="color:var(--ghost-rare);font-weight:700;margin-top:12px;">Phase 1</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>The scale-in animation on the boss art is the emotional peak -- this is where the player goes "oh no"</li>
+          <li>Dialogue quotes give each boss personality, make them feel like characters</li>
+          <li>3-second hold is good -- long enough to read, short enough to maintain tension</li>
+          <li>Phase transitions reuse this splash with updated phase numbers and new dialogue</li>
+          <li>Minion wave intros use a similar but simpler version for the minion gate</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 7: THE BATTLE ============ -->
+    <div class="slide" data-slide="7">
+      <div class="slide-number">STEP 07</div>
+      <h2>The Battle</h2>
+      <div class="status-badge status-polish">Needs Polish</div>
+      <p class="slide-desc">
+        The full testroom battle engine runs with boss mode enabled. The player's 3 ghosts face the boss + minion team. Dice roll, abilities fire, resources accumulate, KOs happen. The boss HP bar at the top drains in real-time. Boss AI decisions are driven by personality type:
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-family:'Creepster',cursive;color:#e74c3c;font-size:1rem;letter-spacing:1px;margin-bottom:6px;">TYRANT</div>
+          <div style="color:var(--text2);font-size:0.8rem;line-height:1.5;">Commits all resources. Crushing Blow on triples chips sideline. Gets Sacred Fire on KOs. Retreats behind minions on phase shift.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-family:'Creepster',cursive;color:#9b59b6;font-size:1rem;letter-spacing:1px;margin-bottom:6px;">TRICKSTER</div>
+          <div style="color:var(--text2);font-size:0.8rem;line-height:1.5;">Mirror Dice swaps dice with player. Steals 1-2 resources on win. Splits into illusions on phase shift. Swap to minion every 4 rounds.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-family:'Creepster',cursive;color:#2ecc71;font-size:1rem;letter-spacing:1px;margin-bottom:6px;">SWARM</div>
+          <div style="color:var(--text2);font-size:0.8rem;line-height:1.5;">+1 die per living minion. Spawns new minions on cycle. Sacrifices weakest to negate big hits. Brood Burst on phase shift deals 2 per minion.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="font-family:'Creepster',cursive;color:#75BEEB;font-size:1rem;letter-spacing:1px;margin-bottom:6px;">GLACIER</div>
+          <div style="color:var(--text2);font-size:0.8rem;line-height:1.5;">Frost Aura: 1 cold damage/round. Frozen Dice locks player's highest die to 1. Permafrost: caps player damage at 2-3. Absolute Zero on phase shift.</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px;">
+        <div style="font-family:'Creepster',cursive;color:var(--accent);font-size:1rem;letter-spacing:1px;margin-bottom:8px;">ENRAGE SYSTEM</div>
+        <div style="color:var(--text2);font-size:0.85rem;line-height:1.6;">
+          After each player finishes (all 3 ghosts KO'd or boss team wiped for their round), the boss gains +1 Enrage. At enrage 3: +1 die. At enrage 5: +1 damage. At enrage 7: +1 more die. At enrage 9: DOUBLE all damage. This creates a natural timer -- later raiders face a much harder boss, but the HP pool has been chipped down by earlier players.
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>The testroom battle engine handles all this natively -- raid mode just overlays the boss HP bar</li>
+          <li>Spectators see a simplified feed via Firebase battleState snapshots</li>
+          <li>NEEDS POLISH: spectator view is barebones -- dice visuals, ability callouts, and drama are missing</li>
+          <li>NEEDS POLISH: phase transition splash should interrupt the battle visually, not just overlay</li>
+          <li>Boss AI is fully functional -- personality-specific pre-roll, post-roll, and damage modifiers all work</li>
+          <li>HP scaling is sub-linear: 2 players = 1.5x, 5 players = 3x, 10 players = 4x -- prevents grind</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 8: GAME OVER ============ -->
+    <div class="slide" data-slide="8">
+      <div class="slide-number">STEP 08</div>
+      <h2>Game Over</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        When the boss HP pool hits 0, the battle ends immediately. The player who dealt the killing blow gets tagged. If all raiders lose all their ghosts before the boss falls, the raid is marked as failed. Both outcomes trigger the result screen. Boss dialogue changes based on win/loss -- "The shadow... fades..." vs "Darkness swallows all."
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Victory State</div>
+        <div class="mockup-body" style="padding:0;">
+          <div class="game-over-mockup">
+            <div class="game-over-title victory">RAID COMPLETE!</div>
+            <div class="game-over-boss">Dark Fang</div>
+            <div class="game-over-quote">"The shadow... fades..."</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-label">Defeat State</div>
+        <div class="mockup-body" style="padding:0;">
+          <div class="game-over-mockup">
+            <div class="game-over-title defeat">RAID FAILED</div>
+            <div class="game-over-boss">Dark Fang</div>
+            <div class="game-over-quote">"Darkness swallows all."</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>Victory uses gold-bright, defeat uses accent red -- instantly readable emotional state</li>
+          <li>Boss-specific defeat/victory dialogue adds character to every outcome</li>
+          <li>Transition from battle to result is clean -- the testroom state machine handles this</li>
+          <li>Failed raids still give 50% partial reward based on damage dealt -- no wasted effort</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 9: CELEBRATION SCREEN ============ -->
+    <div class="slide" data-slide="9">
+      <div class="slide-number">STEP 09</div>
+      <h2>Celebration Screen</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        The full result screen shows everything: boss status (DEFEATED / remaining HP), total damage dealt, killing blow credit, and a damage leaderboard sorted by contribution. MVP gets a gold badge, killing blow player gets a red KB badge. Your own row is highlighted with a gold border. A "RETURN TO LOBBY" button takes you back.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Raid Result -- Victory</div>
+        <div class="mockup-body" style="padding:24px;">
+          <div class="celebration-mockup">
+            <div style="font-family:'Creepster',cursive;font-size:2.5rem;color:var(--gold-bright);letter-spacing:5px;">RAID COMPLETE!</div>
+            <div style="font-family:'Creepster',cursive;font-size:1.3rem;color:var(--text2);margin-top:4px;">Dark Fang</div>
+            <div style="color:var(--text2);font-style:italic;margin-top:8px;">"The shadow... fades..."</div>
+
+            <div class="celebration-stats">
+              <div class="celebration-stat">
+                <span class="celebration-stat-label">Boss HP</span>
+                <span class="celebration-stat-value" style="color:#2ecc71;">DEFEATED</span>
+              </div>
+              <div class="celebration-stat">
+                <span class="celebration-stat-label">Total Damage</span>
+                <span class="celebration-stat-value">90</span>
+              </div>
+              <div class="celebration-stat highlight">
+                <span class="celebration-stat-label">Killing Blow</span>
+                <span class="celebration-stat-value">SkylarNYC</span>
+              </div>
+            </div>
+
+            <div class="celebration-leaderboard">
+              <h3 style="font-family:'Creepster',cursive;color:var(--gold);font-size:1.1rem;letter-spacing:2px;margin-bottom:10px;">DAMAGE LEADERBOARD</h3>
+              <div class="celebration-row is-mvp is-me">
+                <span class="celebration-rank">#1</span>
+                <span class="celebration-name">DrBango <span class="mvp-badge">MVP</span></span>
+                <span class="celebration-damage">52 dmg</span>
+                <span class="celebration-survived">3/3 survived</span>
+              </div>
+              <div class="celebration-row">
+                <span class="celebration-rank">#2</span>
+                <span class="celebration-name">SkylarNYC <span class="kb-badge">KB</span></span>
+                <span class="celebration-damage">38 dmg</span>
+                <span class="celebration-survived">2/3 survived</span>
+              </div>
+            </div>
+
+            <button style="margin-top:24px;padding:14px 32px;font-family:'Creepster',cursive;font-size:1.2rem;letter-spacing:2px;background:linear-gradient(135deg,#d4a040,#8a6b20);color:#fff;border:none;border-radius:10px;cursor:pointer;">RETURN TO LOBBY</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>Damage leaderboard is the social hook -- players will want to beat their friends' damage</li>
+          <li>MVP + Killing Blow badges give two different ways to shine</li>
+          <li>MVP gets bonus raid points (25 extra), KB also gets 25 bonus -- double reward if same person</li>
+          <li>Ghost survival count (3/3, 2/3) adds a secondary skill metric</li>
+          <li>Consider: add raid points earned to the result screen so players see the reward immediately</li>
+          <li>Consider: victory confetti/particle effect -- this should feel like a CELEBRATION</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 10: BADGE COLLECTION ============ -->
+    <div class="slide" data-slide="10">
+      <div class="slide-number">STEP 10</div>
+      <h2>Badge Collection</h2>
+      <div class="status-badge status-working">Working</div>
+      <p class="slide-desc">
+        Defeating a boss for the first time awards a unique badge. Badges appear in the Spirit World book and unlock progression. Defeating all bosses in a zone awards a Champion badge (composite). The ultimate goal: "Spiritkin Grand Master" requires clearing every zone in the game. Badge display uses gold borders for earned, dim locked state for unearned.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">Badge Grid -- Partial Progress</div>
+        <div class="mockup-body">
+          <div class="raid-badge-grid">
+            <div class="raid-badge earned"><span class="raid-badge-icon">&#x1F3D1;</span><span class="raid-badge-name">Fang</span><span class="raid-badge-check">&#x2714;</span></div>
+            <div class="raid-badge earned"><span class="raid-badge-icon">&#x1F525;</span><span class="raid-badge-name">Trail Blazer</span><span class="raid-badge-check">&#x2714;</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F43A;</span><span class="raid-badge-name">Dances with Wolves</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F33F;</span><span class="raid-badge-name">Heart of the Hills</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F451;</span><span class="raid-badge-name">Ice Scepter</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x26F0;</span><span class="raid-badge-name">Mountainbreaker</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F52E;</span><span class="raid-badge-name">Veil Piercer</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x2744;</span><span class="raid-badge-name">Valley Hero</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F432;</span><span class="raid-badge-name">Smoldering</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x2604;</span><span class="raid-badge-name">Meteorfall</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F30A;</span><span class="raid-badge-name">The Depths</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F5DD;</span><span class="raid-badge-name">Dark Castle Key</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F56F;</span><span class="raid-badge-name">Blue Flame</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F47B;</span><span class="raid-badge-name">Shady Cloak</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F573;</span><span class="raid-badge-name">Doom Denied</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F3F0;</span><span class="raid-badge-name">Dark Spire Key</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x2694;</span><span class="raid-badge-name">The Grand</span></div>
+            <div class="raid-badge locked"><span class="raid-badge-icon">&#x1F31F;</span><span class="raid-badge-name">Spiritkin Grand Master</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Design Notes</h4>
+        <ul>
+          <li>18 total badges form a clear progression tree across 5 tiers</li>
+          <li>Composite badges (Heart of the Hills, Valley Hero, etc.) auto-award when all sub-badges are collected</li>
+          <li>Badge checks use the `awardRaidBadge` function with composite detection built in</li>
+          <li>Spiritkin Grand Master is the ultimate flex -- requires clearing every zone including Valkin</li>
+          <li>Badges double as gate keys -- need Fang badge to unlock Timber, need Ice Scepter for Volcanic Isles</li>
+          <li>Consider: badge hover tooltip showing which boss and how to earn it</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ SLIDE 11: AUDIT SUMMARY ============ -->
+    <div class="slide" data-slide="11">
+      <div class="slide-number">AUDIT SUMMARY</div>
+      <h2>System Status</h2>
+      <p class="slide-desc" style="margin-bottom:24px;">
+        Full audit of the raid system -- what's solid, what needs work, and what's missing entirely.
+      </p>
+
+      <div class="audit-section">
+        <h3 class="green">Working End-to-End</h3>
+        <ul class="audit-list check">
+          <li>Spirit World book UI with 5 zone tabs, boss cards, lock/unlock state</li>
+          <li>Queue system with Firebase real-time sync and transaction-based instance creation</li>
+          <li>Boss HP scaling based on player count (sub-linear: 1x to 4x)</li>
+          <li>4 boss personality types with full AI (Tyrant, Trickster, Swarm, Glacier)</li>
+          <li>Phase transition system (4 phases with unique boss dialogue and effects)</li>
+          <li>Enrage system (progressive difficulty for later raiders)</li>
+          <li>Badge award system with composite badge detection</li>
+          <li>Progression gating (badges unlock bosses in later tiers)</li>
+          <li>Raid points economy with shop (Spirit Packs, Premium Packs, Legendary Packs)</li>
+          <li>Testroom redirect with full boss mode parameters via URL</li>
+          <li>Heartbeat system for disconnect detection (30s timeout)</li>
+          <li>Stale instance cleanup (1hr for instances, 30min for queues)</li>
+          <li>Result screen with damage leaderboard, MVP, and killing blow credit</li>
+          <li>Spectator view with real-time battle state snapshots</li>
+        </ul>
+      </div>
+
+      <div class="audit-section">
+        <h3 class="yellow">Needs Polish</h3>
+        <ul class="audit-list warn">
+          <li>Queue-to-raid transition has no countdown animation or sound -- feels abrupt</li>
+          <li>Spectator battle feed is text-only -- needs dice visuals, HP bars, ability callouts</li>
+          <li>No victory celebration effects (confetti, sound, screen shake)</li>
+          <li>Raid points earned not shown on result screen</li>
+          <li>Art fallback is timber.jpg everywhere -- needs a generic "unknown" silhouette</li>
+          <li>No pre-raid strategy view (can't see other players' teams before start)</li>
+          <li>Badge award notification is invisible -- no popup or fanfare when badge is earned</li>
+          <li>Phase transition overlays don't interrupt the testroom cleanly</li>
+          <li>No sound design for any part of the raid flow</li>
+        </ul>
+      </div>
+
+      <div class="audit-section">
+        <h3 class="red">Untested / Broken</h3>
+        <ul class="audit-list x">
+          <li>Full multi-player raid with 3+ real concurrent users (never tested at scale)</li>
+          <li>Disconnect recovery -- does the raid advance properly if a fighter drops mid-battle?</li>
+          <li>Race condition on boss defeat -- two players could drain boss to 0 simultaneously</li>
+          <li>Testroom boss mode integration -- does the URL redirect actually load correctly?</li>
+          <li>Battle state snapshot write frequency -- could overwhelm Firebase on rapid dice rolls</li>
+          <li>Minion wave before boss fight -- wave intro + battle + boss fight sequencing untested</li>
+          <li>10-player full lobby performance (10 Firebase listeners, 10 heartbeats)</li>
+        </ul>
+      </div>
+
+      <div class="audit-section">
+        <h3 class="blue">Progression Map</h3>
+        <div class="progression-map">
+          <div class="prog-row tier1">
+            <span class="prog-zone" style="color:#2ecc71;">Rolling Hills</span>
+            <span class="prog-bosses">Dark Fang (open) &rarr; Jasper (open) &rarr; Timber (needs Fang badge)</span>
+            <span class="prog-badge">&#x1F33F; Heart of the Hills</span>
+          </div>
+          <div class="prog-row" style="padding-left:40px;color:var(--text-dim);font-size:0.75rem;">&#x2193;</div>
+          <div class="prog-row tier2">
+            <span class="prog-zone" style="color:#75BEEB;">Frost Valley</span>
+            <span class="prog-bosses">King Jay (open) &rarr; Mtn King (open) &rarr; Romy (needs Lucy badge)</span>
+            <span class="prog-badge">&#x2744; Valley Hero</span>
+          </div>
+          <div class="prog-row" style="padding-left:40px;color:var(--text-dim);font-size:0.75rem;">&#x2193; (needs King Jay badge)</div>
+          <div class="prog-row tier3">
+            <span class="prog-zone" style="color:#e74c3c;">Volcanic Isles</span>
+            <span class="prog-bosses">Pip &rarr; Humar &rarr; Nerina (needs Heart of the Hills)</span>
+            <span class="prog-badge">&#x1F5DD; Dark Castle Key</span>
+          </div>
+          <div class="prog-row" style="padding-left:40px;color:var(--text-dim);font-size:0.75rem;">&#x2193; (needs Dark Castle Key)</div>
+          <div class="prog-row tier4">
+            <span class="prog-zone" style="color:#9b59b6;">Dark Castle</span>
+            <span class="prog-bosses">Lucy &rarr; Shade &rarr; Bigsby</span>
+            <span class="prog-badge">&#x1F3F0; Dark Spire Key</span>
+          </div>
+          <div class="prog-row" style="padding-left:40px;color:var(--text-dim);font-size:0.75rem;">&#x2193; (needs Dark Spire Key)</div>
+          <div class="prog-row tier5">
+            <span class="prog-zone" style="color:#c0392b;">The Dark Spire</span>
+            <span class="prog-bosses">Valkin the Grand (FINAL BOSS)</span>
+            <span class="prog-badge">&#x2694; The Grand &rarr; &#x1F31F; Spiritkin Grand Master</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="audit-section">
+        <h3 style="color:var(--gold);">Priority Fixes</h3>
+        <ul class="audit-list arrow">
+          <li><strong>P0:</strong> Test the full testroom redirect -- confirm boss mode URL params load correctly</li>
+          <li><strong>P0:</strong> Test a real 2-player raid end-to-end (Dark Fang, minPlayers: 1)</li>
+          <li><strong>P1:</strong> Add raid-launching countdown (3-2-1 GO!) between queue fill and redirect</li>
+          <li><strong>P1:</strong> Badge award popup with sound and animation</li>
+          <li><strong>P1:</strong> Raid points earned shown on result screen</li>
+          <li><strong>P2:</strong> Spectator view upgrade -- dice visuals, HP bars, ability narration</li>
+          <li><strong>P2:</strong> Victory celebration effects (confetti, screen shake, sound)</li>
+          <li><strong>P3:</strong> Pre-raid team preview (show other players' teams)</li>
+          <li><strong>P3:</strong> Load testing with 5+ concurrent users</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="slide" data-slide="12">
+      <div class="slide-number">v0.76 AUDIT FIXES</div>
+      <h2>Shadow Self Raid Audit</h2>
+      <p class="slide-desc" style="margin-bottom:24px;">
+        Full code-level audit of every raid code path. Traced queue flow, testroom integration, return flow, and multi-player sequencing.
+      </p>
+
+      <div class="audit-section">
+        <h3 class="red">Bugs Fixed</h3>
+        <ul class="audit-list check">
+          <li><strong>CRITICAL: Padded ghost damage inflation</strong> -- Bosses with fewer than 3 ghosts (e.g. Dark Fang solo) pad to 3 by duplicating the boss. KO'd padding was counted as damage dealt, inflating totals by 2-3x. Fixed: damage calcs now only count real boss ghosts via RAID_PARAMS.realBossGhostCount.</li>
+          <li><strong>Double raid points</strong> -- checkRaidResult() called distributeRaidRewards() AND manually incremented points for the returning player. Killing-blow player earned 2x points. Fixed: removed inline increment, distributeRaidRewards handles all players.</li>
+          <li><strong>HP display mismatch</strong> -- Queue view showed boss.baseHp (decorative field, e.g. 60) while the engine uses bossGhost.maxHp (per-fight HP, e.g. 9). Fixed: queue now shows bossGhost.maxHp to match actual gameplay.</li>
+          <li><strong>Firebase listener leak</strong> -- cleanupRaid() had a TODO comment and never actually removed instance or queue listeners. Fixed: properly calls .off() on instance, battleState, and queue refs.</li>
+        </ul>
+      </div>
+
+      <div class="audit-section">
+        <h3 class="green">Verified Working</h3>
+        <ul class="audit-list check">
+          <li>Queue flow: selectRaid() to joinRaid() to startRaidFromQueue() -- clean transaction-based instance creation</li>
+          <li>Testroom integration: URL params correctly inject boss ghosts into GHOSTS array, pad to 3, KO padding</li>
+          <li>Boss HP bar: tracks real damage per renderBattle cycle, drains pool correctly</li>
+          <li>Return flow: testroom redirects with damage/ghostsLost/result, multiplayer drains boss HP in Firebase</li>
+          <li>Multi-player sequencing: currentFighterIdx advances, next player's activeRaid listener triggers entry</li>
+          <li>activeRaid guard: raidResult param blocks re-entry, URL cleaned before initRaidSystem runs</li>
+          <li>Badge progression gating: composite badges auto-award when all prereqs are met</li>
+          <li>Disconnect detection: heartbeat + 30s timeout + transaction-based advancement</li>
+        </ul>
+      </div>
+
+      <div class="audit-section">
+        <h3 class="yellow">Balance Assessment</h3>
+        <ul class="audit-list arrow">
+          <li>HP scaling is sub-linear (1x to 4x for 1-10 players). Each player fights a fresh copy of the boss ghost at its real maxHp. Total damage from all fights drains the shared pool.</li>
+          <li>Solo Dark Fang (pool 9, ghost 9 HP): ~60-40 player advantage. On target.</li>
+          <li>2-player Mountain King (pool 45, ghost 30 HP): each player deals ~15-20 damage. Tight but winnable. On target.</li>
+          <li>5-player Mountain King (pool 90, ghost 30 HP): each player needs ~18 avg damage. Challenging. On target.</li>
+          <li>Enrage system (+1 per fighter) keeps pressure on later fighters, preventing easy cleanup.</li>
+          <li>Minion damage counts toward boss pool drain -- all team damage is meaningful.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide" data-slide="13">
+      <div class="slide-number">v0.77 SOCIAL RAID</div>
+      <h2>The Waiting Room</h2>
+      <div class="status-badge status-working">WORKING</div>
+      <p class="slide-desc">
+        After clicking START RAID, all players enter a social waiting room -- the "poker table." You see your teammates, their teams, and the boss looming overhead. This is where the raid becomes personal.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">RAID WAITING ROOM</div>
+        <div class="mockup-body">
+          <div style="text-align:center;padding:16px 0;">
+            <div style="width:80px;height:80px;border-radius:50%;background:var(--surface2);border:3px solid var(--gold);margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:2rem;">&#x1F409;</div>
+            <div style="font-family:Creepster,cursive;font-size:1.4rem;color:var(--gold-bright);margin-top:8px;">Mountain King</div>
+            <div style="color:var(--text2);font-style:italic;font-size:0.85rem;">The Tyrant of Stone</div>
+            <div style="color:var(--accent);font-style:italic;font-size:0.8rem;margin-top:4px;">"You dare challenge ME in my own domain?"</div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:16px 0;">
+            <div style="background:var(--surface2);border:2px solid var(--gold);border-radius:10px;padding:12px;width:130px;text-align:center;">
+              <div style="font-weight:700;font-size:0.85rem;">Wyatt (you)</div>
+              <div style="display:flex;gap:3px;justify-content:center;margin-top:6px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border);"></div>
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border);"></div>
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border);"></div>
+              </div>
+            </div>
+            <div style="background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:12px;width:130px;text-align:center;">
+              <div style="font-weight:700;font-size:0.85rem;">EJ</div>
+              <div style="display:flex;gap:3px;justify-content:center;margin-top:6px;">
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border);"></div>
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border);"></div>
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border);"></div>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--surface);border-top:1px solid var(--border);padding:10px 12px;font-size:0.8rem;">
+            <div><span style="color:var(--gold);font-weight:700;">SYSTEM:</span> <span style="color:var(--accent);font-style:italic;">Wyatt entered the waiting room.</span></div>
+            <div><span style="color:var(--gold);font-weight:700;">EJ:</span> <span style="color:var(--text2);">Nice team! Let's go!</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>How It Works</h4>
+        <ul>
+          <li>All players see each other's 3-ghost teams before the fight starts</li>
+          <li>Boss art and intro dialogue displayed prominently</li>
+          <li>Firebase-backed real-time chat with quick reaction buttons</li>
+          <li>Auto-launches after 15 seconds, or click LAUNCH to go immediately</li>
+          <li>System messages announce arrivals and launch events</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide" data-slide="14">
+      <div class="slide-number">v0.77 SOCIAL RAID</div>
+      <h2>Live Spectator View</h2>
+      <div class="status-badge status-working">WORKING</div>
+      <p class="slide-desc">
+        When your teammate is fighting, you watch them LIVE. Not just text updates -- you see their ghost, the boss, HP bars, dice rolls, and ability callouts in real-time. Plus chat stays active so you can cheer them on.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">SPECTATOR VIEW — WATCHING TEAMMATE</div>
+        <div class="mockup-body">
+          <div style="text-align:center;margin-bottom:8px;">
+            <div style="font-family:Creepster,cursive;font-size:0.9rem;color:var(--gold);letter-spacing:2px;">WATCHING</div>
+            <div style="font-weight:800;font-size:1.1rem;">Wyatt vs Mountain King</div>
+          </div>
+          <div style="display:flex;justify-content:space-around;align-items:center;padding:12px 0;">
+            <div style="text-align:center;">
+              <div style="width:60px;height:60px;border-radius:50%;background:var(--surface2);border:3px solid #e74c3c;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">&#x1F47B;</div>
+              <div style="font-size:0.85rem;font-weight:700;margin-top:4px;">Timber</div>
+              <div style="height:12px;background:rgba(255,255,255,0.05);border-radius:6px;overflow:hidden;margin-top:3px;width:80px;">
+                <div style="height:100%;width:70%;background:linear-gradient(90deg,#c0392b,#e74c3c);border-radius:6px;"></div>
+              </div>
+              <div style="font-size:1rem;font-weight:800;margin-top:6px;letter-spacing:2px;">[5, 4, 3]</div>
+            </div>
+            <div style="font-family:Creepster,cursive;font-size:2rem;color:var(--gold);">VS</div>
+            <div style="text-align:center;">
+              <div style="width:60px;height:60px;border-radius:50%;background:var(--surface2);border:3px solid #8e44ad;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">&#x1F409;</div>
+              <div style="font-size:0.85rem;font-weight:700;margin-top:4px;">Mountain King</div>
+              <div style="height:12px;background:rgba(255,255,255,0.05);border-radius:6px;overflow:hidden;margin-top:3px;width:80px;">
+                <div style="height:100%;width:85%;background:linear-gradient(90deg,#6c3483,#8e44ad);border-radius:6px;"></div>
+              </div>
+              <div style="font-size:1rem;font-weight:800;margin-top:6px;letter-spacing:2px;">[4, 3, 2]</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:#2ecc71;font-weight:700;font-size:0.9rem;padding:6px;">Timber deals 1 damage!</div>
+          <div style="margin:8px auto;max-width:300px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text2);font-weight:700;margin-bottom:3px;"><span>BOSS HP POOL</span><span>36 / 45</span></div>
+            <div style="height:18px;background:rgba(255,255,255,0.05);border-radius:9px;overflow:hidden;"><div style="height:100%;width:80%;background:linear-gradient(90deg,#8e44ad,#c0392b);border-radius:9px;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>How It Works</h4>
+        <ul>
+          <li>Testroom writes battle snapshots to Firebase every 2 seconds during raids</li>
+          <li>Spectators receive snapshots via Firebase listener and render them in real-time</li>
+          <li>Shows: ghost art, HP bars, dice rolls, ability callouts, boss pool HP</li>
+          <li>Chat stays active -- spectators can send reactions and messages during the fight</li>
+          <li>Post-fight results shown when a fighter finishes: damage dealt, boss HP remaining</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="slide" data-slide="15">
+      <div class="slide-number">v0.77 SOCIAL RAID</div>
+      <h2>Quick Chat Reactions</h2>
+      <div class="status-badge status-working">WORKING</div>
+      <p class="slide-desc">
+        One-tap reaction buttons keep the chat alive without typing. Available in both the waiting room and the spectator view. Every reaction pushes to Firebase and appears on all players' screens instantly.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-label">QUICK REACTIONS</div>
+        <div class="mockup-body" style="padding:16px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+            <span style="padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;font-size:0.85rem;">&#x1F3B2; Nice roll!</span>
+            <span style="padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;font-size:0.85rem;">&#x2694;&#xFE0F; Let's go!</span>
+            <span style="padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;font-size:0.85rem;">&#x1F480; Watch out!</span>
+            <span style="padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;font-size:0.85rem;">&#x1F525; Fire!</span>
+            <span style="padding:6px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;font-size:0.85rem;">&#x1F47B; Spooky...</span>
+          </div>
+          <div style="margin-top:16px;font-size:0.8rem;color:var(--text2);">
+            <div style="margin-bottom:4px;"><span style="color:var(--gold);font-weight:700;">Wyatt:</span> &#x1F3B2; Nice roll!</div>
+            <div style="margin-bottom:4px;"><span style="color:var(--gold);font-weight:700;">EJ:</span> &#x1F525; Fire!</div>
+            <div><span style="color:var(--gold);font-weight:700;">Skylar:</span> &#x1F480; Watch out!</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-notes">
+        <h4>Reactions Available</h4>
+        <ul>
+          <li>&#x1F3B2; Nice roll! -- celebrate a good roll</li>
+          <li>&#x2694;&#xFE0F; Let's go! -- hype up the team</li>
+          <li>&#x1F480; Watch out! -- warn about danger</li>
+          <li>&#x1F525; Fire! -- general excitement</li>
+          <li>&#x1F47B; Spooky... -- spirit world vibes</li>
+          <li>Custom messages via text input (max 120 chars)</li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- /slides-viewport -->
+</div><!-- /slide-container -->
+
+<script>
+const TOTAL_SLIDES = 15;
+let currentSlide = 1;
+
+function showSlide(n) {
+  if (n < 1 || n > TOTAL_SLIDES) return;
+  currentSlide = n;
+
+  document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+  const target = document.querySelector(`.slide[data-slide="${n}"]`);
+  if (target) {
+    target.classList.add('active');
+    document.querySelector('.slides-viewport').scrollTop = 0;
+  }
+
+  document.getElementById('slide-current').textContent = n;
+  document.getElementById('btn-prev').disabled = n === 1;
+  document.getElementById('btn-next').disabled = n === TOTAL_SLIDES;
+
+  document.querySelectorAll('.slide-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i + 1 === n);
+  });
+}
+
+function nextSlide() { showSlide(currentSlide + 1); }
+function prevSlide() { showSlide(currentSlide - 1); }
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextSlide(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevSlide(); }
+});
+
+// Build dots
+const dotsContainer = document.getElementById('slide-dots');
+for (let i = 1; i <= TOTAL_SLIDES; i++) {
+  const dot = document.createElement('div');
+  dot.className = 'slide-dot' + (i === 1 ? ' active' : '');
+  dot.onclick = () => showSlide(i);
+  dotsContainer.appendChild(dot);
+}
+
+// Touch swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 60) {
+    if (dx < 0) nextSlide();
+    else prevSlide();
+  }
+}, { passive: true });
+
+// Initialize
+showSlide(1);
+</script>
+
+</body>
+</html>
