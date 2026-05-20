@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.27'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.28'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -4129,8 +4129,11 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
   padding: 3px 10px; border-radius: 10px; white-space: nowrap;
 }
 .home-currency::before {
-  content: '\2B50 ';
+  content: '\2B50';
   font-size: 0.7rem;
+  margin-right: 4px;
+  position: relative;
+  top: -1px;
 }
 
 /* Spirit of the Day Showcase */
@@ -4183,6 +4186,13 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
   margin-bottom: 8px;
 }
 .home-play-btn:active { transform: scale(0.97); }
+.play-btn-team {
+  display: flex; gap: 8px; justify-content: center; margin-bottom: 6px;
+}
+.play-btn-team img {
+  width: 40px; height: 40px; border-radius: 8px; border: 2px solid rgba(0,0,0,0.3);
+  object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
 .home-play-sub {
   font-family: 'Inter', sans-serif; font-size: 0.65rem;
   font-weight: 400; letter-spacing: 0; opacity: 0.7; margin-top: 2px;
@@ -4915,6 +4925,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 
     <!-- Big PLAY Button -->
     <button class="home-play-btn" onclick="playGame()">
+      <div class="play-btn-team" id="play-btn-team"></div>
       PLAY
       <span class="home-play-sub" id="home-games-meta">Pick your team and battle</span>
     </button>
@@ -6301,7 +6312,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.27';
+const BBN_VERSION = 'v2.28';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -6404,6 +6415,22 @@ function renderHomeScreen() {
   if (currency) {
     const pts = userProfile.raidPoints || userProfile.spiritPoints || 0;
     currency.textContent = pts.toLocaleString();
+  }
+  // Play button team preview
+  const playTeamEl = document.getElementById('play-btn-team');
+  const metaEl = document.getElementById('home-games-meta');
+  if (playTeamEl) {
+    const filledTeam = (userProfile.currentTeam || []).filter(id => id && getGhost(id));
+    if (filledTeam.length >= 3) {
+      playTeamEl.innerHTML = filledTeam.slice(0, 3).map(id => {
+        const g = getGhost(id);
+        return `<img src="${g.art}" alt="${g.name}" onerror="this.style.background='var(--surface3)'">`;
+      }).join('');
+      if (metaEl) metaEl.textContent = filledTeam.map(id => getGhost(id).name).join(' · ');
+    } else {
+      playTeamEl.innerHTML = '';
+      if (metaEl) metaEl.textContent = 'Pick your team and battle';
+    }
   }
   // Pack status
   const packStatus = document.getElementById('home-pack-status');
@@ -7014,9 +7041,9 @@ function removeFromTeam(slot) {
 function playGame() {
   const filledTeam = team.filter(id => id !== null);
 
-  // Case A: Team is ready → go straight to matchmaking
+  // Case A: Team is ready → pick random opponent and go
   if (filledTeam.length === 3) {
-    createChallenge();
+    quickBattle();
     return;
   }
 
@@ -7053,7 +7080,7 @@ function playGame() {
   showPickTeamBanner();
 }
 
-function quickBattle() {
+async function quickBattle() {
   const filledTeam = team.filter(id => id !== null);
   if (filledTeam.length < 3) {
     showToast('Pick 3 spirits first!');
@@ -7063,7 +7090,64 @@ function quickBattle() {
     showToast('No games remaining today!');
     return;
   }
-  createChallenge();
+
+  const btn = document.getElementById('battle-btn');
+  btn.disabled = true;
+  btn.textContent = 'Finding opponent...';
+
+  // Grab leaderboard players who have a team and aren't us
+  try {
+    const snap = await db.ref('mp/leaderboard').orderByChild('elo').limitToLast(20).once('value');
+    const candidates = [];
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const d = child.val();
+        if (child.key !== currentUser.uid && d.team && d.team.length >= 3) {
+          candidates.push({ uid: child.key, ...d });
+        }
+      });
+    }
+
+    if (candidates.length === 0) {
+      // Fallback: use today's daily rival
+      const daily = getDailyTeam();
+      await db.ref(`mp/users/${currentUser.uid}/currentTeam`).set(filledTeam);
+      window.location.href = '../testroom/?red=' + filledTeam.join(',') + '&blue=' + daily.team.join(',') + '&mode=daily' + getLayoutParam();
+      return;
+    }
+
+    // Pick a random opponent
+    const opp = candidates[Math.floor(Math.random() * candidates.length)];
+    const oppTeam = opp.team.slice(0, 3).filter(id => getGhost(id));
+    if (oppTeam.length < 3) {
+      // Bad team data — fallback to daily rival
+      const daily = getDailyTeam();
+      await db.ref(`mp/users/${currentUser.uid}/currentTeam`).set(filledTeam);
+      window.location.href = '../testroom/?red=' + filledTeam.join(',') + '&blue=' + daily.team.join(',') + '&mode=daily' + getLayoutParam();
+      return;
+    }
+
+    // Save our team + opponent info
+    await db.ref(`mp/users/${currentUser.uid}/currentTeam`).set(filledTeam);
+    sessionStorage.setItem('mp_opponent', JSON.stringify({
+      uid: opp.uid,
+      name: opp.displayName || 'Rival',
+      elo: opp.elo || 1000,
+      team: oppTeam
+    }));
+
+    // Go to battle
+    window.location.href = '../testroom/?red=' + filledTeam.join(',')
+      + '&blue=' + oppTeam.join(',')
+      + '&mode=mp'
+      + '&oppName=' + encodeURIComponent(opp.displayName || 'Rival')
+      + '&oppElo=' + (opp.elo || 1000)
+      + getLayoutParam();
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'READY TO BATTLE';
+    showToast('Error finding opponent. Try again.');
+  }
 }
 
 function showPickTeamBanner() {
