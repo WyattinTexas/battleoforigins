@@ -21964,6 +21964,271 @@ renderDice(null,null);
 <audio id="sfxShatter" src="../boo/Shatter.mp3" preload="auto"></audio>
 <audio id="sfxVictory" src="../boo/winningwhistle.mp3" preload="auto"></audio>
 <script>
+// ═══════════════════════════════════════════════════════════════
+// LAYOUT SWITCHER — cycle through 10 CSS layout presets in compact mode
+// ═══════════════════════════════════════════════════════════════
+
+const LAYOUTS = [
+  {
+    name: '1: Art Only',
+    desc: 'Cards = name + art only. Info in compact row below.',
+    css: `
+      .compact-layout .fighter-slot .card-ability, .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:4/3!important; }
+      .compact-layout #blue-team-column { display:grid!important; grid-template-columns:40px 1fr 40px!important; grid-template-areas:"sl-l f sl-r" "sl-l info sl-r"!important; gap:3px!important; align-items:center!important; justify-items:center!important; }
+      .compact-layout #red-team-column { display:grid!important; grid-template-columns:40px 1fr 40px!important; grid-template-areas:"sl-l f sl-r" "sl-l info sl-r" ". ab ." ". btn ."!important; gap:3px!important; align-items:center!important; align-content:center!important; justify-items:center!important; }
+      .compact-layout .team-battle-row { display:contents!important; }
+      .compact-layout .sideline-stack { display:contents!important; }
+      .compact-layout #blue-sl-left, .compact-layout #red-sl-left { grid-area:sl-l!important; }
+      .compact-layout #blue-sl-right, .compact-layout #red-sl-right { grid-area:sl-r!important; }
+      .compact-layout #blue-team-column .fighter-slot { grid-area:f!important; width:150px!important; margin:0 auto!important; }
+      .compact-layout #red-team-column .fighter-slot { grid-area:f!important; width:170px!important; margin:0 auto!important; }
+      .compact-layout #blue-team-column .team-info { grid-area:info!important; width:100%!important; text-align:center!important; }
+      .compact-layout #red-team-column .team-info { grid-area:info!important; width:100%!important; text-align:center!important; }
+      .compact-layout #red-team-column .ability-buttons { grid-area:ab!important; }
+      .compact-layout #rollRedBtn { grid-area:btn!important; width:100%!important; }
+      .compact-layout .sideline-slot { width:38px!important; }
+    `
+  },
+  {
+    name: '2: Info Bars',
+    desc: 'Fighter centered, thin HP+ability bar below. Max efficiency.',
+    css: `
+      .compact-layout .fighter-slot .card-ability, .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:1!important; }
+      .compact-layout #blue-team-column, .compact-layout #red-team-column { display:grid!important; grid-template-columns:40px 1fr 40px!important; gap:3px!important; align-items:center!important; justify-items:center!important; }
+      .compact-layout #red-team-column { grid-template-areas:"sl-l f sl-r" "sl-l info sl-r" ". ab ." ". btn ."!important; align-content:center!important; }
+      .compact-layout #blue-team-column { grid-template-areas:"sl-l f sl-r" "sl-l info sl-r"!important; }
+      .compact-layout .team-battle-row { display:contents!important; }
+      .compact-layout .sideline-stack { display:contents!important; }
+      .compact-layout #blue-sl-left, .compact-layout #red-sl-left { grid-area:sl-l!important; }
+      .compact-layout #blue-sl-right, .compact-layout #red-sl-right { grid-area:sl-r!important; }
+      .compact-layout #blue-team-column .fighter-slot { grid-area:f!important; width:140px!important; margin:0 auto!important; }
+      .compact-layout #red-team-column .fighter-slot { grid-area:f!important; width:160px!important; margin:0 auto!important; }
+      .compact-layout .team-info { grid-area:info!important; width:100%!important; text-align:center!important; }
+      .compact-layout #red-team-column .ability-buttons { grid-area:ab!important; }
+      .compact-layout #rollRedBtn { grid-area:btn!important; width:100%!important; }
+      .compact-layout .sideline-slot { width:38px!important; }
+    `
+  },
+  {
+    name: '3: 50/50 Split',
+    desc: 'Screen split in half. Dice bar between.',
+    css: `
+      .compact-layout .fighter-slot .card-ability, .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:4/3!important; }
+      .compact-layout #blue-team-column { flex:1 1 auto!important; display:grid!important; grid-template-columns:40px 1fr 40px!important; grid-template-areas:"sl-l f sl-r" "sl-l info sl-r"!important; gap:3px!important; align-items:center!important; align-content:center!important; justify-items:center!important; }
+      .compact-layout #red-team-column { flex:1 1 auto!important; display:grid!important; grid-template-columns:40px 1fr 40px!important; grid-template-areas:"sl-l f sl-r" "sl-l info sl-r" ". ab ." ". btn ."!important; gap:3px!important; align-items:center!important; align-content:center!important; justify-items:center!important; }
+      .compact-layout .team-battle-row { display:contents!important; }
+      .compact-layout .sideline-stack { display:contents!important; }
+      .compact-layout #blue-sl-left, .compact-layout #red-sl-left { grid-area:sl-l!important; }
+      .compact-layout #blue-sl-right, .compact-layout #red-sl-right { grid-area:sl-r!important; }
+      .compact-layout #blue-team-column .fighter-slot { grid-area:f!important; width:140px!important; margin:0 auto!important; }
+      .compact-layout #red-team-column .fighter-slot { grid-area:f!important; width:160px!important; margin:0 auto!important; }
+      .compact-layout .team-info { grid-area:info!important; width:100%!important; text-align:center!important; }
+      .compact-layout #red-team-column .ability-buttons { grid-area:ab!important; }
+      .compact-layout #rollRedBtn { grid-area:btn!important; width:100%!important; }
+      .compact-layout .sideline-slot { width:38px!important; }
+      .compact-layout .arena-center { flex:0 0 auto!important; background:linear-gradient(90deg,rgba(233,69,96,0.06),rgba(0,0,0,0.2),rgba(59,130,246,0.06))!important; border-radius:8px!important; margin:0 3px!important; }
+    `
+  },
+  {
+    name: '4: Overlap Pills',
+    desc: 'Sideline pills overlap fighter card edges.',
+    css: `
+      .compact-layout .fighter-slot .card-ability, .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:1!important; }
+      .compact-layout #blue-team-column, .compact-layout #red-team-column { display:flex!important; flex-direction:column!important; align-items:center!important; position:relative!important; }
+      .compact-layout .team-battle-row { display:flex!important; flex-direction:row!important; align-items:center!important; justify-content:center!important; position:relative!important; width:100%!important; }
+      .compact-layout .sideline-stack { display:contents!important; }
+      .compact-layout #blue-sl-left, .compact-layout #red-sl-left { position:absolute!important; left:8px!important; z-index:1!important; }
+      .compact-layout #blue-sl-right, .compact-layout #red-sl-right { position:absolute!important; right:8px!important; z-index:1!important; }
+      .compact-layout #blue-team-column .fighter-slot { width:160px!important; z-index:2!important; margin:0 auto!important; }
+      .compact-layout #red-team-column .fighter-slot { width:180px!important; z-index:2!important; margin:0 auto!important; }
+      .compact-layout .sideline-slot { width:42px!important; }
+      .compact-layout #red-team-column .ability-buttons { width:100%!important; }
+      .compact-layout #rollRedBtn { width:100%!important; }
+    `
+  },
+  {
+    name: '5: Minimal',
+    desc: 'No desc text. Just name, art, ability name. Tightest.',
+    css: `
+      .compact-layout .fighter-slot .card-ability, .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .card-ability-desc { display:none!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:4/3!important; }
+      .compact-layout #blue-team-column { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; }
+      .compact-layout #red-team-column { display:flex!important; flex-direction:column!important; align-items:center!important; gap:3px!important; }
+      .compact-layout #red-team-column .team-battle-row { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; width:100%!important; }
+      .compact-layout #blue-team-column .team-battle-row { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; }
+      .compact-layout .sideline-stack { display:flex!important; flex-direction:column!important; gap:3px!important; }
+      .compact-layout #blue-team-column .fighter-slot { width:120px!important; flex-shrink:0!important; }
+      .compact-layout #red-team-column .fighter-slot { width:140px!important; flex-shrink:0!important; }
+      .compact-layout .sideline-slot { width:44px!important; }
+      .compact-layout .team-info { flex:1!important; min-width:0!important; }
+      .compact-layout #red-team-column .ability-buttons { width:100%!important; }
+      .compact-layout #rollRedBtn { width:100%!important; }
+    `
+  },
+  {
+    name: '6: Landscape Cards',
+    desc: 'Wide cards — art left, info right. Saves vertical space.',
+    css: `
+      .compact-layout .fighter-slot { display:flex!important; flex-direction:row!important; width:100%!important; margin:0!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { width:80px!important; height:70px!important; aspect-ratio:auto!important; flex-shrink:0!important; }
+      .compact-layout .fighter-slot .card-ability { display:block!important; font-size:0.5rem!important; }
+      .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout #blue-team-column, .compact-layout #red-team-column { display:flex!important; flex-direction:column!important; gap:3px!important; }
+      .compact-layout .team-battle-row { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; }
+      .compact-layout .sideline-stack { display:flex!important; flex-direction:column!important; gap:3px!important; }
+      .compact-layout .sideline-slot { width:40px!important; }
+      .compact-layout #red-team-column .ability-buttons { width:100%!important; }
+      .compact-layout #rollRedBtn { width:100%!important; }
+    `
+  },
+  {
+    name: '7: No Opp Bench',
+    desc: 'Opponent bench hidden. Player gets all the space.',
+    css: `
+      .compact-layout .fighter-slot .card-ability, .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:1!important; }
+      .compact-layout #blue-team-column .sideline-stack { display:none!important; }
+      .compact-layout #blue-team-column { display:flex!important; flex-direction:column!important; align-items:center!important; }
+      .compact-layout #blue-team-column .team-battle-row { display:flex!important; justify-content:center!important; }
+      .compact-layout #blue-team-column .fighter-slot { width:160px!important; }
+      .compact-layout #red-team-column { display:grid!important; grid-template-columns:44px 1fr 44px!important; grid-template-areas:"sl-l f sl-r" "sl-l info sl-r" ". ab ." ". btn ."!important; gap:3px!important; align-items:center!important; align-content:center!important; justify-items:center!important; }
+      .compact-layout #red-team-column .team-battle-row { display:contents!important; }
+      .compact-layout #red-team-column .sideline-stack { display:contents!important; }
+      .compact-layout #red-sl-left { grid-area:sl-l!important; }
+      .compact-layout #red-sl-right { grid-area:sl-r!important; }
+      .compact-layout #red-team-column .fighter-slot { grid-area:f!important; width:180px!important; margin:0 auto!important; }
+      .compact-layout #red-team-column .team-info { grid-area:info!important; width:100%!important; text-align:center!important; }
+      .compact-layout #red-team-column .ability-buttons { grid-area:ab!important; }
+      .compact-layout #rollRedBtn { grid-area:btn!important; width:100%!important; }
+      .compact-layout .sideline-slot { width:42px!important; }
+    `
+  },
+  {
+    name: '8: Side by Side',
+    desc: 'Fighter LEFT, info RIGHT. RPG status screen.',
+    css: `
+      .compact-layout .fighter-slot .card-ability, .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:4/3!important; }
+      .compact-layout #blue-team-column, .compact-layout #red-team-column { display:flex!important; flex-direction:column!important; gap:3px!important; }
+      .compact-layout .team-battle-row { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; }
+      .compact-layout .sideline-stack { display:flex!important; flex-direction:column!important; gap:3px!important; }
+      .compact-layout #blue-team-column .fighter-slot { width:100px!important; flex-shrink:0!important; }
+      .compact-layout #red-team-column .fighter-slot { width:120px!important; flex-shrink:0!important; }
+      .compact-layout .sideline-slot { width:44px!important; }
+      .compact-layout .team-info { flex:1!important; min-width:0!important; }
+      .compact-layout #red-team-column .ability-buttons { width:100%!important; }
+      .compact-layout #rollRedBtn { width:100%!important; }
+    `
+  },
+  {
+    name: '9: Compact Opp',
+    desc: 'Opponent as tiny strip. Player gets the big card.',
+    css: `
+      .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout #blue-team-column { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; padding:4px 8px!important; }
+      .compact-layout #blue-team-column .team-battle-row { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; }
+      .compact-layout #blue-team-column .sideline-stack { display:flex!important; flex-direction:row!important; gap:3px!important; }
+      .compact-layout #blue-team-column .fighter-slot { width:50px!important; flex-shrink:0!important; }
+      .compact-layout #blue-team-column .fighter-slot .card-ability { display:none!important; }
+      .compact-layout #blue-team-column .fighter-slot .portrait-img, .compact-layout #blue-team-column .fighter-slot .card-img-placeholder { aspect-ratio:1!important; }
+      .compact-layout #blue-team-column .sideline-slot { width:36px!important; }
+      .compact-layout #blue-team-column .team-info { flex:1!important; min-width:0!important; }
+      .compact-layout #red-team-column { display:grid!important; grid-template-columns:44px 1fr 44px!important; grid-template-areas:"sl-l f sl-r" "sl-l info sl-r" ". ab ." ". btn ."!important; gap:3px!important; align-items:center!important; align-content:center!important; justify-items:center!important; }
+      .compact-layout #red-team-column .team-battle-row { display:contents!important; }
+      .compact-layout #red-team-column .sideline-stack { display:contents!important; }
+      .compact-layout #red-sl-left { grid-area:sl-l!important; }
+      .compact-layout #red-sl-right { grid-area:sl-r!important; }
+      .compact-layout #red-team-column .fighter-slot { grid-area:f!important; width:190px!important; margin:0 auto!important; }
+      .compact-layout #red-team-column .fighter-slot .card-ability { display:block!important; }
+      .compact-layout #red-team-column .fighter-slot .portrait-img, .compact-layout #red-team-column .fighter-slot .card-img-placeholder { aspect-ratio:1!important; }
+      .compact-layout #red-team-column .team-info { grid-area:info!important; width:100%!important; text-align:center!important; }
+      .compact-layout #red-team-column .ability-buttons { grid-area:ab!important; }
+      .compact-layout #rollRedBtn { grid-area:btn!important; width:100%!important; }
+      .compact-layout .sideline-slot { width:42px!important; }
+    `
+  },
+  {
+    name: '10: Classic',
+    desc: 'Hands at edges, fighters in center. Card game feel.',
+    css: `
+      .compact-layout .fighter-slot .card-ability-desc { display:none!important; }
+      .compact-layout .arena-board { gap:2px!important; }
+      .compact-layout #blue-team-column { display:flex!important; flex-direction:column!important; gap:2px!important; }
+      .compact-layout #red-team-column { display:flex!important; flex-direction:column!important; gap:2px!important; }
+      .compact-layout .team-battle-row { display:flex!important; flex-direction:row!important; align-items:center!important; gap:4px!important; }
+      .compact-layout .sideline-stack { display:flex!important; flex-direction:row!important; gap:3px!important; justify-content:center!important; order:1!important; }
+      .compact-layout #red-team-column .sideline-stack { order:1!important; }
+      .compact-layout #blue-team-column .sideline-stack { order:-1!important; }
+      .compact-layout .fighter-slot { order:0!important; }
+      .compact-layout #blue-team-column .fighter-slot { width:110px!important; flex-shrink:0!important; }
+      .compact-layout #red-team-column .fighter-slot { width:120px!important; flex-shrink:0!important; }
+      .compact-layout .fighter-slot .portrait-img, .compact-layout .fighter-slot .card-img-placeholder { aspect-ratio:4/3!important; }
+      .compact-layout .sideline-slot { width:48px!important; }
+      .compact-layout .team-info { flex:1!important; min-width:0!important; }
+      .compact-layout #red-team-column .ability-buttons { width:100%!important; order:2!important; }
+      .compact-layout #rollRedBtn { width:100%!important; order:3!important; }
+    `
+  }
+];
+
+let currentLayout = 0;
+let layoutStyleEl = null;
+
+function initLayoutSwitcher() {
+  if (!COMPACT_LAYOUT) return;
+
+  // Create style element for dynamic CSS
+  layoutStyleEl = document.createElement('style');
+  layoutStyleEl.id = 'layout-switcher-css';
+  document.head.appendChild(layoutStyleEl);
+
+  // Create toolbar
+  const bar = document.createElement('div');
+  bar.id = 'layout-switcher';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(10,6,18,0.95);border-top:2px solid #d4a040;padding:6px 10px;display:flex;align-items:center;gap:6px;font-family:Inter,system-ui,sans-serif;backdrop-filter:blur(8px);';
+  bar.innerHTML = `
+    <button onclick="switchLayout(-1)" style="background:#d4a040;color:#0a0a1e;border:none;padding:4px 8px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;">&#9664;</button>
+    <div style="flex:1;text-align:center;">
+      <div id="layout-name" style="font-size:11px;font-weight:800;color:#f0c560;"></div>
+      <div id="layout-desc" style="font-size:8px;color:#888;"></div>
+    </div>
+    <button onclick="switchLayout(1)" style="background:#d4a040;color:#0a0a1e;border:none;padding:4px 8px;border-radius:6px;font-weight:800;font-size:11px;cursor:pointer;">&#9654;</button>
+    <button onclick="document.getElementById('layout-switcher').style.display='none'" style="background:#e94560;color:#fff;border:none;padding:4px 6px;border-radius:6px;font-weight:800;font-size:9px;cursor:pointer;">&#10005;</button>
+  `;
+  document.body.appendChild(bar);
+
+  applyLayout(0);
+}
+
+function switchLayout(dir) {
+  currentLayout = (currentLayout + dir + LAYOUTS.length) % LAYOUTS.length;
+  applyLayout(currentLayout);
+}
+
+function applyLayout(idx) {
+  const layout = LAYOUTS[idx];
+  layoutStyleEl.textContent = layout.css;
+  document.getElementById('layout-name').textContent = layout.name + ' (' + (idx + 1) + '/' + LAYOUTS.length + ')';
+  document.getElementById('layout-desc').textContent = layout.desc;
+  // Force re-render
+  if (typeof renderBattle === 'function' && typeof B !== 'undefined' && B) renderBattle();
+}
+
+// Auto-init when battle starts (compact mode only)
+if (COMPACT_LAYOUT) {
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      if (document.querySelector('.arena-board')) initLayoutSwitcher();
+    }, 3000);
+  });
+}
+</script>
+<script>
 // DRAG TOOL — position sideline pills visually
 // Activate: call enableDragMode() from console, or add &drag=1 to URL
 function enableDragMode() {
