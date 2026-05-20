@@ -1868,267 +1868,154 @@ body.lite-mode .die.rolling { animation: none !important; }
 .wp-dimmed { opacity:0.35; }
 .wp-dimmed:hover { opacity:0.7; }
 
-/* ===== COMPACT MOBILE LAYOUT (?layout=compact) ===== */
-/* Activated by URL param — original layout untouched without it */
+/* ===== COMPACT MOBILE LAYOUT — DESIGN B ===== */
+/* Activated by URL param ?layout=compact */
 
 /* Overall: single viewport, no scroll */
 .compact-layout .arena-board {
   flex-direction: column !important;
-  height: 100vh !important;
   height: 100dvh !important;
-  max-height: 100vh !important;
   max-height: 100dvh !important;
   overflow: hidden !important;
   padding: 4px !important;
   gap: 2px !important;
 }
 
-/* Opponent (blue) at top — reorder to top */
-.compact-layout #blue-team-column { order: -1 !important; }
+/* Narrator: fixed banner at top */
+.compact-layout .narrator-inner {
+  position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+  z-index: 500 !important; font-size: 11px !important; padding: 6px 10px !important;
+  min-height: 24px !important; border-radius: 0 !important;
+  backdrop-filter: blur(8px) !important;
+  background: rgba(10,10,30,0.92) !important;
+  border-bottom: 1px solid rgba(126,232,250,0.15) !important;
+}
+.compact-layout .arena-board { padding-top: 28px !important; }
 
-/* Opponent section: compact strip */
+/* Hide turn indicator, VS elements, battle log */
+.compact-layout .turn-indicator { display: none !important; }
+.compact-layout .log-wrap { display: none !important; }
+.compact-layout .narrator-box { height: 0 !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+
+/* Leave Raid button reposition */
+.compact-layout #leaveRaidBtn { top: 28px !important; right: 4px !important; font-size: 0.65rem !important; padding: 4px 10px !important; }
+
+/* --- OPPONENT (blue) at top — CSS Grid --- */
 .compact-layout #blue-team-column {
-  flex: 0 0 auto !important;
-  padding: 4px 8px !important;
-  background: rgba(59,130,246,0.08);
-  border-radius: 10px;
-  border: 1px solid rgba(59,130,246,0.15);
+  order: -1 !important; flex: 0 0 auto !important;
+  background: rgba(233,69,96,0.04) !important;
+  border: 1px solid rgba(233,69,96,0.10) !important;
+  border-radius: 8px !important; padding: 3px 6px !important;
+  display: grid !important;
+  grid-template-columns: 50px 1fr 50px !important;
+  grid-template-areas: "opp-sl-l opp-fighter opp-sl-r" "opp-sl-l opp-info opp-sl-r" !important;
+  gap: 3px !important; align-items: center !important; justify-items: center !important;
 }
-.compact-layout #blue-team-column .team-battle-row {
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
+.compact-layout #blue-team-column .team-battle-row { display: contents !important; }
+.compact-layout #blue-team-column .sideline-stack { display: contents !important; }
+.compact-layout #blue-sl-left { grid-area: opp-sl-l !important; }
+.compact-layout #blue-sl-right { grid-area: opp-sl-r !important; }
 .compact-layout #blue-team-column .fighter-slot {
-  width: 70px !important;
-  min-width: 70px !important;
+  grid-area: opp-fighter !important; width: 170px !important; margin: 0 auto !important;
 }
-.compact-layout #blue-team-column .fighter-slot .portrait-img {
-  max-height: 60px !important;
+.compact-layout #blue-team-column .team-info {
+  grid-area: opp-info !important; min-width: 0 !important; width: 100% !important; text-align: center !important;
 }
-.compact-layout #blue-team-column .fighter-slot .card-name { font-size: 0.55rem !important; }
-.compact-layout #blue-team-column .fighter-slot .card-ability { display: none !important; }
-.compact-layout #blue-team-column .fighter-slot .card-ability-desc { display: none !important; }
-.compact-layout #blue-team-column .sideline-stack {
-  flex-direction: row !important;
-  gap: 4px !important;
-}
-.compact-layout #blue-team-column .sideline-slot {
-  width: 40px !important;
-  min-width: 40px !important;
-}
+/* Opponent sideline pills */
+.compact-layout #blue-team-column .sideline-slot { width: 46px !important; border-radius: 8px !important; }
 .compact-layout #blue-team-column .sideline-slot .card-name { font-size: 0.45rem !important; }
 .compact-layout #blue-team-column .sideline-slot .card-ability,
 .compact-layout #blue-team-column .sideline-slot .card-ability-desc { display: none !important; }
-.compact-layout #blue-team-column .team-info {
-  flex: 1 !important;
-}
-.compact-layout #blue-team-column .hp-bar-wrap { height: 6px !important; }
-.compact-layout #blue-team-column .hp-text { font-size: 0.6rem !important; }
-.compact-layout #blue-team-column .resources { display: none !important; }
-.compact-layout #blue-team-column .ability-buttons { display: none !important; }
-.compact-layout #blue-team-column .action-btn { display: none !important; }
+.compact-layout #blue-team-column .sideline-slot .portrait-img { max-height: 40px !important; }
+/* Opponent fighter styling */
+.compact-layout #blue-team-column .fighter-slot .card-img,
+.compact-layout #blue-team-column .fighter-slot .card-img-placeholder,
+.compact-layout #blue-team-column .fighter-slot .portrait-img { aspect-ratio: 1 !important; max-height: none !important; }
+.compact-layout #blue-team-column .fighter-slot .card-ability { display: none !important; }
+.compact-layout #blue-team-column .fighter-slot .card-ability-desc { display: none !important; }
+/* Hide ALL opponent controls */
+.compact-layout #blue-team-column .action-btn,
+.compact-layout #blue-team-column .ability-buttons,
 .compact-layout #blue-team-column .duel-done-btn { display: none !important; }
+.compact-layout #blue-team-column .resources { display: none !important; }
 
-/* --- Compact VS divider --- */
-.compact-layout .arena-center::before {
-  content: '' !important;
-  display: block !important;
-  height: 1px !important;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent) !important;
-  margin-bottom: 2px !important;
-}
-.compact-layout .arena-center::after {
-  content: 'VS' !important;
-  display: none !important;
-}
-.compact-layout .compact-vs-divider {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  padding: 1px 0 !important;
-  order: -1 !important;
-}
-/* VS divider via pseudo-elements on dice-stack */
-.compact-layout .dice-stack::before {
-  content: 'VS';
-  display: block;
-  text-align: center;
-  font-size: 0.55rem;
-  font-weight: 800;
-  letter-spacing: 3px;
-  color: rgba(255,255,255,0.25);
-  padding: 0;
-  margin: 0;
-  line-height: 1;
-  background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.08) 50%, transparent 90%);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-/* Center dice area: compact */
+/* --- DICE CENTER --- */
 .compact-layout .arena-center {
-  flex: 0 0 auto !important;
-  min-width: 0 !important;
-  padding: 0 !important;
+  flex: 1 1 auto !important; min-width: 0 !important; width: 100% !important;
+  padding: 2px 4px !important; order: 0 !important;
+  display: flex !important; flex-direction: column !important;
+  justify-content: center !important; align-items: center !important;
 }
-.compact-layout .dice-stack {
-  padding: 2px 8px !important;
-  min-height: auto !important;
-}
-.compact-layout .dice-row { justify-content: center !important; gap: 4px !important; }
-.compact-layout .die {
-  width: 34px !important;
-  height: 34px !important;
-  font-size: 0.9rem !important;
-}
-.compact-layout .die-3d-wrapper {
-  width: 34px !important;
-  height: 34px !important;
-}
-.compact-layout .die-3d-cube {
-  width: 34px !important;
-  height: 34px !important;
-}
-.compact-layout .die-3d-face { width: 34px !important; height: 34px !important; }
-.compact-layout .die-3d-pip { width: 5px !important; height: 5px !important; }
-.compact-layout #turnIndicator { font-size: 0.6rem !important; }
-.compact-layout #muteToggle { position: absolute !important; top: 2px !important; right: 8px !important; font-size: 0.8rem !important; }
-.compact-layout .ability-callout { font-size: 0.7rem !important; padding: 4px 8px !important; }
+.compact-layout .dice-stack { padding: 6px 10px !important; gap: 4px !important; }
+.compact-layout .dice-row { gap: 4px !important; justify-content: center !important; }
+.compact-layout .die { width: 36px !important; height: 36px !important; font-size: 17px !important; }
 
-/* Your section (red): prominent but compact */
+/* --- PLAYER (red) at bottom — CSS Grid --- */
 .compact-layout #red-team-column {
-  flex: 1 1 auto !important;
-  padding: 4px 8px !important;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
-  overflow-y: auto !important;
+  order: 1 !important; flex: 1 1 auto !important;
+  background: rgba(59,130,246,0.05) !important;
+  border: 1px solid rgba(59,130,246,0.10) !important;
+  border-radius: 8px !important; padding: 3px 6px !important;
+  display: grid !important;
+  grid-template-columns: 50px 1fr 50px !important;
+  grid-template-areas: "my-sl-l my-fighter my-sl-r" "my-sl-l my-info my-sl-r" ". my-abilities ." ". my-btn ." !important;
+  gap: 3px !important; align-content: center !important; align-items: center !important; justify-items: center !important;
 }
-.compact-layout #red-team-column .team-battle-row {
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 6px !important;
-}
+.compact-layout #red-team-column .team-battle-row { display: contents !important; }
+.compact-layout #red-team-column .sideline-stack { display: contents !important; }
+.compact-layout #red-sl-left { grid-area: my-sl-l !important; }
+.compact-layout #red-sl-right { grid-area: my-sl-r !important; }
 .compact-layout #red-team-column .fighter-slot {
-  width: 90px !important;
-  min-width: 90px !important;
+  grid-area: my-fighter !important; width: 200px !important; margin: 0 auto !important;
 }
-.compact-layout #red-team-column .fighter-slot .portrait-img {
-  max-height: 80px !important;
+.compact-layout #red-team-column .team-info {
+  grid-area: my-info !important; min-width: 0 !important; width: 100% !important; text-align: center !important;
 }
-.compact-layout #red-team-column .fighter-slot .card-name { font-size: 0.65rem !important; }
-.compact-layout #red-team-column .fighter-slot .card-ability { display: none !important; }
-.compact-layout #red-team-column .fighter-slot .card-ability-desc { display: none !important; }
-.compact-layout #red-team-column .sideline-stack {
-  flex-direction: row !important;
-  gap: 4px !important;
-}
-.compact-layout #red-team-column .sideline-slot {
-  width: 40px !important;
-  min-width: 40px !important;
-}
+.compact-layout #red-team-column .ability-buttons { grid-area: my-abilities !important; }
+/* Player sideline pills */
+.compact-layout #red-team-column .sideline-slot { width: 46px !important; border-radius: 8px !important; }
+.compact-layout #red-team-column .sideline-slot .card-name { font-size: 0.45rem !important; }
 .compact-layout #red-team-column .sideline-slot .card-ability,
 .compact-layout #red-team-column .sideline-slot .card-ability-desc { display: none !important; }
-.compact-layout #red-team-column .hp-bar-wrap { height: 8px !important; }
-.compact-layout #red-team-column .resources {
-  gap: 3px !important;
-  justify-content: center !important;
-}
-.compact-layout #red-team-column .res-tile {
-  width: 28px !important;
-  height: 28px !important;
-  font-size: 0.45rem !important;
-  padding: 2px !important;
-  border-radius: 6px !important;
-}
-.compact-layout #red-team-column .res-tile .res-img { width: 14px !important; height: 14px !important; }
-.compact-layout #red-team-column .res-tile .res-count { font-size: 0.55rem !important; }
-.compact-layout #red-team-column .ability-buttons {
-  gap: 3px !important;
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  scrollbar-width: none !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-.compact-layout #red-team-column .ability-buttons::-webkit-scrollbar { display: none; }
-.compact-layout #red-team-column .ability-btn {
-  font-size: 0.55rem !important;
-  padding: 4px 8px !important;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-}
-/* ROLL button: prominent, full-width, golden */
-.compact-layout #red-team-column .action-btn {
-  width: 100% !important;
-  min-height: 50px !important;
-  padding: 14px !important;
-  font-size: 1.1rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 1px !important;
-  border-radius: 12px !important;
-  margin-top: 6px !important;
-  background: linear-gradient(135deg, #d4a040, #b8860b) !important;
-  border: 2px solid rgba(212,160,64,0.5) !important;
-  color: #fff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
-  box-shadow: 0 4px 16px rgba(212,160,64,0.3), inset 0 1px 0 rgba(255,255,255,0.15) !important;
-}
-.compact-layout #red-team-column .action-btn:active {
-  transform: scale(0.97) !important;
-  box-shadow: 0 2px 8px rgba(212,160,64,0.4) !important;
+.compact-layout #red-team-column .sideline-slot .portrait-img { max-height: 40px !important; }
+/* Player fighter styling */
+.compact-layout #red-team-column .fighter-slot .card-img,
+.compact-layout #red-team-column .fighter-slot .card-img-placeholder,
+.compact-layout #red-team-column .fighter-slot .portrait-img { aspect-ratio: 1 !important; max-height: none !important; }
+
+/* --- GOLD READY/ROLL BUTTON --- */
+.compact-layout #red-team-column .action-btn.team-roll,
+.compact-layout #rollRedBtn {
+  grid-area: my-btn !important; width: 100% !important; max-width: 100% !important;
+  padding: 14px !important; font-size: 16px !important; font-weight: 800 !important; letter-spacing: 2px !important;
+  min-height: 44px !important; border-radius: 12px !important;
+  background: linear-gradient(135deg, #d4a040, #f0c850) !important;
+  color: #0e0a1a !important; border: none !important;
+  box-shadow: 0 4px 16px rgba(212,160,64,0.35) !important;
+  text-transform: uppercase !important;
 }
 
-/* Battle log: single line with tap indicator */
-.compact-layout .log-wrap {
-  max-height: 22px !important;
-  overflow: hidden !important;
-  cursor: pointer;
-  transition: max-height 0.3s ease;
-  padding: 2px 8px !important;
-  margin-top: 2px !important;
-  position: relative !important;
-}
-.compact-layout .log-wrap h4 { display: none !important; }
-.compact-layout .log-wrap .log-entry { font-size: 0.55rem !important; line-height: 1.3 !important; }
-.compact-layout .log-wrap::after {
-  content: 'tap to expand';
-  position: absolute;
-  right: 8px;
-  top: 4px;
-  font-size: 0.4rem;
-  color: rgba(255,255,255,0.2);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  pointer-events: none;
-}
-.compact-layout .log-wrap.log-expanded {
-  max-height: 150px !important;
-  overflow-y: auto !important;
-}
-.compact-layout .log-wrap.log-expanded::after {
-  content: 'tap to collapse';
+/* Resources compact */
+.compact-layout .res-tile { width: 32px !important; height: 36px !important; border-radius: 6px !important; }
+.compact-layout .res-tile .res-main { font-size: 14px !important; }
+.compact-layout .res-tile .res-count { font-size: 9px !important; }
+.compact-layout .res-tile .res-label { font-size: 6px !important; }
+.compact-layout .resources { gap: 3px !important; }
+
+/* HP */
+.compact-layout .hp-text { font-size: 0.55rem !important; }
+
+/* Overlays: scrollable */
+.compact-layout .moonstone-picker,
+.compact-layout .swap-overlay,
+.compact-layout .pressure-overlay,
+.compact-layout .selene-overlay,
+.compact-layout .steal-overlay {
+  overflow-y: auto !important; -webkit-overflow-scrolling: touch !important;
 }
 
-/* Narrator: fixed banner at top, out of layout flow */
-.compact-layout .narrator-inner {
-  position: fixed !important;
-  top: 0 !important; left: 0 !important; right: 0 !important;
-  z-index: 500 !important;
-  font-size: 0.65rem !important;
-  padding: 4px 12px !important;
-  background: rgba(10,6,18,0.92) !important;
-  backdrop-filter: blur(6px) !important;
-  border-bottom: 1px solid rgba(168,85,247,0.2) !important;
-}
-
-/* Hide team-select nav bar during battle */
-.compact-layout.battle-active .top-nav,
-.compact-layout.battle-active .panel-tabs { display: none !important; }
-
-/* KO swap overlay: compact */
-.compact-layout .ko-option {
-  width: 70px !important;
-}
+/* KO swap compact */
+.compact-layout .ko-option { width: 70px !important; }
 .compact-layout .ko-option .portrait-img { max-height: 60px !important; }
 
 /* ===== MP MODE — Versus Banner Fighting Game Layout ===== */
