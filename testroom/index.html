@@ -4901,7 +4901,7 @@ function syncWillpower(team) {
 }
 
 function activateWillpower(teamKey) {
-  if (!B) return;
+  if (!B || COMPACT_LAYOUT || MP_MODE) return;
   const team = B[teamKey];
   const f = active(team);
   if (!f || f.ko) return;
@@ -19087,8 +19087,9 @@ function renderBattle() {
     // HP Bar
     updateHpBar(team, f.hp, f.maxHp);
 
-    // Willpower Stack
-    const wpEl = document.getElementById(`${team}-willpower`);
+    // Willpower Stack — disabled in compact/MP mode
+    if (COMPACT_LAYOUT || MP_MODE) { const wpEl = document.getElementById(`${team}-willpower`); if (wpEl) wpEl.innerHTML = ''; }
+    const wpEl = (!COMPACT_LAYOUT && !MP_MODE) ? document.getElementById(`${team}-willpower`) : null;
     if (wpEl && f.willpower && f.willpower.length >= 0) {
       const wpCards = f.willpower.slice(0, 6);
       const canActivate = isPreRollActive(team) && !f.ko && f.willpower.length > 0
