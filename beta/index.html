@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.40'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.41'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -6380,7 +6380,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.40';
+const BBN_VERSION = 'v2.41';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -10680,6 +10680,7 @@ function renderTradeModal() {
         </div>
       </div>
       <p style="color:var(--text2);font-size:0.85rem;margin:12px 0;">Send trade offer to <strong>${tradeState.targetName}</strong>?</p>
+      <p style="color:var(--gold);font-size:0.8rem;margin-bottom:8px;">Cost: 50 Spirit Points</p>
       <div class="trade-actions">
         <button class="modal-close-btn" onclick="tradeState.step='pick-ours';renderTradeModal();">Back</button>
         <button class="trade-send-btn" onclick="sendTrade()">Send Trade</button>
@@ -10700,6 +10701,18 @@ function selectTradeCard(field, ghostId) {
 
 async function sendTrade() {
   if (!tradeState.requesting || !tradeState.offering) return;
+
+  // Check Spirit Points cost
+  const spCost = 50;
+  const currentSP = userProfile.raidPoints || userProfile.spiritPoints || 0;
+  if (currentSP < spCost) {
+    showToast(`Need ${spCost} Spirit Points to trade! You have ${currentSP}.`);
+    return;
+  }
+
+  // Deduct Spirit Points
+  await db.ref(`mp/users/${currentUser.uid}/raidPoints`).set(currentSP - spCost);
+  userProfile.raidPoints = currentSP - spCost;
 
   const tradeRef = db.ref('mp/trades').push();
   await tradeRef.set({
