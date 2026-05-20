@@ -1363,9 +1363,7 @@
     border-radius:8px !important; padding:3px 6px !important;
     display:grid !important;
     grid-template-columns:120px 1fr !important;
-    grid-template-areas:
-      "opp-bench opp-bench"
-      "opp-fighter opp-info" !important;
+    grid-template-areas:"opp-bench opp-bench" "opp-fighter opp-info" !important;
     gap:3px !important;
   }
   #raid-screen #blue-team-column .team-battle-row { display:contents !important; }
@@ -1427,11 +1425,7 @@
     border-radius:8px !important; padding:3px 6px !important;
     display:grid !important;
     grid-template-columns:120px 1fr !important;
-    grid-template-areas:
-      "my-fighter my-info"
-      "my-bench my-bench"
-      "my-abilities my-abilities"
-      "my-btn my-btn" !important;
+    grid-template-areas:"my-fighter my-info" "my-bench my-bench" "my-abilities my-abilities" "my-btn my-btn" !important;
     gap:3px !important;
     align-content:center !important;
   }
