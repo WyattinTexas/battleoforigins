@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.35'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.36'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -5214,7 +5214,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
   <div class="screen" id="screen-shop">
     <div class="screen-header">
       <h2 class="screen-title">Shop</h2>
-      <span class="screen-subtitle">Get the real cards</span>
+      <span class="screen-subtitle">Legacy Sets Available Now</span>
     </div>
     <div class="shop-products">
       <a class="shop-product" href="https://corkscrewgames.com/collections/frontpage/products/october-1st-release-boo-ster-pack-10-count" target="_blank" rel="noopener">
@@ -6376,7 +6376,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.35';
+const BBN_VERSION = 'v2.36';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
