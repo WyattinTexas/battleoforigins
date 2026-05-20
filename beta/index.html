@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.41'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.42'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -5202,13 +5202,13 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
         </div>
         <span id="trade-badge-main" style="display:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:22px;height:22px;border-radius:11px;align-items:center;justify-content:center;">0</span>
       </div>
-      <div class="screen-card" onclick="if(typeof viewCollection==='function'&&selectedTarget) viewCollection(selectedTarget.uid, selectedTarget.name)" style="cursor:pointer;margin-top:8px;">
+      <div class="screen-card" onclick="openTradePlayerPicker()" style="cursor:pointer;margin-top:8px;">
         <div class="screen-card-icon" style="background:linear-gradient(135deg,#2563eb,#3b82f6);">
           <span style="font-size:1.4rem;">O</span>
         </div>
         <div class="screen-card-info">
           <div class="screen-card-title">Offer Trade</div>
-          <div class="screen-card-desc">Select a player from the leaderboard first</div>
+          <div class="screen-card-desc">Pick a player and propose a card swap</div>
         </div>
       </div>
     </div>
@@ -6380,7 +6380,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.41';
+const BBN_VERSION = 'v2.42';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -10562,6 +10562,45 @@ let tradeState = {
   offering: null,    // ghost ID we're giving
   step: 'pick-theirs' // pick-theirs | pick-ours | confirm
 };
+
+async function openTradePlayerPicker() {
+  const modal = document.getElementById('trade-modal-box');
+  modal.innerHTML = '<h3>Choose a Player to Trade With</h3><p style="color:var(--text2);font-size:0.85rem;margin-bottom:12px;">Loading players...</p>';
+  document.getElementById('trade-modal').classList.add('active');
+
+  const snap = await db.ref('mp/leaderboard').orderByChild('elo').limitToLast(20).once('value');
+  const players = [];
+  if (snap.exists()) {
+    snap.forEach(child => {
+      if (child.key !== currentUser.uid) {
+        players.push({ uid: child.key, ...child.val() });
+      }
+    });
+  }
+  players.sort((a, b) => (b.elo || 1000) - (a.elo || 1000));
+
+  if (players.length === 0) {
+    modal.innerHTML = '<h3>No Players Available</h3><p style="color:var(--text-dim);text-align:center;padding:24px;">No other players found.</p><div class="trade-actions"><button class="modal-close-btn" onclick="closeTradeModal()">Close</button></div>';
+    return;
+  }
+
+  modal.innerHTML = `
+    <h3>Choose a Player</h3>
+    <p style="color:var(--text2);font-size:0.8rem;margin-bottom:12px;">Pick someone to trade with:</p>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto;">
+      ${players.map(p => {
+        const leadGhost = p.team && p.team.length > 0 ? getGhost(p.team[0]) : null;
+        const portrait = leadGhost ? `<img src="${leadGhost.art}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid var(--border);" onerror="this.style.display='none'">` : '';
+        return `<div onclick="closeTradeModal();viewCollection('${p.uid}','${(p.displayName||'Player').replace(/'/g,"\\'")}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
+          ${portrait}
+          <span style="flex:1;font-weight:600;color:var(--text);">${p.displayName || 'Unknown'}</span>
+          <span style="font-family:Creepster,cursive;color:var(--gold);font-size:0.9rem;">${p.elo || 1000}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="trade-actions" style="margin-top:12px;"><button class="modal-close-btn" onclick="closeTradeModal()">Cancel</button></div>
+  `;
+}
 
 async function viewCollection(uid, name) {
   tradeState = {
