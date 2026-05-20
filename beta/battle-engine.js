@@ -154,6 +154,99 @@ function applyMobileTeamClasses() {
 }
 
 // ============================================================
+// DRAG TOOL — position sideline pills visually
+// Activate: call enableDragMode() from console, or ?drag=1 URL param
+// ============================================================
+function enableDragMode() {
+  const pills = document.querySelectorAll('.sideline-slot');
+  if (!pills.length) { console.log('[DRAG] No sideline slots found — start a battle first'); return; }
+
+  // Overlay with instructions
+  let overlay = document.getElementById('drag-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'drag-overlay';
+    overlay.style.cssText = 'position:fixed;top:28px;left:0;right:0;z-index:10000;background:rgba(0,0,0,0.85);color:#f0c560;font-size:11px;padding:6px 12px;text-align:center;font-weight:700;display:flex;gap:8px;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<span>DRAG MODE — move sideline pills</span><button id="drag-copy" style="background:#d4a040;color:#0a0a1e;border:none;padding:4px 10px;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer;">COPY CSS</button><button id="drag-done" style="background:#e94560;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-weight:800;font-size:10px;cursor:pointer;">DONE</button>';
+    document.body.appendChild(overlay);
+  }
+
+  const positions = {};
+
+  pills.forEach(pill => {
+    // Make draggable
+    pill.style.position = 'relative';
+    pill.style.zIndex = '100';
+    pill.style.cursor = 'grab';
+    pill.style.touchAction = 'none';
+    pill.style.outline = '2px solid #f0c560';
+
+    let startX, startY, origLeft, origTop;
+    const id = pill.id || pill.querySelector('.card-name-banner')?.textContent || 'unknown';
+
+    function onStart(e) {
+      e.preventDefault();
+      pill.style.cursor = 'grabbing';
+      const touch = e.touches ? e.touches[0] : e;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      origLeft = parseInt(pill.style.left) || 0;
+      origTop = parseInt(pill.style.top) || 0;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onEnd);
+      document.addEventListener('touchmove', onMove, {passive:false});
+      document.addEventListener('touchend', onEnd);
+    }
+    function onMove(e) {
+      e.preventDefault();
+      const touch = e.touches ? e.touches[0] : e;
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      pill.style.left = (origLeft + dx) + 'px';
+      pill.style.top = (origTop + dy) + 'px';
+      positions[id] = { left: origLeft + dx, top: origTop + dy };
+    }
+    function onEnd() {
+      pill.style.cursor = 'grab';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      console.log(`[DRAG] ${id}: left:${positions[id]?.left || 0}px, top:${positions[id]?.top || 0}px`);
+    }
+    pill.addEventListener('mousedown', onStart);
+    pill.addEventListener('touchstart', onStart, {passive:false});
+  });
+
+  // Copy CSS button
+  document.getElementById('drag-copy').onclick = () => {
+    let css = '/* Sideline positions from drag tool */\n';
+    Object.entries(positions).forEach(([id, pos]) => {
+      css += `#${id} { position:relative; left:${pos.left}px; top:${pos.top}px; }\n`;
+    });
+    navigator.clipboard.writeText(css).then(() => {
+      document.getElementById('drag-copy').textContent = 'COPIED!';
+      setTimeout(() => document.getElementById('drag-copy').textContent = 'COPY CSS', 1500);
+    });
+    console.log('[DRAG] CSS:\n' + css);
+  };
+
+  // Done button
+  document.getElementById('drag-done').onclick = () => {
+    pills.forEach(p => { p.style.cursor = ''; p.style.outline = ''; });
+    overlay.remove();
+    console.log('[DRAG] Final positions:', JSON.stringify(positions));
+  };
+
+  console.log('[DRAG] Drag mode enabled — move the highlighted sideline pills, then click COPY CSS');
+}
+
+// Auto-enable if ?drag=1 in URL
+if (new URLSearchParams(window.location.search).get('drag') === '1') {
+  window.addEventListener('load', () => setTimeout(enableDragMode, 2000));
+}
+
+// ============================================================
 // BATTLE SPEED — multiplier for all animation/delay timings
 // 0=1x (normal), 1=10x, 2=25x, 3=100x
 // ============================================================
