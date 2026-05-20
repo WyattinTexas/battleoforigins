@@ -1921,7 +1921,7 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout #blue-sl-left { grid-area: opp-sl-l !important; }
 .compact-layout #blue-sl-right { grid-area: opp-sl-r !important; }
 .compact-layout #blue-team-column .fighter-slot {
-  grid-area: opp-fighter !important; width: 170px !important; margin: 0 auto !important;
+  grid-area: opp-fighter !important; width: 150px !important; margin: 0 auto !important;
 }
 .compact-layout #blue-team-column .team-info {
   grid-area: opp-info !important; min-width: 0 !important; width: 100% !important; text-align: center !important;
@@ -1972,7 +1972,7 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout #red-sl-left { grid-area: my-sl-l !important; }
 .compact-layout #red-sl-right { grid-area: my-sl-r !important; }
 .compact-layout #red-team-column .fighter-slot {
-  grid-area: my-fighter !important; width: 200px !important; margin: 0 auto !important;
+  grid-area: my-fighter !important; width: 180px !important; margin: 0 auto !important;
 }
 .compact-layout #red-team-column .team-info {
   grid-area: my-info !important; min-width: 0 !important; width: 100% !important; text-align: center !important;
@@ -1984,10 +1984,12 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout #red-team-column .sideline-slot .card-ability,
 .compact-layout #red-team-column .sideline-slot .card-ability-desc { display: none !important; }
 .compact-layout #red-team-column .sideline-slot .portrait-img { max-height: 40px !important; }
-/* Player fighter styling */
+/* Player fighter styling — name + art only, ability info goes in team-info below */
 .compact-layout #red-team-column .fighter-slot .card-img,
 .compact-layout #red-team-column .fighter-slot .card-img-placeholder,
 .compact-layout #red-team-column .fighter-slot .portrait-img { aspect-ratio: 1 !important; max-height: none !important; }
+.compact-layout #red-team-column .fighter-slot .card-ability { display: none !important; }
+.compact-layout #red-team-column .fighter-slot .card-ability-desc { display: none !important; }
 
 /* --- GOLD READY/ROLL BUTTON --- */
 .compact-layout #red-team-column .action-btn.team-roll,
