@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.38'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.39'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -6376,7 +6376,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.38';
+const BBN_VERSION = 'v2.39';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -6437,7 +6437,19 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /* ===== Spiritkin of the Day — full screen view ===== */
-const SPIRITKIN_OF_THE_DAY_ID = 78; // Haywire
+function getSpiritkinOfTheDay() {
+  const now = new Date();
+  const seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+  const active = typeof getActiveGhosts === 'function' ? getActiveGhosts() : [];
+  if (active.length === 0) return 78; // fallback to Haywire
+  // Simple hash to pick a consistent ghost per day
+  let hash = seed;
+  hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+  hash = ((hash >> 16) ^ hash) * 0x45d9f3b;
+  hash = (hash >> 16) ^ hash;
+  return active[Math.abs(hash) % active.length].id;
+}
+const SPIRITKIN_OF_THE_DAY_ID = getSpiritkinOfTheDay();
 function showSpiritkinDetail() {
   const ghost = typeof getGhost === 'function' ? getGhost(SPIRITKIN_OF_THE_DAY_ID) : null;
   if (!ghost) return;
@@ -6504,6 +6516,16 @@ function showGhostPreview(id) {
 /* ===== Home Screen Rendering ===== */
 function renderHomeScreen() {
   if (!userProfile) return;
+  // Spiritkin of the Day — update showcase
+  const sotd = typeof getGhost === 'function' ? getGhost(SPIRITKIN_OF_THE_DAY_ID) : null;
+  if (sotd) {
+    const sotdImg = document.getElementById('spirit-showcase-img');
+    if (sotdImg) { sotdImg.src = sotd.art; sotdImg.alt = sotd.name; }
+    const sotdName = document.getElementById('spirit-showcase-name');
+    if (sotdName) sotdName.textContent = sotd.name;
+    const sotdAbility = document.getElementById('spirit-showcase-ability');
+    if (sotdAbility) sotdAbility.textContent = `${sotd.ability || ''} — ${sotd.abilityDesc || ''}`.substring(0, 80);
+  }
   // Profile card
   const av = document.getElementById('home-avatar');
   if (av && currentUser?.photoURL) av.src = currentUser.photoURL;
