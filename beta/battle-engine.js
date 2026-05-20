@@ -14982,7 +14982,8 @@ function renderBattle() {
           slCardHtml += `<div class="frostbite-badge">❄️${fc}</div>`;
         }
         el.innerHTML = slCardHtml;
-        el.onclick = isPick ? () => doKoSwap(team, realIdx) : null;
+        const ghostId = sl[i].id;
+        el.onclick = isPick ? () => doKoSwap(team, realIdx) : () => { if (typeof showCardDetail === 'function') showCardDetail(ghostId); };
       } else {
         el.style.visibility = 'hidden';
         el.onclick = null;
