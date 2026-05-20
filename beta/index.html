@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.39'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.40'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -1468,9 +1468,13 @@ body.shake { animation: screen-shake 0.5s ease-in-out; }
 .lb-rank-gold .lb-card-rank { color: #d4a040; text-shadow: 0 0 6px rgba(212,160,64,0.4); }
 .lb-rank-silver .lb-card-rank { color: #c0c0c0; text-shadow: 0 0 6px rgba(192,192,192,0.3); }
 .lb-rank-bronze .lb-card-rank { color: #cd7f32; text-shadow: 0 0 6px rgba(205,127,50,0.3); }
-.lb-rank-gold { border-left: 3px solid #d4a040; background: linear-gradient(90deg, rgba(212,160,64,0.08), transparent 40%); }
-.lb-rank-silver { border-left: 3px solid #c0c0c0; background: linear-gradient(90deg, rgba(192,192,192,0.06), transparent 40%); }
-.lb-rank-bronze { border-left: 3px solid #cd7f32; background: linear-gradient(90deg, rgba(205,127,50,0.06), transparent 40%); }
+.lb-rank-gold { border-left: 3px solid #f0c560; background: radial-gradient(ellipse at 10% 50%, rgba(240,197,96,0.18), transparent 60%); box-shadow: inset 0 0 20px rgba(240,197,96,0.06); }
+.lb-rank-silver { border-left: 3px solid #c0c0c0; background: radial-gradient(ellipse at 10% 50%, rgba(192,192,192,0.14), transparent 60%); box-shadow: inset 0 0 16px rgba(192,192,192,0.04); }
+.lb-rank-bronze { border-left: 3px solid #cd7f32; background: radial-gradient(ellipse at 10% 50%, rgba(205,127,50,0.12), transparent 60%); box-shadow: inset 0 0 14px rgba(205,127,50,0.04); }
+.lb-rank-blue { border-left: 2px solid #4a9aca; background: radial-gradient(ellipse at 10% 50%, rgba(74,154,202,0.10), transparent 60%); }
+.lb-rank-blue .lb-card-rank { color: #4a9aca; text-shadow: 0 0 6px rgba(74,154,202,0.5); }
+.lb-rank-green { border-left: 2px solid #22c55e; background: radial-gradient(ellipse at 10% 50%, rgba(34,197,94,0.08), transparent 60%); }
+.lb-rank-green .lb-card-rank { color: #22c55e; text-shadow: 0 0 6px rgba(34,197,94,0.5); }
 .lb-card-me { background: rgba(212,160,64,0.1) !important; border: 1px solid rgba(212,160,64,0.3); }
 .lb-card-info { flex: 1; min-width: 0; }
 .lb-card-name { font-weight: 700; font-size: 0.95rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -6376,7 +6380,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.39';
+const BBN_VERSION = 'v2.40';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -7604,7 +7608,7 @@ async function renderLeaderboard(data) {
   if (mainLb) {
     mainLb.innerHTML = top15.map((entry, i) => {
       const isCurrent = currentUser && entry.uid === currentUser.uid;
-      const rankClass = i === 0 ? 'lb-rank-gold' : i === 1 ? 'lb-rank-silver' : i === 2 ? 'lb-rank-bronze' : '';
+      const rankClass = i === 0 ? 'lb-rank-gold' : i === 1 ? 'lb-rank-silver' : i === 2 ? 'lb-rank-bronze' : i === 3 ? 'lb-rank-blue' : i === 4 ? 'lb-rank-green' : '';
       const challengeBtn = !isCurrent
         ? `<button class="lb-card-challenge" onclick="event.stopPropagation();selectTarget('${entry.uid}')">Challenge</button>`
         : '';
