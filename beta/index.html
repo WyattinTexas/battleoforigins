@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.37'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.38'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -6376,7 +6376,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.37';
+const BBN_VERSION = 'v2.38';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -7610,7 +7610,7 @@ async function renderLeaderboard(data) {
         <div class="lb-card-rank">${i + 1}</div>
         <div class="lb-card-info">
           <div class="lb-card-name">${entry.displayName || 'Unknown'}${champHtml}</div>
-          <div class="lb-card-record">${entry.wins || 0}W ${entry.losses || 0}L${badgeHtml}</div>
+          <div class="lb-card-record">${badgeHtml}</div>
         </div>
         <div class="lb-card-team">${teamHtml}</div>
         <div class="lb-card-elo">${entry.elo || 1000}</div>
