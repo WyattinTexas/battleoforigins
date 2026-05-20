@@ -1871,6 +1871,10 @@ body.lite-mode .die.rolling { animation: none !important; }
 /* ===== COMPACT MOBILE LAYOUT — DESIGN B ===== */
 /* Activated by URL param ?layout=compact */
 
+/* Kill all scroll in compact mode */
+body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
+.compact-layout #battle-view { height: 100dvh !important; overflow: hidden !important; }
+
 /* Overall: single viewport, no scroll */
 .compact-layout .arena-board {
   flex-direction: column !important;
@@ -1895,7 +1899,8 @@ body.lite-mode .die.rolling { animation: none !important; }
 /* Hide turn indicator, VS elements, battle log */
 .compact-layout .turn-indicator { display: none !important; }
 .compact-layout .log-wrap { display: none !important; }
-.compact-layout .narrator-box { height: 0 !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+.compact-layout .narrator-box { display: none !important; }
+.compact-layout #skipSpecialsBtn { display: none !important; }
 
 /* Leave Raid button reposition */
 .compact-layout #leaveRaidBtn { top: 28px !important; right: 4px !important; font-size: 0.65rem !important; padding: 4px 10px !important; }
@@ -1945,8 +1950,9 @@ body.lite-mode .die.rolling { animation: none !important; }
   padding: 2px 4px !important; order: 0 !important;
   display: flex !important; flex-direction: column !important;
   justify-content: center !important; align-items: center !important;
+  position: relative !important; overflow: hidden !important;
 }
-.compact-layout .dice-stack { padding: 6px 10px !important; gap: 4px !important; }
+.compact-layout .dice-stack { padding: 6px 10px !important; gap: 4px !important; position: relative !important; overflow: hidden !important; }
 .compact-layout .dice-row { gap: 4px !important; justify-content: center !important; }
 .compact-layout .die { width: 36px !important; height: 36px !important; font-size: 17px !important; }
 
@@ -9261,6 +9267,7 @@ function rollReady(team) {
   // v733: async MP — when Red clicks READY, signal the AI to roll Blue after a short delay
   if (MP_MODE && !LIVE_PVP && team === 'red') {
     pvpRedClickedRoll = true;
+    if (COMPACT_LAYOUT) { document.getElementById('rollRedBtn').textContent = 'ROLL'; }
   }
   // Duel Phase locks rolls until both players click Done
   if (B.phase === 'duel-1' || B.phase === 'duel-2') return;
@@ -22166,7 +22173,7 @@ function enableDragMode() {
   };
   console.log('[DRAG] Drag mode enabled — move highlighted sideline pills, then COPY CSS');
 }
-if (new URLSearchParams(window.location.search).get('drag') === '1') {
+if (COMPACT_LAYOUT || new URLSearchParams(window.location.search).get('drag') === '1') {
   window.addEventListener('load', () => setTimeout(enableDragMode, 3000));
 }
 </script>
