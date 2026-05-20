@@ -1475,6 +1475,8 @@ body.shake { animation: screen-shake 0.5s ease-in-out; }
 .lb-rank-blue .lb-card-rank { color: #4a9aca; text-shadow: 0 0 6px rgba(74,154,202,0.5); }
 .lb-rank-green { border-left: 2px solid #22c55e; background: radial-gradient(ellipse at 10% 50%, rgba(34,197,94,0.08), transparent 60%); }
 .lb-rank-green .lb-card-rank { color: #22c55e; text-shadow: 0 0 6px rgba(34,197,94,0.5); }
+.lb-rank-teal { border-left: 2px solid #2dd4bf; background: radial-gradient(ellipse at 10% 50%, rgba(45,212,191,0.08), transparent 60%); }
+.lb-rank-teal .lb-card-rank { color: #2dd4bf; text-shadow: 0 0 6px rgba(45,212,191,0.5); }
 .lb-card-me { background: rgba(212,160,64,0.1) !important; border: 1px solid rgba(212,160,64,0.3); }
 .lb-card-info { flex: 1; min-width: 0; }
 .lb-card-name { font-weight: 700; font-size: 0.95rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -7608,7 +7610,7 @@ async function renderLeaderboard(data) {
   if (mainLb) {
     mainLb.innerHTML = top15.map((entry, i) => {
       const isCurrent = currentUser && entry.uid === currentUser.uid;
-      const rankClass = i === 0 ? 'lb-rank-gold' : i === 1 ? 'lb-rank-silver' : i === 2 ? 'lb-rank-bronze' : i === 3 ? 'lb-rank-blue' : i === 4 ? 'lb-rank-green' : '';
+      const rankClass = i === 0 ? 'lb-rank-gold' : i === 1 ? 'lb-rank-silver' : i === 2 ? 'lb-rank-bronze' : i === 3 ? 'lb-rank-blue' : i === 4 ? 'lb-rank-green' : i <= 9 ? 'lb-rank-teal' : '';
       const challengeBtn = !isCurrent
         ? `<button class="lb-card-challenge" onclick="event.stopPropagation();selectTarget('${entry.uid}')">Challenge</button>`
         : '';
