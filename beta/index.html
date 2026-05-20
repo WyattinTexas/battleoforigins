@@ -7444,6 +7444,12 @@ function showCardDetail(ghostId) {
   document.getElementById('card-detail-ability-desc').textContent = ghost.abilityDesc || '';
 
   const btn = document.getElementById('card-detail-add');
+  // During battle, hide the add/remove button — detail is view-only
+  if (typeof B !== 'undefined' && B) {
+    btn.style.display = 'none';
+  } else {
+    btn.style.display = '';
+  }
   const inTeam = team.includes(ghostId);
   if (inTeam) {
     btn.textContent = 'Remove from Team';

@@ -135,6 +135,25 @@ let pvpBlueResolvedLocally = false; // v725: flag to prevent double-resolution o
 let pvpRedReady = false; // v726: Red has committed resources and is waiting for Blue
 
 // ============================================================
+// MOBILE COMPACT LAYOUT — Design B
+// ============================================================
+function isMobileCompact() { return window.innerWidth <= 900; }
+
+function applyMobileTeamClasses() {
+  if (!isMobileCompact()) return;
+  const mySide = PVP_SIDE || 'red';
+  const oppSide = mySide === 'red' ? 'blue' : 'red';
+  const myCol = document.getElementById(`${mySide}-team-column`);
+  const oppCol = document.getElementById(`${oppSide}-team-column`);
+  // Clear old classes
+  document.querySelectorAll('.local-team, .opponent-team').forEach(el => {
+    el.classList.remove('local-team', 'opponent-team');
+  });
+  if (myCol) myCol.classList.add('local-team');
+  if (oppCol) oppCol.classList.add('opponent-team');
+}
+
+// ============================================================
 // BATTLE SPEED — multiplier for all animation/delay timings
 // 0=1x (normal), 1=10x, 2=25x, 3=100x
 // ============================================================
@@ -5897,6 +5916,15 @@ function resetRollButtons() {
     if (oppBtn) oppBtn.style.display = 'none';
     const myBtn = document.getElementById(PVP_SIDE === 'red' ? 'rollRedBtn' : 'rollBlueBtn');
     if (myBtn) myBtn.textContent = 'ROLL';
+  }
+  // Mobile compact: show READY on local player's button, hide opponent's
+  if (isMobileCompact()) {
+    const mySide = PVP_SIDE || 'red';
+    const oppSide = mySide === 'red' ? 'blue' : 'red';
+    const myBtn = document.getElementById(mySide === 'red' ? 'rollRedBtn' : 'rollBlueBtn');
+    const oppBtn = document.getElementById(oppSide === 'red' ? 'rollRedBtn' : 'rollBlueBtn');
+    if (myBtn) myBtn.textContent = 'READY';
+    if (oppBtn) oppBtn.style.display = 'none';
   }
   // Clear dice display between rounds — no leftover numbers from last roll
   ['red', 'blue'].forEach(t => {
@@ -14937,6 +14965,7 @@ function hitDamage(teamName) {
 
 function renderBattle() {
   if (!B) return;
+  applyMobileTeamClasses();
 
   // v736: enforce Moonstone cap (1) and Firefly cap (1) globally
   ['red','blue'].forEach(s => {
@@ -15455,8 +15484,17 @@ function showRolling(team, count) {
   const dice = [];
   const els = [];
   const isRed = team === 'red';
-  const handX = isRed ? minX + 10 : maxX - 10;
-  const handY = maxY - 5;
+  const mobile = isMobileCompact();
+  const mySide = PVP_SIDE || 'red';
+  const isLocalTeam = team === mySide;
+  // Mobile vertical layout: local team throws from bottom, opponent from top
+  // Desktop horizontal layout: red throws from left, blue from right
+  const handX = mobile
+    ? W / 2 + (Math.random() - 0.5) * 30
+    : (isRed ? minX + 10 : maxX - 10);
+  const handY = mobile
+    ? (isLocalTeam ? maxY - 5 : minY + 5)
+    : maxY - 5;
   const throwVecs = pickThrowProfile(count);
 
   for (let i = 0; i < count; i++) {
