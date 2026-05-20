@@ -1378,7 +1378,7 @@
   #raid-screen #blue-sl-right { grid-area:opp-sl-r !important; }
   #raid-screen #blue-team-column .fighter-slot {
     grid-area:opp-fighter !important;
-    width:200px !important; margin:0 auto !important;
+    width:170px !important; margin:0 auto !important;
   }
   #raid-screen #blue-team-column .team-info {
     grid-area:opp-info !important; min-width:0 !important; width:100% !important; text-align:center !important;
@@ -1446,7 +1446,7 @@
   #raid-screen #red-sl-right { grid-area:my-sl-r !important; }
   #raid-screen #red-team-column .fighter-slot {
     grid-area:my-fighter !important;
-    width:220px !important; margin:0 auto !important;
+    width:200px !important; margin:0 auto !important;
   }
   #raid-screen #red-team-column .team-info {
     grid-area:my-info !important; min-width:0 !important; width:100% !important; text-align:center !important;
