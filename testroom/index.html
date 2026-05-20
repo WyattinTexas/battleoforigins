@@ -2131,6 +2131,115 @@ body.lite-mode .die.rolling { animation: none !important; }
 }
 .compact-layout .ko-option .portrait-img { max-height: 60px !important; }
 
+/* ===== MP MODE — Versus Banner Fighting Game Layout ===== */
+body.mp-mode { overflow-x: hidden; }
+body.mp-mode .tabs { display: none !important; }
+body.mp-mode .header { display: none !important; }
+body.mp-mode #browse-panel { display: none !important; }
+body.mp-mode .willpower-stack,
+body.mp-mode .wp-stack-info,
+body.mp-mode .wp-pile,
+body.mp-mode [id*="willpower"] { display: none !important; }
+
+/* VS Banner */
+#vs-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; margin-bottom: 8px;
+  background: linear-gradient(90deg, rgba(180,60,60,0.15), rgba(20,15,30,0.9) 40%, rgba(20,15,30,0.9) 60%, rgba(60,80,180,0.15));
+  border-bottom: 1px solid rgba(212,160,64,0.15);
+  border-radius: 10px;
+}
+.vs-name {
+  font-family: 'Creepster', cursive;
+  font-size: 1.1rem; letter-spacing: 1.5px;
+}
+.vs-name.vs-red { color: #e85454; text-shadow: 0 0 8px rgba(232,84,84,0.3); }
+.vs-name.vs-blue { color: #5494e8; text-shadow: 0 0 8px rgba(84,148,232,0.3); }
+.vs-round {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 2px;
+  color: var(--gold, #d4a040); text-transform: uppercase;
+}
+
+/* Arena → vertical layout in MP mode */
+body.mp-mode .arena-board {
+  flex-direction: column !important;
+  gap: 6px !important;
+  padding: 0 4px;
+}
+body.mp-mode #blue-team-column { order: -1; }
+body.mp-mode .team-column {
+  flex-direction: row !important;
+  width: 100%;
+  gap: 6px !important;
+  position: relative;
+}
+
+/* Fighter card — prominent */
+body.mp-mode .fighter-slot {
+  width: 200px !important;
+  min-width: 200px;
+  z-index: 2;
+  position: relative;
+}
+
+/* Sideline — peek from behind active card */
+body.mp-mode .sideline-stack {
+  flex-direction: row !important;
+  gap: 4px !important;
+}
+body.mp-mode .sideline-slot {
+  width: 80px !important;
+  opacity: 0.7 !important;
+  transform: scale(0.88);
+}
+body.mp-mode .sideline-slot:hover {
+  opacity: 1 !important;
+  transform: scale(0.94) !important;
+}
+
+/* Dice area compact */
+body.mp-mode .arena-center {
+  flex: none !important;
+  width: 100%;
+  padding: 4px 0;
+}
+body.mp-mode .arena-mid { margin: 0 auto; }
+
+/* Hide blue roll in async (AI controls blue) */
+body.mp-mode:not(.live-pvp) #rollBlueBtn { display: none !important; }
+body.mp-mode:not(.live-pvp) #duelDoneBlueBtn { display: none !important; }
+
+/* Red roll button — full width gold */
+body.mp-mode #rollRedBtn {
+  width: 100% !important;
+  max-width: 100%;
+  font-size: 1.1rem !important;
+  padding: 14px !important;
+  background: linear-gradient(135deg, var(--gold, #d4a040), #f0c850) !important;
+  color: #0e0a1a !important;
+  font-weight: 800 !important;
+  border-radius: 12px !important;
+  letter-spacing: 2px;
+}
+
+/* Team info (HP bar) — full width */
+body.mp-mode .team-info {
+  width: 100%;
+  flex: 1;
+}
+
+/* Turn indicator — hidden (VS banner handles it) */
+body.mp-mode .turn-indicator { display: none !important; }
+
+/* Ability callout — wider in MP */
+body.mp-mode .ability-callout {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Resources row compact */
+body.mp-mode .resources { font-size: 0.7rem; }
+
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -4334,6 +4443,11 @@ function switchTab(t) {
   document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', (i===0&&t==='browse')||(i===1&&t==='battle')));
   document.getElementById('browse-panel').classList.toggle('active', t==='browse');
   document.getElementById('battle-panel').classList.toggle('active', t==='battle');
+}
+
+function updateVsRound() {
+  const el = document.getElementById('vs-round');
+  if (el && B) el.textContent = 'Round ' + B.round;
 }
 
 // ============================================================
@@ -15165,6 +15279,7 @@ function _resolveRoundImpl() {
         return;
       }
       narrate(`<b class="gold">Round ${B.round}</b> — <b class="red-text">${active(B.red).name}</b>&nbsp;vs&nbsp;<b class="blue-text">${active(B.blue).name}</b>`);
+      updateVsRound();
       renderBattle();
       setTimeout(() => { startNextRound(); }, spd(350));
     });
@@ -20104,6 +20219,7 @@ document.addEventListener('keydown', e => {
   if (redIds.length !== 3) return;
 
   MP_MODE = true;
+  document.body.classList.add('mp-mode');
 
   // Force standard settings for all MP/daily games
   const speedEl = document.getElementById('speedSlider');
@@ -20146,6 +20262,19 @@ document.addEventListener('keydown', e => {
   // Switch to arena tab and auto-start battle
   setTimeout(() => {
     switchTab('battle');
+
+    // Inject VS Banner for MP mode
+    const battleView = document.getElementById('battle-view');
+    if (battleView && !document.getElementById('vs-banner')) {
+      const vsBanner = document.createElement('div');
+      vsBanner.id = 'vs-banner';
+      const redName = MP_PLAYER_NAMES.red || 'You';
+      const blueName = MP_PLAYER_NAMES.blue || 'Rival';
+      const blueElo = params.get('oppElo') || '';
+      vsBanner.innerHTML = `<span class="vs-name vs-red">${redName}</span><span class="vs-round" id="vs-round">Round 1</span><span class="vs-name vs-blue">${blueName}${blueElo ? ' <small style="opacity:0.5">' + blueElo + '</small>' : ''}</span>`;
+      battleView.insertBefore(vsBanner, battleView.firstChild);
+    }
+
     renderPicks();
     startBattle();
     // Start blue AI for async/daily modes (not live PvP — that's a real player)
@@ -20870,6 +20999,7 @@ function aiHandlePostRoll() {
 
   LIVE_PVP = true;
   MP_MODE = true;
+  document.body.classList.add('mp-mode');
   PVP_SIDE = side;
   PVP_GAME_ID = gameId;
   PVP_GAME_REF = db.ref(`mp/livegames/${gameId}`);
