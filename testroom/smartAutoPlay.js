@@ -1,18 +1,20 @@
 // Smart Auto-Play Simulation — paste into browser console
 // Replaces basic autoPlay with ability-aware AI
+// v842 — [shadow] Zippa sim/resolver unified (removed stale pre-roll LS conversion); Wendy Lucky Stone over-grant removed
+const DEBUG = (typeof window !== 'undefined' && window.DEBUG) || false; // set window.DEBUG=true to enable verbose logging
 function smartAutoPlay(numGames = 50) {
-  if (autoPlayRunning) { console.log('Auto-play already running'); return; }
+  if (autoPlayRunning) { if (DEBUG) console.log('Auto-play already running'); return; }
   autoPlayRunning = true;
   autoPlayQueue = numGames;
   autoPlayTotal = numGames;
-  console.log(`🧠 Smart Auto-play: starting ${numGames} games...`);
+  if (DEBUG) console.log(`🧠 Smart Auto-play: starting ${numGames} games...`);
   smartPlayNext();
 }
 
 function smartPlayNext() {
   if (autoPlayQueue <= 0) {
     autoPlayRunning = false;
-    console.log(`✅ Smart auto-play complete! ${autoPlayTotal} games played.`);
+    if (DEBUG) console.log(`✅ Smart auto-play complete! ${autoPlayTotal} games played.`);
     if (B) {
       B = null;
       document.getElementById('battle-view').style.display = 'none';
@@ -35,7 +37,7 @@ function smartPlayNext() {
   if (gameNum % 10 === 1 || gameNum === autoPlayTotal) {
     const rn = S.redPicks.map(id => ghostData(id).name);
     const bn = S.bluePicks.map(id => ghostData(id).name);
-    console.log(`🧠 Game ${gameNum}/${autoPlayTotal}: Red [${rn}] vs Blue [${bn}]`);
+    if (DEBUG) console.log(`🧠 Game ${gameNum}/${autoPlayTotal}: Red [${rn}] vs Blue [${bn}]`);
   }
 
   prevResources = { red: {}, blue: {} };
@@ -612,6 +614,7 @@ function smartSimRounds(gameNum) {
     const enemy = opp(team);
     if (f.id !== 202 || f.ko || B.pressureUsed[teamKey]) return;
     if (hasSideline(enemy, 301)) return; // Dylan Scarecrow blocks Pressure
+    if (active(enemy).id === 326 && !active(enemy).ko) return; // Barnaby (326) Stubborn — immune to forced swaps (v842)
     const enemyKey = teamKey === 'red' ? 'blue' : 'red';
     const aliveSideline = B[enemyKey].ghosts
       .map((g, i) => ({ g, i }))
@@ -694,16 +697,8 @@ function smartSimRounds(gameNum) {
     }
   });
 
-  // Zippa (423) — Glimmer: before rolling, gain Lucky Stones equal to Healing Seeds held (v674: moved from win to pre-roll)
-  ['red','blue'].forEach(teamKey => {
-    const f = active(B[teamKey]);
-    if (f.id === 423 && !f.ko) {
-      const seeds = B[teamKey].resources.healingSeed || 0;
-      if (seeds > 0) {
-        B[teamKey].resources.luckyStone += seeds;
-      }
-    }
-  });
+  // Zippa (423) — Glimmer: REWORKED — now passive +1 damage per Healing Seed held (applied in win-path damage calc).
+  // v842: removed stale pre-roll Lucky Stone conversion (was v674 intermediate; index.html resolver uses damage bonus).
 
   // Forest Spirit (446) — Hex: AI auto-spends Burn to remove enemy dice + gain Sacred Fire per Burn spent
   // Matches index.html useHex: spend 1 Burn → -1 enemy die + +1 Sacred Fire
@@ -1201,26 +1196,44 @@ function smartSimRounds(gameNum) {
     }
   });
   // Willow (435) — Joy of Painting: Sideline & In Play: +1 die if you lost the last roll
-  // Matches index.html lines 8044–8057. willowLostLast[team] set in win/loss/tie paths below.
+  // Cornelius (45) on enemy sideline negates sideline Willow (not active). Matches index.html.
   ['red','blue'].forEach(tName => {
     const _wf = active(B[tName]);
+    const oppK = tName === 'red' ? 'blue' : 'red';
     const hasWillowActive = _wf.id === 435 && !_wf.ko;
     const hasWillowSideline = hasSideline(B[tName], 435);
     if ((hasWillowActive || hasWillowSideline) && B.willowLostLast[tName]) {
-      if (tName === 'red') redCount++; else blueCount++;
-      // Knight Terror (401) / Knight Light (402) react to Joy of Painting
-      const oppK = tName === 'red' ? 'blue' : 'red';
-      const knight = active(B[oppK]);
-      if (knight && !knight.ko) {
-        if (knight.id === 401) { _wf.hp = Math.max(0, _wf.hp - 2); if (_wf.hp <= 0) { _wf.ko = true; _wf.killedBy = 401; } }
-        else if (knight.id === 402) { B.retributionDice[oppK] = (B.retributionDice[oppK] || 0) + 1; }
+      // Cornelius blocks sideline Willow only (active fires through)
+      if (hasWillowSideline && !hasWillowActive && hasSideline(B[oppK], 45)) {
+        // Antidote — die bonus blocked (no callout in sim)
+      } else {
+        if (tName === 'red') redCount++; else blueCount++;
+        // Knight Terror (401) / Knight Light (402) react to Joy of Painting
+        const knight = active(B[oppK]);
+        if (knight && !knight.ko) {
+          if (knight.id === 401) { _wf.hp = Math.max(0, _wf.hp - 2); if (_wf.hp <= 0) { _wf.ko = true; _wf.killedBy = 401; } }
+          else if (knight.id === 402) { B.retributionDice[oppK] = (B.retributionDice[oppK] || 0) + 1; }
+        }
       }
+    }
+  });
+  // Zach (87) — Craftsman: while on sideline, Guard Thomas (41) gets +1 die each roll.
+  // Blocked by Cornelius (45) on the enemy sideline. Matches index.html Zach pre-roll die block.
+  ['red','blue'].forEach(teamKey => {
+    const f = active(B[teamKey]);
+    const enemyKey = teamKey === 'red' ? 'blue' : 'red';
+    if (!f.ko && f.id === 41 && hasSideline(B[teamKey], 87) && !hasSideline(B[enemyKey], 45)) {
+      if (teamKey === 'red') redCount++; else blueCount++;
     }
   });
   // Haywire (78) — WILD CHORDS!: permanent +1 die bonus added every round once triggered (never consumed/cleared).
   // Mirrors index.html lines 7057–7058: `if (haywireBonus.red > 0) redCount += haywireBonus.red` (permanent, not reset).
   if ((B.haywireBonus.red || 0) > 0) redCount += B.haywireBonus.red;
   if ((B.haywireBonus.blue || 0) > 0) blueCount += B.haywireBonus.blue;
+
+  // Laura (79) — Catchy Tune: permanent +1 die bonus (awarded once per game on straight)
+  if (B.catchyTuneDieBonus && (B.catchyTuneDieBonus.red || 0) > 0) redCount += B.catchyTuneDieBonus.red;
+  if (B.catchyTuneDieBonus && (B.catchyTuneDieBonus.blue || 0) > 0) blueCount += B.catchyTuneDieBonus.blue;
 
   // Marcus (57) — GLACIAL POUNDING!: +4 bonus dice next roll after taking 3+ damage
   // Bonus goes to the PLAYER — whoever is active gets the dice, even if Marcus died from the hit.
@@ -1455,7 +1468,7 @@ function smartSimRounds(gameNum) {
       if (fours > 0) {
         t.resources.luckyStone += fours;
         const oppKey = teamKey === 'red' ? 'blue' : 'red';
-        if (hasSideline(B[oppKey], 33)) B[oppKey].resources.luckyStone += fours; // DEPENDABLE! mirror
+        if (hasOnTeam(B[oppKey], 33)) B[oppKey].resources.luckyStone += fours; // DEPENDABLE! mirror
       }
     }
   });
@@ -1490,7 +1503,7 @@ function smartSimRounds(gameNum) {
     if (f.id === 327 && !f.ko && hasEvenDoubles(dice)) {
       t.resources.moonstone += 2;
       const oppKey = teamKey === 'red' ? 'blue' : 'red';
-      if (hasSideline(B[oppKey], 33)) B[oppKey].resources.moonstone += 2; // DEPENDABLE! mirror
+      if (hasOnTeam(B[oppKey], 33)) B[oppKey].resources.moonstone += 2; // DEPENDABLE! mirror
     }
   });
 
@@ -1501,7 +1514,7 @@ function smartSimRounds(gameNum) {
     if (f.id === 308 && !f.ko && classify(oppDice).type === 'doubles') {
       t.resources.healingSeed++;
       const oppKey = teamKey === 'red' ? 'blue' : 'red';
-      if (hasSideline(B[oppKey], 33)) B[oppKey].resources.healingSeed++; // DEPENDABLE! mirror
+      if (hasOnTeam(B[oppKey], 33)) B[oppKey].resources.healingSeed++; // DEPENDABLE! mirror
     }
   });
 
@@ -1656,7 +1669,7 @@ function smartSimRounds(gameNum) {
       if (hasSideline(B[teamKey], 303)) {
         B[teamKey].resources.surge += 4;
         const oppKey = teamKey === 'red' ? 'blue' : 'red';
-        if (hasSideline(B[oppKey], 33)) B[oppKey].resources.surge += 4; // DEPENDABLE! mirror
+        if (hasOnTeam(B[oppKey], 33)) B[oppKey].resources.surge += 4; // DEPENDABLE! mirror
       }
     });
     // Jimmy (352) Sideline & In Play: tie → +3 Lucky Stones + 1 Magic Firefly
@@ -1669,7 +1682,7 @@ function smartSimRounds(gameNum) {
         B[teamKey].resources.luckyStone += 3;
         B[teamKey].resources.firefly = (B[teamKey].resources.firefly || 0) + 1;
         const oppKey = teamKey === 'red' ? 'blue' : 'red';
-        if (hasSideline(B[oppKey], 33)) {
+        if (hasOnTeam(B[oppKey], 33)) {
           B[oppKey].resources.luckyStone += 3;
           B[oppKey].resources.firefly = (B[oppKey].resources.firefly || 0) + 1;
         }
@@ -2012,17 +2025,21 @@ function smartSimRounds(gameNum) {
     // Pale Nimbus (88) — Hidden Storm: while on sideline, +2 damage if winning dice sum < 7.
     // Cornelius (45) on enemy sideline blocks it. Matches index.html lines 9499–9511.
     if (hasSideline(wTeam, 88) && !wF.ko && winDice && winDice.reduce((s,d)=>s+d,0) < 7 && !hasSideline(lTeam, 45)) { dmg += 2; }
-    // Zach (87) — Craftsman: while on sideline, Guard Thomas (41) active doubles win → +3 damage.
+    // Zach (87) — Craftsman: while on sideline, Guard Thomas (41) active doubles win → +2 damage.
     // Cornelius (45) on enemy sideline blocks it. Matches index.html lines 9566–9578.
-    if (hasSideline(wTeam, 87) && wF.id === 41 && !wF.ko && wR.type === 'doubles' && !hasSideline(lTeam, 45)) { dmg += 3; }
+    if (hasSideline(wTeam, 87) && wF.id === 41 && !wF.ko && wR.type === 'doubles' && !hasSideline(lTeam, 45)) { dmg += 2; }
     // Laura (79) — Catchy Tune: Sideline & In Play: straight unlocks permanent die-lock.
     // AI auto-locks highest die. Check both winner and loser for straight activation.
-    if (!B.catchyTuneUnlocked[winner] && hasAlive(wTeam, 79) && winDice && isStraight(winDice) && !hasSideline(lTeam, 45)) {
+    if (hasAlive(wTeam, 79) && winDice && isStraight(winDice) && !hasSideline(lTeam, 45)) {
       B.catchyTuneUnlocked[winner] = true;
+      if (!B.catchyTuneDieBonus) B.catchyTuneDieBonus = { red: 0, blue: 0 };
+      B.catchyTuneDieBonus[winner] = (B.catchyTuneDieBonus[winner] || 0) + 1;
     }
     const loser = winner === 'red' ? 'blue' : 'red';
-    if (!B.catchyTuneUnlocked[loser] && hasAlive(lTeam, 79) && loseDice && isStraight(loseDice) && !hasSideline(wTeam, 45)) {
+    if (hasAlive(lTeam, 79) && loseDice && isStraight(loseDice) && !hasSideline(wTeam, 45)) {
       B.catchyTuneUnlocked[loser] = true;
+      if (!B.catchyTuneDieBonus) B.catchyTuneDieBonus = { red: 0, blue: 0 };
+      B.catchyTuneDieBonus[loser] = (B.catchyTuneDieBonus[loser] || 0) + 1;
     }
     // AI locks highest die for next roll
     if (B.catchyTuneUnlocked[winner] && winDice && winDice.length > 0) {
@@ -2281,7 +2298,7 @@ function smartSimRounds(gameNum) {
     });
 
     // On-win resource gains — Sandwiches (33) DEPENDABLE! mirrors Specials to lTeam when on their sideline
-    const sandwichLose = hasSideline(lTeam, 33);
+    const sandwichLose = hasOnTeam(lTeam, 33);
     if (wF.id === 209 && !wF.ko) { wTeam.resources.surge += 2;       if (sandwichLose) lTeam.resources.surge += 2; }       // Dart: +2 Surge
     if (wF.id === 307 && !wF.ko) { wTeam.resources.ice += 3; if (sandwichLose) { lTeam.resources.ice += 3; } } // Artemis: v674 — +3 Ice Shards (was Surge+Ice)
     if (wF.id === 342 && !wF.ko) {
@@ -2404,7 +2421,7 @@ function smartSimRounds(gameNum) {
     });
 
     // On-lose resource gains — Sandwiches (33) DEPENDABLE! mirrors Specials to wTeam when on their sideline
-    const sandwichWin = hasSideline(wTeam, 33);
+    const sandwichWin = hasOnTeam(wTeam, 33);
     const loseDice = winner === 'red' ? blueDice : redDice;
     if (lF.id === 24 && dmg > 0) { lTeam.resources.fire++;    if (sandwichWin) wTeam.resources.fire++;   }  // Simon (24): Brew Time — dmg guard, no KO guard (matches index.html line 9998)
     if (lF.id === 29)            { lTeam.resources.ice++;     if (sandwichWin) wTeam.resources.ice++;    }  // Sad Sal (29): Tough Job — loss only, no dmg/KO guard (matches index.html line 10007)
@@ -2503,15 +2520,13 @@ function smartSimRounds(gameNum) {
         wTeam.resources.healingSeed++;
       }
     }
-    // Starling (441) — Moonbeam: Win with doubles+ → +1 Moonstone + 1 Magic Firefly
+    // Wendy (441) — Moonbeam: Win with doubles+ → +1 Magic Firefly (matches index.html abilityDesc)
+    // v842: removed Lucky Stone over-grant; card grants only Magic Firefly, not Moonstone or Lucky Stone
     if (wF.id === 441 && !wF.ko && ['doubles','triples','quads','penta'].includes(wR.type)) {
-      wTeam.resources.luckyStone++;
       wTeam.resources.firefly = (wTeam.resources.firefly || 0) + 1;
-      // Sandwiches mirror for Lucky Stone only (Fireflies are not mirrorable)
-      const sandwichLose = hasSideline(lTeam, 33);
-      if (sandwichLose) { lTeam.resources.luckyStone++; }
     }
-    // Zippa (423) — Glimmer: v674 rework — moved to pre-roll section
+    // Zippa (423) — Glimmer: passive +1 damage per Healing Seed held (v842: wired into sim win-path; removed stale pre-roll LS conversion)
+    if (wF.id === 423 && !wF.ko) { dmg += (wTeam.resources.healingSeed || 0); }
 
     // Harvey (448) — Harvest Moon: Win: gain +1 Moonstone for each 5 you rolled
     if (wF.id === 448 && !wF.ko) {
@@ -2519,7 +2534,7 @@ function smartSimRounds(gameNum) {
       if (fives > 0) {
         wTeam.resources.moonstone += fives;
         // Sandwiches mirror for Moonstone
-        const sandwichLoseH = hasSideline(lTeam, 33);
+        const sandwichLoseH = hasOnTeam(lTeam, 33);
         if (sandwichLoseH) { lTeam.resources.moonstone += fives; }
       }
     }
@@ -2533,7 +2548,7 @@ function smartSimRounds(gameNum) {
         else if (wR.type === 'doubles') lTeam.resources.moonstone++;
         else if (['triples','quads','penta'].includes(wR.type)) lTeam.resources.fire += 3;
         // DEPENDABLE! mirror — Sandwiches (33) on wTeam grants wTeam the same consolation resources
-        if (hasSideline(wTeam, 33)) {
+        if (hasOnTeam(wTeam, 33)) {
           if (wR.type === 'singles') wTeam.resources.luckyStone += 2;         // matches index.html line 10816: luckyStone += 2
           else if (wR.type === 'doubles') wTeam.resources.moonstone++;
           else if (['triples','quads','penta'].includes(wR.type)) wTeam.resources.fire += 3;
@@ -2549,7 +2564,8 @@ function smartSimRounds(gameNum) {
       if (wF.id === 432 && !wF.ko) {
         wTeam.resources.fire += 1;
         wTeam.resources.ice += 2;
-        wTeam.resources.luckyStone += 1;
+        if (!wTeam.resources.frostbite) wTeam.resources.frostbite = 0;
+        wTeam.resources.frostbite += 1;
         wTeam.resources.moonstone += 1;
         wTeam.resources.healingSeed += 2;
       }
@@ -2601,7 +2617,7 @@ function smartSimRounds(gameNum) {
       else if (wR.type === 'doubles') wTeam.resources.moonstone++;
       else if (['triples','quads','penta'].includes(wR.type)) wTeam.resources.fire += 3;
       // DEPENDABLE! mirror — Sandwiches (33) on lTeam grants lTeam the same consolation resources
-      if (hasSideline(lTeam, 33)) {
+      if (hasOnTeam(lTeam, 33)) {
         if (wR.type === 'singles') lTeam.resources.luckyStone++;
         else if (wR.type === 'doubles') lTeam.resources.moonstone++;
         else if (['triples','quads','penta'].includes(wR.type)) lTeam.resources.fire += 3;
@@ -2627,7 +2643,8 @@ function smartSimRounds(gameNum) {
     // (lowest HP) sideline ghost. Matches index.html lines 11041–11084: winstonSchemeSideline built from
     // loseTeam sideline, doWinstonSchemeChoice sets loseTeam.activeIdx. AI always swaps when sideline
     // exists — bringing in the opponent's weakest ghost is optimal play for Winston.
-    if (wF.id === 15 && !wF.ko) {
+    // Barnaby (326) — Stubborn: immune to forced swaps by opponent effects (v842)
+    if (wF.id === 15 && !wF.ko && !(active(lTeam).id === 326 && !active(lTeam).ko)) {
       const winstonTargets = lTeam.ghosts
         .map((g, i) => ({ g, i }))
         .filter(x => x.i !== lTeam.activeIdx && !x.g.ko);
@@ -2645,7 +2662,7 @@ function smartSimRounds(gameNum) {
       B[teamKey].resources.healingSeed++;
       B[teamKey].resources.luckyStone++;
       const oppKey = teamKey === 'red' ? 'blue' : 'red';
-      if (hasSideline(B[oppKey], 33)) { B[oppKey].resources.healingSeed++; B[oppKey].resources.luckyStone++; }
+      if (hasOnTeam(B[oppKey], 33)) { B[oppKey].resources.healingSeed++; B[oppKey].resources.luckyStone++; }
     }
   });
 
@@ -2893,4 +2910,4 @@ function smartSimRounds(gameNum) {
   setTimeout(() => smartSimRounds(gameNum), 0);
 }
 
-console.log('🧠 smartAutoPlay loaded! Run: smartAutoPlay(100)');
+if (DEBUG) console.log('🧠 smartAutoPlay loaded! Run: smartAutoPlay(100)');
