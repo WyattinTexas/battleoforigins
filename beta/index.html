@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.28'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.29'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -4174,28 +4174,78 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
   font-size: 0.7rem; color: var(--text2); line-height: 1.4;
 }
 
-/* Big Golden PLAY Button */
+/* Big PLAY Button — Arena Entrance + Spotlight hybrid */
 .home-play-btn {
+  position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 100%; padding: 18px; border: none; border-radius: 16px;
+  width: 100%; padding: 20px 18px 16px; border: none; border-radius: 16px;
   font-family: 'Creepster', cursive; font-size: 1.8rem;
   letter-spacing: 4px; cursor: pointer;
-  background: linear-gradient(135deg, var(--gold), #c88a20);
-  color: var(--bg); transition: all 0.2s;
-  box-shadow: 0 4px 20px rgba(212,160,64,0.3);
+  background: linear-gradient(145deg, #1a1028, #0e0a1a);
+  color: #ffd700; transition: all 0.2s;
   margin-bottom: 8px;
+  overflow: visible;
+  z-index: 1;
+}
+.home-play-btn::before {
+  content: '';
+  position: absolute; inset: -2px; border-radius: 18px;
+  background: linear-gradient(135deg, #ff6a00, #ffc800, #ff6a00, #ffc800);
+  background-size: 300% 300%;
+  animation: fireShift 3s ease infinite;
+  z-index: -1;
+}
+.home-play-btn::after {
+  content: '';
+  position: absolute; inset: -6px; border-radius: 22px;
+  background: radial-gradient(ellipse, rgba(255,140,0,0.25), transparent 70%);
+  animation: arenaPulse 2s ease-in-out infinite;
+  z-index: -2;
+}
+@keyframes fireShift {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes arenaPulse {
+  0%,100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
 }
 .home-play-btn:active { transform: scale(0.97); }
+.home-play-btn:active::after { animation: none; opacity: 0; }
+
+/* Fan layout cards */
 .play-btn-team {
-  display: flex; gap: 8px; justify-content: center; margin-bottom: 6px;
+  display: flex; align-items: flex-end; justify-content: center;
+  height: 70px; position: relative; margin-bottom: 4px; width: 160px;
 }
 .play-btn-team img {
-  width: 40px; height: 40px; border-radius: 8px; border: 2px solid rgba(0,0,0,0.3);
-  object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  width: 44px; height: 56px; border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.15);
+  object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  position: absolute;
+  transition: transform 0.3s;
+}
+.play-btn-team img:nth-child(1) {
+  transform: rotate(-12deg) translateX(-38px);
+  z-index: 1;
+}
+.play-btn-team img:nth-child(2) {
+  width: 50px; height: 64px;
+  transform: translateY(-4px);
+  z-index: 2;
+  border-color: rgba(255,200,0,0.3);
+}
+.play-btn-team img:nth-child(3) {
+  transform: rotate(12deg) translateX(38px);
+  z-index: 1;
+}
+.home-play-btn .play-text {
+  text-shadow: 0 0 20px rgba(255,165,0,0.4);
 }
 .home-play-sub {
-  font-family: 'Inter', sans-serif; font-size: 0.65rem;
-  font-weight: 400; letter-spacing: 0; opacity: 0.7; margin-top: 2px;
+  font-family: 'Inter', sans-serif; font-size: 0.6rem;
+  font-weight: 500; letter-spacing: 1.5px; color: #8a7a60;
+  margin-top: 2px; text-transform: uppercase;
 }
 
 /* Challenge Friend Button */
@@ -6312,7 +6362,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.28';
+const BBN_VERSION = 'v2.29';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
