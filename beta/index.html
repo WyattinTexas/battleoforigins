@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.29'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.30'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -4174,11 +4174,11 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
   font-size: 0.7rem; color: var(--text2); line-height: 1.4;
 }
 
-/* Big PLAY Button — Arena Entrance + Spotlight hybrid */
+/* Big PLAY Button — Arena Entrance */
 .home-play-btn {
   position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 100%; padding: 20px 18px 16px; border: none; border-radius: 16px;
+  width: 100%; padding: 22px 18px 16px; border: none; border-radius: 16px;
   font-family: 'Creepster', cursive; font-size: 1.8rem;
   letter-spacing: 4px; cursor: pointer;
   background: linear-gradient(145deg, #1a1028, #0e0a1a);
@@ -4190,16 +4190,16 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 .home-play-btn::before {
   content: '';
   position: absolute; inset: -2px; border-radius: 18px;
-  background: linear-gradient(135deg, #ff6a00, #ffc800, #ff6a00, #ffc800);
+  background: linear-gradient(135deg, var(--gold-deep, #8a6a1a), var(--gold, #d4a040), var(--gold-bright, #f0c850), var(--gold, #d4a040));
   background-size: 300% 300%;
-  animation: fireShift 3s ease infinite;
+  animation: fireShift 4s ease infinite;
   z-index: -1;
 }
 .home-play-btn::after {
   content: '';
-  position: absolute; inset: -6px; border-radius: 22px;
-  background: radial-gradient(ellipse, rgba(255,140,0,0.25), transparent 70%);
-  animation: arenaPulse 2s ease-in-out infinite;
+  position: absolute; inset: -5px; border-radius: 22px;
+  background: radial-gradient(ellipse, rgba(212,160,64,0.2), transparent 70%);
+  animation: arenaPulse 2.5s ease-in-out infinite;
   z-index: -2;
 }
 @keyframes fireShift {
@@ -4208,7 +4208,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 }
 @keyframes arenaPulse {
   0%,100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.06); }
+  50% { opacity: 0.8; transform: scale(1.04); }
 }
 .home-play-btn:active { transform: scale(0.97); }
 .home-play-btn:active::after { animation: none; opacity: 0; }
@@ -4216,31 +4216,29 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 /* Fan layout cards */
 .play-btn-team {
   display: flex; align-items: flex-end; justify-content: center;
-  height: 70px; position: relative; margin-bottom: 4px; width: 160px;
+  height: 100px; position: relative; margin-bottom: 4px; width: 200px;
 }
 .play-btn-team img {
-  width: 44px; height: 56px; border-radius: 8px;
+  width: 60px; height: 78px; border-radius: 10px;
   border: 2px solid rgba(255,255,255,0.15);
-  object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.6);
   position: absolute;
   transition: transform 0.3s;
 }
 .play-btn-team img:nth-child(1) {
-  transform: rotate(-12deg) translateX(-38px);
+  transform: rotate(-12deg) translateX(-52px);
   z-index: 1;
 }
 .play-btn-team img:nth-child(2) {
-  width: 50px; height: 64px;
-  transform: translateY(-4px);
+  width: 68px; height: 88px;
+  transform: translateY(-6px);
   z-index: 2;
-  border-color: rgba(255,200,0,0.3);
+  border-color: rgba(212,160,64,0.4);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.7);
 }
 .play-btn-team img:nth-child(3) {
-  transform: rotate(12deg) translateX(38px);
+  transform: rotate(12deg) translateX(52px);
   z-index: 1;
-}
-.home-play-btn .play-text {
-  text-shadow: 0 0 20px rgba(255,165,0,0.4);
 }
 .home-play-sub {
   font-family: 'Inter', sans-serif; font-size: 0.6rem;
@@ -6362,7 +6360,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.29';
+const BBN_VERSION = 'v2.30';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -7117,11 +7115,10 @@ function playGame() {
       }
     }
     renderTeamStrip();
-    renderCollection();
     updateBattleButton();
     saveTeamToFirebase();
-    switchScreen('collection');
-    showTeamReadyBanner();
+    // Team auto-filled — go straight to battle
+    quickBattle();
     return;
   }
 
