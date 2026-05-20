@@ -1355,19 +1355,32 @@
   #raid-screen .vs-inner { display:none; }
   #raid-screen .triples-banner { font-size:2.5rem; letter-spacing:2px; }
 
-  /* --- OPPONENT: top of screen (class set by applyMobileTeamClasses) --- */
+  /* --- OPPONENT: top of screen — CSS Grid layout --- */
   #raid-screen #blue-team-column {
     order:-1 !important; flex:0 0 auto !important;
     background:rgba(233,69,96,0.04) !important;
     border:1px solid rgba(233,69,96,0.10) !important;
     border-radius:8px !important; padding:3px 6px !important;
-    display:flex !important; flex-wrap:wrap !important; gap:3px !important; align-items:center !important;
+    display:grid !important;
+    grid-template-columns:120px 1fr !important;
+    grid-template-areas:
+      "opp-bench opp-bench"
+      "opp-fighter opp-info" !important;
+    gap:3px !important;
   }
   #raid-screen #blue-team-column .team-battle-row { display:contents !important; }
   #raid-screen #blue-team-column .sideline-stack {
-    flex-direction:row !important; gap:5px !important; justify-content:center !important;
-    order:-1 !important; width:100% !important; flex-basis:100% !important;
+    grid-area:opp-bench !important;
+    display:flex !important; flex-direction:row !important; gap:5px !important; justify-content:center !important;
   }
+  #raid-screen #blue-team-column .fighter-slot {
+    grid-area:opp-fighter !important;
+    width:auto !important; margin:0 !important;
+  }
+  #raid-screen #blue-team-column .team-info {
+    grid-area:opp-info !important; min-width:0 !important;
+  }
+  /* Sideline card styling */
   #raid-screen #blue-team-column .sideline-slot { width:80px; border-radius:8px; flex-shrink:0; }
   #raid-screen #blue-team-column .sideline-slot .card-name-banner {
     font-size:8px; padding:2px 3px; white-space:normal; text-align:center; line-height:1.15;
@@ -1382,14 +1395,12 @@
   #raid-screen #blue-team-column .sideline-slot .card-img-placeholder {
     aspect-ratio:3/2; object-fit:cover; border-radius:7px 7px 0 0;
   }
-  #raid-screen #blue-team-column .fighter-slot {
-    width:120px; margin:0; flex-shrink:0; order:0;
-  }
+  /* Fighter styling */
   #raid-screen #blue-team-column .fighter-slot .card-img,
   #raid-screen #blue-team-column .fighter-slot .card-img-placeholder { aspect-ratio:3/2; }
   #raid-screen #blue-team-column .fighter-slot .card-name-banner { font-size:10px; padding:3px 5px; }
-  #raid-screen #blue-team-column .team-info { flex:1; min-width:0; order:1; }
   #raid-screen #blue-team-column .fighter-slot .ci-desc { display:none; }
+  /* Hide ALL opponent controls */
   #raid-screen #blue-team-column .action-btn,
   #raid-screen #blue-team-column .ability-buttons,
   #raid-screen #blue-team-column .duel-done-btn { display:none !important; }
@@ -1408,24 +1419,39 @@
   }
   #raid-screen .die.rolling { will-change:transform; }
 
-  /* --- PLAYER (red-team-column): bottom of screen --- */
+  /* --- PLAYER (red-team-column): bottom of screen — CSS Grid layout --- */
   #raid-screen #red-team-column {
     order:1 !important; flex:1 1 auto !important;
     background:rgba(59,130,246,0.05) !important;
     border:1px solid rgba(59,130,246,0.10) !important;
     border-radius:8px !important; padding:3px 6px !important;
-    display:flex !important; flex-wrap:wrap !important; gap:3px !important; align-items:center !important;
+    display:grid !important;
+    grid-template-columns:120px 1fr !important;
+    grid-template-areas:
+      "my-fighter my-info"
+      "my-bench my-bench"
+      "my-abilities my-abilities"
+      "my-btn my-btn" !important;
+    gap:3px !important;
     align-content:center !important;
   }
 
-  /* Dissolve battle-row so fighter + team-info sit side by side */
+  /* Dissolve battle-row so children participate in grid */
   #raid-screen #red-team-column .team-battle-row { display:contents !important; }
 
-  /* Sideline: horizontal row BELOW fighter (full width)
-     In red HTML, sideline-stack comes BEFORE fighter — use order to push below */
   #raid-screen #red-team-column .sideline-stack {
-    flex-direction:row !important; gap:5px !important; justify-content:center !important;
-    order:2 !important; width:100% !important; flex-basis:100% !important;
+    grid-area:my-bench !important;
+    display:flex !important; flex-direction:row !important; gap:5px !important; justify-content:center !important;
+  }
+  #raid-screen #red-team-column .fighter-slot {
+    grid-area:my-fighter !important;
+    width:auto !important; margin:0 !important;
+  }
+  #raid-screen #red-team-column .team-info {
+    grid-area:my-info !important; min-width:0 !important;
+  }
+  #raid-screen #red-team-column .ability-buttons {
+    grid-area:my-abilities !important; grid-column:1/-1 !important;
   }
 
   /* Player bench cards: 80px compact with ability name */
@@ -1443,26 +1469,14 @@
   #raid-screen #red-team-column .sideline-slot .card-img-placeholder {
     aspect-ratio:3/2; object-fit:cover; border-radius:7px 7px 0 0;
   }
-
-  /* Player fighter: side by side with team-info */
-  #raid-screen #red-team-column .fighter-slot {
-    width:120px; margin:0; flex-shrink:0; order:0;
-  }
+  /* Fighter styling */
   #raid-screen #red-team-column .fighter-slot .card-img,
   #raid-screen #red-team-column .fighter-slot .card-img-placeholder { aspect-ratio:3/2; }
   #raid-screen #red-team-column .fighter-slot .card-name-banner { font-size:10px; padding:3px 5px; }
 
-  /* Team info beside fighter */
-  #raid-screen #red-team-column .team-info {
-    flex:1; min-width:0; order:1;
-  }
-
-  /* Ability buttons after sideline */
-  #raid-screen #red-team-column .ability-buttons { order:3; width:100%; }
-
   /* --- GOLD READY/ROLL BUTTON --- */
   #raid-screen #red-team-column .action-btn.team-roll {
-    order:4; width:100%; max-width:100%; margin-top:auto;
+    grid-area:my-btn !important; width:100%; max-width:100%;
     padding:12px; font-size:15px; font-weight:800; letter-spacing:2px;
     min-height:44px; border-radius:12px;
     background:linear-gradient(135deg, #d4a040, #f0c850);
