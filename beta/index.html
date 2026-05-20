@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.30'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.31'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -4240,11 +4240,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
   transform: rotate(12deg) translateX(52px);
   z-index: 1;
 }
-.home-play-sub {
-  font-family: 'Inter', sans-serif; font-size: 0.6rem;
-  font-weight: 500; letter-spacing: 1.5px; color: #8a7a60;
-  margin-top: 2px; text-transform: uppercase;
-}
+/* (home-play-sub removed — redundant with card art) */
 
 /* Challenge Friend Button */
 .home-challenge-btn {
@@ -4974,8 +4970,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
     <!-- Big PLAY Button -->
     <button class="home-play-btn" onclick="playGame()">
       <div class="play-btn-team" id="play-btn-team"></div>
-      PLAY
-      <span class="home-play-sub" id="home-games-meta">Pick your team and battle</span>
+      ENTER THE ARENA
     </button>
 
     <!-- Challenge Friend -->
@@ -6360,7 +6355,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.30';
+const BBN_VERSION = 'v2.31';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -6466,7 +6461,6 @@ function renderHomeScreen() {
   }
   // Play button team preview
   const playTeamEl = document.getElementById('play-btn-team');
-  const metaEl = document.getElementById('home-games-meta');
   if (playTeamEl) {
     const filledTeam = (userProfile.currentTeam || []).filter(id => id && getGhost(id));
     if (filledTeam.length >= 3) {
@@ -6474,10 +6468,8 @@ function renderHomeScreen() {
         const g = getGhost(id);
         return `<img src="${g.art}" alt="${g.name}" onerror="this.style.background='var(--surface3)'">`;
       }).join('');
-      if (metaEl) metaEl.textContent = filledTeam.map(id => getGhost(id).name).join(' · ');
     } else {
       playTeamEl.innerHTML = '';
-      if (metaEl) metaEl.textContent = 'Pick your team and battle';
     }
   }
   // Pack status
