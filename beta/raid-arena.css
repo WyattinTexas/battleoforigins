@@ -1332,9 +1332,9 @@
 @media (max-width:900px) {
   /* --- Arena Board: vertical stack, fill viewport, no scroll --- */
   #raid-screen .arena-board {
-    flex-direction:column; height:100dvh; overflow:hidden;
-    padding:4px; gap:2px; border-radius:0; max-height:none;
-    align-items:stretch;
+    flex-direction:column !important; height:100dvh !important; overflow:hidden !important;
+    padding:4px !important; gap:2px !important; border-radius:0 !important; max-height:none !important;
+    align-items:stretch !important;
   }
 
   /* --- Narrator: fixed banner at top --- */
@@ -1356,43 +1356,43 @@
   #raid-screen .triples-banner { font-size:2.5rem; letter-spacing:2px; }
 
   /* --- OPPONENT: top of screen (class set by applyMobileTeamClasses) --- */
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) {
-    order:-1; flex:0 0 auto;
-    background:rgba(233,69,96,0.04);
-    border:1px solid rgba(233,69,96,0.10);
-    border-radius:8px; padding:3px 6px;
-    display:flex; flex-wrap:wrap; gap:3px; align-items:center;
+  #raid-screen #blue-team-column {
+    order:-1 !important; flex:0 0 auto !important;
+    background:rgba(233,69,96,0.04) !important;
+    border:1px solid rgba(233,69,96,0.10) !important;
+    border-radius:8px !important; padding:3px 6px !important;
+    display:flex !important; flex-wrap:wrap !important; gap:3px !important; align-items:center !important;
   }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .team-battle-row { display:contents; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-stack {
-    flex-direction:row; gap:5px; justify-content:center;
-    order:-1; width:100%; flex-basis:100%;
+  #raid-screen #blue-team-column .team-battle-row { display:contents !important; }
+  #raid-screen #blue-team-column .sideline-stack {
+    flex-direction:row !important; gap:5px !important; justify-content:center !important;
+    order:-1 !important; width:100% !important; flex-basis:100% !important;
   }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot { width:80px; border-radius:8px; flex-shrink:0; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot .card-name-banner {
+  #raid-screen #blue-team-column .sideline-slot { width:80px; border-radius:8px; flex-shrink:0; }
+  #raid-screen #blue-team-column .sideline-slot .card-name-banner {
     font-size:8px; padding:2px 3px; white-space:normal; text-align:center; line-height:1.15;
   }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot .ability-banner {
+  #raid-screen #blue-team-column .sideline-slot .ability-banner {
     display:block; font-size:6px; padding:1px 3px;
     color:var(--moonstone); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot .ci-desc { display:none; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot .card-info { padding:0; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot .card-img,
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot .card-img-placeholder {
+  #raid-screen #blue-team-column .sideline-slot .ci-desc { display:none; }
+  #raid-screen #blue-team-column .sideline-slot .card-info { padding:0; }
+  #raid-screen #blue-team-column .sideline-slot .card-img,
+  #raid-screen #blue-team-column .sideline-slot .card-img-placeholder {
     aspect-ratio:3/2; object-fit:cover; border-radius:7px 7px 0 0;
   }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .fighter-slot {
+  #raid-screen #blue-team-column .fighter-slot {
     width:120px; margin:0; flex-shrink:0; order:0;
   }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .fighter-slot .card-img,
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .fighter-slot .card-img-placeholder { aspect-ratio:3/2; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .fighter-slot .card-name-banner { font-size:10px; padding:3px 5px; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .team-info { flex:1; min-width:0; order:1; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .fighter-slot .ci-desc { display:none; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .action-btn,
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .ability-buttons,
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .duel-done-btn { display:none !important; }
+  #raid-screen #blue-team-column .fighter-slot .card-img,
+  #raid-screen #blue-team-column .fighter-slot .card-img-placeholder { aspect-ratio:3/2; }
+  #raid-screen #blue-team-column .fighter-slot .card-name-banner { font-size:10px; padding:3px 5px; }
+  #raid-screen #blue-team-column .team-info { flex:1; min-width:0; order:1; }
+  #raid-screen #blue-team-column .fighter-slot .ci-desc { display:none; }
+  #raid-screen #blue-team-column .action-btn,
+  #raid-screen #blue-team-column .ability-buttons,
+  #raid-screen #blue-team-column .duel-done-btn { display:none !important; }
 
   /* --- ARENA CENTER (dice): compact, between teams --- */
   #raid-screen .arena-center {
@@ -1409,59 +1409,59 @@
   #raid-screen .die.rolling { will-change:transform; }
 
   /* --- PLAYER (red-team-column): bottom of screen --- */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) {
-    order:1; flex:1 1 auto;
-    background:rgba(59,130,246,0.05);
-    border:1px solid rgba(59,130,246,0.10);
-    border-radius:8px; padding:3px 6px;
-    display:flex; flex-wrap:wrap; gap:3px; align-items:center;
-    align-content:center;
+  #raid-screen #red-team-column {
+    order:1 !important; flex:1 1 auto !important;
+    background:rgba(59,130,246,0.05) !important;
+    border:1px solid rgba(59,130,246,0.10) !important;
+    border-radius:8px !important; padding:3px 6px !important;
+    display:flex !important; flex-wrap:wrap !important; gap:3px !important; align-items:center !important;
+    align-content:center !important;
   }
 
   /* Dissolve battle-row so fighter + team-info sit side by side */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .team-battle-row { display:contents; }
+  #raid-screen #red-team-column .team-battle-row { display:contents !important; }
 
   /* Sideline: horizontal row BELOW fighter (full width)
      In red HTML, sideline-stack comes BEFORE fighter — use order to push below */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-stack {
-    flex-direction:row; gap:5px; justify-content:center;
-    order:2; width:100%; flex-basis:100%;
+  #raid-screen #red-team-column .sideline-stack {
+    flex-direction:row !important; gap:5px !important; justify-content:center !important;
+    order:2 !important; width:100% !important; flex-basis:100% !important;
   }
 
   /* Player bench cards: 80px compact with ability name */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot { width:80px; border-radius:8px; flex-shrink:0; }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot .card-name-banner {
+  #raid-screen #red-team-column .sideline-slot { width:80px; border-radius:8px; flex-shrink:0; }
+  #raid-screen #red-team-column .sideline-slot .card-name-banner {
     font-size:8px; padding:2px 3px; white-space:normal; text-align:center; line-height:1.15;
   }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot .ability-banner {
+  #raid-screen #red-team-column .sideline-slot .ability-banner {
     display:block; font-size:6px; padding:1px 3px;
     color:var(--moonstone); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot .ci-desc { display:none; }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot .card-info { padding:0; }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot .card-img,
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot .card-img-placeholder {
+  #raid-screen #red-team-column .sideline-slot .ci-desc { display:none; }
+  #raid-screen #red-team-column .sideline-slot .card-info { padding:0; }
+  #raid-screen #red-team-column .sideline-slot .card-img,
+  #raid-screen #red-team-column .sideline-slot .card-img-placeholder {
     aspect-ratio:3/2; object-fit:cover; border-radius:7px 7px 0 0;
   }
 
   /* Player fighter: side by side with team-info */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .fighter-slot {
+  #raid-screen #red-team-column .fighter-slot {
     width:120px; margin:0; flex-shrink:0; order:0;
   }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .fighter-slot .card-img,
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .fighter-slot .card-img-placeholder { aspect-ratio:3/2; }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .fighter-slot .card-name-banner { font-size:10px; padding:3px 5px; }
+  #raid-screen #red-team-column .fighter-slot .card-img,
+  #raid-screen #red-team-column .fighter-slot .card-img-placeholder { aspect-ratio:3/2; }
+  #raid-screen #red-team-column .fighter-slot .card-name-banner { font-size:10px; padding:3px 5px; }
 
   /* Team info beside fighter */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .team-info {
+  #raid-screen #red-team-column .team-info {
     flex:1; min-width:0; order:1;
   }
 
   /* Ability buttons after sideline */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .ability-buttons { order:3; width:100%; }
+  #raid-screen #red-team-column .ability-buttons { order:3; width:100%; }
 
   /* --- GOLD READY/ROLL BUTTON --- */
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .action-btn.team-roll {
+  #raid-screen #red-team-column .action-btn.team-roll {
     order:4; width:100%; max-width:100%; margin-top:auto;
     padding:12px; font-size:15px; font-weight:800; letter-spacing:2px;
     min-height:44px; border-radius:12px;
@@ -1470,7 +1470,7 @@
     box-shadow:0 4px 16px rgba(212,160,64,0.35), 0 0 20px rgba(240,200,80,0.15);
     text-transform:uppercase;
   }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .action-btn.team-roll:hover:not(:disabled) {
+  #raid-screen #red-team-column .action-btn.team-roll:hover:not(:disabled) {
     background:linear-gradient(135deg, #e0b050, #f8d860);
     transform:translateY(-1px);
     box-shadow:0 6px 20px rgba(212,160,64,0.45), 0 0 28px rgba(240,200,80,0.2);
@@ -1510,10 +1510,10 @@
 
 /* --- Extra-small phone refinements (≤440px) --- */
 @media (max-width:440px) {
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .sideline-slot { width:80px; }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .sideline-slot { width:80px; }
-  #raid-screen :is(.opponent-team, #blue-team-column:not(.local-team)) .fighter-slot { width:120px; }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .fighter-slot { width:120px; }
+  #raid-screen #blue-team-column .sideline-slot { width:80px; }
+  #raid-screen #red-team-column .sideline-slot { width:80px; }
+  #raid-screen #blue-team-column .fighter-slot { width:120px; }
+  #raid-screen #red-team-column .fighter-slot { width:120px; }
   #raid-screen .die { width:34px; height:34px; font-size:16px; }
   #raid-screen .dice-stack { padding:6px 8px; gap:4px; }
   #raid-screen .res-tile { width:32px; height:36px; border-radius:6px; }
@@ -1521,7 +1521,7 @@
   #raid-screen .res-tile .res-main img { width:18px; height:18px; }
   #raid-screen .res-tile .res-count { font-size:9px; }
   #raid-screen .res-tile .res-label { font-size:6px; }
-  #raid-screen :is(.local-team, #red-team-column:not(.opponent-team)) .action-btn.team-roll {
+  #raid-screen #red-team-column .action-btn.team-roll {
     padding:12px; font-size:15px; min-height:46px;
   }
   #raid-screen .narrator-inner { font-size:10px; padding:5px 8px; }
