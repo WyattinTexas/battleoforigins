@@ -7,7 +7,7 @@
 <script>
 // Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
 (function(){
-  const LOCAL_V = 'v2.36'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.37'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
   }).catch(() => {});
@@ -6376,7 +6376,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.36';
+const BBN_VERSION = 'v2.37';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
@@ -6459,6 +6459,37 @@ function showSpiritkinDetail() {
         <img src="${ghost.art}" style="width:220px;height:220px;object-fit:cover;border-radius:20px;border:2.5px solid ${rc}66;position:relative;" onerror="this.style.background='var(--surface3)'">
       </div>
       <div style="font-family:Creepster,cursive;font-size:2rem;color:var(--gold-bright,#f0c850);letter-spacing:2px;margin-bottom:4px;">${ghost.name}</div>
+      <div style="display:flex;gap:10px;justify-content:center;align-items:center;margin-bottom:16px;">
+        <span style="font-size:0.6rem;font-weight:700;padding:3px 10px;border-radius:8px;background:${rc}18;color:${rc};letter-spacing:1px;">${(ghost.rarity||'').replace('-',' ').toUpperCase()}</span>
+        <span style="font-size:0.75rem;font-weight:600;color:var(--text,#e8dcc8);">${ghost.maxHp} HP</span>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px 20px;text-align:left;">
+        <div style="font-family:Creepster,cursive;font-size:1.1rem;color:var(--gold,#d4a040);margin-bottom:6px;">${ghost.ability||''}</div>
+        <div style="font-size:0.8rem;color:var(--text2,#a09686);line-height:1.6;">${ghost.abilityDesc||''}</div>
+      </div>
+    </div>`;
+}
+
+function showGhostPreview(id) {
+  const ghost = typeof getGhost === 'function' ? getGhost(id) : null;
+  if (!ghost) return;
+  const old = document.getElementById('ghost-preview-overlay');
+  if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'ghost-preview-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(6,4,14,0.97);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;';
+  document.body.appendChild(overlay);
+  overlay.onclick = () => overlay.remove();
+  const rarityColors = { common:'#8a8a8a', uncommon:'#4a9aca', rare:'#a855f7', 'ghost-rare':'#22c55e', legendary:'#f59e0b' };
+  const rc = rarityColors[ghost.rarity] || '#888';
+  overlay.innerHTML = `
+    <button onclick="document.getElementById('ghost-preview-overlay').remove()" style="position:absolute;top:16px;right:20px;background:rgba(255,255,255,0.1);border:none;color:#fff;font-size:1.6rem;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;">&times;</button>
+    <div onclick="event.stopPropagation()" style="text-align:center;max-width:340px;width:100%;">
+      <div style="position:relative;display:inline-block;margin-bottom:16px;">
+        <div style="position:absolute;inset:-8px;border-radius:24px;background:radial-gradient(ellipse,${rc}15,transparent 70%);"></div>
+        <img src="${ghost.art}" style="width:200px;height:200px;object-fit:cover;border-radius:20px;border:2.5px solid ${rc}66;position:relative;" onerror="this.style.background='var(--surface3)'">
+      </div>
+      <div style="font-family:Creepster,cursive;font-size:1.8rem;color:var(--gold-bright,#f0c850);letter-spacing:2px;margin-bottom:4px;">${ghost.name}</div>
       <div style="display:flex;gap:10px;justify-content:center;align-items:center;margin-bottom:16px;">
         <span style="font-size:0.6rem;font-weight:700;padding:3px 10px;border-radius:8px;background:${rc}18;color:${rc};letter-spacing:1px;">${(ghost.rarity||'').replace('-',' ').toUpperCase()}</span>
         <span style="font-size:0.75rem;font-weight:600;color:var(--text,#e8dcc8);">${ghost.maxHp} HP</span>
@@ -7793,7 +7824,7 @@ function showBadgeDetail(idx) {
   const teamHtml = m.team.map(id => {
     const g = typeof getGhost === 'function' ? getGhost(id) : null;
     if (!g) return '';
-    return `<div style="text-align:center;"><img src="${g.art}" style="width:50px;height:50px;border-radius:10px;border:1.5px solid ${m.color}44;object-fit:cover;" onerror="this.style.background='var(--surface3)'"><div style="font-size:0.6rem;color:var(--text2);margin-top:3px;">${g.name}</div></div>`;
+    return `<div style="text-align:center;cursor:pointer;" onclick="event.stopPropagation();showGhostPreview(${id})"><img src="${g.art}" style="width:50px;height:50px;border-radius:10px;border:1.5px solid ${m.color}44;object-fit:cover;" onerror="this.style.background='var(--surface3)'"><div style="font-size:0.6rem;color:var(--text2);margin-top:3px;">${g.name}</div></div>`;
   }).join('');
 
   // Create overlay (always fresh — removes stale detached elements)
