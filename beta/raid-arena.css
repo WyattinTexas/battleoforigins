@@ -1542,24 +1542,244 @@
   #raid-screen .narrator-inner { font-size:10px; padding:5px 8px; }
 }
 
+/* =============================================================
+   LANDSCAPE — Guild Wars 1 inspired HUD layout
+   Fighters in top corners, dice center, skill bar at bottom
+   ============================================================= */
 @media (max-height:500px) and (orientation:landscape) {
-  #raid-screen .arena-board { flex-direction:row !important; max-height:100dvh; overflow-y:auto; align-items:stretch; padding:6px; gap:6px; }
-  #raid-screen .team-column { width:auto; flex:1; min-width:0; gap:4px; }
-  #raid-screen .team-battle-row { flex-direction:row; gap:4px; }
-  #raid-screen .sideline-stack { flex-direction:column; gap:4px; }
-  #raid-screen .arena-center { min-width:80px; max-width:120px; gap:4px; }
-  #raid-screen .fighter-slot { width:100px; margin:0; }
-  #raid-screen .sideline-slot { width:56px; }
-  #raid-screen .die { width:36px; height:36px; font-size:16px; }
-  #raid-screen .dice-row { gap:2px; }
-  #raid-screen .team-roll { padding:6px 10px; font-size:11px; }
-  #raid-screen .ability-btn { padding:3px 6px; font-size:10px; }
-  #raid-screen .hp-bar-wrap { max-width:160px; }
-  #raid-screen .res-tile { width:30px; height:36px; }
-  #raid-screen .res-tile .res-main { font-size:13px; }
-  #raid-screen .res-tile .res-main img { width:16px; height:16px; }
-  #raid-screen .res-tile .res-count { font-size:9px; }
-  #raid-screen .res-tile .res-label { font-size:6px; }
-  #raid-screen .narrator-inner { font-size:10px; padding:4px 8px; min-height:20px; }
-  #raid-screen .turn-indicator { font-size:12px !important; }
+
+  /* --- Board: CSS Grid shell --- */
+  #raid-screen .arena-board {
+    display:grid !important; flex-direction:unset !important;
+    grid-template-columns:auto 1fr auto;
+    grid-template-rows:1fr auto;
+    grid-template-areas:
+      "opp    dice    my-cards"
+      "opp    dice    my-info";
+    height:100dvh !important; max-height:100dvh !important;
+    padding:22px 6px 4px 6px !important; gap:4px !important;
+    border-radius:0 !important; overflow:hidden !important;
+    align-items:stretch;
+  }
+
+  /* --- Narrator: fixed thin strip at top --- */
+  #raid-screen .narrator-inner {
+    position:fixed; top:0; left:0; right:0; z-index:500;
+    font-size:10px; padding:3px 10px; min-height:18px;
+    border-radius:0; backdrop-filter:blur(8px);
+    background:rgba(10,10,30,0.92);
+    border-bottom:1px solid rgba(126,232,250,0.15);
+  }
+  #raid-screen .narrator-box { height:0; overflow:hidden; margin:0; padding:0; }
+
+  /* --- VS bar: hidden --- */
+  #raid-screen .vs-text,
+  #raid-screen .vs-fighter-name,
+  #raid-screen .vs-inner { display:none; }
+
+  /* Leave Raid button */
+  #raid-screen #leaveRaidBtn {
+    top:20px !important; right:4px !important; font-size:0.6rem !important;
+    padding:3px 8px !important;
+  }
+
+  /* --- OPPONENT (blue): top-left corner --- */
+  #raid-screen #blue-team-column {
+    grid-area:opp; display:flex !important; flex-direction:column !important;
+    align-items:flex-start !important; justify-content:flex-start !important;
+    gap:3px !important; padding:2px !important;
+    background:rgba(233,69,96,0.04) !important;
+    border:1px solid rgba(233,69,96,0.10) !important;
+    border-radius:8px !important;
+    min-width:0; max-width:180px;
+  }
+  #raid-screen #blue-team-column .team-battle-row {
+    display:flex !important; flex-direction:row !important; gap:3px !important;
+    align-items:flex-start !important;
+  }
+  #raid-screen #blue-team-column .sideline-stack {
+    display:flex !important; flex-direction:column !important; gap:2px !important;
+  }
+  #raid-screen #blue-team-column .fighter-slot {
+    width:80px !important; margin:0 !important;
+  }
+  #raid-screen #blue-team-column .fighter-slot .card-name-banner { font-size:8px; padding:2px 4px; }
+  #raid-screen #blue-team-column .fighter-slot .ability-banner { display:none !important; }
+  #raid-screen #blue-team-column .fighter-slot .ci-desc { display:none; }
+  #raid-screen #blue-team-column .fighter-slot .card-info { padding:2px 4px; }
+  #raid-screen #blue-team-column .fighter-slot .card-img,
+  #raid-screen #blue-team-column .fighter-slot .card-img-placeholder { aspect-ratio:1; }
+  #raid-screen #blue-team-column .sideline-slot {
+    width:40px !important; border-radius:6px;
+  }
+  #raid-screen #blue-team-column .sideline-slot .card-name-banner {
+    font-size:6px; padding:1px 2px; white-space:normal; text-align:center; line-height:1.1;
+  }
+  #raid-screen #blue-team-column .sideline-slot .ability-banner { display:none !important; }
+  #raid-screen #blue-team-column .sideline-slot .ci-desc { display:none; }
+  #raid-screen #blue-team-column .sideline-slot .card-info { padding:0; }
+  #raid-screen #blue-team-column .sideline-slot .card-img,
+  #raid-screen #blue-team-column .sideline-slot .card-img-placeholder {
+    aspect-ratio:4/3; object-fit:cover; border-radius:5px 5px 0 0;
+  }
+  #raid-screen #blue-team-column .team-info {
+    width:100%; display:flex; flex-direction:row; align-items:center; gap:4px;
+  }
+  #raid-screen #blue-team-column .hp-bar-wrap { max-width:120px; height:6px; }
+  #raid-screen #blue-team-column .hp-text { font-size:0.5rem; margin-top:0; }
+  #raid-screen #blue-team-column .resources { gap:2px; }
+  #raid-screen #blue-team-column .res-tile { width:24px; height:28px; border-radius:4px; }
+  #raid-screen #blue-team-column .res-tile .res-main { font-size:11px; }
+  #raid-screen #blue-team-column .res-tile .res-main img { width:14px; height:14px; }
+  #raid-screen #blue-team-column .res-tile .res-count { font-size:7px; }
+  #raid-screen #blue-team-column .res-tile .res-label { font-size:5px; }
+  /* Hide opponent controls */
+  #raid-screen #blue-team-column .action-btn,
+  #raid-screen #blue-team-column .ability-buttons,
+  #raid-screen #blue-team-column .duel-done-btn { display:none !important; }
+
+  /* --- PLAYER (red): dissolve into parent grid --- */
+  #raid-screen #red-team-column {
+    display:contents !important;
+  }
+
+  /* Player fighter + sidelines: top-right */
+  #raid-screen #red-team-column .team-battle-row {
+    grid-area:my-cards;
+    display:flex !important; flex-direction:row-reverse !important; gap:3px !important;
+    align-items:flex-start !important; justify-content:flex-end !important;
+    padding:2px !important;
+    background:rgba(59,130,246,0.04);
+    border:1px solid rgba(59,130,246,0.10);
+    border-radius:8px;
+  }
+  #raid-screen #red-team-column .sideline-stack {
+    display:flex !important; flex-direction:column !important; gap:2px !important;
+  }
+  #raid-screen #red-team-column .fighter-slot {
+    width:80px !important; margin:0 !important;
+  }
+  #raid-screen #red-team-column .fighter-slot .card-name-banner { font-size:8px; padding:2px 4px; }
+  #raid-screen #red-team-column .fighter-slot .ability-banner { display:none !important; }
+  #raid-screen #red-team-column .fighter-slot .ci-desc { display:none; }
+  #raid-screen #red-team-column .fighter-slot .card-info { padding:2px 4px; }
+  #raid-screen #red-team-column .fighter-slot .card-img,
+  #raid-screen #red-team-column .fighter-slot .card-img-placeholder { aspect-ratio:1; }
+  #raid-screen #red-team-column .sideline-slot {
+    width:40px !important; border-radius:6px;
+  }
+  #raid-screen #red-team-column .sideline-slot .card-name-banner {
+    font-size:6px; padding:1px 2px; white-space:normal; text-align:center; line-height:1.1;
+  }
+  #raid-screen #red-team-column .sideline-slot .ability-banner { display:none !important; }
+  #raid-screen #red-team-column .sideline-slot .ci-desc { display:none; }
+  #raid-screen #red-team-column .sideline-slot .card-info { padding:0; }
+  #raid-screen #red-team-column .sideline-slot .card-img,
+  #raid-screen #red-team-column .sideline-slot .card-img-placeholder {
+    aspect-ratio:4/3; object-fit:cover; border-radius:5px 5px 0 0;
+  }
+
+  /* Player HP + resources: below fighter, right side */
+  #raid-screen #red-team-column .team-info {
+    grid-area:my-info;
+    display:flex !important; flex-direction:row !important; align-items:center !important;
+    gap:4px; justify-content:flex-end;
+    padding:0 4px;
+  }
+  #raid-screen #red-team-column .hp-bar-wrap { max-width:120px; height:6px; }
+  #raid-screen #red-team-column .hp-text { font-size:0.5rem; margin-top:0; }
+  #raid-screen #red-team-column .resources { gap:2px; }
+  #raid-screen #red-team-column .res-tile { width:24px; height:28px; border-radius:4px; }
+  #raid-screen #red-team-column .res-tile .res-main { font-size:11px; }
+  #raid-screen #red-team-column .res-tile .res-main img { width:14px; height:14px; }
+  #raid-screen #red-team-column .res-tile .res-count { font-size:7px; }
+  #raid-screen #red-team-column .res-tile .res-label { font-size:5px; }
+
+  /* --- BOTTOM SKILL BAR: fixed bar at bottom with abilities + roll --- */
+  #raid-screen #red-team-column .ability-buttons,
+  #raid-screen #red-team-column .action-btn.team-roll,
+  #raid-screen #red-team-column .duel-done-btn {
+    position:fixed !important; bottom:0; z-index:450;
+  }
+
+  /* Ability buttons: left/center of bottom bar */
+  #raid-screen #red-team-column .ability-buttons {
+    left:0; right:120px; bottom:0;
+    display:flex !important; justify-content:center !important; align-items:center !important;
+    gap:4px; flex-wrap:wrap;
+    padding:5px 8px;
+    background:linear-gradient(0deg, rgba(10,10,30,0.95), rgba(10,10,30,0.85));
+    border-top:1px solid rgba(126,232,250,0.12);
+    min-height:36px;
+  }
+  #raid-screen .ability-btn {
+    padding:4px 10px; font-size:10px; border-radius:6px;
+  }
+
+  /* Roll button: right side of bottom bar */
+  #raid-screen #red-team-column .action-btn.team-roll {
+    right:0 !important; bottom:0 !important; left:auto !important;
+    width:120px !important; max-width:none;
+    height:36px;
+    padding:0 !important; font-size:12px !important; font-weight:800;
+    letter-spacing:2px; border-radius:0;
+    background:linear-gradient(135deg, #d4a040, #f0c850) !important;
+    color:#0e0a1a !important; border:none !important;
+    box-shadow:none;
+    text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #raid-screen #red-team-column .action-btn.team-roll:hover:not(:disabled) {
+    background:linear-gradient(135deg, #e0b050, #f8d860) !important;
+  }
+
+  /* Duel done button */
+  #raid-screen #red-team-column .duel-done-btn {
+    right:0 !important; bottom:0 !important; left:auto !important;
+    width:120px; height:36px;
+    padding:0; font-size:11px; border-radius:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Reserve space at bottom for fixed bar */
+  #raid-screen .arena-board {
+    padding-bottom:40px !important;
+  }
+
+  /* --- ARENA CENTER: dice prominent in the middle --- */
+  #raid-screen .arena-center {
+    grid-area:dice;
+    display:flex !important; flex-direction:column !important;
+    align-items:center !important; justify-content:center !important;
+    gap:6px; min-width:0; max-width:none; padding:0 8px;
+  }
+  #raid-screen .arena-mid { gap:4px; }
+  #raid-screen .turn-indicator { font-size:11px !important; }
+  #raid-screen .dice-stack { padding:8px 14px; gap:6px; border-radius:10px; }
+  #raid-screen .dice-row { gap:3px; }
+  #raid-screen .die {
+    width:34px; height:34px; font-size:16px; border-radius:7px;
+  }
+  #raid-screen .die.rolling { will-change:transform; }
+
+  /* Ability callout */
+  #raid-screen .ability-callout { font-size:10px; }
+
+  /* Mute toggle */
+  #raid-screen #muteToggle { top:2px !important; right:4px !important; font-size:14px !important; }
+
+  /* Log: hidden in landscape */
+  #raid-screen .log-wrap { display:none !important; }
+
+  /* Overlays: scrollable */
+  #raid-screen .moonstone-picker,
+  #raid-screen .swap-overlay,
+  #raid-screen .pressure-overlay,
+  #raid-screen .selene-overlay,
+  #raid-screen .steal-overlay {
+    overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  }
+
+  /* Triples banner: smaller */
+  #raid-screen .triples-banner { font-size:2rem; letter-spacing:2px; }
 }
