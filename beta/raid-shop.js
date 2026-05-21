@@ -36,10 +36,13 @@ function renderRaidShop(points, collection, badges) {
       <h3>PACKS</h3>
       <div class="raid-shop-grid">`;
 
-  RAID_SHOP_ITEMS.forEach(item => {
+  const packs = RAID_SHOP_ITEMS.filter(i => i.type === 'pack');
+  const merch = RAID_SHOP_ITEMS.filter(i => i.type !== 'pack');
+
+  packs.forEach(item => {
     const canAfford = points >= item.cost;
     html += `<div class="raid-shop-item ${canAfford ? '' : 'cannot-afford'}">
-      <div class="raid-shop-item-icon">${item.img ? `<img src="${item.img}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : (item.type === 'pack' ? '&#x1F4E6;' : '&#x1F0CF;')}</div>
+      <div class="raid-shop-item-icon">&#x1F4E6;</div>
       <div class="raid-shop-item-name">${item.name}</div>
       <div class="raid-shop-item-desc">${item.desc}</div>
       <div class="raid-shop-item-cost">
@@ -49,6 +52,20 @@ function renderRaidShop(points, collection, badges) {
               onclick="purchaseRaidItem('${item.id}')">
         ${canAfford ? 'BUY' : 'NOT ENOUGH'}
       </button>
+    </div>`;
+  });
+
+  html += `</div></div>
+    <div class="raid-shop-items">
+      <h3>MERCH</h3>
+      <div class="raid-shop-grid">`;
+
+  merch.forEach(item => {
+    html += `<div class="raid-shop-item raid-shop-merch">
+      <div class="raid-shop-item-icon">${item.img ? `<img src="${item.img}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : '&#x1F381;'}</div>
+      <div class="raid-shop-item-name">${item.name}</div>
+      <div class="raid-shop-item-desc">${item.desc}</div>
+      <button class="raid-shop-buy-btn" disabled>COMING SOON</button>
     </div>`;
   });
 
