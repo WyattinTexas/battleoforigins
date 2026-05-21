@@ -19285,8 +19285,8 @@ function renderBattle() {
     const enemy = opp(B[team]);
     let html = '';
     if (isPreRollActive(team)) {
-      // Willpower activation button
-      if (f.willpower && f.willpower.length > 0 && !(B.wpUsedThisTurn && B.wpUsedThisTurn[team]) && !f.willpowerTopLocked) {
+      // Willpower activation button — disabled in compact/MP mode
+      if (!COMPACT_LAYOUT && !MP_MODE && f.willpower && f.willpower.length > 0 && !(B.wpUsedThisTurn && B.wpUsedThisTurn[team]) && !f.willpowerTopLocked) {
         const topCard = wpCardById(f.willpower[0]);
         if (topCard) {
           const costLabel = topCard.hpCost ? ` (${topCard.hpCost} HP)` : '';
@@ -22045,7 +22045,10 @@ const LAYOUTS = [
       .compact-layout #blue-sl-right, .compact-layout #red-sl-right { position:absolute!important; right:8px!important; z-index:1!important; }
       .compact-layout #blue-team-column .fighter-slot { width:160px!important; z-index:2!important; margin:0 auto!important; }
       .compact-layout #red-team-column .fighter-slot { width:180px!important; z-index:2!important; margin:0 auto!important; }
-      .compact-layout .sideline-slot { width:42px!important; }
+      .compact-layout .sideline-slot { width:48px!important; max-height:58px!important; overflow:hidden!important; border-radius:8px!important; }
+      .compact-layout .sideline-slot .portrait-img, .compact-layout .sideline-slot .card-img-placeholder { aspect-ratio:1!important; max-height:40px!important; object-fit:cover!important; }
+      .compact-layout .sideline-slot .card-name { font-size:0.4rem!important; text-align:center!important; padding:1px!important; }
+      .compact-layout .sideline-slot .card-ability, .compact-layout .sideline-slot .card-ability-desc { display:none!important; }
       .compact-layout #red-team-column .ability-buttons { width:100%!important; }
       .compact-layout #rollRedBtn { width:100%!important; }
     `
