@@ -2022,6 +2022,15 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout .dice-stack { padding: 0 !important; gap: 3px !important; }
 .compact-layout .dice-row { gap: 4px !important; justify-content: center !important; }
 .compact-layout .die { width: 30px !important; height: 30px !important; font-size: 12px !important; }
+/* Hide everything in dice zone except dice — callouts go to narrator only */
+.compact-layout .ability-callout { display: none !important; }
+.compact-layout .arena-center .ms-inline-picker { display: none !important; }
+.compact-layout .arena-center .arena-mid { display: contents !important; }
+/* Narrator highlight when ability fires */
+.compact-layout .narrator-inner.ability-active {
+  border-bottom-color: var(--gold) !important;
+  background: rgba(20,16,10,0.95) !important;
+}
 /* Mute button — top-right corner under narrator */
 .compact-layout #muteToggle {
   position: fixed !important; top: 26px !important; right: 8px !important;
@@ -2053,12 +2062,12 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   grid-column: 1 / -1 !important; grid-row: 3 !important;
   min-width: 0 !important; width: 100% !important;
 }
-/* Resources inside team-info */
+/* Resources inside team-info — always visible */
 .compact-layout #red-team-column .resources {
   display: flex !important; flex-wrap: nowrap !important;
   justify-content: center !important; gap: 2px !important;
-  overflow-x: auto !important; overflow-y: hidden !important;
-  max-height: 32px !important;
+  overflow: visible !important;
+  margin-top: 2px !important;
 }
 /* Ability buttons row */
 .compact-layout #red-team-column .ability-buttons {
@@ -2116,6 +2125,33 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 
 /* HP bar + text */
 .compact-layout .hp-text { font-size: 0.5rem !important; }
+
+/* Long-press card tooltip */
+.card-tooltip-overlay {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+.card-tooltip-overlay.active { display: flex; }
+.card-tooltip-box {
+  background: rgba(10,10,30,0.96); border: 1px solid var(--gold);
+  border-radius: 14px; padding: 18px; max-width: 280px; width: 85%;
+  text-align: center;
+}
+.card-tooltip-box .ctt-name {
+  font-size: 16px; font-weight: 900; margin-bottom: 4px;
+}
+.card-tooltip-box .ctt-ability {
+  font-size: 13px; font-weight: 700; color: var(--gold);
+  letter-spacing: 0.5px; margin-bottom: 8px;
+}
+.card-tooltip-box .ctt-desc {
+  font-size: 12px; color: var(--text2); line-height: 1.5;
+}
+.card-tooltip-box .ctt-hint {
+  font-size: 9px; color: var(--text-dim); margin-top: 10px;
+  letter-spacing: 0.5px;
+}
 
 /* Resources — compact tiles */
 .compact-layout .res-tile { width: 26px !important; height: 26px !important; border-radius: 4px !important; }
@@ -2428,6 +2464,16 @@ body.mp-mode:not(.live-pvp) #blue-team-column .ability-buttons { display: none !
 </div>
 
 <!-- Ability Splash -->
+<!-- Card tooltip (long-press in compact mode) -->
+<div class="card-tooltip-overlay" id="cardTooltip" onclick="this.classList.remove('active')">
+  <div class="card-tooltip-box">
+    <div class="ctt-name" id="cttName"></div>
+    <div class="ctt-ability" id="cttAbility"></div>
+    <div class="ctt-desc" id="cttDesc"></div>
+    <div class="ctt-hint">Tap anywhere to close</div>
+  </div>
+</div>
+
 <div class="ability-splash" id="abilitySplash">
   <div class="ability-splash-inner">
     <div class="ability-splash-name" id="splashName"></div>
@@ -22372,6 +22418,33 @@ function applyLayout(idx) {
   document.getElementById('layout-desc').textContent = layout.desc;
   // Force re-render
   if (typeof renderBattle === 'function' && typeof B !== 'undefined' && B) renderBattle();
+}
+
+// ===== COMPACT MODE: Long-press card tooltip =====
+if (COMPACT_LAYOUT) {
+  let _cttTimer = null;
+  document.addEventListener('touchstart', function(e) {
+    const card = e.target.closest('.fighter-slot, .sideline-slot');
+    if (!card) return;
+    _cttTimer = setTimeout(function() {
+      const gid = card.dataset.ghostId;
+      if (!gid) return;
+      const g = ghostData(Number(gid));
+      if (!g) return;
+      const overlay = document.getElementById('cardTooltip');
+      document.getElementById('cttName').textContent = g.name;
+      document.getElementById('cttName').style.color =
+        g.rarity === 'legendary' ? 'var(--legendary)' :
+        g.rarity === 'ghost-rare' ? 'var(--ghost-rare)' :
+        g.rarity === 'rare' ? 'var(--rare)' :
+        g.rarity === 'uncommon' ? 'var(--uncommon)' : 'var(--text)';
+      document.getElementById('cttAbility').textContent = g.ability;
+      document.getElementById('cttDesc').textContent = g.abilityDesc;
+      overlay.classList.add('active');
+    }, 500);
+  }, { passive: true });
+  document.addEventListener('touchend', function() { clearTimeout(_cttTimer); }, { passive: true });
+  document.addEventListener('touchmove', function() { clearTimeout(_cttTimer); }, { passive: true });
 }
 
 // Layout switcher disabled — use initLayoutSwitcher() from console if needed for dev
