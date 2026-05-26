@@ -1967,12 +1967,19 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout #blue-team-column .sideline-slot .card-ability,
 .compact-layout #blue-team-column .sideline-slot .card-ability-desc { display: none !important; }
 .compact-layout #blue-team-column .sideline-slot .portrait-img { max-height: 42px !important; }
-/* Opponent fighter — compact square art */
+/* Opponent fighter — compact art, hide desc/status */
 .compact-layout #blue-team-column .fighter-slot .card-img,
 .compact-layout #blue-team-column .fighter-slot .card-img-placeholder,
 .compact-layout #blue-team-column .fighter-slot .portrait-img { aspect-ratio: 4/3 !important; max-height: 90px !important; }
 .compact-layout #blue-team-column .fighter-slot .card-ability { display: none !important; }
 .compact-layout #blue-team-column .fighter-slot .card-ability-desc { display: none !important; }
+.compact-layout #blue-team-column .fighter-slot .ability-banner { display: none !important; }
+.compact-layout #blue-team-column .fighter-slot .card-info { display: none !important; }
+.compact-layout #blue-team-column .fighter-slot .fighter-status { display: none !important; }
+.compact-layout #blue-team-column .fighter-slot .card-name-banner { padding: 3px 6px !important; font-size: 11px !important; }
+.compact-layout #blue-team-column .sideline-slot .ability-banner { display: none !important; }
+.compact-layout #blue-team-column .sideline-slot .card-info { display: none !important; }
+.compact-layout #blue-team-column .sideline-slot .card-name-banner { padding: 2px 4px !important; font-size: 9px !important; }
 /* Hide ALL opponent controls */
 .compact-layout #blue-team-column .action-btn,
 .compact-layout #blue-team-column .ability-buttons,
@@ -2026,12 +2033,19 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout #red-team-column .sideline-slot .card-ability,
 .compact-layout #red-team-column .sideline-slot .card-ability-desc { display: none !important; }
 .compact-layout #red-team-column .sideline-slot .portrait-img { max-height: 42px !important; }
-/* Player fighter — slightly bigger than opponent */
+/* Player fighter — slightly bigger than opponent, hide desc/status from card (shown in team-info) */
 .compact-layout #red-team-column .fighter-slot .card-img,
 .compact-layout #red-team-column .fighter-slot .card-img-placeholder,
 .compact-layout #red-team-column .fighter-slot .portrait-img { aspect-ratio: 4/3 !important; max-height: 120px !important; }
 .compact-layout #red-team-column .fighter-slot .card-ability { display: none !important; }
 .compact-layout #red-team-column .fighter-slot .card-ability-desc { display: none !important; }
+.compact-layout #red-team-column .fighter-slot .ability-banner { display: none !important; }
+.compact-layout #red-team-column .fighter-slot .card-info { display: none !important; }
+.compact-layout #red-team-column .fighter-slot .fighter-status { display: none !important; }
+.compact-layout #red-team-column .fighter-slot .card-name-banner { padding: 4px 6px !important; font-size: 12px !important; }
+.compact-layout #red-team-column .sideline-slot .ability-banner { display: none !important; }
+.compact-layout #red-team-column .sideline-slot .card-info { display: none !important; }
+.compact-layout #red-team-column .sideline-slot .card-name-banner { padding: 2px 4px !important; font-size: 9px !important; }
 
 /* --- GOLD READY/ROLL BUTTON — compact, not massive --- */
 .compact-layout #red-team-column .action-btn.team-roll,
