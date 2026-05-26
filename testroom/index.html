@@ -1964,9 +1964,10 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   background: rgba(233,69,96,0.04) !important;
   border: 1px solid rgba(233,69,96,0.10) !important;
   border-radius: 6px !important; padding: 2px 4px !important;
+  max-height: 55dvh !important; overflow: hidden !important;
   display: grid !important;
   grid-template-columns: 60px 1fr 60px !important;
-  grid-template-areas: "my-sl-l my-fighter my-sl-r" "my-sl-l my-info my-sl-r" ". my-res ." ". my-abilities ." ". my-btn ." !important;
+  grid-template-areas: "my-sl-l my-fighter my-sl-r" "my-sl-l my-info my-sl-r" ". my-abilities ." ". my-btn ." !important;
   gap: 2px !important; align-content: center !important; align-items: center !important; justify-items: center !important;
 }
 .compact-layout #red-team-column .team-battle-row { display: contents !important; }
@@ -1981,7 +1982,14 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   font-size: 0.6rem !important;
 }
 .compact-layout #red-team-column .ability-buttons { grid-area: my-abilities !important; }
-.compact-layout #red-team-column .resources { grid-area: my-res !important; }
+/* Resources are inside .team-info (not direct grid child), so grid-area won't work.
+   Style them inline within team-info instead. */
+.compact-layout #red-team-column .resources {
+  display: flex !important; flex-wrap: nowrap !important;
+  justify-content: center !important; gap: 2px !important;
+  overflow-x: auto !important; overflow-y: hidden !important;
+  max-height: 32px !important;
+}
 /* Player sideline cards — show ability name */
 .compact-layout #red-team-column .sideline-slot { width: 56px !important; border-radius: 6px !important; }
 .compact-layout #red-team-column .sideline-slot .card-name { font-size: 0.45rem !important; }
@@ -2033,6 +2041,7 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   background: rgba(59,130,246,0.04) !important;
   border: 1px solid rgba(59,130,246,0.10) !important;
   border-radius: 6px !important; padding: 2px 4px !important;
+  max-height: 35dvh !important; overflow: hidden !important;
   display: grid !important;
   grid-template-columns: 60px 1fr 60px !important;
   grid-template-areas: "opp-sl-l opp-fighter opp-sl-r" "opp-sl-l opp-info opp-sl-r" !important;
@@ -19358,7 +19367,15 @@ function renderBattle() {
     // Snapshot current resources for flash detection
     const newSnap = { moonstone:r.moonstone, ice:totalIce, fire:totalFire, surge:r.surge+c.surge, healingSeed:r.healingSeed, luckyStone:r.luckyStone, firefly:r.firefly||0 };
     const prev = prevResources[team] || {};
-    document.getElementById(`${team}-resources`).innerHTML = rh;
+    // Compact mode: skip innerHTML rebuild if resources unchanged (prevents flashing)
+    const resHash = JSON.stringify(newSnap);
+    const resEl0 = document.getElementById(`${team}-resources`);
+    if (COMPACT_LAYOUT && resEl0.dataset.resHash === resHash) {
+      // unchanged — skip
+    } else {
+      resEl0.innerHTML = rh;
+      resEl0.dataset.resHash = resHash;
+    }
     // Flash any resource tile that increased
     const resEl = document.getElementById(`${team}-resources`);
     ['moonstone','ice','fire','surge','healingSeed','luckyStone','firefly'].forEach(key => {
