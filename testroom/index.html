@@ -1516,6 +1516,26 @@ header .sub { font-family:'Inter', sans-serif; color:var(--text-warm); font-size
   100% { transform:scale(1) rotate(0deg); opacity:1; }
 }
 
+/* ===== VS SPLASH — PORTRAIT: stack vertically (Red top, VS, Blue bottom) ===== */
+@media (max-width: 600px), (orientation: portrait) {
+  .vs-inner {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .vs-fighter-name { font-size: 1.8rem; max-width: 90vw; }
+  .vs-text { font-size: 3.5rem; }
+  .vs-fighter-name.red { animation: vsNamePopTop 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
+  .vs-fighter-name.blue { animation: vsNamePopBottom 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.35s both; }
+  @keyframes vsNamePopTop {
+    0% { transform: translateY(-40px) scale(0.7); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+  @keyframes vsNamePopBottom {
+    0% { transform: translateY(40px) scale(0.7); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+  }
+}
+
 .screen-shake { animation:screenShake 0.5s ease-out; }
 @keyframes screenShake {
   0%, 100% { transform:translateX(0); }
