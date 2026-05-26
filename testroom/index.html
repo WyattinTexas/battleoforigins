@@ -1895,14 +1895,16 @@ body.lite-mode .die.rolling { animation: none !important; }
 body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout #battle-view { height: 100dvh !important; overflow: hidden !important; }
 
-/* Overall: single viewport, no scroll */
+/* Overall: fit viewport, allow scroll only if content overflows */
 .compact-layout .arena-board {
   flex-direction: column !important;
   height: 100dvh !important;
   max-height: 100dvh !important;
-  overflow: hidden !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   padding: 4px !important;
   gap: 2px !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 /* Narrator: fixed banner at top */
@@ -1919,8 +1921,14 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 /* Hide turn indicator, VS elements, battle log */
 .compact-layout .turn-indicator { display: none !important; }
 .compact-layout .log-wrap { display: none !important; }
-.compact-layout .narrator-box { display: none !important; }
 .compact-layout #skipSpecialsBtn { display: none !important; }
+
+/* Narrator: show as fixed top banner */
+.compact-layout .narrator-box {
+  position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+  z-index: 500 !important; margin: 0 !important; width: 100% !important;
+  display: block !important;
+}
 
 /* Leave Raid button reposition */
 .compact-layout #leaveRaidBtn { top: 28px !important; right: 4px !important; font-size: 0.65rem !important; padding: 4px 10px !important; }
@@ -1966,11 +1974,12 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 
 /* --- DICE CENTER --- */
 .compact-layout .arena-center {
-  flex: 1 1 auto !important; min-width: 0 !important; width: 100% !important;
-  padding: 2px 4px !important; order: 0 !important;
+  flex: 0 0 auto !important; min-width: 0 !important; width: 100% !important;
+  padding: 4px !important; order: 0 !important;
   display: flex !important; flex-direction: column !important;
   justify-content: center !important; align-items: center !important;
   position: relative !important; overflow: hidden !important;
+  min-height: 48px !important;
 }
 .compact-layout .dice-stack { padding: 6px 10px !important; gap: 4px !important; position: relative !important; overflow: hidden !important; }
 .compact-layout .dice-row { gap: 4px !important; justify-content: center !important; }
