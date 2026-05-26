@@ -1931,17 +1931,34 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout .sideline-slot,
 .compact-layout .arena-card,
 .compact-layout .team-column,
-.compact-layout .arena-center {
+.compact-layout .arena-center,
+.compact-layout .fighter-slot.ability-fire,
+.compact-layout .fighter-slot.ability-fire-fire,
+.compact-layout .fighter-slot.ability-fire-blue,
+.compact-layout .fighter-slot.ability-fire-purple,
+.compact-layout .fighter-slot.ability-fire-green,
+.compact-layout .fighter-slot.ability-fire-gold,
+.compact-layout .fighter-slot.ability-fire-red,
+.compact-layout .fighter-slot.ability-fire-default,
+.compact-layout .fighter-slot.team-red,
+.compact-layout .fighter-slot.team-blue,
+.compact-layout .card-name-banner,
+.compact-layout .ability-banner,
+.compact-layout .hp-bar-inner,
+.compact-layout .arena-board,
+.compact-layout .arena-board * {
   transition: none !important;
   animation: none !important;
 }
+/* Also kill box-shadow animations on fighter slots */
+.compact-layout .fighter-slot.ability-fire { box-shadow: none !important; }
 
 /* Leave Raid button reposition */
 .compact-layout #leaveRaidBtn { top: 24px !important; right: 4px !important; font-size: 0.65rem !important; padding: 4px 10px !important; }
 
 /* --- PLAYER (red) at TOP --- */
 .compact-layout #red-team-column {
-  order: -1 !important; flex: 1 1 auto !important;
+  order: -1 !important; flex: 0 0 auto !important;
   background: rgba(233,69,96,0.04) !important;
   border: 1px solid rgba(233,69,96,0.10) !important;
   border-radius: 6px !important; padding: 2px 4px !important;
@@ -18684,7 +18701,9 @@ function drainNarrate() {
   const el = document.getElementById('narrator');
   if (!el || narrateQueue.length === 0) { narrateActive = false; return; }
   narrateActive = true;
-  const html = narrateQueue.shift();
+  let html = narrateQueue.shift();
+  // Strip em-dashes from narrator text (compact mode readability)
+  if (COMPACT_LAYOUT) html = html.replace(/ — /g, ' ').replace(/— /g, '').replace(/ —/g, '');
   el.style.opacity = '0';
   setTimeout(() => {
     el.innerHTML = '<span>' + html + '</span>';
