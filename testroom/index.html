@@ -1952,6 +1952,8 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 }
 /* Also kill box-shadow animations on fighter slots */
 .compact-layout .fighter-slot.ability-fire { box-shadow: none !important; }
+/* Hide 3D physics dice — they position absolutely and overlap everything */
+.compact-layout .die-physics { display: none !important; }
 
 /* Leave Raid button reposition */
 .compact-layout #leaveRaidBtn { top: 24px !important; right: 4px !important; font-size: 0.65rem !important; padding: 4px 10px !important; }
@@ -19166,7 +19168,21 @@ function renderBattle() {
     const fighterEl = document.getElementById(`${team}-fighter`);
     const fData = ghostData(f.id);
     fighterEl.className = `arena-card fighter-slot team-${team} rarity-${fData.rarity} ${f.ko?'ko':''}`;
-    fighterEl.innerHTML = renderCardSlot(f, true);
+    // Compact mode: skip full innerHTML rebuild if same ghost (prevents flashing)
+    const prevFighterId = fighterEl.dataset.ghostId;
+    if (COMPACT_LAYOUT && prevFighterId == f.id) {
+      // Just update HP badge
+      const hpBadge = fighterEl.querySelector('.card-hp-badge');
+      if (hpBadge) {
+        const hpRatio = f.hp / f.maxHp;
+        const hpColor = hpRatio > 1 ? 'var(--moonstone)' : hpRatio > 0.6 ? 'var(--hp-green)' : hpRatio > 0.3 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+        hpBadge.textContent = f.hp + '/' + f.maxHp;
+        hpBadge.style.color = hpColor;
+      }
+    } else {
+      fighterEl.innerHTML = renderCardSlot(f, true);
+      fighterEl.dataset.ghostId = f.id;
+    }
 
     // HP Bar
     updateHpBar(team, f.hp, f.maxHp);
@@ -19221,7 +19237,20 @@ function renderBattle() {
           const fc = B.frostbite[team][realIdx];
           slCardHtml += `<div class="frostbite-badge">❄️${fc}</div>`;
         }
-        el.innerHTML = slCardHtml;
+        // Compact mode: skip full rebuild if same ghost (prevents flashing)
+        const prevSlId = el.dataset.ghostId;
+        if (COMPACT_LAYOUT && prevSlId == sl[i].id && !isPick) {
+          const slHpBadge = el.querySelector('.card-hp-badge');
+          if (slHpBadge) {
+            const slHpR = sl[i].hp / sl[i].maxHp;
+            const slHpC = slHpR > 1 ? 'var(--moonstone)' : slHpR > 0.6 ? 'var(--hp-green)' : slHpR > 0.3 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+            slHpBadge.textContent = sl[i].hp + '/' + sl[i].maxHp;
+            slHpBadge.style.color = slHpC;
+          }
+        } else {
+          el.innerHTML = slCardHtml;
+          el.dataset.ghostId = sl[i].id;
+        }
         el.onclick = isPick ? () => doKoSwap(team, realIdx) : null;
       } else {
         el.style.visibility = 'hidden';
@@ -19696,6 +19725,13 @@ function renderDice(rd, bd) {
 function showRolling(team, count) {
   const el = document.getElementById(team + '-dice');
   const cls = 'die-' + team;
+  // Compact mode: skip 3D physics, just show flat rolling placeholders
+  if (COMPACT_LAYOUT) {
+    el.innerHTML = Array(count).fill(0).map((_, i) =>
+      `<div class="die ${cls}" id="${team}-die-${i}">?</div>`
+    ).join('');
+    return;
+  }
   // Hidden placeholder dice for layout (keeps tray height stable)
   el.innerHTML = Array(count).fill(0).map((_, i) =>
     `<div class="die ${cls}" id="${team}-die-${i}" style="visibility:hidden">?</div>`
