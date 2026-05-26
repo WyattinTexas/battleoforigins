@@ -6481,7 +6481,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ===== Screen Navigation ===== */
 /* Mobile layout param for testroom redirects */
-function getLayoutParam() { return window.innerWidth <= 768 ? '&layout=compact' : ''; }
+function getLayoutParam() { return (window.innerWidth <= 768 ? '&layout=compact' : '') + '&returnTo=' + encodeURIComponent('../beta/'); }
 
 function switchScreen(screenId) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));

@@ -3110,6 +3110,7 @@ let PVP_GAME_ID = null;
 let PVP_GAME_REF = null;
 let PVP_OPPONENT_READY = false; // tracks if opponent has clicked roll
 let MP_DAILY = false; // true when loaded via daily rival mode
+let MP_RETURN_TO = '../multiplayer/'; // where to redirect after MP battle (overridden by returnTo param)
 let MP_PLAYER_NAMES = { red: 'Red', blue: 'Blue' }; // display names for game over screen
 let pvpAbilityEvents = []; // v721: capture ability callouts for Blue sync
 let pvpRedClickedRoll = false; // v733: async MP — AI waits for Red to click READY before rolling
@@ -18519,7 +18520,7 @@ function showGameOver(winner) {
       }
 
       if (goButtons) {
-        const returnUrl = `../multiplayer/?raidResult=done`
+        const returnUrl = `${MP_RETURN_TO}?raidResult=done`
           + `&instanceId=${encodeURIComponent(RAID_PARAMS.instanceId)}`
           + `&raidId=${encodeURIComponent(RAID_PARAMS.raidId)}`
           + `&damage=${totalDamage}`
@@ -18540,8 +18541,8 @@ function showGameOver(winner) {
     } else if (goButtons) {
       // Daily mode uses dailyResult param; regular MP uses result param
       const returnUrl = MP_DAILY
-        ? `../multiplayer/?dailyResult=${result}`
-        : `../multiplayer/?result=${result}`;
+        ? `${MP_RETURN_TO}?dailyResult=${result}`
+        : `${MP_RETURN_TO}?result=${result}`;
       goButtons.innerHTML = `
         <button class="go-btn-rematch" onclick="window.location.href='${returnUrl}'">
           Return to Arena
@@ -20001,8 +20002,8 @@ document.addEventListener('keydown', e => {
       const winner = B && B.phase === 'over' ? (document.getElementById('goTitle').className.includes('red') ? 'red' : document.getElementById('goTitle').className.includes('blue') ? 'blue' : 'draw') : 'draw';
       const result = winner === 'red' ? 'win' : (winner === 'blue' ? 'loss' : 'draw');
       const returnUrl = MP_DAILY
-        ? '../multiplayer/?dailyResult=' + result
-        : '../multiplayer/?result=' + result;
+        ? MP_RETURN_TO + '?dailyResult=' + result
+        : MP_RETURN_TO + '?result=' + result;
       window.location.href = returnUrl;
     } else {
       rematchBattle();
@@ -20033,6 +20034,8 @@ document.addEventListener('keydown', e => {
   const mode = params.get('mode');
   if (mode !== 'mp' && mode !== 'daily' && mode !== 'champion') return;
   if (mode === 'daily') MP_DAILY = true;
+  const returnTo = params.get('returnTo');
+  if (returnTo) MP_RETURN_TO = decodeURIComponent(returnTo);
 
   const redParam = params.get('red');
   if (!redParam) return;
