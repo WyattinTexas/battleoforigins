@@ -1894,6 +1894,10 @@ body.lite-mode .die.rolling { animation: none !important; }
 /* Kill all scroll in compact mode */
 body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout #battle-view { height: 100dvh !important; overflow: hidden !important; }
+/* Protect compact layout from landscape media query override */
+@media (max-height:500px) and (orientation:landscape) {
+  body.compact-layout .arena-board { flex-direction: column !important; }
+}
 
 /* Overall: MUST fit 100dvh, no scroll */
 .compact-layout .arena-board {
@@ -1952,6 +1956,8 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 }
 /* Also kill box-shadow animations on fighter slots */
 .compact-layout .fighter-slot.ability-fire { box-shadow: none !important; }
+/* Allow HP bar to animate smoothly (exception to the wildcard kill) */
+.compact-layout .hp-bar-inner { transition: width 0.4s ease !important; }
 /* Hide 3D physics dice — they position absolutely and overlap everything */
 .compact-layout .die-physics { display: none !important; }
 
@@ -18715,21 +18721,24 @@ function drainNarrate() {
   let html = narrateQueue.shift();
   // Strip em-dashes from narrator text (compact mode readability)
   if (COMPACT_LAYOUT) html = html.replace(/ — /g, ' ').replace(/— /g, '').replace(/ —/g, '');
-  el.style.opacity = '0';
-  setTimeout(() => {
+  if (COMPACT_LAYOUT) {
+    // Compact: instant text swap, no fade (prevents visible flashing)
     el.innerHTML = '<span>' + html + '</span>';
-    el.style.opacity = '1';
-    // Always hold 1800ms — even as the last item in the queue.
-    // Without this, `narrateActive` drops to false immediately after display,
-    // so any narrate() called within ~800–1500ms (e.g. "Y enters the arena!"
-    // after "X is down!") bypasses the queue and stomps the current line.
-    // After the 1800ms hold, drain the next queued item if one arrived,
-    // otherwise release the lock so future calls fire immediately.
     setTimeout(() => {
       if (narrateQueue.length > 0) drainNarrate();
       else narrateActive = false;
     }, 1800);
-  }, 150);
+  } else {
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.innerHTML = '<span>' + html + '</span>';
+      el.style.opacity = '1';
+      setTimeout(() => {
+        if (narrateQueue.length > 0) drainNarrate();
+        else narrateActive = false;
+      }, 1800);
+    }, 150);
+  }
 }
 
 // ============================================================
@@ -19176,10 +19185,12 @@ function renderBattle() {
     // Fighter
     const fighterEl = document.getElementById(`${team}-fighter`);
     const fData = ghostData(f.id);
-    fighterEl.className = `arena-card fighter-slot team-${team} rarity-${fData.rarity} ${f.ko?'ko':''}`;
+    const newFighterClass = `arena-card fighter-slot team-${team} rarity-${fData.rarity} ${f.ko?'ko':''}`;
     // Compact mode: skip full innerHTML rebuild if same ghost (prevents flashing)
     const prevFighterId = fighterEl.dataset.ghostId;
     if (COMPACT_LAYOUT && prevFighterId == f.id) {
+      // Only update className if it actually changed
+      if (fighterEl.className !== newFighterClass) fighterEl.className = newFighterClass;
       // Just update HP badge
       const hpBadge = fighterEl.querySelector('.card-hp-badge');
       if (hpBadge) {
@@ -19189,6 +19200,7 @@ function renderBattle() {
         hpBadge.style.color = hpColor;
       }
     } else {
+      fighterEl.className = newFighterClass;
       fighterEl.innerHTML = renderCardSlot(f, true);
       fighterEl.dataset.ghostId = f.id;
     }
@@ -19234,7 +19246,7 @@ function renderBattle() {
         const slData = ghostData(sl[i].id);
         const isPick = isKoPickTeam && !sl[i].ko;
         const realIdx = t.ghosts.indexOf(sl[i]);
-        el.className = `arena-card sideline-slot rarity-${slData.rarity} ${sl[i].ko?'ko':''} ${isPick?'ko-swap-pick':''}`;
+        const newSlClass = `arena-card sideline-slot rarity-${slData.rarity} ${sl[i].ko?'ko':''} ${isPick?'ko-swap-pick':''}`;
         let slCardHtml = renderCardSlot(sl[i], false);
         // Burn badge: show how much burn is stacked on this sideline ghost
         if (B.burn && B.burn[team] && B.burn[team][realIdx]) {
@@ -19249,6 +19261,7 @@ function renderBattle() {
         // Compact mode: skip full rebuild if same ghost (prevents flashing)
         const prevSlId = el.dataset.ghostId;
         if (COMPACT_LAYOUT && prevSlId == sl[i].id && !isPick) {
+          if (el.className !== newSlClass) el.className = newSlClass;
           const slHpBadge = el.querySelector('.card-hp-badge');
           if (slHpBadge) {
             const slHpR = sl[i].hp / sl[i].maxHp;
@@ -19257,6 +19270,7 @@ function renderBattle() {
             slHpBadge.style.color = slHpC;
           }
         } else {
+          el.className = newSlClass;
           el.innerHTML = slCardHtml;
           el.dataset.ghostId = sl[i].id;
         }
