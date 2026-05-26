@@ -1905,7 +1905,8 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   height: 100dvh !important;
   max-height: 100dvh !important;
   overflow: hidden !important;
-  padding: 4px !important;
+  padding: 4px 6px !important;
+  padding-bottom: max(4px, env(safe-area-inset-bottom)) !important;
   gap: 0 !important;
 }
 
@@ -1978,10 +1979,10 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   order: -1 !important; flex: 1 1 auto !important;
   background: rgba(59,130,246,0.04) !important;
   border: 1px solid rgba(59,130,246,0.10) !important;
-  border-radius: 6px !important; padding: 3px !important;
+  border-radius: 6px !important; padding: 3px 4px !important;
   overflow: hidden !important;
   display: grid !important;
-  grid-template-columns: 86px 1fr !important;
+  grid-template-columns: 88px 1fr !important;
   grid-template-rows: auto auto auto !important;
   gap: 2px !important; align-items: center !important;
 }
@@ -2020,7 +2021,7 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 }
 .compact-layout .dice-stack { padding: 0 !important; gap: 3px !important; }
 .compact-layout .dice-row { gap: 4px !important; justify-content: center !important; }
-.compact-layout .die { width: 28px !important; height: 28px !important; font-size: 11px !important; }
+.compact-layout .die { width: 30px !important; height: 30px !important; font-size: 12px !important; }
 /* Mute button — top-right corner under narrator */
 .compact-layout #muteToggle {
   position: fixed !important; top: 26px !important; right: 8px !important;
@@ -2032,11 +2033,11 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   order: 1 !important; flex: 1 1 auto !important;
   background: rgba(233,69,96,0.04) !important;
   border: 1px solid rgba(233,69,96,0.10) !important;
-  border-radius: 6px !important; padding: 3px !important;
-  padding-bottom: max(3px, env(safe-area-inset-bottom)) !important;
+  border-radius: 6px !important; padding: 3px 4px !important;
+  padding-bottom: max(4px, env(safe-area-inset-bottom)) !important;
   overflow: hidden !important;
   display: grid !important;
-  grid-template-columns: 86px 1fr !important;
+  grid-template-columns: 88px 1fr !important;
   grid-template-rows: auto auto auto auto auto !important;
   gap: 2px !important; align-items: center !important;
 }
@@ -2088,11 +2089,11 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 
 /* === SHARED CARD STYLING (both teams) === */
 
-/* Sideline cards — 82px wide, show name + ability + HP */
+/* Sideline cards — 84px wide, show name + ability + HP */
 .compact-layout .sideline-slot {
-  width: 82px !important; border-radius: 6px !important;
+  width: 84px !important; border-radius: 6px !important; justify-self: start !important;
 }
-.compact-layout .sideline-slot .card-name-banner { padding: 2px 4px !important; font-size: 8px !important; }
+.compact-layout .sideline-slot .card-name-banner { padding: 2px 3px !important; font-size: 7.5px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
 .compact-layout .sideline-slot .portrait-img,
 .compact-layout .sideline-slot .card-img,
 .compact-layout .sideline-slot .card-img-placeholder { max-height: 46px !important; }
