@@ -4849,8 +4849,8 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
     margin: 0 auto;
   }
 
-  /* Turn home screen children into a CSS grid */
-  #screen-home {
+  /* Turn home screen children into a CSS grid (only when active) */
+  #screen-home.active {
     display: grid !important;
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-rows: auto;
