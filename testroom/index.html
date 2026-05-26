@@ -1923,7 +1923,7 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   background: rgba(10,10,30,0.92) !important;
   border-bottom: 1px solid rgba(126,232,250,0.15) !important;
 }
-.compact-layout .arena-board { padding-top: 24px !important; }
+.compact-layout .arena-board { padding-top: 22px !important; }
 
 /* Hide turn indicator, battle log */
 .compact-layout .turn-indicator { display: none !important; }
@@ -1978,12 +1978,12 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   order: -1 !important; flex: 1 1 auto !important;
   background: rgba(59,130,246,0.04) !important;
   border: 1px solid rgba(59,130,246,0.10) !important;
-  border-radius: 6px !important; padding: 4px !important;
+  border-radius: 6px !important; padding: 3px !important;
   overflow: hidden !important;
   display: grid !important;
-  grid-template-columns: 90px 1fr !important;
+  grid-template-columns: 86px 1fr !important;
   grid-template-rows: auto auto auto !important;
-  gap: 3px !important; align-items: center !important;
+  gap: 2px !important; align-items: center !important;
 }
 /* Blue: fighter is first in HTML, sidelines after — place fighter RIGHT (col 2) */
 .compact-layout #blue-team-column .fighter-slot {
@@ -2007,20 +2007,20 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 /* --- DICE ZONE (middle) --- */
 .compact-layout .arena-center {
   flex: 0 0 auto !important; min-width: 0 !important; width: 100% !important;
-  padding: 6px 10px !important; order: 0 !important;
+  padding: 4px 10px !important; order: 0 !important;
   display: flex !important; flex-direction: column !important;
   justify-content: center !important; align-items: center !important;
-  gap: 4px !important;
+  gap: 3px !important;
   position: relative !important;
-  min-height: 44px !important;
+  min-height: 40px !important;
   background: rgba(0,0,0,0.35) !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
   border-radius: 8px !important;
-  margin: 3px 4px !important;
+  margin: 2px 4px !important;
 }
-.compact-layout .dice-stack { padding: 0 !important; gap: 4px !important; }
+.compact-layout .dice-stack { padding: 0 !important; gap: 3px !important; }
 .compact-layout .dice-row { gap: 4px !important; justify-content: center !important; }
-.compact-layout .die { width: 30px !important; height: 30px !important; font-size: 12px !important; }
+.compact-layout .die { width: 28px !important; height: 28px !important; font-size: 11px !important; }
 /* Mute button — top-right corner under narrator */
 .compact-layout #muteToggle {
   position: fixed !important; top: 26px !important; right: 8px !important;
@@ -2032,12 +2032,13 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
   order: 1 !important; flex: 1 1 auto !important;
   background: rgba(233,69,96,0.04) !important;
   border: 1px solid rgba(233,69,96,0.10) !important;
-  border-radius: 6px !important; padding: 4px !important;
+  border-radius: 6px !important; padding: 3px !important;
+  padding-bottom: max(3px, env(safe-area-inset-bottom)) !important;
   overflow: hidden !important;
   display: grid !important;
-  grid-template-columns: 90px 1fr !important;
+  grid-template-columns: 86px 1fr !important;
   grid-template-rows: auto auto auto auto auto !important;
-  gap: 3px !important; align-items: center !important;
+  gap: 2px !important; align-items: center !important;
 }
 /* Red: sidelines first in HTML, fighter after — sidelines LEFT (col 1), fighter RIGHT (col 2) */
 .compact-layout #red-sl-left { grid-column: 1 !important; grid-row: 1 !important; }
@@ -2087,26 +2088,26 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 
 /* === SHARED CARD STYLING (both teams) === */
 
-/* Sideline cards — 80px wide, show name + ability + HP */
+/* Sideline cards — 82px wide, show name + ability + HP */
 .compact-layout .sideline-slot {
-  width: 80px !important; border-radius: 6px !important;
+  width: 82px !important; border-radius: 6px !important;
 }
 .compact-layout .sideline-slot .card-name-banner { padding: 2px 4px !important; font-size: 8px !important; }
 .compact-layout .sideline-slot .portrait-img,
 .compact-layout .sideline-slot .card-img,
-.compact-layout .sideline-slot .card-img-placeholder { max-height: 52px !important; }
-.compact-layout .sideline-slot .ability-banner { font-size: 7px !important; padding: 2px 3px !important; }
+.compact-layout .sideline-slot .card-img-placeholder { max-height: 46px !important; }
+.compact-layout .sideline-slot .ability-banner { font-size: 6.5px !important; padding: 1px 3px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
 .compact-layout .sideline-slot .card-info { display: none !important; }
 .compact-layout .sideline-slot .card-ability,
 .compact-layout .sideline-slot .card-ability-desc { display: none !important; }
 .compact-layout .sideline-slot .fighter-status { display: none !important; }
 
 /* Fighter cards — fill right column, show name + art + ability name */
-.compact-layout .fighter-slot .card-name-banner { padding: 3px 6px !important; font-size: 11px !important; }
+.compact-layout .fighter-slot .card-name-banner { padding: 2px 6px !important; font-size: 10px !important; }
 .compact-layout .fighter-slot .card-img,
 .compact-layout .fighter-slot .card-img-placeholder,
-.compact-layout .fighter-slot .portrait-img { aspect-ratio: 4/3 !important; max-height: 140px !important; }
-.compact-layout .fighter-slot .ability-banner { font-size: 9px !important; padding: 3px 5px !important; }
+.compact-layout .fighter-slot .portrait-img { aspect-ratio: 4/3 !important; max-height: 115px !important; }
+.compact-layout .fighter-slot .ability-banner { font-size: 8px !important; padding: 2px 5px !important; }
 .compact-layout .fighter-slot .card-info { display: none !important; }
 .compact-layout .fighter-slot .card-ability { display: none !important; }
 .compact-layout .fighter-slot .card-ability-desc { display: none !important; }
@@ -2116,10 +2117,10 @@ body.compact-layout { overflow: hidden !important; height: 100dvh !important; }
 .compact-layout .hp-text { font-size: 0.5rem !important; }
 
 /* Resources — compact tiles */
-.compact-layout .res-tile { width: 28px !important; height: 28px !important; border-radius: 5px !important; }
-.compact-layout .res-tile .res-main { font-size: 11px !important; }
+.compact-layout .res-tile { width: 26px !important; height: 26px !important; border-radius: 4px !important; }
+.compact-layout .res-tile .res-main { font-size: 10px !important; }
 .compact-layout .res-tile .res-count { font-size: 7px !important; }
-.compact-layout .res-tile .res-label { font-size: 5px !important; }
+.compact-layout .res-tile .res-label { font-size: 4px !important; }
 .compact-layout .resources { gap: 2px !important; }
 
 /* Overlays: scrollable */
