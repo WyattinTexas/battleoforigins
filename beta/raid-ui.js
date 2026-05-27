@@ -1071,8 +1071,14 @@ function showRaidResult(data) {
   // battle arena template (#battle-view, dice, HP bars) lives inside
   // #raid-screen — wiping innerHTML destroys it, leaving the NEXT raid's
   // battle UI with no DOM to render into (blank screen until refresh).
-  // The .raid-result-screen CSS covers the battle view via position+inset,
-  // so the visual effect is identical, but battle-view survives.
+  // We hide #battle-view and #leaveRaidBtn directly (more reliable than
+  // stacking-context z-index since narrator/log-wrap had z-index:200 plus
+  // log-wrap created its own stacking context that fought the overlay).
+  // closeRaidResult / showRaidLobby restore them.
+  const battleView = document.getElementById('battle-view');
+  if (battleView) battleView.style.display = 'none';
+  const leaveBtn = document.getElementById('leaveRaidBtn');
+  if (leaveBtn) leaveBtn.style.display = 'none';
   raidScreen.querySelectorAll('.raid-result-screen').forEach(el => el.remove());
   raidScreen.insertAdjacentHTML('beforeend', html);
 
@@ -1200,6 +1206,12 @@ function showLootRollReveal(playerData, boss) {
 }
 
 function closeRaidResult() {
+  // Restore battle-view + leaveRaidBtn that showRaidResult hid.
+  // They need to be available for the next raid.
+  const battleView = document.getElementById('battle-view');
+  if (battleView) battleView.style.display = '';
+  const leaveBtn = document.getElementById('leaveRaidBtn');
+  if (leaveBtn) leaveBtn.style.display = '';
   hideRaidScreen();
   cleanupRaid();
   showRaidLobby();

@@ -708,9 +708,11 @@ function handleActiveFight(data) {
       if (typeof stopBlueAI === 'function') stopBlueAI();
       B = null;
       raidBattleState = null;
-      // Show battle view (spectator may have hidden it)
+      // Show battle view (spectator may have hidden it, or showRaidResult did)
       const battleView = document.getElementById('battle-view');
       if (battleView) battleView.style.display = 'block';
+      const leaveBtn = document.getElementById('leaveRaidBtn');
+      if (leaveBtn) leaveBtn.style.display = '';
       startMyRaidFight(data);
     } else {
       _currentRaidRole = 'spectator';
