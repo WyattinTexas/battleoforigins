@@ -11,7 +11,7 @@
 // which remote version we reloaded for; if the same mismatch reappears after
 // the reload, we log and stop rather than reload again.
 (function(){
-  const LOCAL_V = 'v2.65'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.66'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     const remote = v.trim();
     if (remote === LOCAL_V || !remote.startsWith('v')) return;
@@ -3165,7 +3165,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 .raid-phase-effect { color: var(--gold); font-size: 0.9rem; margin-top: 6px; }
 
 /* Raid Result Screen */
-.raid-result-screen { position: absolute; inset: 0; z-index: 10; background: var(--bg); overflow-y: auto; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+.raid-result-screen { position: absolute; inset: 0; z-index: 9000; background: var(--bg); overflow-y: auto; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
 .raid-result-screen.victory .raid-result-title { color: var(--gold-bright); }
 .raid-result-screen.defeat .raid-result-title { color: var(--accent); }
 .raid-result-title { font-family: 'Creepster', cursive; font-size: 3rem; letter-spacing: 5px; }
@@ -6484,7 +6484,7 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="raid-battle-bridge.js"></script>
 
 <script>
-const BBN_VERSION = 'v2.65';
+const BBN_VERSION = 'v2.66';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;
