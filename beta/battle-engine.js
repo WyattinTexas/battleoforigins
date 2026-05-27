@@ -6635,6 +6635,9 @@ function doPreRollSetup() {
   // return discarded them and the callout silently never played.
   const preRollKO = [B.red, B.blue].some(t => active(t).ko);
   if (preRollKO && preRollCallouts.length > 0) {
+    console.log('[PRE-ROLL KO] Detected. callouts=' + preRollCallouts.length +
+      ' redActiveKO=' + active(B.red).ko + ' blueActiveKO=' + active(B.blue).ko +
+      ' blueGhosts=' + B.blue.ghosts.map(g => `${g.name}(hp:${g.hp},ko:${g.ko})`).join(','));
     // Park phase NOW so rollReady's `if (B.phase !== 'ready') return;` guard fires
     // and prevents rolling from starting while MELTDOWN! is on screen. Without this,
     // doPreRollSetup returns undefined, the phase stays 'ready', rollReady sets it to
@@ -6646,7 +6649,28 @@ function doPreRollSetup() {
       setTimeout(() => showAbilityCallout(c[0], c[1], c[2], c[3]), i * spd(1500));
     });
     refundCommitted();
-    setTimeout(() => handleKOs(), preRollCallouts.length * spd(1500));
+    const handleKOsDelay = preRollCallouts.length * spd(1500);
+    setTimeout(() => {
+      console.log('[PRE-ROLL KO] Firing handleKOs after delay=' + handleKOsDelay);
+      handleKOs();
+    }, handleKOsDelay);
+    // Safety net: if the scheduled handleKOs somehow doesn't complete the
+    // end-of-fight transition (race with state restore, listener-triggered
+    // reset, etc.), this check fires 1.5s later and force-shows game over.
+    // Without this, raid Meltdown KO of a single-ghost boss team can leave
+    // the player stuck at phase!=over with no overlay or progression.
+    setTimeout(() => {
+      if (!B || B.phase === 'over') return;
+      const blueAllKo = B.blue && B.blue.ghosts.length > 0 && B.blue.ghosts.every(g => g.ko);
+      const redAllKo  = B.red  && B.red.ghosts.length  > 0 && B.red.ghosts.every(g => g.ko);
+      if (!blueAllKo && !redAllKo) return;
+      let winner = 'draw';
+      if (blueAllKo && !redAllKo) winner = 'red';
+      else if (redAllKo && !blueAllKo) winner = 'blue';
+      console.warn('[PRE-ROLL KO SAFETY NET] handleKOs did not transition to over; ' +
+        'phase=' + B.phase + ' winner=' + winner + ' — force-firing showGameOver.');
+      showGameOver(winner);
+    }, handleKOsDelay + spd(1500));
     return;
   }
   if (handleKOs()) {
@@ -14257,6 +14281,9 @@ function handleKOs() {
   // Check for game-over first
   const redAllDown = B.red.ghosts.every(g => g.ko);
   const blueAllDown = B.blue.ghosts.every(g => g.ko);
+  console.log('[handleKOs] redAllDown=' + redAllDown + ' blueAllDown=' + blueAllDown +
+    ' redGhosts=' + B.red.ghosts.map(g => `${g.name}(hp:${g.hp},ko:${g.ko})`).join(',') +
+    ' blueGhosts=' + B.blue.ghosts.map(g => `${g.name}(hp:${g.hp},ko:${g.ko})`).join(','));
   if (redAllDown && blueAllDown) { showGameOver('draw'); renderBattle(); return true; }
   if (redAllDown) { showGameOver('blue'); renderBattle(); return true; }
   if (blueAllDown) { showGameOver('red'); renderBattle(); return true; }
@@ -14402,6 +14429,8 @@ function doKoSwap(team, idx) {
 }
 
 function showGameOver(winner) {
+  console.log('[showGameOver] winner=' + winner + ' prevPhase=' + (B ? B.phase : 'no-B') +
+    ' RAID_MODE=' + RAID_MODE + ' MP_MODE=' + MP_MODE + ' window.RAID_MODE=' + window.RAID_MODE);
   B.phase = 'over';
   // Live PvP: broadcast game over so both clients show it
   if (LIVE_PVP && PVP_GAME_REF && PVP_SIDE === 'red') {
