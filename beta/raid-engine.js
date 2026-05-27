@@ -64,9 +64,9 @@ const RAID_ITEMS = {
 
   // === LEGENDARY → weapon or head slot ===
   golden_dice:    { name: 'Golden Dice',    icon: '🎲', type: 'legendary', tier: 'legendary', slot: 'weapon',
-                    desc: '+1 die on your first roll of every fight.' },
+                    desc: '+1 die on every roll for the whole fight.' },
   shades_cape:   { name: 'Shade\'s Cape',   icon: '👑', type: 'legendary', tier: 'legendary', slot: 'head',
-                    desc: 'Your active ghost gains +1 max HP for this raid.' },
+                    desc: 'All your Spiritkin gain +1 max HP for this raid.' },
   valkins_crystal:   { name: "Valkin's Crystal",  icon: '💀', type: 'legendary', tier: 'legendary', slot: 'accessory',
                     desc: 'Doubles deal +1 bonus damage.' },
 };
@@ -157,7 +157,7 @@ function rollBossLoot(tier) {
  * Only EQUIPPED items are applied (head, weapon, accessory slots).
  * Falls back to applying all items if no equipment data exists (backwards compat).
  */
-function applyRaidLoot(battleState, team, lootInventory) {
+function applyRaidLoot(battleState, team, lootInventory, isFirstTurn) {
   if (!lootInventory || !lootInventory.items) return;
   const t = battleState.teams?.[team] || battleState[team];
   if (!t) return;
@@ -168,12 +168,26 @@ function applyRaidLoot(battleState, team, lootInventory) {
     ? Object.values(equipped).filter(Boolean)   // only the 3 equipped slots
     : lootInventory.items;                       // legacy: apply everything
 
+  // Items split into two categories:
+  //   - ONE-TIME (resource grants + HP mods): fire ONLY on the player's first
+  //     turn of the raid; their effects persist via saved player state.
+  //     Applying these every turn would stack resources, repeatedly damage
+  //     the player (Firefly), and inflate maxHp (Shade's Cape).
+  //   - PER-FIGHT (B-level flags): the underlying B is reinitialized at every
+  //     turn handoff, so flags like Ice Blade forged / Mask of Night must be
+  //     re-applied each turn or the effect disappears mid-raid.
+  const ONE_TIME = new Set([
+    'lucky_charm', 'healing_root', 'ember_stone', 'frost_shard',
+    'surge_crystal', 'moonstone_ring', 'firefly_lantern', 'shades_cape'
+  ]);
+
   itemsToApply.forEach(item => {
     const def = RAID_ITEMS[item];
     if (!def) return;
+    if (ONE_TIME.has(item) && !isFirstTurn) return; // skip resource grants on subsequent turns
 
     switch (item) {
-      // Charms — grant starting resources
+      // Charms — grant starting resources (FIRST TURN ONLY)
       case 'lucky_charm':    if (t.resources) t.resources.luckyStone = (t.resources.luckyStone || 0) + 1; break;
       case 'healing_root':   if (t.resources) t.resources.healingSeed = (t.resources.healingSeed || 0) + 1; break;
       case 'ember_stone':    if (t.resources) t.resources.fire = (t.resources.fire || 0) + 1; break;
@@ -194,28 +208,39 @@ function applyRaidLoot(battleState, team, lootInventory) {
         if (battleState.flameBlade) battleState.flameBlade[team] = true;
         break;
 
-      // Masks — set flags
+      // Masks — reuse Sophia's mask system (already wired for post-roll Burn
+      // and dice-mirroring/+1-damage logic in battle-engine.js)
       case 'mask_of_day':
-        battleState.maskOfDay = battleState.maskOfDay || {};
-        battleState.maskOfDay[team] = true;
+        if (!battleState.sophiaMask) battleState.sophiaMask = { red: null, blue: null };
+        if (!battleState.sophiaMaskActive) battleState.sophiaMaskActive = { red: false, blue: false };
+        battleState.sophiaMask[team] = 'day';
+        battleState.sophiaMaskActive[team] = true;
         break;
       case 'mask_of_night':
-        battleState.maskOfNight = battleState.maskOfNight || {};
-        battleState.maskOfNight[team] = true;
+        if (!battleState.sophiaMask) battleState.sophiaMask = { red: null, blue: null };
+        if (!battleState.sophiaMaskActive) battleState.sophiaMaskActive = { red: false, blue: false };
+        battleState.sophiaMask[team] = 'night';
+        battleState.sophiaMaskActive[team] = true;
         break;
 
       // Legendary
       case 'golden_dice':
-        battleState.goldenDice = battleState.goldenDice || {};
-        battleState.goldenDice[team] = true; // +1 die on first roll
+        if (!battleState.goldenDice) battleState.goldenDice = { red: false, blue: false };
+        battleState.goldenDice[team] = true; // +1 die on every roll of the fight
         break;
       case 'shades_cape':
-        // +1 max HP to active ghost
-        if (t.ghosts && t.ghosts[0]) t.ghosts[0].maxHp = (t.ghosts[0].maxHp || 0) + 1;
-        if (t.ghosts && t.ghosts[0]) t.ghosts[0].hp = (t.ghosts[0].hp || 0) + 1;
+        // +1 max HP to ALL ghosts on the team (so sideline ghosts that swap
+        // in still have the bonus). Once-per-raid via the ONE_TIME gate.
+        if (t.ghosts) {
+          t.ghosts.forEach(g => {
+            if (!g) return;
+            g.maxHp = (g.maxHp || 0) + 1;
+            g.hp = (g.hp || 0) + 1;
+          });
+        }
         break;
       case 'valkins_crystal':
-        battleState.valkinShard = battleState.valkinShard || {};
+        if (!battleState.valkinShard) battleState.valkinShard = { red: false, blue: false };
         battleState.valkinShard[team] = true; // +1 damage on doubles
         break;
     }
@@ -536,6 +561,17 @@ function startActiveRaidListener() {
       return;
     }
 
+    // If activeRaid changed from one instance to another WITHOUT going through
+    // null (e.g., user joined a new raid straight from the result screen),
+    // cleanupRaid never ran and stale state from the previous raid is still
+    // around — _currentFighterIdx, _lastTurnCounter, _raidWaitingRoomShown,
+    // the old instance listener. That's enough to keep the new raid from
+    // initializing and leave every player on a black screen.
+    if (currentRaid && currentRaid.instanceId !== instanceId) {
+      console.log('[RAID] Switching raids without cleanup gap — running cleanupRaid first');
+      cleanupRaid();
+    }
+
     currentRaid = { instanceId, ...instance };
     enterRaidScreen(instanceId);
   });
@@ -554,7 +590,14 @@ var _lastTurnCounter = -1;     // turn counter — distinguishes repeated same-i
 var _raidRoleTransitioning = false; // lock: prevents snapshot updates during role changes
 
 function enterRaidScreen(instanceId) {
-  _raidResultShown = false; // Reset for new raid
+  // Reset all per-raid latches so stale state from a previous raid can't
+  // block initialization of this one (belt-and-suspenders — the activeRaid
+  // listener now also calls cleanupRaid on instance switch, but if anything
+  // bypasses that path, these resets keep the new raid functional).
+  _raidResultShown = false;
+  _currentFighterIdx = -1;
+  _lastTurnCounter = -1;
+  window._raidWaitingRoomShown = false;
   const instRef = db.ref(`mp/raids/instances/${instanceId}`);
 
   // SINGLE listener — no more races between status/fighterIdx/battleState
@@ -691,6 +734,12 @@ function setupSpectatorView(data, currentIdx, players) {
   const bossConfig = RAID_BOSSES[data.raidId];
   if (!bossConfig) return;
 
+  // Hide any leftover game-over overlay (e.g., from this player having
+  // wiped — they should now spectate the remaining raiders, not stare at
+  // a "You lost" screen).
+  const gameOverEl = document.getElementById('gameOver');
+  if (gameOverEl) { gameOverEl.style.display = 'none'; gameOverEl.innerHTML = ''; gameOverEl.classList.remove('active'); }
+
   // Show the raid screen
   const raidScreen = document.getElementById('raid-screen');
   if (raidScreen) raidScreen.style.display = 'block';
@@ -707,9 +756,17 @@ function setupSpectatorView(data, currentIdx, players) {
   // Flag stays set for 6s to cover async entry callbacks in startBattle().
   window._raidSkipEntry = true;
 
-  // Set up the full battle arena (ghosts, art, HP bars, layout)
+  // Set up the full battle arena (ghosts, art, HP bars, layout). If any
+  // setup step throws (e.g., a transient missing DOM element when the
+  // spectator's listener fires before the page is fully wired), don't
+  // leave the player staring at a blank screen — snapshot updates will
+  // still flow in and the next render will fill in the arena.
   if (typeof initRaidBattleInPage === 'function') {
-    initRaidBattleInPage(data, blueGhosts, currentPlayer.team, false);
+    try {
+      initRaidBattleInPage(data, blueGhosts, currentPlayer.team, false);
+    } catch (e) {
+      console.error('[RAID] Spectator initRaidBattleInPage threw:', e);
+    }
   }
 
   // Immediately stop AI and snapshot sync — spectator is read-only
@@ -743,7 +800,7 @@ function setupSpectatorView(data, currentIdx, players) {
 /**
  * Start the player's raid fight
  */
-function startMyRaidFight(raidData) {
+async function startMyRaidFight(raidData) {
   const user = firebase.auth().currentUser;
   const bossConfig = RAID_BOSSES[raidData.raidId];
   if (!bossConfig) return;
@@ -766,6 +823,18 @@ function startMyRaidFight(raidData) {
   const phase = getBossPhase(raidData.bossCurrentHp, raidData.bossMaxHp);
   const bossTeam = buildBossTeam(bossConfig, phase, raidData.enrageLevel || 0);
 
+  // Fetch the user's raid loot inventory so equipped items (head/weapon/
+  // accessory) apply to this fight. Without this the loadout UI is cosmetic.
+  let lootInventory = null;
+  if (user) {
+    try {
+      const invSnap = await db.ref(`mp/users/${user.uid}/raidRunInventory`).once('value');
+      lootInventory = invSnap.val() || null;
+    } catch (e) {
+      console.warn('[RAID] Failed to fetch loot inventory:', e);
+    }
+  }
+
   raidBattleState = {
     phase: 'fighting',
     raidData: raidData,
@@ -780,7 +849,8 @@ function startMyRaidFight(raidData) {
     ghostsLost: 0,
     hasWave: hasWave,
     waveDefeated: false,
-    currentSlot: currentIdx
+    currentSlot: currentIdx,
+    lootInventory: lootInventory
   };
 
   if (hasWave) {
@@ -1470,6 +1540,18 @@ async function distributeRaidRewards(instanceId, bossDefeated, killingBlowUid) {
     // Cleared when user clicks "Return to Lobby" on result screen.
   }
 
+  // Write status='complete' atomically with loot/badges/points so the
+  // instance listener fires once with all the data showRaidResult needs.
+  // Previously the bridge wrote status='complete' first and rewards arrived
+  // later — handleRaidComplete fired before lootItem was populated, so the
+  // result screen showed "No loot this time" even though loot was rolled.
+  updates[`mp/raids/instances/${instanceId}/status`] = 'complete';
+  updates[`mp/raids/instances/${instanceId}/completedAt`] = firebase.database.ServerValue.TIMESTAMP;
+  updates[`mp/raids/instances/${instanceId}/fightPhase`] = 'done';
+  if (bossDefeated && killingBlowUid) {
+    updates[`mp/raids/instances/${instanceId}/bossDefeatedBy`] = killingBlowUid;
+  }
+
   await db.ref().update(updates);
   // Await all badge grants so spectators reliably receive their badge
   if (badgePromises.length > 0) {
@@ -1609,11 +1691,15 @@ async function writeBattleSnapshot(snapshotData) {
       ko: !!g.ko, art: g.art || '', id: g.id || 0,
       ability: g.ability || '', abilityDesc: g.abilityDesc || '', rarity: g.rarity || 'common'
     })),
-    allBossGhosts: (snapshotData.allBossGhosts || []).map(g => ({
-      name: g.name || '???', hp: g.hp || 0, maxHp: g.maxHp || 1,
-      ko: !!g.ko, art: g.art || '', id: g.id || 0,
-      ability: g.ability || '', abilityDesc: g.abilityDesc || '', rarity: g.rarity || 'common'
-    })),
+    allBossGhosts: (snapshotData.allBossGhosts || []).map(g => {
+      const entry = {
+        name: g.name || '???', hp: g.hp || 0, maxHp: g.maxHp || 1,
+        ko: !!g.ko, art: g.art || '', id: g.id || 0,
+        ability: g.ability || '', abilityDesc: g.abilityDesc || '', rarity: g.rarity || 'common'
+      };
+      if (g.baseId != null) entry.baseId = g.baseId;
+      return entry;
+    }),
     playerActiveIdx: snapshotData.playerActiveIdx || 0,
     bossActiveIdx: snapshotData.bossActiveIdx || 0,
     playerSideline: (snapshotData.playerSideline || []).map(g => ({

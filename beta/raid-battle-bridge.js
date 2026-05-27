@@ -11,6 +11,43 @@ var _originalGhostData = {};
 // _currentRaidRole is declared in raid-engine.js: 'fighter' | 'spectator' | null
 
 /**
+ * Cycle from currentIdx forward and return the next slot whose player is
+ * still in the raid (not 'done' from wiping, not 'disconnected'). Returns
+ * -1 if no living player remains, meaning the raid is over.
+ */
+function _findNextLivingPlayer(currentIdx, players, playerCount) {
+  for (let step = 1; step <= playerCount; step++) {
+    const idx = (currentIdx + step) % playerCount;
+    const p = players[idx];
+    if (!p) continue;
+    if (p.status === 'done' || p.status === 'disconnected') continue;
+    return idx;
+  }
+  return -1;
+}
+
+/**
+ * Snapshot Boss-side persistent state that must survive turn handoffs:
+ * Humar's pendingLucyDmg, per-ghost burn stacks. Without this, abilities
+ * applied to the boss in one player's round vanish when the next player
+ * takes over.
+ */
+function _snapshotBossPersistentState() {
+  const s = { pendingLucyDmg: 0, burn: {} };
+  if (!B) return s;
+  if (B.pendingLucyDmg && typeof B.pendingLucyDmg.blue === 'number') {
+    s.pendingLucyDmg = B.pendingLucyDmg.blue || 0;
+  }
+  if (B.burn && B.burn.blue) {
+    for (const k of Object.keys(B.burn.blue)) {
+      const v = B.burn.blue[k];
+      if (typeof v === 'number' && v > 0) s.burn[k] = v;
+    }
+  }
+  return s;
+}
+
+/**
  * Update the spectator's arena from a Firebase battleState snapshot.
  * Called when the battleState listener fires on Player 2's client.
  * Updates the local B state and re-renders so Player 2 sees live dice/HP changes.
@@ -64,6 +101,7 @@ function updateSpectatorFromSnapshot(snapshot) {
         if (sg.ability) B.blue.ghosts[i].ability = sg.ability;
         if (sg.abilityDesc) B.blue.ghosts[i].abilityDesc = sg.abilityDesc;
         if (sg.rarity) B.blue.ghosts[i].rarity = sg.rarity;
+        if (sg.baseId != null) B.blue.ghosts[i].baseId = sg.baseId;
       }
     });
     if (snapshot.bossActiveIdx != null) {
@@ -254,6 +292,10 @@ function initRaidBattleInPage(raidData, enemyGhosts, playerTeam, isWave) {
             B.blue.ghosts[i].ability = gs.ability;
             B.blue.ghosts[i].abilityDesc = gs.abilityDesc;
             B.blue.ghosts[i].rarity = gs.rarity;
+            // Boss ghosts have their own ID in the 9200+ range; baseId routes
+            // ability triggers to the player-card equivalent. Must survive
+            // turn handoffs or the boss's ability stops firing on round 2+.
+            if (gs.baseId != null) B.blue.ghosts[i].baseId = gs.baseId;
           }
         }
       });
@@ -313,6 +355,62 @@ function initRaidBattleInPage(raidData, enemyGhosts, playerTeam, isWave) {
       if (savedState.resources) {
         B.red.resources = { ...B.red.resources, ...savedState.resources };
       }
+      // Restore Moonstone Sickness so it persists across turn handoffs
+      if (typeof savedState.moonstoneSickness === 'number') {
+        B.red.moonstoneSickness = savedState.moonstoneSickness;
+      }
+      if (typeof savedState.moonstoneSicknessCount === 'number') {
+        B.red.moonstoneSicknessCount = savedState.moonstoneSicknessCount;
+      }
+      if (typeof savedState.moonstoneSicknessPending === 'number') {
+        B.red.moonstoneSicknessPending = savedState.moonstoneSicknessPending;
+      }
+    }
+
+    // ── 7c. Restore boss persistent state (Humar pendingLucyDmg, burn) ──
+    // These effects target the boss and must survive turn handoffs.
+    const persist = raidData.bossPersistentState;
+    if (persist) {
+      if (typeof persist.pendingLucyDmg === 'number' && persist.pendingLucyDmg > 0) {
+        if (!B.pendingLucyDmg) B.pendingLucyDmg = { red: 0, blue: 0 };
+        B.pendingLucyDmg.blue = persist.pendingLucyDmg;
+      }
+      if (persist.burn && typeof persist.burn === 'object') {
+        if (!B.burn) B.burn = { red: {}, blue: {} };
+        if (!B.burn.blue) B.burn.blue = {};
+        for (const k of Object.keys(persist.burn)) {
+          const v = persist.burn[k];
+          if (typeof v === 'number' && v > 0) B.burn.blue[k] = v;
+        }
+      }
+    }
+
+    // ── 7d. Apply the fighter's equipped raid loadout (head/weapon/accessory) ──
+    // Inventory was fetched async in startMyRaidFight and stashed on
+    // raidBattleState.lootInventory. Only the fighter's own team gets loot.
+    // isFirstTurn = no saved player state from a previous turn yet → grant
+    // one-time resource items (Lucky Stone, Healing Seed, etc.). On later
+    // turns, only re-apply per-fight flags (blades, masks, golden dice,
+    // Valkin's Crystal) since B is reinitialized at every handoff.
+    if (isFighter && typeof raidBattleState !== 'undefined' && raidBattleState
+        && raidBattleState.lootInventory && typeof applyRaidLoot === 'function') {
+      try {
+        const isFirstTurn = !savedState;
+        applyRaidLoot(B, 'red', raidBattleState.lootInventory, isFirstTurn);
+      } catch (e) {
+        console.warn('[RAID] applyRaidLoot failed:', e);
+      }
+    }
+
+    // ── 7e. Capture turn-start POOL HP as baseline for per-turn damage ──
+    // Damage attribution must be in POOL units, not ghost units. The pool
+    // (e.g. 27 HP for 2-player Timber) is what players see drop; the boss
+    // ghost (e.g. 18 HP) is a scaled view of the pool. Earlier versions
+    // tracked ghost-unit damage, which undercounted by the pool/ghost ratio
+    // (1.5x for 2 players) — players saw a Total Damage that didn't match
+    // the pool drop.
+    if (isFighter) {
+      window._raidTurnStartPool = raidData.bossCurrentHp || 0;
     }
 
     // ── 7c. Clear dice from previous player's turn ──────────────
@@ -590,14 +688,14 @@ function injectRaidReturnButton() {
         const players = currentRaid.players || {};
         const playerCount = Object.keys(players).length;
         const currentIdx = raidBattleState?.currentSlot || 0;
-        const nextIdx = currentIdx + 1;
         const ghostsLost = B ? B.red.ghosts.filter(g => g.ko).length : 0;
-        let totalDamage = 0;
-        if (B && B.blue) {
-          B.blue.ghosts.forEach(g => {
-            if (g) totalDamage += Math.max(0, g.maxHp - (g.ko ? 0 : g.hp));
-          });
-        }
+        // Did this player wipe? (all ghosts KO'd). If so, mark them done;
+        // surviving players keep raiding instead of failing the whole raid.
+        const playerWiped = B && B.red && B.red.ghosts.every(g => g.ko);
+        // This player's damage = pool drop during their turn (in pool units).
+        // baseline was captured in initRaidBattleInPage as the bossCurrentHp
+        // the player started with; poolNow was computed above.
+        const turnDamage = Math.max(0, (window._raidTurnStartPool || 0) - poolNow);
 
         // Save player ghost state (with identity for transforms)
         // IMPORTANT: Firebase rejects undefined — coerce every field
@@ -608,6 +706,10 @@ function injectRaidReturnButton() {
           const cleanRes = {};
           for (const k of Object.keys(rawRes)) { if (rawRes[k] !== undefined) cleanRes[k] = rawRes[k]; }
           savedPlayerState.resources = cleanRes;
+          // Persist Moonstone Sickness so it follows the player across turns
+          savedPlayerState.moonstoneSickness = B.red.moonstoneSickness || 0;
+          savedPlayerState.moonstoneSicknessCount = B.red.moonstoneSicknessCount || 0;
+          savedPlayerState.moonstoneSicknessPending = B.red.moonstoneSicknessPending || 0;
           B.red.ghosts.forEach(g => {
             const gs = { hp: g.hp || 0, maxHp: g.maxHp || 1, ko: !!g.ko,
                          id: g.id || 0, name: g.name || '???', art: g.art || '',
@@ -622,43 +724,64 @@ function injectRaidReturnButton() {
           });
         }
 
-        // Build atomic update
+        // Snapshot Boss-side persistent state (Humar pendingLucyDmg, burn)
+        const bossPersist = _snapshotBossPersistentState();
+
+        // Build atomic update.
+        // The current player is "done" ONLY if they wiped (no more ghosts).
+        // If THEY won and the boss lost (poolNow <= 0), they're still alive.
+        // damageDealt/totalDamageDealt accumulate via increment so a player
+        // who takes multiple turns gets credited for each.
         const update = {
           bossCurrentHp: poolNow,
-          [`players/${currentIdx}/status`]: 'done',
-          [`players/${currentIdx}/damageDealt`]: totalDamage,
-          [`players/${currentIdx}/ghostsLost`]: ghostsLost
+          bossPersistentState: bossPersist,
+          [`players/${currentIdx}/damageDealt`]: firebase.database.ServerValue.increment(turnDamage),
+          [`players/${currentIdx}/ghostsLost`]: ghostsLost,
+          totalDamageDealt: firebase.database.ServerValue.increment(turnDamage)
         };
+        if (playerWiped) {
+          update[`players/${currentIdx}/status`] = 'done';
+        }
         if (user) {
           update[`playerGhostState/${user.uid}`] = savedPlayerState;
         }
 
-        // Check if boss is dead or all players done
+        // Check if boss is dead, then if living players remain.
+        // status='complete' is NOT written here — distributeRaidRewards writes
+        // it atomically with loot/badges so the result screen has loot data.
+        let nextIdxResolved = -1;
+        let raidEnding = false;
+        let raidWon = false;
         if (poolNow <= 0) {
-          update.status = 'complete';
-          update.completedAt = firebase.database.ServerValue.TIMESTAMP;
-          update.bossDefeatedBy = user?.uid || null;
-          update.fightPhase = 'done';
-        } else if (nextIdx >= playerCount) {
-          // All players fought, boss survived
-          update.status = 'complete';
-          update.completedAt = firebase.database.ServerValue.TIMESTAMP;
+          raidEnding = true;
+          raidWon = true;
           update.fightPhase = 'done';
         } else {
-          // Advance to next fighter
-          update.currentFighterIdx = nextIdx;
-          update.currentFighterUid = players[nextIdx]?.uid || null;
-          update.fightPhase = 'fighting';
-          update.enrageLevel = firebase.database.ServerValue.increment(1);
+          // Build a synthetic players map reflecting THIS write so the helper
+          // doesn't try to advance to the just-wiped current player.
+          const playersAfter = { ...players };
+          if (playerWiped) {
+            playersAfter[currentIdx] = { ...(playersAfter[currentIdx] || {}), status: 'done' };
+          }
+          nextIdxResolved = _findNextLivingPlayer(currentIdx, playersAfter, playerCount);
+          if (nextIdxResolved === -1) {
+            // All players are done — raid fails
+            raidEnding = true;
+            raidWon = false;
+            update.fightPhase = 'done';
+          } else {
+            update.currentFighterIdx = nextIdxResolved;
+            update.currentFighterUid = players[nextIdxResolved]?.uid || null;
+            update.fightPhase = 'fighting';
+            update.enrageLevel = firebase.database.ServerValue.increment(1);
+          }
         }
 
         setTimeout(() => {
           db.ref(`mp/raids/instances/${instanceId}`).update(update).then(() => {
-            console.log('[RAID] Game over processed. Winner:', winner, '| Pool HP:', poolNow);
-            if (poolNow <= 0 && typeof distributeRaidRewards === 'function') {
-              distributeRaidRewards(instanceId, true, user?.uid);
-            } else if (nextIdx >= playerCount && typeof distributeRaidRewards === 'function') {
-              distributeRaidRewards(instanceId, false, null);
+            console.log('[RAID] Game over processed. Winner:', winner, '| Pool HP:', poolNow, '| Wiped:', playerWiped, '| Next:', nextIdxResolved);
+            if (raidEnding && typeof distributeRaidRewards === 'function') {
+              distributeRaidRewards(instanceId, raidWon, raidWon ? user?.uid : null);
             }
           }).catch(e => console.warn('[RAID] game-over update error:', e));
         }, 1500);
@@ -690,6 +813,63 @@ function injectRaidReturnButton() {
   };
 })();
 
+// ─── PATCH: Direct Red→Blue roll trigger in raid mode ───────────
+// In raid mode, when the player clicks READY (rollReady('red')), schedule
+// Blue's roll directly instead of relying on the polled aiTick. The poll
+// approach kept missing — pre-roll setup, phase transitions, or commit
+// modals could shift state between the tick and the delayed call.
+// This guarantees Blue rolls exactly once per Red roll.
+(function _hookRedRollFiresBlue() {
+  const _origRollReady = window.rollReady;
+  if (typeof _origRollReady !== 'function') return;
+
+  let _pendingBlueRoll = false;
+
+  window.rollReady = function (team) {
+    const result = _origRollReady.call(this, team);
+
+    // Only hook Red clicks in raid mode (MP_MODE + RAID_MODE + multi-player)
+    if (!window.RAID_MODE || !window.MP_MODE || team !== 'red') return result;
+    if (!currentRaid) return result;
+    const players = currentRaid.players || {};
+    if (Object.keys(players).length <= 1) return result;
+    if (_currentRaidRole !== 'fighter') return result;
+    // STATE-DRIVEN: schedule Blue if pre-roll setup ran and Blue hasn't rolled
+    // yet. Dropping the previous "first click only" (wasReady) gate means a
+    // user's second click can also kick off Blue when the first schedule
+    // missed its window — full recovery instead of silently stuck.
+    if (!B || !B.preRoll || !B.preRoll.blue) return result;
+    if (B.preRoll.blue.dice) return result; // already rolled
+    if (_pendingBlueRoll) return result;
+    _pendingBlueRoll = true;
+
+    // Wait long enough for pre-roll callouts to clear, then roll Blue.
+    const baseDelay = 900 + Math.random() * 300;
+    const calloutWait = (B.preRollCalloutEndTime)
+      ? Math.max(0, B.preRollCalloutEndTime - Date.now()) : 0;
+    const delay = Math.max(baseDelay, calloutWait + 200);
+
+    setTimeout(() => {
+      _pendingBlueRoll = false;
+      if (!B) return;
+      if (B.phase !== 'ready' && B.phase !== 'rolling') return;
+      if (B.preRoll && B.preRoll.blue && B.preRoll.blue.dice) return;
+      const blueBtn = document.getElementById('rollBlueBtn');
+      if (blueBtn && (blueBtn.disabled || blueBtn.classList.contains('locked'))) return;
+      if (typeof aiCommitSpecials === 'function') aiCommitSpecials('blue');
+      _origRollReady.call(window, 'blue');
+    }, delay);
+
+    return result;
+  };
+
+  // Reset pending flag when a battle starts fresh (round 1, no Red roll yet).
+  // resetRollButtons fires at the start of each fresh raid battle in raid mode
+  // (B.round===1 falls through to _orig), so we hook the alt-turns wrapper
+  // below to clear our flag too — done inline since it's the same wrapper.
+  window._raidClearPendingBlueRoll = function () { _pendingBlueRoll = false; };
+})();
+
 // ─── PATCH: Alternating turns — swap players after each round ───
 // Intercepts resetRollButtons (called after a round fully resolves)
 // to swap to the next player instead of enabling roll buttons again.
@@ -715,6 +895,8 @@ function injectRaidReturnButton() {
     // Only intercept AFTER at least one round has been played (B.round > 1)
     if (!B || B.round <= 1) {
       _raidRoundsPlayed = 0;
+      // Fresh battle for a new fighter turn — clear our pending-blue-roll latch
+      if (typeof window._raidClearPendingBlueRoll === 'function') window._raidClearPendingBlueRoll();
       return _origResetRollButtons.call(this);
     }
 
@@ -757,6 +939,13 @@ function injectRaidReturnButton() {
       const cleanRes = {};
       for (const k of Object.keys(rawRes)) { if (rawRes[k] !== undefined) cleanRes[k] = rawRes[k]; }
       savedPlayerState.resources = cleanRes;
+      // Persist Moonstone Sickness team-level state. Without this the sickness
+      // counters reset to 0 every turn handoff (B is reinitialized), so a
+      // player who used a Moonstone last turn would come back without the
+      // pre-roll damage debuff that's supposed to follow them.
+      savedPlayerState.moonstoneSickness = B.red.moonstoneSickness || 0;
+      savedPlayerState.moonstoneSicknessCount = B.red.moonstoneSicknessCount || 0;
+      savedPlayerState.moonstoneSicknessPending = B.red.moonstoneSicknessPending || 0;
       B.red.ghosts.forEach(g => {
         const gs = { hp: g.hp || 0, maxHp: g.maxHp || 1, ko: !!g.ko,
                      id: g.id || 0, name: g.name || '???', art: g.art || '',
@@ -777,79 +966,112 @@ function injectRaidReturnButton() {
     if (B && B.blue) {
       savedBossState.activeIdx = B.blue.activeIdx || 0;
       B.blue.ghosts.forEach(g => {
-        savedBossState.ghosts.push({ hp: g.hp || 0, maxHp: g.maxHp || 1, ko: !!g.ko,
-                                     id: g.id || 0, name: g.name || '???', art: g.art || '',
-                                     ability: g.ability || '', abilityDesc: g.abilityDesc || '', rarity: g.rarity || 'common' });
+        const entry = { hp: g.hp || 0, maxHp: g.maxHp || 1, ko: !!g.ko,
+                        id: g.id || 0, name: g.name || '???', art: g.art || '',
+                        ability: g.ability || '', abilityDesc: g.abilityDesc || '', rarity: g.rarity || 'common' };
+        // Preserve baseId so ability triggers keep firing across turn handoffs
+        if (g.baseId != null) entry.baseId = g.baseId;
+        savedBossState.ghosts.push(entry);
       });
     }
+
+    // Snapshot Boss-side state that must persist across handoffs (Humar's
+    // delayed damage, per-ghost burn stacks). Without this the boss
+    // "forgets" effects applied by the previous player's ghosts.
+    const bossPersist = _snapshotBossPersistentState();
+
+    // This player's damage = pool drop during their turn (in pool units).
+    // baseline was captured in initRaidBattleInPage as the bossCurrentHp
+    // the player started with.
+    let ghostsLostThisRun = 0;
+    if (B && B.red) {
+      ghostsLostThisRun = B.red.ghosts.filter(g => g.ko).length;
+    }
+    // poolNow is computed inside the setTimeout below; turnDamage is computed
+    // there too so we have the up-to-date pool value.
 
     // Advance currentFighterIdx in Firebase after a brief delay
     setTimeout(() => {
       if (!currentRaid) return;
       const currentIdx = raidBattleState?.currentSlot || 0;
-      const nextIdx = (currentIdx + 1) % playerCount;
       const instanceId = currentRaid.instanceId;
       const user = firebase.auth().currentUser;
 
       // Calculate new boss pool HP from the boss ghost's current HP
       const poolMax = currentRaid.bossMaxHp || 15;
       const poolNow = Math.max(0, Math.round(poolMax * (bossHpNow / bossMaxGhostHpForTurn)));
+      // Per-turn damage in POOL units (matches what the player sees drop).
+      const turnDamage = Math.max(0, (window._raidTurnStartPool || 0) - poolNow);
 
       // ATOMIC write: player ghost state + fighter advance in ONE update
       // Prevents race where listener fires on index change before ghost state is saved
       // turnCounter increments each swap so the listener can distinguish repeated same-index turns
       const prevTurnCounter = currentRaid.turnCounter || 0;
       const update = {
-        currentFighterIdx: nextIdx,
-        currentFighterUid: players[nextIdx]?.uid || null,
-        fightPhase: 'fighting',
         bossCurrentHp: poolNow,
         bossGhostState: savedBossState,
-        turnCounter: prevTurnCounter + 1
+        bossPersistentState: bossPersist,
+        turnCounter: prevTurnCounter + 1,
+        // Per-player damage/ghosts-lost, accumulated via increment so a player
+        // who takes multiple turns gets credited for each. Initial value is 0
+        // from queue join, so first increment lands at the right total.
+        [`players/${currentIdx}/damageDealt`]: firebase.database.ServerValue.increment(turnDamage),
+        [`players/${currentIdx}/ghostsLost`]: ghostsLostThisRun,
+        // Instance-level total for the result screen's "Total Damage" stat.
+        totalDamageDealt: firebase.database.ServerValue.increment(turnDamage)
       };
       if (user && savedPlayerState.ghosts.length > 0) {
         update[`playerGhostState/${user.uid}`] = savedPlayerState;
       }
 
+      // Decide if the raid is ending here. status='complete' is NOT written
+      // in this update — distributeRaidRewards writes it atomically with
+      // loot/badges so the result screen has loot data populated.
+      let raidEnding = false;
+      let raidWon = false;
+      let resolvedNextIdx = -1;
+      if (poolNow <= 0) {
+        raidEnding = true;
+        raidWon = true;
+        update.fightPhase = 'done';
+        update[`players/${currentIdx}/status`] = 'done';
+      } else {
+        resolvedNextIdx = _findNextLivingPlayer(currentIdx, players, playerCount);
+        if (resolvedNextIdx === -1) {
+          raidEnding = true;
+          raidWon = false;
+          update.fightPhase = 'done';
+        } else {
+          update.currentFighterIdx = resolvedNextIdx;
+          update.currentFighterUid = players[resolvedNextIdx]?.uid || null;
+          update.fightPhase = 'fighting';
+        }
+      }
+
       db.ref(`mp/raids/instances/${instanceId}`).update(update).then(() => {
-        console.log('[RAID] Turn passed to player', nextIdx, '| Boss pool HP:', poolNow, '/', poolMax);
-        _currentRaidRole = 'spectator';
+        if (raidEnding) {
+          if (raidWon) {
+            console.log('[RAID] Boss defeated mid-handoff. Completing raid.');
+          } else {
+            console.log('[RAID] All remaining players done — boss survives. Completing raid.');
+          }
+          if (typeof distributeRaidRewards === 'function') {
+            distributeRaidRewards(instanceId, raidWon, raidWon ? user?.uid : null);
+          }
+        } else {
+          console.log('[RAID] Turn passed to player', resolvedNextIdx, '| Boss pool HP:', poolNow, '/', poolMax);
+          _currentRaidRole = 'spectator';
+        }
       }).catch(e => console.error('[RAID] Turn handoff Firebase write FAILED:', e));
     }, 1500);
   };
 })();
 
-// ─── PATCH: Spectator detects game completion ──────────────────
-// Player 2 needs to see a result screen when the raid completes.
-// Listen for raid status changes even while spectating.
-(function _hookSpectatorGameOver() {
-  // Poll raid status while spectating
-  setInterval(() => {
-    if (_currentRaidRole !== 'spectator' || !currentRaid) return;
-    db.ref(`mp/raids/instances/${currentRaid.instanceId}/status`).once('value').then(snap => {
-      if (snap.val() === 'complete') {
-        // Raid is over — show return to lobby
-        const raidScreen = document.getElementById('raid-screen');
-        if (!raidScreen || raidScreen.style.display === 'none') return;
-        // Don't show if we already have a game-over overlay
-        const existing = document.getElementById('gameOver');
-        if (existing && existing.style.display !== 'none' && existing.innerHTML) return;
-
-        // Show a simple result overlay
-        const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
-        overlay.innerHTML = `
-          <h1 style="font-family:Creepster,cursive;font-size:2.5rem;color:#2ecc71;letter-spacing:4px;">RAID COMPLETE</h1>
-          <p style="color:var(--text2);font-size:1.1rem;">The raid has ended.</p>
-          <button style="background:linear-gradient(135deg,#9b59b6,#8e44ad);color:#fff;border:1px solid #c084fc;padding:12px 32px;font-size:1rem;font-weight:700;border-radius:8px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;"
-            onclick="this.parentElement.remove(); cleanupRaidBattle(); if(typeof showRaidLobby==='function') showRaidLobby();">
-            RETURN TO LOBBY
-          </button>`;
-        document.body.appendChild(overlay);
-      }
-    }).catch(() => {});
-  }, 2000);
-})();
+// (Removed: spectator-poll fallback overlay. The single instance listener
+//  in raid-engine.js handles status='complete' for both fighter and
+//  spectator via handleRaidComplete → showRaidResult. The polled overlay
+//  was rendered on document.body at z-9999 and obscured the proper result
+//  screen, leaving the player stuck on a "RAID COMPLETE" black screen.)
 
 // ─── SNAPSHOT SYNC: Poll battle state and write to Firebase ─────
 // Simple interval that writes B state to Firebase every 500ms while
@@ -895,11 +1117,15 @@ function startSnapshotSync() {
       const _rawRes = B.red ? (B.red.resources || {}) : {};
       const playerResources = {};
       for (const k of Object.keys(_rawRes)) { if (_rawRes[k] !== undefined) playerResources[k] = _rawRes[k]; }
-      const allBossGhosts = B.blue ? B.blue.ghosts.map(g => ({
-        name: g.name || '???', hp: g.hp || 0, maxHp: g.maxHp || 1,
-        ko: !!g.ko, art: g.art || '', id: g.id || 0,
-        ability: g.ability || '', abilityDesc: g.abilityDesc || '', rarity: g.rarity || 'common'
-      })) : [];
+      const allBossGhosts = B.blue ? B.blue.ghosts.map(g => {
+        const entry = {
+          name: g.name || '???', hp: g.hp || 0, maxHp: g.maxHp || 1,
+          ko: !!g.ko, art: g.art || '', id: g.id || 0,
+          ability: g.ability || '', abilityDesc: g.abilityDesc || '', rarity: g.rarity || 'common'
+        };
+        if (g.baseId != null) entry.baseId = g.baseId; // route ability triggers
+        return entry;
+      }) : [];
 
       writeBattleSnapshot({
         playerName: firebase.auth().currentUser?.displayName || 'Raider',

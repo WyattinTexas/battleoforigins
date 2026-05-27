@@ -1008,7 +1008,11 @@ function showRaidResult(data) {
 
   const mvp = sortedPlayers[0];
   const user = firebase.auth().currentUser;
-  const killingBlowPlayer = data.bossDefeatedBy ? Object.values(players).find(p => p.uid === data.bossDefeatedBy) : null;
+  const killingBlowEntry = data.bossDefeatedBy
+    ? Object.entries(players).find(([s, p]) => p.uid === data.bossDefeatedBy)
+    : null;
+  const killingBlowPlayer = killingBlowEntry ? killingBlowEntry[1] : null;
+  const killingBlowSlot = killingBlowEntry ? parseInt(killingBlowEntry[0]) : null;
 
   let html = `
     <div class="raid-result-screen ${bossDefeated ? 'victory' : 'defeat'}">
@@ -1032,7 +1036,7 @@ function showRaidResult(data) {
         </div>
         ${killingBlowPlayer ? `<div class="raid-result-stat highlight">
           <span class="raid-stat-label">Killing Blow</span>
-          <span class="raid-stat-value">${killingBlowPlayer.displayName}</span>
+          <span class="raid-stat-value">${killingBlowPlayer.displayName}${killingBlowSlot != null ? ` <span class="raid-slot-tag">P${killingBlowSlot + 1}</span>` : ''}</span>
         </div>` : ''}
       </div>
 
@@ -1044,7 +1048,7 @@ function showRaidResult(data) {
           const isKiller = p.uid === data.bossDefeatedBy;
           return `<div class="raid-result-row ${isMe ? 'is-me' : ''} ${isMvp ? 'is-mvp' : ''}">
             <span class="raid-result-rank">#${i + 1}</span>
-            <span class="raid-result-player-name">${p.displayName}${isMvp ? ' <span class="mvp-badge">MVP</span>' : ''}${isKiller ? ' <span class="kb-badge">KB</span>' : ''}</span>
+            <span class="raid-result-player-name"><span class="raid-slot-tag">P${p.slot + 1}</span> ${p.displayName}${isMvp ? ' <span class="mvp-badge">MVP</span>' : ''}${isKiller ? ' <span class="kb-badge">KB</span>' : ''}${isMe ? ' <span class="raid-slot-me">YOU</span>' : ''}</span>
             <span class="raid-result-damage">${p.damageDealt || 0} dmg</span>
             <span class="raid-result-ghosts-lost">${3 - (p.ghostsLost || 0)}/3 survived</span>
           </div>`;

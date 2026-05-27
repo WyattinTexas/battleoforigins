@@ -494,7 +494,7 @@ const RAID_BOSSES = {
     tier: 1, set: 'Rolling Hills',
     requiredBadge: 'dark_fang_slayer', requiredPlayers: 3,
     bossGhost: {
-      id: 210, name: 'Timber', maxHp: 18, art: '../testroom/art/timber.jpg',
+      id: 9201, baseId: 210, name: 'Timber', maxHp: 18, art: '../testroom/art/timber.jpg',
       ability: 'Howl of the Alpha', abilityDesc: 'Before each roll: remove 1 enemy die. Triples+: deal 1 chip damage to all enemy sideline ghosts.'
     },
     minionsByPhase: { 1: [], 2: [9101], 3: [9101, 9102], 4: [9101, 9103] },
@@ -516,7 +516,7 @@ const RAID_BOSSES = {
     tier: 1, set: 'Rolling Hills',
     requiredBadge: null, requiredPlayers: 2, minPlayers: 1,
     bossGhost: {
-      id: 202, name: 'Dark Fang', maxHp: 9, art: '../testroom/art/originals/DarkFang.png',
+      id: 9202, baseId: 202, name: 'Dark Fang', maxHp: 9, art: '../testroom/art/originals/DarkFang.png',
       ability: 'Pressure', abilityDesc: 'Win: deal +1 damage for each KO\'d ghost this game.'
     },
     minionsByPhase: { 1: [], 2: [], 3: [], 4: [] },
@@ -538,7 +538,7 @@ const RAID_BOSSES = {
     tier: 1, set: 'Rolling Hills',
     requiredBadge: null, requiredPlayers: 2,
     bossGhost: {
-      id: 428, name: 'Jasper', maxHp: 10, art: '../testroom/art/originals/Pickwick.png',
+      id: 9203, baseId: 428, name: 'Jasper', maxHp: 10, art: '../testroom/art/originals/Pickwick.png',
       ability: 'Flame Dive', abilityDesc: 'Win: roll 1 bonus die and deal its value as damage. Jasper takes 1 self-damage. High risk, high reward.'
     },
     minionsByPhase: { 1: [9121, 9122], 2: [9123, 9122], 3: [9124, 9123], 4: [9123, 9125] },
@@ -563,7 +563,7 @@ const RAID_BOSSES = {
     tier: 2, set: 'Frost Valley',
     requiredBadge: null, requiredPlayers: 2,
     bossGhost: {
-      id: 106, name: 'King Jay', maxHp: 14, art: '../testroom/art/originals/king_jay.jpg',
+      id: 9204, baseId: 106, name: 'King Jay', maxHp: 14, art: '../testroom/art/originals/king_jay.jpg',
       ability: 'Reflection', abilityDesc: 'Lose roll & dice total = 7: reflect ALL damage. Permafrost: max 3 damage per hit. Frost Aura: 1 cold damage per round.'
     },
     minionsByPhase: { 1: [9131], 2: [9131, 9132], 3: [9133, 9132], 4: [9134] },
@@ -585,7 +585,7 @@ const RAID_BOSSES = {
     tier: 2, set: 'Frost Valley',
     requiredBadge: 'lucy_slayer', requiredPlayers: 3,
     bossGhost: {
-      id: 114, name: 'Romy', maxHp: 20, art: '../testroom/art/originals/romy.jpg',
+      id: 9206, baseId: 114, name: 'Romy', maxHp: 20, art: '../testroom/art/originals/romy.jpg',
       ability: 'Valley Guardian', abilityDesc: 'Predicts a die number each round. If any die matches: +3 damage. Mirror Dice: swap 1 die with player after rolling.'
     },
     minionsByPhase: { 1: [9111], 2: [9112], 3: [9112, 9113], 4: [9111, 9112] },
@@ -607,7 +607,7 @@ const RAID_BOSSES = {
     tier: 2, set: 'Frost Valley',
     requiredBadge: null, requiredPlayers: 5,
     bossGhost: {
-      id: 110, name: 'The Mountain King', maxHp: 30, art: '../testroom/art/originals/mountain_king_leg.jpg',
+      id: 9205, baseId: 110, name: 'The Mountain King', maxHp: 30, art: '../testroom/art/originals/mountain_king_leg.jpg',
       ability: 'Beast Mode', abilityDesc: 'Doubles deal 2X damage. Triples+: deal 2 chip damage to ALL enemy ghosts. On KO: gain 2 Sacred Fire.'
     },
     minionsByPhase: { 1: [], 2: [9101], 3: [9101, 9102], 4: [9103, 9101] },
@@ -631,7 +631,7 @@ const RAID_BOSSES = {
     tier: 3, set: 'Volcanic Isles',
     requiredBadge: 'king_jay_slayer', requiredPlayers: 2,
     bossGhost: {
-      id: 418, name: 'Pip', maxHp: 11, art: '../testroom/art/originals/Pip.png',
+      id: 9207, baseId: 418, name: 'Pip', maxHp: 11, art: '../testroom/art/originals/Pip.png',
       ability: 'Toasted', abilityDesc: 'Triples+: permanently remove 1 enemy die. +1 die per living minion. Gains 2 Sacred Fires on triples.'
     },
     minionsByPhase: { 1: [9121, 9122], 2: [9123, 9122], 3: [9124, 9123], 4: [9123, 9125] },
@@ -654,7 +654,7 @@ const RAID_BOSSES = {
     tier: 3, set: 'Volcanic Isles',
     requiredBadge: 'king_jay_slayer', requiredPlayers: 3,
     bossGhost: {
-      id: 336, name: 'Humar', maxHp: 16, art: '../testroom/art/humar.jpg',
+      id: 9208, baseId: 336, name: 'Humar', maxHp: 16, art: '../testroom/art/humar.jpg',
       ability: 'Meteor', abilityDesc: 'Win: opponent takes 2 damage before their next roll. Gain 1 Burn. On KO: gain 2 Sacred Fire.'
     },
     minionsByPhase: { 1: [9101], 2: [9101, 9103], 3: [9103, 9102], 4: [9103, 9101] },
@@ -676,7 +676,7 @@ const RAID_BOSSES = {
     tier: 3, set: 'Volcanic Isles',
     requiredBadge: 'heart_of_the_hills', requiredPlayers: 5,
     bossGhost: {
-      id: 306, name: 'Nerina', maxHp: 35, art: '../testroom/art/the_deep.jpg',
+      id: 9209, baseId: 306, name: 'Nerina', maxHp: 35, art: '../testroom/art/the_deep.jpg',
       ability: 'Leviathan', abilityDesc: 'Entry: deal 3 damage. Permafrost: max 3 damage per hit. Frost Aura: 1 damage per round. 9 HP base — a true titan.'
     },
     minionsByPhase: { 1: [9131], 2: [9131, 9132], 3: [9133, 9132], 4: [9134, 9134] },
@@ -700,7 +700,7 @@ const RAID_BOSSES = {
     tier: 4, set: 'Dark Castle',
     requiredBadge: 'dark_castle_key', requiredPlayers: 2,
     bossGhost: {
-      id: 108, name: 'Lucy', maxHp: 16, art: '../testroom/art/originals/lucy.jpg',
+      id: 9210, baseId: 108, name: 'Lucy', maxHp: 16, art: '../testroom/art/originals/lucy.jpg',
       ability: 'Blue Fire', abilityDesc: 'Win: gain 1 Sacred Fire. Mirror Dice: swap 1 die. Steal 1 resource on win. Sacred Fires deal double damage.'
     },
     minionsByPhase: { 1: [9111], 2: [9112, 9113], 3: [9113, 9112], 4: [9111, 9113] },
@@ -722,7 +722,7 @@ const RAID_BOSSES = {
     tier: 4, set: 'Dark Castle',
     requiredBadge: 'dark_castle_key', requiredPlayers: 2,
     bossGhost: {
-      id: 111, name: 'Shade', maxHp: 12, art: '../testroom/art/originals/shade.jpg',
+      id: 9211, baseId: 111, name: 'Shade', maxHp: 12, art: '../testroom/art/originals/shade.jpg',
       ability: 'Haunt', abilityDesc: 'Before EVERY roll: opponent takes 2 damage. Permafrost: max 2 damage per hit. The tick damage is relentless.'
     },
     minionsByPhase: { 1: [9131], 2: [9131, 9132], 3: [9133, 9134], 4: [9134, 9134] },
@@ -744,7 +744,7 @@ const RAID_BOSSES = {
     tier: 4, set: 'Dark Castle',
     requiredBadge: 'dark_castle_key', requiredPlayers: 3,
     bossGhost: {
-      id: 424, name: 'Bigsby', maxHp: 10, art: '../testroom/art/originals/Digby.png',
+      id: 9212, baseId: 424, name: 'Bigsby', maxHp: 10, art: '../testroom/art/originals/Digby.png',
       ability: 'Omen', abilityDesc: 'Win: deal +1 damage. Moonstone use triggers Doom transformation. +1 die per living minion.'
     },
     minionsByPhase: { 1: [9121, 9122], 2: [9123, 9122], 3: [9124, 9123], 4: [9123, 9125] },
@@ -769,7 +769,7 @@ const RAID_BOSSES = {
     tier: 5, set: 'The Dark Spire',
     requiredBadge: 'dark_spire_key', requiredPlayers: 3,
     bossGhost: {
-      id: 9012, name: 'Valkin the Grand', maxHp: 25, art: '../testroom/art/originals/ValkinTheGrand.png',
+      id: 9213, baseId: 432, name: 'Valkin the Grand', maxHp: 25, art: '../testroom/art/originals/ValkinTheGrand.png',
       ability: 'Grand Dominion', abilityDesc: 'Doubles deal 3X damage. Triples+: deal 3 chip to ALL enemies. On KO: gain 3 Sacred Fire. The final boss.'
     },
     minionsByPhase: { 1: [9101, 9102], 2: [9101, 9103], 3: [9103, 9102], 4: [9103, 9103] },
