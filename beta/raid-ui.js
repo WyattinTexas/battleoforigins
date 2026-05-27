@@ -1067,7 +1067,14 @@ function showRaidResult(data) {
       <button class="raid-result-close" onclick="closeRaidResult()">RETURN TO LOBBY</button>
     </div>`;
 
-  raidScreen.innerHTML = html;
+  // Append the result overlay instead of replacing innerHTML. The permanent
+  // battle arena template (#battle-view, dice, HP bars) lives inside
+  // #raid-screen — wiping innerHTML destroys it, leaving the NEXT raid's
+  // battle UI with no DOM to render into (blank screen until refresh).
+  // The .raid-result-screen CSS covers the battle view via position+inset,
+  // so the visual effect is identical, but battle-view survives.
+  raidScreen.querySelectorAll('.raid-result-screen').forEach(el => el.remove());
+  raidScreen.insertAdjacentHTML('beforeend', html);
 
   // ─── Juice ───────────────────────────────────────────────────
   if (bossDefeated) {
