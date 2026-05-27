@@ -14764,6 +14764,7 @@ function startMusic() {
 
 function fadeOutMusic() {
   const music = document.getElementById('bgMusic');
+  if (!music) return; // beta removed bgMusic — no-op instead of throwing in showGameOver
   clearInterval(music._fadeInt);
   music._fadeInt = setInterval(() => {
     if (music.volume > 0.03) { music.volume -= 0.03; }
@@ -14783,6 +14784,14 @@ function toggleMute() {
   localStorage.setItem('tr_muted', _muted ? '1' : '0');
   const music = document.getElementById('bgMusic');
   const btn = document.getElementById('muteToggle');
+  if (!music) {
+    // beta removed bgMusic — just update the button state without touching audio
+    if (btn) {
+      btn.textContent = _muted ? '\u{1F507}' : '\u{1F50A}';
+      btn.title = _muted ? 'Music off — click to unmute' : 'Music on — click to mute';
+    }
+    return;
+  }
   if (_muted) {
     music.pause();
     // Don't reset _musicStarted — muting is temporary, not a stop
@@ -14823,10 +14832,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function stopMusicHard() {
   const music = document.getElementById('bgMusic');
-  clearInterval(music._fadeInt);
-  music.pause();
-  music.currentTime = 0;
-  music.volume = 0.2;
+  if (music) {
+    clearInterval(music._fadeInt);
+    music.pause();
+    music.currentTime = 0;
+    music.volume = 0.2;
+  }
   _musicStarted = false;
   // Clean up any pending retry handler
   if (_musicRetryHandler) {
