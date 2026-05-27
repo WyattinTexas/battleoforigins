@@ -870,7 +870,7 @@ function activateWillpower(teamKey) {
   // Apply effect
   applyWillpowerEffect(teamKey, card);
 
-  log(`<span class="log-ability">${card.emoji} ${card.name}</span> — ${f.name} activates willpower! ${card.desc}`);
+  bLog(`<span class="log-ability">${card.emoji} ${card.name}</span> — ${f.name} activates willpower! ${card.desc}`);
   renderBattle();
 }
 
@@ -1016,7 +1016,7 @@ let B = null; // battle state
 let prevResources = { red: {}, blue: {} }; // for resource-gained flash
 
 const LOG_MAX = 50; // [shadow] perf: cap battle log to prevent unbounded array growth
-function log(html) { B.log.unshift(html); if (B.log.length > LOG_MAX) B.log.length = LOG_MAX; }
+function bLog(html) { B.log.unshift(html); if (B.log.length > LOG_MAX) B.log.length = LOG_MAX; }
 
 function startBattle() {
   prevResources = { red: {}, blue: {} };
@@ -1124,7 +1124,7 @@ function startBattle() {
   const _appEl = document.querySelector('.app');
   if (_appEl) _appEl.classList.add('battle-active');
   if (typeof startMusic === 'function') startMusic();
-  log('<span class="log-round">Battle begins!</span>');
+  bLog('<span class="log-round">Battle begins!</span>');
   renderBattle();
 
   // Disable roll buttons until everything is done
@@ -1201,7 +1201,7 @@ function triggerEntry(team, skipEntryEffects) {
   // Tyson (365) — Hop: when a disabled ghost enters play, re-enable its sideline ability
   if (B.tysonDisabled && B.tysonDisabled[entryTeamName].includes(team.activeIdx)) {
     B.tysonDisabled[entryTeamName] = B.tysonDisabled[entryTeamName].filter(i => i !== team.activeIdx);
-    log(`<span class="log-ability">${f.name}</span> — enters play! Sideline ability re-enabled.`);
+    bLog(`<span class="log-ability">${f.name}</span> — enters play! Sideline ability re-enabled.`);
   }
   narrate(`<b class="${entryTeamName}-text">${f.name}</b> enters the arena!`);
 
@@ -1221,7 +1221,7 @@ function triggerEntry(team, skipEntryEffects) {
       if (B.burnSource && B.burnSource[entryTeamName]) delete B.burnSource[entryTeamName][activeIdx];
       burnEntryFired = true;
       showAbilityCallout('TORRENT!', 'var(--rare)', `Mike — Torrent! Sideline immune to Burn! ${f.name} takes no damage.`, entryTeamName);
-      log(`<span class="log-ability">Mike</span> — Torrent! <span class="log-heal">Sideline immune to Burn!</span> ${f.name} takes no damage.`);
+      bLog(`<span class="log-ability">Mike</span> — Torrent! <span class="log-heal">Sideline immune to Burn!</span> ${f.name} takes no damage.`);
     } else if (burnCount > 0 && !f.ko && f.id !== 416) {
       // Welder (450) active OR Welder's Torch permanent: burns deal +1 extra damage
       const oppTeamName = entryTeamName === 'red' ? 'blue' : 'red';
@@ -1247,14 +1247,14 @@ function triggerEntry(team, skipEntryEffects) {
       burnEntryFired = true;
       const welderBurnLabel = welderBurnBonus > 0 ? ` (Welder's Torch: +${welderBurnBonus}!)` : '';
       showAbilityCallout('BURN!', 'var(--accent)', `${f.name} takes ${totalBurnDmg} Burn damage on entry!${welderBurnLabel} (${burnPre} → ${f.hp} HP)${f.ko ? ' KO!' : ''}`, entryTeamName);
-      log(`<span class="log-dmg">${f.name}</span> — Burn! <span class="log-dmg">${totalBurnDmg} damage on entry!</span>${welderBurnLabel} (${burnPre} → ${f.hp} HP)${f.ko ? ' <span class="log-ko">KO!</span>' : ''}`);
+      bLog(`<span class="log-dmg">${f.name}</span> — Burn! <span class="log-dmg">${totalBurnDmg} damage on entry!</span>${welderBurnLabel} (${burnPre} → ${f.hp} HP)${f.ko ? ' <span class="log-ko">KO!</span>' : ''}`);
     } else if (burnCount > 0 && f.id === 416) {
       // Rook (416) — Immune to Burn: consume burn but take no damage
       delete B.burn[entryTeamName][activeIdx];
       if (B.burnSource && B.burnSource[entryTeamName]) delete B.burnSource[entryTeamName][activeIdx];
       burnEntryFired = true;
       showAbilityCallout('BURN IMMUNE!', 'var(--rare)', `${f.name} — Immune to Burn! No damage taken.`, entryTeamName);
-      log(`<span class="log-ability">${f.name}</span> — <span class="log-heal">Immune to Burn!</span> No damage taken.`);
+      bLog(`<span class="log-ability">${f.name}</span> — <span class="log-heal">Immune to Burn!</span> No damage taken.`);
     }
   }
 
@@ -1272,14 +1272,14 @@ function triggerEntry(team, skipEntryEffects) {
       if (B.frostbiteSource && B.frostbiteSource[entryTeamName]) delete B.frostbiteSource[entryTeamName][activeIdx];
       frostbiteEntryFired = true;
       showAbilityCallout('TORRENT!', 'var(--rare)', `Mike — Torrent! Sideline immune to Frostbite! ${f.name} keeps all dice.`, entryTeamName);
-      log(`<span class="log-ability">Mike</span> — Torrent! <span class="log-heal">Sideline immune to Frostbite!</span> ${f.name} keeps all dice.`);
+      bLog(`<span class="log-ability">Mike</span> — Torrent! <span class="log-heal">Sideline immune to Frostbite!</span> ${f.name} keeps all dice.`);
     } else if (fbCount > 0 && !f.ko && f.id === 416) {
       // Rook — Immune to Frostbite: consume but no dice penalty
       delete B.frostbite[entryTeamName][activeIdx];
       if (B.frostbiteSource && B.frostbiteSource[entryTeamName]) delete B.frostbiteSource[entryTeamName][activeIdx];
       frostbiteEntryFired = true;
       showAbilityCallout('FROSTBITE IMMUNE!', 'var(--rare)', `${f.name} — Immune to Frostbite! No dice lost.`, entryTeamName);
-      log(`<span class="log-ability">${f.name}</span> — <span class="log-heal">Immune to Frostbite!</span> No dice lost.`);
+      bLog(`<span class="log-ability">${f.name}</span> — <span class="log-heal">Immune to Frostbite!</span> No dice lost.`);
     } else if (fbCount > 0 && !f.ko) {
       if (!B.frostbiteDicePenalty) B.frostbiteDicePenalty = { red: 0, blue: 0 };
       B.frostbiteDicePenalty[entryTeamName] = fbCount;
@@ -1287,7 +1287,7 @@ function triggerEntry(team, skipEntryEffects) {
       if (B.frostbiteSource && B.frostbiteSource[entryTeamName]) delete B.frostbiteSource[entryTeamName][activeIdx];
       frostbiteEntryFired = true;
       showAbilityCallout('FROSTBITE!', '#3b82f6', `${f.name} enters frostbitten! -${fbCount} dice this roll!`, entryTeamName);
-      log(`<span class="log-ability" style="color:#60a5fa">${f.name}</span> — Frostbite! <span class="log-dmg">-${fbCount} dice on entry!</span>`);
+      bLog(`<span class="log-ability" style="color:#60a5fa">${f.name}</span> — Frostbite! <span class="log-dmg">-${fbCount} dice on entry!</span>`);
     }
   }
 
@@ -1312,7 +1312,7 @@ function triggerEntry(team, skipEntryEffects) {
   if (f.id === 201) {
     f.hankFirstRoll = true;
     entryCallouts.push(['SLUMBER!', 'var(--uncommon)', `${f.name} — first roll locked to 1-2-3!`, entryTeamName]);
-    log(`<span class="log-ability">${f.name}</span> enters lazily — first roll will be 1-2-3.`);
+    bLog(`<span class="log-ability">${f.name}</span> enters lazily — first roll will be 1-2-3.`);
     collectKnightReactions();
   }
 
@@ -1326,7 +1326,7 @@ function triggerEntry(team, skipEntryEffects) {
       if (ef.hp <= 0) { ef.ko = true; ef.killedBy = (f.originalId || f.id); }
       const enemyName = enemy === B.red ? 'red' : 'blue';
       entryCallouts.push(['LEVIATHAN!', 'var(--legendary)', `${f.name} — 3 entry damage to ${ef.name}!`, entryTeamName]);
-      log(`<span class="log-ability">${f.name}</span> — Leviathan! <span class="log-dmg">3 entry damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+      bLog(`<span class="log-ability">${f.name}</span> — Leviathan! <span class="log-dmg">3 entry damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
       playDamageSfx(3);
       hitDamage(enemyName);
       collectKnightReactions();
@@ -1337,7 +1337,7 @@ function triggerEntry(team, skipEntryEffects) {
   if (f.id === 302) {
     f.maximoFirstRoll = true;
     entryCallouts.push(['NAP!', 'var(--common)', `${f.name} — first roll is 1 die only!`, entryTeamName]);
-    log(`<span class="log-ability">${f.name}</span> is napping... first roll will be only 1 die.`);
+    bLog(`<span class="log-ability">${f.name}</span> is napping... first roll will be only 1 die.`);
     collectKnightReactions();
   }
 
@@ -1345,7 +1345,7 @@ function triggerEntry(team, skipEntryEffects) {
   if (f.id === 98) {
     f.reddFirstRoll = true;
     entryCallouts.push(['NOTORIOUS!', 'var(--ghost-rare)', `${f.name} — +2 dice for this roll!`, entryTeamName]);
-    log(`<span class="log-ability">${f.name}</span> — Notorious! Enters with +2 bonus dice for the first roll!`);
+    bLog(`<span class="log-ability">${f.name}</span> — Notorious! Enters with +2 bonus dice for the first roll!`);
     collectKnightReactions();
   }
 
@@ -1385,7 +1385,7 @@ function triggerEntry(team, skipEntryEffects) {
       if (ef.hp <= 0) { ef.ko = true; ef.killedBy = (f.originalId || f.id); }
       const enemyName = enemy === B.red ? 'red' : 'blue';
       entryCallouts.push(['MENACE!', 'var(--uncommon)', `${f.name} — 1 entry damage to ${ef.name}!`, entryTeamName]);
-      log(`<span class="log-ability">${f.name}</span> — Menace! <span class="log-dmg">1 entry damage to ${ef.name}!</span> ${ef.ko ? '<span class="log-ko">KO!</span>' : ef.hp + ' HP left'}`);
+      bLog(`<span class="log-ability">${f.name}</span> — Menace! <span class="log-dmg">1 entry damage to ${ef.name}!</span> ${ef.ko ? '<span class="log-ko">KO!</span>' : ef.hp + ' HP left'}`);
       playDamageSfx(1);
       hitDamage(enemyName);
       collectKnightReactions();
@@ -1400,10 +1400,10 @@ function triggerEntry(team, skipEntryEffects) {
       const before = f.hp;
       f.hp += gain; // allow overclock — late-game scaling tank
       entryCallouts.push(['SOLITUDE!', 'var(--uncommon)', `${f.name} — +${gain} HP from ${koCount} fallen ghost${koCount > 1 ? 's' : ''}! (${before}→${f.hp} HP)`, entryTeamName]);
-      log(`<span class="log-ability">${f.name}</span> — Solitude! +${gain} HP from ${koCount} fallen ghosts. (${before}→${f.hp} HP)`);
+      bLog(`<span class="log-ability">${f.name}</span> — Solitude! +${gain} HP from ${koCount} fallen ghosts. (${before}→${f.hp} HP)`);
     } else {
       entryCallouts.push(['SOLITUDE!', 'var(--uncommon)', `${f.name} — No fallen ghosts yet. Waiting...`, entryTeamName]);
-      log(`<span class="log-ability">${f.name}</span> — Solitude! No fallen ghosts yet.`);
+      bLog(`<span class="log-ability">${f.name}</span> — Solitude! No fallen ghosts yet.`);
     }
   }
 
@@ -1412,12 +1412,12 @@ function triggerEntry(team, skipEntryEffects) {
   if (f.id === 56) {
     team.resources.ice += 2;
     entryCallouts.push(['SPLOOP!', 'var(--uncommon)', `${f.name} — +2 Ice Shards! (${team.resources.ice} total)`, entryTeamName]);
-    log(`<span class="log-ability">${f.name}</span> — Sploop! Gained <span class="log-ice">2 Ice Shards</span>! (${team.resources.ice} total)`);
+    bLog(`<span class="log-ability">${f.name}</span> — Sploop! Gained <span class="log-ice">2 Ice Shards</span>! (${team.resources.ice} total)`);
     collectKnightReactions();
     if (hasOnTeam(enemy, 33)) {
       enemy.resources.ice += 2;
       entryCallouts.push(['DEPENDABLE!', 'var(--common)', `Sandwiches — mirrors Sploop! +2 Ice Shards! (${enemy.resources.ice} total)`, entryTeamName === 'red' ? 'blue' : 'red']);
-      log(`<span class="log-ability">Sandwiches</span> — Dependable! Mirrors Sploop: +<span class="log-ice">2 Ice Shards</span>! (${enemy.resources.ice} total)`);
+      bLog(`<span class="log-ability">Sandwiches</span> — Dependable! Mirrors Sploop: +<span class="log-ice">2 Ice Shards</span>! (${enemy.resources.ice} total)`);
     }
   }
 
@@ -1430,7 +1430,7 @@ function triggerEntry(team, skipEntryEffects) {
       if (!B.raditzHuntReady) B.raditzHuntReady = { red: false, blue: false };
       B.raditzHuntReady[teamName] = true;
       entryCallouts.push(['HUNT!', 'var(--rare)', `${f.name} — may force an opponent swap before rolling!`, entryTeamName]);
-      log(`<span class="log-ability">${f.name}</span> — Hunt! Primed — choose to force an opponent swap before rolling.`);
+      bLog(`<span class="log-ability">${f.name}</span> — Hunt! Primed — choose to force an opponent swap before rolling.`);
     }
   }
 
@@ -1439,7 +1439,7 @@ function triggerEntry(team, skipEntryEffects) {
   if (f.id === 60 && B.battleStarted) {
     f.dallasQuickDraw = 2;
     entryCallouts.push(['QUICK DRAW!', 'var(--uncommon)', `${f.name} — stealing 1 opponent die for the next 2 rolls!`, entryTeamName]);
-    log(`<span class="log-ability">${f.name}</span> — Quick Draw! Steals 1 opponent die for the first 2 rolls.`);
+    bLog(`<span class="log-ability">${f.name}</span> — Quick Draw! Steals 1 opponent die for the first 2 rolls.`);
     collectKnightReactions();
   }
 
@@ -1450,7 +1450,7 @@ function triggerEntry(team, skipEntryEffects) {
     if (!team.resources.burn) team.resources.burn = 0;
     team.resources.burn++;
     entryCallouts.push(['LIGHT THE WAY!', 'var(--uncommon)', `${f.name} — Entry! +1 Surge, +1 Lucky Stone, +1 Burn!`, entryTeamName]);
-    log(`<span class="log-ability">${f.name}</span> — Light the Way! <span class="log-ms">+1 Surge, +1 Lucky Stone, +1 Burn!</span>`);
+    bLog(`<span class="log-ability">${f.name}</span> — Light the Way! <span class="log-ms">+1 Surge, +1 Lucky Stone, +1 Burn!</span>`);
     collectKnightReactions();
   }
 
@@ -1459,7 +1459,7 @@ function triggerEntry(team, skipEntryEffects) {
     if (!team.resources.burn) team.resources.burn = 0;
     team.resources.burn += 3;
     entryCallouts.push(['STAMPEDE!', 'var(--common)', `${f.name} — Entry! +3 Burn!`, entryTeamName]);
-    log(`<span class="log-ability">${f.name}</span> — Stampede! Entry → <span class="log-dmg">+3 Burn!</span>`);
+    bLog(`<span class="log-ability">${f.name}</span> — Stampede! Entry → <span class="log-dmg">+3 Burn!</span>`);
     collectKnightReactions();
   }
 
@@ -1474,7 +1474,7 @@ function triggerEntry(team, skipEntryEffects) {
     const nicholasTeamName = enteringTeamName === 'red' ? 'blue' : 'red';
     entryCallouts.push(['SNEAK ATTACK!', 'var(--uncommon)',
       `${nicholasGhost.name} — 2 damage to ${f.name} on entry!`, nicholasTeamName]);
-    log(`<span class="log-ability">${nicholasGhost.name}</span> — Sneak Attack! <span class="log-dmg">2 damage to ${f.name} on entry!</span> ${f.ko ? '<span class="log-ko">KO!</span>' : f.hp + ' HP left'}`);
+    bLog(`<span class="log-ability">${nicholasGhost.name}</span> — Sneak Attack! <span class="log-dmg">2 damage to ${f.name} on entry!</span> ${f.ko ? '<span class="log-ko">KO!</span>' : f.hp + ' HP left'}`);
     playDamageSfx(2);
     hitDamage(enteringTeamName);
     // Knight reactions: Nicholas's ability belongs to the enemy team — the entering team may counter.
@@ -1602,7 +1602,7 @@ function maskedHeroImmune(ghost) {
 // Dark Fang — guarded heal: adds HP only if not blocked. Returns true if heal went through.
 function guardedHeal(ghost, amount, teamName) {
   if (deathHowlBlocksHealing(teamName)) {
-    log(`<span class="log-ability">Dark Fang</span> — Pressure! ${ghost.name}'s healing blocked!`);
+    bLog(`<span class="log-ability">Dark Fang</span> — Pressure! ${ghost.name}'s healing blocked!`);
     return false;
   }
   ghost.hp += amount;
@@ -1686,7 +1686,7 @@ function triggerBorisHook(team) {
     if (g.id === 343 && !g.ko) {
       const before = g.hp;
       g.hp += 2; // overclocks — no cap
-      log(`<span class="log-heal">${g.name}</span> — Fortify! Surge spent → +2 HP (${before}→${g.hp}/${g.maxHp}${g.hp > g.maxHp ? ' · overclocked!' : ''}).`);
+      bLog(`<span class="log-heal">${g.name}</span> — Fortify! Surge spent → +2 HP (${before}→${g.hp}/${g.maxHp}${g.hp > g.maxHp ? ' · overclocked!' : ''}).`);
     }
   });
 }
@@ -1716,13 +1716,13 @@ function triggerCameronSpecialWatch(usingTeam, immediate) {
     B.pendingResolve[prKey] = dice;
     B[diceKey] = dice;
     renderDice(B.redDice, B.blueDice);
-    log(`<span class="log-ability">${camGhost.name}</span> (${loc}) — Unstoppable Force! Opponent used a special → <span class="log-ms">+1 die rolled immediately! [${extraDie}]</span>`);
+    bLog(`<span class="log-ability">${camGhost.name}</span> (${loc}) — Unstoppable Force! Opponent used a special → <span class="log-ms">+1 die rolled immediately! [${extraDie}]</span>`);
     showAbilityCallout('UNSTOPPABLE FORCE!', 'var(--common)', `${camGhost.name} — +1 die! Rolled a ${extraDie}!`, oppTeamName);
   } else {
     // Pre-roll: store for next roll's Phase 2 dice computation
     if (!B.cameronBonusDice) B.cameronBonusDice = { red: 0, blue: 0 };
     B.cameronBonusDice[oppTeamName]++;
-    log(`<span class="log-ability">${camGhost.name}</span> (${loc}) — Unstoppable Force! Opponent used a special → <span class="log-ms">+1 die next roll!</span> (${B.cameronBonusDice[oppTeamName]} stored)`);
+    bLog(`<span class="log-ability">${camGhost.name}</span> (${loc}) — Unstoppable Force! Opponent used a special → <span class="log-ms">+1 die next roll!</span> (${B.cameronBonusDice[oppTeamName]} stored)`);
   }
 }
 
@@ -1819,14 +1819,14 @@ function spendHealingSeed(team) {
   // Dark Fang (202) — Pressure: enemy ghost cannot heal
   if (deathHowlBlocksHealing(team)) {
     t.resources.healingSeed--;
-    log(`<span class="log-ability">Dark Fang</span> — Pressure! ${f.name}'s Healing Seed consumed but healing blocked!`);
+    bLog(`<span class="log-ability">Dark Fang</span> — Pressure! ${f.name}'s Healing Seed consumed but healing blocked!`);
     renderBattle();
     return;
   }
   t.resources.healingSeed--;
   f.hp = Math.min(f.maxHp, f.hp + 1);
   playSfx('sfxSpecial', 0.4);
-  log(`<span class="log-heal">${f.name}</span> used a Healing Seed! Healed to ${f.hp} HP.`);
+  bLog(`<span class="log-heal">${f.name}</span> used a Healing Seed! Healed to ${f.hp} HP.`);
 
   // Young Cap (429) — Energize: when active uses a Healing Seed, +1 die this roll + 1 Ice Shard + 1 Surge
   if (f.id === 429 && !f.ko) {
@@ -1835,7 +1835,7 @@ function spendHealingSeed(team) {
     t.resources.ice++;
     t.resources.surge++;
     showAbilityCallout('ENERGIZE!', 'var(--uncommon)', `${f.name} — Healing Seed used! +1 die, +1 Ice Shard, +1 Surge!`, team);
-    log(`<span class="log-ability">${f.name}</span> — Energize! Healing Seed → +1 die this roll, <span class="log-ice">+1 Ice Shard</span>, <span class="log-ms">+1 Surge</span>.`);
+    bLog(`<span class="log-ability">${f.name}</span> — Energize! Healing Seed → +1 die this roll, <span class="log-ice">+1 Ice Shard</span>, <span class="log-ms">+1 Surge</span>.`);
   }
 
   // Boopies (419) — Boopie Magic: sideline — when active spends Healing Seed, gain 1 Lucky Stone
@@ -1844,7 +1844,7 @@ function spendHealingSeed(team) {
     const boopiesG = getSidelineGhost(t, 419);
     const boopiesName = boopiesG ? boopiesG.name : 'Boopies';
     showAbilityCallout('BOOPIE MAGIC!', 'var(--common)', `${boopiesName} (sideline) — Healing Seed spent! +1 Lucky Stone!`, team);
-    log(`<span class="log-ability">${boopiesName}</span> — Boopie Magic! Healing Seed spent → <span class="log-ms">+1 Lucky Stone!</span>`);
+    bLog(`<span class="log-ability">${boopiesName}</span> — Boopie Magic! Healing Seed spent → <span class="log-ms">+1 Lucky Stone!</span>`);
   }
 
   // Cameron (25) — Unstoppable Force: opponent used a special
@@ -1862,7 +1862,7 @@ function sacrificeHappyCrystal(team) {
   f.hp = 0; f.ko = true; f.killedBy = -1; // self-sacrifice
   t.resources.moonstone++;
   showAbilityCallout('SPARK STRIKE!', 'var(--moonstone)', `${f.name} sacrificed for 1 Moonstone!`, team);
-  log(`<span class="log-ability">${f.name}</span> sacrifices itself! Gained <span class="log-ms">1 Moonstone</span>!`);
+  bLog(`<span class="log-ability">${f.name}</span> sacrifices itself! Gained <span class="log-ms">1 Moonstone</span>!`);
   if (!handleKOs()) renderBattle();
 }
 
@@ -1946,7 +1946,7 @@ function useFinnFlameBlade(team) {
   if (!B.flameBlade) B.flameBlade = { red: false, blue: false };
   B.flameBlade[team] = true;
   creditGhost(team, 204, 'ms', 1); // Finn earns MVP credit for forging
-  log(`<span class="log-ability">Finn</span> — Forge! 1 Healing Seed + 1 Sacred Fire → <span class="log-ms">Flame Blade!</span> (permanent item)`);
+  bLog(`<span class="log-ability">Finn</span> — Forge! 1 Healing Seed + 1 Sacred Fire → <span class="log-ms">Flame Blade!</span> (permanent item)`);
   showAbilityCallout('FLAME BLADE!', 'var(--rare)', 'Finn forges the Flame Blade!', team);
   playSfx('sfxSpecial', 0.5);
   renderBattle();
@@ -1975,7 +1975,7 @@ function carpenterTransform(team) {
   if (!B.carpenterHammer) B.carpenterHammer = { red: false, blue: false };
   B.carpenterHammer[team] = true;
   queueAbility('TRANSFORMATION!', 'var(--rare)', `Carpenter transforms into the Welder! Carpenter's Hammer forged! (+2 singles, permanent)`, null, team);
-  log(`<span class="log-ability">Carpenter</span> — Evolution! <span class="log-ms">WELDER rises!</span> Carpenter's Hammer left behind!`);
+  bLog(`<span class="log-ability">Carpenter</span> — Evolution! <span class="log-ms">WELDER rises!</span> Carpenter's Hammer left behind!`);
   checkRipagooTransform(team);
   renderBattle();
 }
@@ -2003,7 +2003,7 @@ function welderTransform(team) {
   if (!B.welderTorch) B.welderTorch = { red: false, blue: false };
   B.welderTorch[team] = true;
   queueAbility('TRANSFORMATION!', 'var(--rare)', `Welder transforms into the Foreman! Welder's Torch forged! (burns +1, wins give Burn, permanent)`, null, team);
-  log(`<span class="log-ability">Welder</span> — Evolution! <span class="log-ms">FOREMAN rises!</span> Welder's Torch left behind!`);
+  bLog(`<span class="log-ability">Welder</span> — Evolution! <span class="log-ms">FOREMAN rises!</span> Welder's Torch left behind!`);
   checkRipagooTransform(team);
   renderBattle();
 }
@@ -2018,7 +2018,7 @@ function checkRipagooTransform(team) {
     const rName = rg ? rg.name : 'Ripagoo';
     popSidelineCard(t, 452);
     showAbilityCallout('CHEMICAL Y!', 'var(--uncommon)', `${rName} (sideline) — Transformation detected! +2 Burn!`, team);
-    log(`<span class="log-ability">${rName}</span> — Chemical Y! Transformation → <span class="log-burn">+2 Burn!</span>`);
+    bLog(`<span class="log-ability">${rName}</span> — Chemical Y! Transformation → <span class="log-burn">+2 Burn!</span>`);
     renderBattle();
   }
 }
@@ -2054,7 +2054,7 @@ function useZainForge(team) {
   t.resources.moonstone -= 1;
   zain.iceBladeForged = true;
   B.iceBladeForgedPermanent[team] = true; // permanent +2 damage for the rest of the game
-  log(`<span class="log-ability">${zain.name}</span> — Ice Blade forged! Spent <span class="log-ice">1 Ice Shard</span> + <span class="log-ms">1 Moonstone</span>. Permanent +2 damage on ALL winning rolls for the rest of the game!`);
+  bLog(`<span class="log-ability">${zain.name}</span> — Ice Blade forged! Spent <span class="log-ice">1 Ice Shard</span> + <span class="log-ms">1 Moonstone</span>. Permanent +2 damage on ALL winning rolls for the rest of the game!`);
   showAbilityCallout('ICE BLADE!', 'var(--ghost-rare)', `${zain.name} forges the Ice Blade — permanent +2 damage on ALL wins!`, team);
   playSfx('sfxSpecial', 0.5);
   renderBattle();
@@ -2105,7 +2105,7 @@ function checkKnightEffects(abilityTeamName, abilityGhostName, sidelineGhost, de
         } else {
           showAbilityCallout('HEAVY AIR!', 'var(--rare)', `Knight Terror — ${targetName} loses 2 HP!`, oppTeamName);
         }
-        log(`<span class="log-ability">Knight Terror</span> — Heavy Air! <span class="log-dmg">${targetName} loses 2 HP!</span> ${target.ko ? '<span class="log-ko">KO!</span>' : target.hp + ' HP left'}`);
+        bLog(`<span class="log-ability">Knight Terror</span> — Heavy Air! <span class="log-dmg">${targetName} loses 2 HP!</span> ${target.ko ? '<span class="log-ko">KO!</span>' : target.hp + ' HP left'}`);
       }
     }
   }
@@ -2119,7 +2119,7 @@ function checkKnightEffects(abilityTeamName, abilityGhostName, sidelineGhost, de
     } else {
       showAbilityCallout('RETRIBUTION!', 'var(--rare)', `Knight Light — opponent used ability! +1 die next roll!`, oppTeamName);
     }
-    log(`<span class="log-ability">Knight Light</span> — Retribution! <span class="log-ms">+1 die next roll!</span> (${B.retributionDice[oppTeamName]} stored)`);
+    bLog(`<span class="log-ability">Knight Light</span> — Retribution! <span class="log-ms">+1 die next roll!</span> (${B.retributionDice[oppTeamName]} stored)`);
   }
 }
 
@@ -2149,13 +2149,13 @@ function useTysonHop(team) {
   const enemy = opp(t);
   if (dylanNegates(enemy)) {
     showAbilityCallout('BLOCKED!', 'var(--text2)', `Dylan's Scarecrow shuts down Tyson's Hop!`, team === B.red ? 'blue' : 'red');
-    log(`<span class="log-ability">Tyson</span> — Hop blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
+    bLog(`<span class="log-ability">Tyson</span> — Hop blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
     return;
   }
   const aliveSideline = t.ghosts.filter((g,i) => i !== t.activeIdx && !g.ko);
   if (aliveSideline.length === 0) return;
 
-  log(`<span class="log-ability">${f.name}</span> — Hop! Swapping out, no entry effects for incoming ghost.`);
+  bLog(`<span class="log-ability">${f.name}</span> — Hop! Swapping out, no entry effects for incoming ghost.`);
   // Queue HOP! + any Knight reactions sequentially before opening the swap modal
   abilityQueueMode = true;
   queueAbility('HOP!', 'var(--common)', `${f.name} hops to the bench — no entry triggers!`, null, team);
@@ -2179,7 +2179,7 @@ function usePressure(team) {
   // Barnaby (326) — Stubborn: immune to forced swaps by opponent effects
   const _barnabyPressure = active(enemy);
   if (_barnabyPressure && _barnabyPressure.id === 326 && !_barnabyPressure.ko) {
-    log(`<span class="log-ability">Barnaby</span> — Stubborn! Dark Fang's Pressure is blocked — ${_barnabyPressure.name} cannot be forced out.`);
+    bLog(`<span class="log-ability">Barnaby</span> — Stubborn! Dark Fang's Pressure is blocked — ${_barnabyPressure.name} cannot be forced out.`);
     narrate(`<b class="${team}-text">Dark Fang</b> — Pressure blocked! <b>${_barnabyPressure.name}</b> refuses to leave!`);
     return;
   }
@@ -2249,7 +2249,7 @@ function doPressureSwap(attackerTeam, targetIdx) {
   const attackerCls = attackerTeam === 'red' ? 'red-text' : 'blue-text';
   narrate(`<b class="${attackerCls}">${f.name}</b> — Pressure! <b>${oldName}</b> forced to the sideline — <b>${newGhost.name}</b> enters at full HP!`);
   showAbilityCallout('PRESSURE!', 'var(--rare)', `${oldName} forced out — ${newGhost.name} enters!`, attackerTeam);
-  log(`<span class="log-ability">${f.name}</span> — Pressure! Forced ${oldName} out, ${newGhost.name} enters at full HP!`);
+  bLog(`<span class="log-ability">${f.name}</span> — Pressure! Forced ${oldName} out, ${newGhost.name} enters at full HP!`);
   // Delay entry effects by 1500ms so PRESSURE! fully displays before the first entry callout
   // fires (triggerEntry's first setTimeout is at i=0 → ~0ms, which stomped PRESSURE! instantly).
   setTimeout(() => {
@@ -2298,12 +2298,12 @@ function doSeleneChoice(choice) {
   queueAbility('HEART OF THE HILLS!', 'var(--legendary)', subtitle, () => {
     if (choice === 'seed') {
       _selTeam.resources.healingSeed += 2;
-      log(`<span class="log-ability">${_selName}</span> — Heart of the Hills! Doubles → chose <span class="log-ms">2 Healing Seeds</span>!`);
+      bLog(`<span class="log-ability">${_selName}</span> — Heart of the Hills! Doubles → chose <span class="log-ms">2 Healing Seeds</span>!`);
     } else {
       _selTeam.resources.luckyStone += 3;
       // Update lsAvailable so the post-roll Lucky Stone window sees these new stones
       if (B.lsAvailable) B.lsAvailable[sp.tName] = (B.lsAvailable[sp.tName] || 0) + 3;
-      log(`<span class="log-ability">${_selName}</span> — Heart of the Hills! Doubles → chose <span class="log-ms">3 Lucky Stones</span>!`);
+      bLog(`<span class="log-ability">${_selName}</span> — Heart of the Hills! Doubles → chose <span class="log-ms">3 Lucky Stones</span>!`);
     }
     renderBattle();
   }, sp.tName);
@@ -2344,13 +2344,13 @@ function doWiseAlChoice(choice) {
   if (choice === 'ice') {
     wp.winTeam.resources.ice = (wp.winTeam.resources.ice || 0) + 4;
     checkKnightEffects(wp.winTeamName, wp.wF.name);
-    log(`<span class="log-ability">${wp.wF.name}</span> — Squall! <span class="log-ice">+4 Ice Shards</span> instead of dealing damage!`);
+    bLog(`<span class="log-ability">${wp.wF.name}</span> — Squall! <span class="log-ice">+4 Ice Shards</span> instead of dealing damage!`);
     queueAbility('SQUALL!', 'var(--rare)', `${wp.wF.name} — +4 ❄️ Ice Shards instead of dealing damage!`, () => { renderBattle(); }, wp.winTeamName);
   } else {
     // Deal the stashed damage
     wp.lF.hp = Math.max(0, wp.lF.hp - wp.dmg);
     if (wp.lF.hp <= 0) { wp.lF.ko = true; wp.lF.killedBy = (wp.wF.originalId || wp.wF.id); }
-    log(`<span class="log-dmg">${wp.wF.name} deals ${wp.dmg} to ${wp.lF.name}!</span> ${wp.lF.ko?'<span class="log-ko">KO!</span>':wp.lF.hp+' HP left'}`);
+    bLog(`<span class="log-dmg">${wp.wF.name} deals ${wp.dmg} to ${wp.lF.name}!</span> ${wp.lF.ko?'<span class="log-ko">KO!</span>':wp.lF.hp+' HP left'}`);
     renderBattle();
   }
   drainAbilityQueue(() => { if (wp.resume) wp.resume(); });
@@ -2377,13 +2377,13 @@ function doSophiaChoice(choice) {
     const maskName = choice === 'day' ? '☀️ Mask of Day' : '🌙 Mask of Night';
     const maskDesc = choice === 'day' ? 'Gain 1 Burn for each 1 or 2 you roll' : 'Roll the same number of dice as the enemy ghost, +1 damage';
     checkKnightEffects(sp.winTeamName, sp.wF.name);
-    log(`<span class="log-ability">${sp.wF.name}</span> — Masquerade! Gained <b>${maskName}</b> instead of dealing damage! (${maskDesc})`);
+    bLog(`<span class="log-ability">${sp.wF.name}</span> — Masquerade! Gained <b>${maskName}</b> instead of dealing damage! (${maskDesc})`);
     queueAbility('MASQUERADE!', 'var(--rare)', `${sp.wF.name} — ${maskName}! ${maskDesc}`, () => { renderBattle(); }, sp.winTeamName);
   } else {
     // Deal the stashed damage
     sp.lF.hp = Math.max(0, sp.lF.hp - sp.dmg);
     if (sp.lF.hp <= 0) { sp.lF.ko = true; sp.lF.killedBy = (sp.wF.originalId || sp.wF.id); }
-    log(`<span class="log-dmg">${sp.wF.name} deals ${sp.dmg} to ${sp.lF.name}!</span> ${sp.lF.ko?'<span class="log-ko">KO!</span>':sp.lF.hp+' HP left'}`);
+    bLog(`<span class="log-dmg">${sp.wF.name} deals ${sp.dmg} to ${sp.lF.name}!</span> ${sp.lF.ko?'<span class="log-ko">KO!</span>':sp.lF.hp+' HP left'}`);
     renderBattle();
   }
   drainAbilityQueue(() => { if (sp.resume) sp.resume(); });
@@ -2429,13 +2429,13 @@ function doGordokChoice(choice) {
     B.gordokDieBonus[gp.winTeamName] = 1;
     gp.winTeam.resources.moonstone++;
     checkKnightEffects(gp.winTeamName, gp.wF.name);
-    log(`<span class="log-ability">${gp.wF.name}</span> — River Terror! Stole ${gordokStolenList.join(', ')} instead of dealing damage! <span class="log-ice">+1 die next roll!</span> <span class="log-ms">+1 Moonstone!</span>`);
+    bLog(`<span class="log-ability">${gp.wF.name}</span> — River Terror! Stole ${gordokStolenList.join(', ')} instead of dealing damage! <span class="log-ice">+1 die next roll!</span> <span class="log-ms">+1 Moonstone!</span>`);
     queueAbility('RIVER TERROR!', 'var(--rare)', `${gp.wF.name} — stole resources instead of dealing damage! +1 Moonstone!`, () => { renderBattle(); }, gp.winTeamName);
   } else {
     // Deal the stashed damage
     gp.lF.hp = Math.max(0, gp.lF.hp - gp.dmg);
     if (gp.lF.hp <= 0) { gp.lF.ko = true; gp.lF.killedBy = (gp.wF.originalId || gp.wF.id); }
-    log(`<span class="log-dmg">${gp.wF.name} deals ${gp.dmg} to ${gp.lF.name}!</span> ${gp.lF.ko?'<span class="log-ko">KO!</span>':gp.lF.hp+' HP left'}`);
+    bLog(`<span class="log-dmg">${gp.wF.name} deals ${gp.dmg} to ${gp.lF.name}!</span> ${gp.lF.ko?'<span class="log-ko">KO!</span>':gp.lF.hp+' HP left'}`);
     renderBattle();
   }
   drainAbilityQueue(() => { if (gp.resume) gp.resume(); });
@@ -2490,13 +2490,13 @@ function doTimberChoice(choice) {
       }
     }
     subtitle = `${oppLabel} discards 2 specials to keep all dice!`;
-    log(`<span class="log-ability">${oppLabel}</span> chose to discard 2 specials to avoid Timber's Howl!`);
+    bLog(`<span class="log-ability">${oppLabel}</span> chose to discard 2 specials to avoid Timber's Howl!`);
   } else {
     // Lose 1 die
     if (tp.oppTeamName === 'red') B.preRoll.red.count = Math.max(1, B.preRoll.red.count - 1);
     else B.preRoll.blue.count = Math.max(1, B.preRoll.blue.count - 1);
     subtitle = `${oppLabel} rolls 1 fewer die!`;
-    log(`<span class="log-ability">${oppLabel}</span> chose to roll 1 fewer die under Timber's Howl!`);
+    bLog(`<span class="log-ability">${oppLabel}</span> chose to roll 1 fewer die under Timber's Howl!`);
   }
   renderBattle();
   // Queue mode: HOWL! first, then any knight reactions (HEAVY AIR! / RETRIBUTION!),
@@ -2547,30 +2547,30 @@ function doRiderChoice(choice) {
       oppGhost.hp = Math.max(0, oppGhost.hp - 1);
       if (oppGhost.hp <= 0) { oppGhost.hp = 0; oppGhost.ko = true; oppGhost.killedBy = 456; }
       subtitle = `${oppLabel}'s ${oppGhost.name} takes 1 damage! (${oppGhost.hp}/${oppGhost.maxHp} HP)`;
-      log(`<span class="log-ability">${oppLabel}</span> chose to take 1 damage from Ryder's Toll! ${oppGhost.name} → ${oppGhost.hp}/${oppGhost.maxHp} HP.`);
+      bLog(`<span class="log-ability">${oppLabel}</span> chose to take 1 damage from Ryder's Toll! ${oppGhost.name} → ${oppGhost.hp}/${oppGhost.maxHp} HP.`);
       // Simon (24) — Brew Time: gain 1 Sacred Fire when taking ANY damage
       if (oppGhost.id === 24 && !oppGhost.ko) {
         tp.team.resources.fire = (tp.team.resources.fire || 0) + 2;
         queueAbility('BREW TIME!', 'var(--uncommon)', `Simon — Took Toll damage → +2 Sacred Fire!`, tp.oppTeamName);
-        log(`<span class="log-ability">Simon</span> — Brew Time! Took Toll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+        bLog(`<span class="log-ability">Simon</span> — Brew Time! Took Toll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
       }
       // Princess Shade (436) — Bounty: +1 additional damage on pre-roll chip, works from sideline OR active (blocked by Cornelius 45)
       if (!oppGhost.ko && hasAlive(B[tp.riderTeam], 436) && !hasSideline(tp.team, 45)) {
         oppGhost.hp = Math.max(0, oppGhost.hp - 1);
         if (oppGhost.hp <= 0) { oppGhost.hp = 0; oppGhost.ko = true; oppGhost.killedBy = 436; }
         queueAbility('BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${oppGhost.name}!`, tp.riderTeam);
-        log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${oppGhost.name}!</span> ${oppGhost.ko?'<span class="log-ko">KO!</span>':oppGhost.hp+' HP left'}`);
+        bLog(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${oppGhost.name}!</span> ${oppGhost.ko?'<span class="log-ko">KO!</span>':oppGhost.hp+' HP left'}`);
         popSidelineCard(B[tp.riderTeam], 436);
         // Simon takes Bounty damage too
         if (oppGhost.id === 24 && !oppGhost.ko) {
           tp.team.resources.fire = (tp.team.resources.fire || 0) + 1;
           queueAbility('BREW TIME!', 'var(--uncommon)', `Simon — Took Bounty damage → +2 Sacred Fire!`, tp.oppTeamName);
-          log(`<span class="log-ability">Simon</span> — Brew Time! Took Bounty damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+          bLog(`<span class="log-ability">Simon</span> — Brew Time! Took Bounty damage → <span class="log-ms">+1 Sacred Fire!</span>`);
         }
       } else if (!oppGhost.ko && hasAlive(B[tp.riderTeam], 436) && hasSideline(tp.team, 45)) {
         const cornGhost = getSidelineGhost(tp.team, 45);
         queueAbility('ANTIDOTE!', 'var(--uncommon)', `${cornGhost ? cornGhost.name : 'Cornelius'} blocks Princess Shade's Bounty!`, tp.oppTeamName);
-        log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
+        bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
       }
     }
   } else {
@@ -2578,7 +2578,7 @@ function doRiderChoice(choice) {
     const riderTeamObj = B[tp.riderTeam];
     riderTeamObj.resources.fire = (riderTeamObj.resources.fire || 0) + 1;
     subtitle = `${riderName} gains +1 Sacred Fire! (${riderTeamObj.resources.fire} total)`;
-    log(`<span class="log-ability">${oppLabel}</span> chose to give ${riderName} +1 Sacred Fire! (${riderTeamObj.resources.fire} total)`);
+    bLog(`<span class="log-ability">${oppLabel}</span> chose to give ${riderName} +1 Sacred Fire! (${riderTeamObj.resources.fire} total)`);
   }
   renderBattle();
   abilityQueueMode = true;
@@ -2760,7 +2760,7 @@ function finishBalatronRoll() {
     if (wF && wF.name === bp.wFName) {
       wF.hp = bp.hpAfter;
     }
-    log(`<span class="log-ability">${bp.lFName}</span> — Party Time! Counter die: <b>${bp.counterDie}</b> damage to ${bp.wFName}! ${bp.wasKo?'<span class="log-ko">KO!</span>':bp.hpAfter+' HP left'}`);
+    bLog(`<span class="log-ability">${bp.lFName}</span> — Party Time! Counter die: <b>${bp.counterDie}</b> damage to ${bp.wFName}! ${bp.wasKo?'<span class="log-ko">KO!</span>':bp.hpAfter+' HP left'}`);
     renderBattle();
   }
   if (resume) resume();
@@ -2819,7 +2819,7 @@ function doTylerChoice(choice) {
       B.preRoll[team].count = Math.min(6, B.preRoll[team].count + 1);
     }
     showAbilityCallout('HEATING UP!', 'var(--ghost-rare)', `${f.name} — spends 2 HP for +1 die! (${prevHp} → ${f.hp} HP)`, team);
-    log(`<span class="log-ability">${f.name}</span> — Heating Up! Spent 2 HP for +1 die (${prevHp} → ${f.hp} HP).`);
+    bLog(`<span class="log-ability">${f.name}</span> — Heating Up! Spent 2 HP for +1 die (${prevHp} → ${f.hp} HP).`);
     renderBattle();
     // Short pause so the callout is visible before the dice roll
     setTimeout(() => { btn.disabled = false; btn.classList.remove('locked'); doTeamRoll(team, btn); }, spd(1500));
@@ -2852,14 +2852,14 @@ function doGuardianFairyReactive(choice) {
     if (gfIdx !== -1) loseTeam.activeIdx = gfIdx;
     const gfName = gfGhost.name || 'Guardian Fairy';
     queueAbility('WISH!', 'var(--ghost-rare)', `${gfName} — leaps in to absorb ${dmg} damage for ${lF.name}!${gfGhost.ko ? ' GF falls!' : ' ' + gfGhost.hp + ' HP left'}`, null, loseTeamName);
-    log(`<span class="log-ability">${gfName}</span> — Wish! Absorbed ${dmg} damage for ${lF.name}! ${gfGhost.ko ? '<span class="log-ko">GF falls!</span>' : gfGhost.hp + ' HP left'}`);
+    bLog(`<span class="log-ability">${gfName}</span> — Wish! Absorbed ${dmg} damage for ${lF.name}! ${gfGhost.ko ? '<span class="log-ko">GF falls!</span>' : gfGhost.hp + ' HP left'}`);
     renderBattle();
     if (resume) setTimeout(resume, spd(1500));
   } else {
     // Damage applies to the original ghost
     lF.hp = Math.max(0, lF.hp - dmg);
     if (lF.hp <= 0) { lF.ko = true; lF.killedBy = gfp.wFId; }
-    log(`<span class="log-dmg">${gfp.wFName} deals ${dmg} to ${lF.name}!</span> ${lF.ko?'<span class="log-ko">KO!</span>':lF.hp+' HP left'}`);
+    bLog(`<span class="log-dmg">${gfp.wFName} deals ${dmg} to ${lF.name}!</span> ${lF.ko?'<span class="log-ko">KO!</span>':lF.hp+' HP left'}`);
     renderBattle();
     if (resume) setTimeout(resume, 200);
   }
@@ -2909,7 +2909,7 @@ function doChowChoice(choice) {
     if (hasSideline(B[team], 419)) { B[team].resources.luckyStone = (B[team].resources.luckyStone || 0) + 1; }
     showAbilityCallout('SECRET INGREDIENT!', 'var(--uncommon)',
       `${f.name} — discarded 1 Healing Seed for +2 dice! (total +${B.chowExtraDie[team]})`, team);
-    log(`<span class="log-ability">${f.name}</span> — Secret Ingredient! Discarded 1 Healing Seed → +${B.chowExtraDie[team]} dice total!`);
+    bLog(`<span class="log-ability">${f.name}</span> — Secret Ingredient! Discarded 1 Healing Seed → +${B.chowExtraDie[team]} dice total!`);
     renderBattle();
     // If more seeds available, allow another use (re-offer after callout clears)
     if (B[team].resources.healingSeed >= 1) {
@@ -2939,7 +2939,7 @@ function useZorkStoke(team) {
   B.zorkExtraDie[team] = (B.zorkExtraDie[team] || 0) + burnSpent;
   showAbilityCallout('SMOLDER!', 'var(--common)',
     `${f.name} — ${burnSpent} Burn → +${burnSpent} dice!`, team);
-  log(`<span class="log-ability">${f.name}</span> — Smolder! Discarded ${burnSpent} Burn for +${burnSpent} dice!`);
+  bLog(`<span class="log-ability">${f.name}</span> — Smolder! Discarded ${burnSpent} Burn for +${burnSpent} dice!`);
   renderBattle();
 }
 
@@ -3004,7 +3004,7 @@ function slipstreamPickOpp(idx) {
   const _slipF = active(B[s.team]);
   B.slipstreamStolen = { team: s.team, gave, took };
   showAbilityCallout('SLIPSTREAM!', 'var(--rare)', `${_slipF.name} — Swapped ${gave} for opponent's ${took}!`, s.team);
-  log(`<span class="log-ability">${_slipF.name}</span> — Slipstream! <span class="log-dmg">Swapped ${gave} for opponent's ${took}!</span>`);
+  bLog(`<span class="log-ability">${_slipF.name}</span> — Slipstream! <span class="log-dmg">Swapped ${gave} for opponent's ${took}!</span>`);
   renderDice(B.redDice, B.blueDice);
 
   B.slipstreamState = null;
@@ -3030,7 +3030,7 @@ function useTobyButton(team) {
   showAbilityCallout('PURE HEART!', 'var(--ghost-rare)',
     `${f.name} — declares the final roll! Win = instant KO! Toby sacrifices next round.`, team);
   narrate(`<b class="gold">PURE HEART!</b> Toby declares the final roll — a win ends it all!`);
-  log(`<span class="log-ability">${f.name}</span> — PURE HEART declared! Win this roll = instant KO. Toby sacrifices next round.`);
+  bLog(`<span class="log-ability">${f.name}</span> — PURE HEART declared! Win this roll = instant KO. Toby sacrifices next round.`);
   renderBattle();
 }
 
@@ -3054,7 +3054,7 @@ function useBonzaiButton(team) {
   }
   showAbilityCallout('BONZAI!', 'var(--rare)',
     `${f.name} — sacrificed 4 HP for +5 dice! (${preHp} → ${f.hp} HP)`, team);
-  log(`<span class="log-ability">${f.name}</span> — BONZAI! Sacrificed 4 HP → +5 dice! (${preHp} → ${f.hp} HP)`);
+  bLog(`<span class="log-ability">${f.name}</span> — BONZAI! Sacrificed 4 HP → +5 dice! (${preHp} → ${f.hp} HP)`);
   playDamageSfx(3);
   hitDamage(team);
   renderBattle();
@@ -3077,7 +3077,7 @@ function doBonzaiChoice(choice) {
     }
     showAbilityCallout('BONZAI!', 'var(--rare)',
       `${f.name} — sacrificed 4 HP for +5 dice! (${preHp} → ${f.hp} HP)`, team);
-    log(`<span class="log-ability">${f.name}</span> — BONZAI! Sacrificed 3 HP → +5 dice! (${preHp} → ${f.hp} HP)`);
+    bLog(`<span class="log-ability">${f.name}</span> — BONZAI! Sacrificed 3 HP → +5 dice! (${preHp} → ${f.hp} HP)`);
     playDamageSfx(3);
     hitDamage(team);
     renderBattle();
@@ -3102,7 +3102,7 @@ function useCultivate(team) {
   if (hasSideline(B[team], 419)) { B[team].resources.luckyStone = (B[team].resources.luckyStone || 0) + 1; }
   showAbilityCallout('CULTIVATE!', 'var(--uncommon)',
     `${f.name} — discarded 1 Healing Seed → +2 Sacred Fire!`, team);
-  log(`<span class="log-ability">${f.name}</span> — Cultivate! Discarded 1 Healing Seed → +2 Sacred Fire!`);
+  bLog(`<span class="log-ability">${f.name}</span> — Cultivate! Discarded 1 Healing Seed → +2 Sacred Fire!`);
   renderBattle();
 }
 // Legacy wrapper for old overlay (no longer used)
@@ -3128,7 +3128,7 @@ function useHex(team) {
   B[team].resources.fire = (B[team].resources.fire || 0) + 1;
 
   showAbilityCallout('HEX!', 'var(--uncommon)', `${f.name} — -1 Burn → -1 enemy die + 1 Sacred Fire!`, team);
-  log(`<span class="log-ability">${f.name}</span> — Hex! -1 Burn → opponent -1 die + <span class="log-ms">+1 Sacred Fire!</span>`);
+  bLog(`<span class="log-ability">${f.name}</span> — Hex! -1 Burn → opponent -1 die + <span class="log-ms">+1 Sacred Fire!</span>`);
   renderBattle(); // re-renders the button with updated burn count
 }
 
@@ -3175,7 +3175,7 @@ function doNickKnackSteal(team, resKey) {
     B[team].resources.burn += 2;
     showAbilityCallout('KNICK KNACK!', 'var(--uncommon)',
       `${f.name} — stole 1 ${resLabel}! +1 HP + 2 Burn!`, team);
-    log(`<span class="log-ability">${f.name}</span> — Knick Knack! Stole 1 <span class="log-ms">${resLabel}</span>! <span class="log-heal">+1 HP</span> + 2 Burn!`);
+    bLog(`<span class="log-ability">${f.name}</span> — Knick Knack! Stole 1 <span class="log-ms">${resLabel}</span>! <span class="log-heal">+1 HP</span> + 2 Burn!`);
     renderBattle();
     setTimeout(() => { btn.disabled = false; btn.classList.remove('locked'); doTeamRoll(team, btn); }, spd(1500));
   } else {
@@ -3200,7 +3200,7 @@ function showBurnPicker(team) {
     .filter(x => x.index !== enemyTeam.activeIdx && !x.ghost.ko);
 
   if (sidelineGhosts.length === 0) {
-    log('<span class="log-ability">BURN</span> — No enemy sideline ghosts to burn! Burn fizzles.');
+    bLog('<span class="log-ability">BURN</span> — No enemy sideline ghosts to burn! Burn fizzles.');
     t.resources.burn = 0;
     showToast('No sideline targets — Burn fizzled!');
     renderBattle();
@@ -3244,7 +3244,7 @@ function doBurnPlace(team, ghostIndex) {
 
   const targetGhost = B[enemyTeamName].ghosts[ghostIndex];
   const totalBurn = B.burn[enemyTeamName][ghostIndex];
-  log(`<span class="log-ability">BURN!</span> placed on <span class="log-dmg">${targetGhost.name}</span>! (${totalBurn} total)`);
+  bLog(`<span class="log-ability">BURN!</span> placed on <span class="log-dmg">${targetGhost.name}</span>! (${totalBurn} total)`);
   showAbilityCallout('BURN!', 'var(--rare)', `${targetGhost.name} has been marked! ${totalBurn} Burn on entry!`, team);
 
   // Mable Stadango (446) — Hex: when you place Burn, enemy loses 1 die next roll (in play only)
@@ -3252,7 +3252,7 @@ function doBurnPlace(team, ghostIndex) {
   if (mableActive && mableActive.id === 446 && !mableActive.ko) {
     if (!B.hexDieRemoval) B.hexDieRemoval = { red: 0, blue: 0 };
     B.hexDieRemoval[enemyTeamName] = (B.hexDieRemoval[enemyTeamName] || 0) + 1;
-    log(`<span class="log-ability">${mableActive.name}</span> — Hex! Burn placed → enemy -1 die next roll!`);
+    bLog(`<span class="log-ability">${mableActive.name}</span> — Hex! Burn placed → enemy -1 die next roll!`);
     showAbilityCallout('HEX!', 'var(--uncommon)', `${mableActive.name} — Burn placed! Enemy -1 die next roll!`, team);
   }
 
@@ -3293,7 +3293,7 @@ function usePowderBlizzard(team) {
     .filter(x => x.index !== enemyTeam.activeIdx && !x.ghost.ko);
 
   if (sidelineGhosts.length === 0) {
-    log('<span class="log-ability">BLIZZARD</span> — No enemy sideline ghosts to frostbite!');
+    bLog('<span class="log-ability">BLIZZARD</span> — No enemy sideline ghosts to frostbite!');
     return;
   }
 
@@ -3316,7 +3316,7 @@ function usePowderBlizzard(team) {
   });
 
   showAbilityCallout('BLIZZARD!', '#3b82f6', `${f.name} — 1 Ice Shard → 2 Frostbite on ${targetNames.join(' & ')}!`, team);
-  log(`<span class="log-ability" style="color:#60a5fa">${f.name}</span> — Blizzard! Discarded 1 Ice Shard → <span class="log-dmg">2 Frostbite on ${targetNames.join(' & ')}!</span>`);
+  bLog(`<span class="log-ability" style="color:#60a5fa">${f.name}</span> — Blizzard! Discarded 1 Ice Shard → <span class="log-dmg">2 Frostbite on ${targetNames.join(' & ')}!</span>`);
 
   // Cameron (25) — Unstoppable Force: opponent used a special
   triggerCameronSpecialWatch(team);
@@ -3341,7 +3341,7 @@ function showFrostbitePicker(team) {
     .filter(x => x.index !== enemyTeam.activeIdx && !x.ghost.ko);
 
   if (sidelineGhosts.length === 0) {
-    log('<span class="log-ability">FROSTBITE</span> — No enemy sideline ghosts to frostbite!');
+    bLog('<span class="log-ability">FROSTBITE</span> — No enemy sideline ghosts to frostbite!');
     t.resources.frostbite = 0;
     showToast('No sideline targets — Frostbite fizzled!');
     renderBattle();
@@ -3384,7 +3384,7 @@ function doFrostbitePlace(team, ghostIndex) {
 
   const targetGhost = B[enemyTeamName].ghosts[ghostIndex];
   const totalFb = B.frostbite[enemyTeamName][ghostIndex];
-  log(`<span class="log-ability">FROSTBITE!</span> placed on <span class="log-dmg">${targetGhost.name}</span>! (${totalFb} total)`);
+  bLog(`<span class="log-ability">FROSTBITE!</span> placed on <span class="log-dmg">${targetGhost.name}</span>! (${totalFb} total)`);
   showAbilityCallout('FROSTBITE!', '#3b82f6', `${targetGhost.name} has been marked! -${totalFb} dice on entry!`, team);
 
   // Cameron (25) — Unstoppable Force: opponent used a special (Frostbite)
@@ -3457,7 +3457,7 @@ function doFireflyConvert(team, resourceKey) {
 
   const labelMap = { fire:'Sacred Fire', ice:'Ice Shard', luckyStone:'Lucky Stone', moonstone:'Moonstone', healingSeed:'Healing Seed', surge:'Surge', burn:'Burn', frostbite:'Frostbite' };
   const resLabel = labelMap[resourceKey] || resourceKey;
-  log(`<span class="log-ability">MAGIC FIREFLIES!</span> Converted to <span class="log-ms">${resLabel}</span>!`);
+  bLog(`<span class="log-ability">MAGIC FIREFLIES!</span> Converted to <span class="log-ms">${resLabel}</span>!`);
   showAbilityCallout('MAGIC FIREFLIES!', '#ffd700', `Converted to ${resLabel}!`, team);
 
   renderBattle();
@@ -3551,7 +3551,7 @@ function finishJasperRoll() {
       wF.hp = Math.max(0, wF.hp - 1);
       if (wF.hp <= 0) { wF.ko = true; wF.killedBy = -1; }
     }
-    log(`<span class="log-ability">${jp.wFName}</span> — Flame Dive! Bonus die: <span class="log-dmg">${jp.bonusDie} extra damage</span> to ${jp.lFName}! Self-damage: <span class="log-dmg">1 HP</span>.`);
+    bLog(`<span class="log-ability">${jp.wFName}</span> — Flame Dive! Bonus die: <span class="log-dmg">${jp.bonusDie} extra damage</span> to ${jp.lFName}! Self-damage: <span class="log-dmg">1 HP</span>.`);
     renderBattle();
   }
   if (resume) setTimeout(resume, 300);
@@ -3614,7 +3614,7 @@ function finishSkyElusive() {
       wF.hp = Math.max(0, wF.hp - sp.counterDie);
       if (wF.hp <= 0 && !wF.ko) { wF.ko = true; wF.killedBy = 72; }
     }
-    log(`<span class="log-ability">${sp.lFName}</span> — Elusive! Counter die: <span class="log-dmg">${sp.counterDie} damage</span> to ${sp.wFName}! ${wF && wF.ko ? '<span class="log-ko">KO!</span>' : (wF ? wF.hp + ' HP left' : '')}`);
+    bLog(`<span class="log-ability">${sp.lFName}</span> — Elusive! Counter die: <span class="log-dmg">${sp.counterDie} damage</span> to ${sp.wFName}! ${wF && wF.ko ? '<span class="log-ko">KO!</span>' : (wF ? wF.hp + ' HP left' : '')}`);
     renderBattle();
   }
   if (resume) setTimeout(resume, 300);
@@ -3706,7 +3706,7 @@ function finishJenkinsRoll() {
       if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 94; }
     }
     const rollLabel = describeRoll(jp.roll);
-    log(`<span class="log-ability">${jp.jenkinsName}</span> — Greeting! Rolled [${jp.dice.join(', ')}] — ${rollLabel} → <span class="log-dmg">${jp.damage} entry damage to ${jp.enemyName}!</span> ${ef && ef.ko ? '<span class="log-ko">KO!</span>' : (ef ? ef.hp + ' HP left' : '')}`);
+    bLog(`<span class="log-ability">${jp.jenkinsName}</span> — Greeting! Rolled [${jp.dice.join(', ')}] — ${rollLabel} → <span class="log-dmg">${jp.damage} entry damage to ${jp.enemyName}!</span> ${ef && ef.ko ? '<span class="log-ko">KO!</span>' : (ef ? ef.hp + ' HP left' : '')}`);
     playDamageSfx(jp.damage);
     hitDamage(jp.enemyTeam);
     renderBattle();
@@ -3748,7 +3748,7 @@ function doEloiseChoice(choice) {
     f.hp = oppOldHp;
     oppF.hp = myOldHp;
     showAbilityCallout('CHANGE OF HEART!', 'var(--rare)', `${f.name} — HP swap! (${myOldHp} → ${f.hp}) vs enemy (${oppOldHp} → ${oppF.hp})`, team);
-    log(`<span class="log-ability">${f.name}</span> — Change of Heart! Spent 1 Ice Shard. Swapped HP: ${myOldHp} → ${f.hp}, enemy ${oppOldHp} → ${oppF.hp}.`);
+    bLog(`<span class="log-ability">${f.name}</span> — Change of Heart! Spent 1 Ice Shard. Swapped HP: ${myOldHp} → ${f.hp}, enemy ${oppOldHp} → ${oppF.hp}.`);
     renderBattle();
     setTimeout(() => { btn.disabled = false; btn.classList.remove('locked'); doTeamRoll(team, btn); }, spd(1500));
   } else {
@@ -3782,7 +3782,7 @@ function doMallowChoice(choice) {
       if (f.hp <= 0) { f.hp = 0; f.ko = true; f.killedBy = 59; }
       showAbilityCallout('MASK MERCHANT!', 'var(--uncommon)',
         `Mr Filbert — Dozy Cozy cursed! ${f.name} takes 3 damage! (${hpBefore} → ${f.hp} HP)`, team === 'red' ? 'blue' : 'red');
-      log(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Dozy Cozy flipped to damage. ${f.name} ${hpBefore} → ${f.hp} HP.`);
+      bLog(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Dozy Cozy flipped to damage. ${f.name} ${hpBefore} → ${f.hp} HP.`);
     } else {
       f.hp += 3;
       const overMallow = f.hp > f.maxHp;
@@ -3791,7 +3791,7 @@ function doMallowChoice(choice) {
       B[team].resources.burn += 1;
       showAbilityCallout('DOZY COZY!', 'var(--rare)',
         `${mallowName} — spent 2 🔥! ${f.name} +3 HP (${hpBefore} → ${f.hp}${overMallow ? ' · overclocked!' : ''}) + 1 Burn!`, team);
-      log(`<span class="log-ability">${mallowName}</span> — Dozy Cozy! Spent 2 Sacred Fire. ${f.name} +3 HP (${hpBefore} → ${f.hp}${overMallow ? ' · overclocked!' : ''}). +1 Burn!`);
+      bLog(`<span class="log-ability">${mallowName}</span> — Dozy Cozy! Spent 2 Sacred Fire. ${f.name} +3 HP (${hpBefore} → ${f.hp}${overMallow ? ' · overclocked!' : ''}). +1 Burn!`);
     }
     renderBattle();
     if (f.ko) {
@@ -3801,7 +3801,7 @@ function doMallowChoice(choice) {
       setTimeout(() => { btn.disabled = false; btn.classList.remove('locked'); doTeamRoll(team, btn); }, spd(1500));
     }
   } else {
-    log(`<span class="log-ability">Mallow</span> — holds the fire.`);
+    bLog(`<span class="log-ability">Mallow</span> — holds the fire.`);
     setTimeout(() => { btn.disabled = false; btn.classList.remove('locked'); doTeamRoll(team, btn); }, spd(200));
   }
 }
@@ -3842,12 +3842,12 @@ function doBooChoice(choice) {
       f.hp = Math.max(0, f.hp - 1);
       if (f.hp <= 0) { f.hp = 0; f.ko = true; f.killedBy = 59; }
       showAbilityCallout('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Teamwork cursed! ${f.name} takes 1 damage! (${prevHp} → ${f.hp} HP)`, team === 'red' ? 'blue' : 'red');
-      log(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Teamwork flipped to damage. ${f.name} ${prevHp} → ${f.hp} HP.`);
+      bLog(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Teamwork flipped to damage. ${f.name} ${prevHp} → ${f.hp} HP.`);
     } else {
       f.hp += 1;
       const overTeam = f.hp > f.maxHp;
       showAbilityCallout('TEAMWORK!', 'var(--common)', `${f.name} — trade 1 die for +1 HP! (${prevCount} → ${B.preRoll[team].count} dice | ${prevHp} → ${f.hp} HP${overTeam ? ' · overclocked!' : ''})`, team);
-      log(`<span class="log-ability">${f.name}</span> — Teamwork! Traded 1 die for +1 HP (${prevCount} → ${B.preRoll[team].count} dice, ${prevHp} → ${f.hp} HP${overTeam ? ' · overclocked!' : ''}).`);
+      bLog(`<span class="log-ability">${f.name}</span> — Teamwork! Traded 1 die for +1 HP (${prevCount} → ${B.preRoll[team].count} dice, ${prevHp} → ${f.hp} HP${overTeam ? ' · overclocked!' : ''}).`);
     }
     renderBattle();
     if (f.ko) {
@@ -3879,7 +3879,7 @@ function doGusGaleReactive(choice) {
   if (choice === 'yes') {
     // Force swap — new ghost takes the damage via picker
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Gale Force! ${loseTeamName} must choose a replacement — the new ghost takes ${dmg} damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Gale Force! ${loseTeamName} must choose a replacement — the new ghost takes ${dmg} damage!`);
     queueAbility('GALE FORCE!', 'var(--common)', `${wF.name} — No damage! ${loseTeamName === 'red' ? 'Red' : 'Blue'} team must choose a replacement!`, null, winTeamName);
     // Cancel Guardian Fairy if it was pending (Gus swap takes priority)
     if (B.guardianFairyReactivePending) {
@@ -3898,7 +3898,7 @@ function doGusGaleReactive(choice) {
     B._gusGaleAccepted = false;
     lF.hp = Math.max(0, lF.hp - dmg);
     if (lF.hp <= 0) { lF.ko = true; lF.killedBy = (wF.originalId || wF.id); }
-    log(`<span class="log-dmg">${wF.name} deals ${dmg} to ${lF.name}!</span> ${lF.ko?'<span class="log-ko">KO!</span>':lF.hp+' HP left'}`);
+    bLog(`<span class="log-dmg">${wF.name} deals ${dmg} to ${lF.name}!</span> ${lF.ko?'<span class="log-ko">KO!</span>':lF.hp+' HP left'}`);
     playDamageSfx(dmg);
     hitDamage(loseTeamName);
     renderBattle();
@@ -3958,7 +3958,7 @@ function doRaditzHuntChoice(choice) {
   const _barnabyHunt = active(enemy);
   if (_barnabyHunt && _barnabyHunt.id === 326 && !_barnabyHunt.ko) {
     narrate(`<b class="${team}-text">Raditz</b> — Hunt blocked! <b>${_barnabyHunt.name}</b> is Stubborn!`);
-    log(`<span class="log-ability">Barnaby</span> — Stubborn! Raditz Hunt blocked — ${_barnabyHunt.name} cannot be forced out.`);
+    bLog(`<span class="log-ability">Barnaby</span> — Stubborn! Raditz Hunt blocked — ${_barnabyHunt.name} cannot be forced out.`);
     if (oppBtn) { oppBtn.disabled = false; oppBtn.classList.remove('locked'); }
     setTimeout(() => { btn.disabled = false; btn.classList.remove('locked'); doTeamRoll(team, btn); }, spd(200));
     return;
@@ -4029,7 +4029,7 @@ function doRaditzHuntSwap(attackerTeam, targetIdx) {
   const attackerCls = attackerTeam === 'red' ? 'red-text' : 'blue-text';
   narrate(`<b class="${attackerCls}">${raditzG.name}</b> — Hunt! <b>${oldName}</b> to the sideline — <b>${newGhost.name}</b> enters at full HP!`);
   showAbilityCallout('HUNT!', 'var(--rare)', `${oldName} forced out — ${newGhost.name} enters!`, attackerTeam);
-  log(`<span class="log-ability">${raditzG.name}</span> — Hunt! ${oldName} sent to sideline, ${newGhost.name} enters at full HP.`);
+  bLog(`<span class="log-ability">${raditzG.name}</span> — Hunt! ${oldName} sent to sideline, ${newGhost.name} enters at full HP.`);
 
   setTimeout(() => {
     const entryCalloutCount = triggerEntry(enemy, false);
@@ -4091,7 +4091,7 @@ function doDougCautionSwap(targetIdx) {
   const teamCls = `${team}-text`;
   narrate(`<b class="${teamCls}">${dougName}</b> — Caution! Swaps to sideline — <b>${newName}</b> enters (+1 die this roll)!`);
   showAbilityCallout('CAUTION!', 'var(--rare)', `${dougName} → sideline | ${newName} enters with +1 die!`, team);
-  log(`<span class="log-ability">${dougName}</span> — Caution! Doug to sideline, ${newName} enters (+1 die this roll).`);
+  bLog(`<span class="log-ability">${dougName}</span> — Caution! Doug to sideline, ${newName} enters (+1 die this roll).`);
 
   setTimeout(() => {
     const entryCalloutCount = triggerEntry(myTeam, false);
@@ -4180,7 +4180,7 @@ function pickJacksonDie(idx) {
   renderBattle();
 
   showAbilityCallout('REGROW!', 'var(--uncommon)', `${f.name} — die rerolled: ${oldVal} → ${newVal}! (${prevHp} → ${f.hp} HP)`, team);
-  log(`<span class="log-ability">${f.name}</span> — Regrow! Spent 1 HP, rerolled die: ${oldVal} → ${newVal} (${prevHp} → ${f.hp} HP). New dice: [${preRollDice.join(', ')}]`);
+  bLog(`<span class="log-ability">${f.name}</span> — Regrow! Spent 1 HP, rerolled die: ${oldVal} → ${newVal} (${prevHp} → ${f.hp} HP). New dice: [${preRollDice.join(', ')}]`);
 
   // Short pause for callout, then re-prompt if Jackson can go again
   setTimeout(() => {
@@ -4253,7 +4253,7 @@ function doJeanieChoice(choice) {
   const jF = getSidelineGhost(B[team], 90);
   showAbilityCallout('HIDDEN TREASURE!', 'var(--rare)',
     `${jF ? jF.name : 'Jeanie'} forces ${oppLabel} to reroll! [${oldDice.join(', ')}] → [${newDice.join(', ')}]`, team);
-  log(`<span class="log-ability">Jeanie</span> — Hidden Treasure! ${teamLabel} forces ${oppLabel} to reroll: [${oldDice.join(', ')}] → [${newDice.join(', ')}].`);
+  bLog(`<span class="log-ability">Jeanie</span> — Hidden Treasure! ${teamLabel} forces ${oppLabel} to reroll: [${oldDice.join(', ')}] → [${newDice.join(', ')}].`);
 
   // Pause for callout splash then continue
   setTimeout(() => { continuation(); }, spd(1500));
@@ -4325,10 +4325,10 @@ function pickSonyaDie(idx) {
 
   if (oldVal === 2) {
     showAbilityCallout('MESMERIZE!', 'var(--rare)', `${f.name} — die already showing 2, no change!`, team);
-    log(`<span class="log-ability">${f.name}</span> — Mesmerize! Die already a 2, no change.`);
+    bLog(`<span class="log-ability">${f.name}</span> — Mesmerize! Die already a 2, no change.`);
   } else {
     showAbilityCallout('MESMERIZE!', 'var(--rare)', `${f.name} — changed die: ${oldVal} → 2! New dice: [${preRollDice.join(', ')}]`, team);
-    log(`<span class="log-ability">${f.name}</span> — Mesmerize! Changed die ${oldVal} → 2. Dice: [${preRollDice.join(', ')}]`);
+    bLog(`<span class="log-ability">${f.name}</span> — Mesmerize! Changed die ${oldVal} → 2. Dice: [${preRollDice.join(', ')}]`);
   }
 
   setTimeout(() => { continuation(); }, 1200);
@@ -4383,7 +4383,7 @@ function doDarkWingChoice(choice) {
 
   const rollType = classify(newDice).type;
   showAbilityCallout('PRECISION!', 'var(--rare)', `${f.name} — rerolled! [${newDice.join(', ')}]${rollType === 'doubles' ? ' 🎯 Doubles!' : ''}`, team);
-  log(`<span class="log-ability">${f.name}</span> — Precision! Rerolled all dice → [${newDice.join(', ')}]`);
+  bLog(`<span class="log-ability">${f.name}</span> — Precision! Rerolled all dice → [${newDice.join(', ')}]`);
 
   setTimeout(() => { continuation(); }, 1200);
 }
@@ -4529,7 +4529,7 @@ function finishTommyChain() {
   renderBattle();
   showAbilityCallout('REGULATOR!', 'var(--common)',
     `${tommyF.name} — Rolled 6s! +${totalBonus} bonus dice! Now rolling [${dice.join(', ')}]`, team);
-  log(`<span class="log-ability">${tommyF.name}</span> — Regulator! Rolled 6s → +${totalBonus} bonus dice! [${dice.join(', ')}]`);
+  bLog(`<span class="log-ability">${tommyF.name}</span> — Regulator! Rolled 6s → +${totalBonus} bonus dice! [${dice.join(', ')}]`);
   setTimeout(() => { continuation(); }, 800);
 }
 
@@ -4581,7 +4581,7 @@ function doTobogganChoice(idx) {
   if (idx === -1) {
     // No — C&A stays in
     narrate(`<b class="${winTeamName}-text">Calvin &amp; Anna</b> stays in the fight!`);
-    log(`Calvin & Anna — Toboggan declined. Staying in.`);
+    bLog(`Calvin & Anna — Toboggan declined. Staying in.`);
     continuation();
     return;
   }
@@ -4598,7 +4598,7 @@ function doTobogganChoice(idx) {
   const teamColor = winTeamName === 'red' ? 'red-text' : 'blue-text';
   narrate(`<b class="${teamColor}">${oldName}</b> — Toboggan! Slides to sideline — <b>${newGhost.name}</b> enters the fight!`);
   showAbilityCallout('TOBOGGAN!', 'var(--rare)', `${oldName} slides out — ${newGhost.name} enters!`, winTeamName);
-  log(`<span class="log-ability">Calvin & Anna</span> — Toboggan! ${oldName} slides to sideline, ${newGhost.name} enters.`);
+  bLog(`<span class="log-ability">Calvin & Anna</span> — Toboggan! ${oldName} slides to sideline, ${newGhost.name} enters.`);
 
   // Fire entry effects for the newly-active ghost, then continue
   setTimeout(() => {
@@ -4653,7 +4653,7 @@ function doFangOutsideChoice(idx) {
   if (idx === -1) {
     // No — Fang stays in
     narrate(`<b class="${winTeamName}-text">Fang Outside</b> holds their ground!`);
-    log(`Fang Outside — Skillful Coward declined. Staying in.`);
+    bLog(`Fang Outside — Skillful Coward declined. Staying in.`);
     continuation();
     return;
   }
@@ -4669,7 +4669,7 @@ function doFangOutsideChoice(idx) {
   const teamColor = winTeamName === 'red' ? 'red-text' : 'blue-text';
   narrate(`<b class="${teamColor}">${oldName}</b> — Skillful Coward! Slips to sideline — <b>${newGhost.name}</b> enters the fight!`);
   showAbilityCallout('SKILLFUL COWARD!', 'var(--common)', `${oldName} slips out — ${newGhost.name} enters!`, winTeamName);
-  log(`<span class="log-ability">Fang Outside</span> — Skillful Coward! ${oldName} to sideline, ${newGhost.name} enters.`);
+  bLog(`<span class="log-ability">Fang Outside</span> — Skillful Coward! ${oldName} to sideline, ${newGhost.name} enters.`);
 
   // Fire entry effects for the newly-active ghost, then continue
   setTimeout(() => {
@@ -4688,9 +4688,9 @@ function doFangUndercoverArmChoice(choice) {
   if (choice === 'yes') {
     B.fangUndercoverArmed[team] = true;
     showAbilityCallout('SKILLED COWARD!', 'var(--common)', `Fang Undercover armed — dodge incoming damage this round!`, team);
-    log(`<span class="log-ability">Fang Undercover</span> — Skilled Coward armed!`);
+    bLog(`<span class="log-ability">Fang Undercover</span> — Skilled Coward armed!`);
   } else {
-    log(`Fang Undercover — Skilled Coward declined. Fighting straight.`);
+    bLog(`Fang Undercover — Skilled Coward declined. Fighting straight.`);
   }
   btn.classList.remove('locked');
   btn.disabled = false;
@@ -4738,7 +4738,7 @@ function doFangUndercoverSwapChoice(idx) {
 
   narrate(`<b class="${teamColor}">${oldName}</b> — Skilled Coward! Slips to sideline — <b>${newGhost.name}</b> enters the fight!`);
   showAbilityCallout('SKILLED COWARD!', 'var(--common)', `${oldName} slips out — ${newGhost.name} enters!`, loseTeamName);
-  log(`<span class="log-ability">Fang Undercover</span> — Skilled Coward! ${oldName} to sideline, ${newGhost.name} enters.`);
+  bLog(`<span class="log-ability">Fang Undercover</span> — Skilled Coward! ${oldName} to sideline, ${newGhost.name} enters.`);
 
   // Fire entry effects for the newly-active ghost, then continue
   setTimeout(() => {
@@ -4797,7 +4797,7 @@ function doWinstonSchemeChoice(idx) {
   if (idx === -1) {
     // Skip — keep current opponent ghost, still get dice
     narrate(`<b class="${winTeamColor}">Winston</b> — Scheme skipped. +2 dice next roll!`);
-    log(`Winston — Scheme declined. <span class="log-ms">+2 dice next roll!</span>`);
+    bLog(`Winston — Scheme declined. <span class="log-ms">+2 dice next roll!</span>`);
     continuation();
     return;
   }
@@ -4812,7 +4812,7 @@ function doWinstonSchemeChoice(idx) {
 
   narrate(`<b class="${winTeamColor}">Winston</b> — Scheme! <b class="${loseTeamColor}">${oldName}</b> forced to sideline — <b class="${loseTeamColor}">${newGhost.name}</b> enters!`);
   showAbilityCallout('SCHEME!', 'var(--common)', `${oldName} forced out — ${newGhost.name} enters!`, winTeamName);
-  log(`<span class="log-ability">Winston</span> — Scheme! Forced ${oldName} to sideline, ${newGhost.name} enters. <span class="log-ms">+2 dice next roll!</span>`);
+  bLog(`<span class="log-ability">Winston</span> — Scheme! Forced ${oldName} to sideline, ${newGhost.name} enters. <span class="log-ms">+2 dice next roll!</span>`);
 
   // Fire entry effects for the newly-active enemy ghost, then continue
   setTimeout(() => {
@@ -4877,7 +4877,7 @@ function doTysonHopChoice(loseTeamName, ghostIdx) {
   const winColor = winTeamName === 'red' ? 'red-text' : 'blue-text';
   narrate(`<b class="${winColor}">Tyson</b> — Hop! <b>${targetGhost.name}</b>'s sideline ability disabled!`);
   showAbilityCallout('HOP!', 'var(--common)', `${targetGhost.name}'s ${gd.ability} disabled!`, winTeamName);
-  log(`<span class="log-ability">Tyson</span> — Hop! ${targetGhost.name}'s sideline ability (${gd.ability}) disabled until it enters play.`);
+  bLog(`<span class="log-ability">Tyson</span> — Hop! ${targetGhost.name}'s sideline ability (${gd.ability}) disabled until it enters play.`);
 
   continuation();
 }
@@ -4908,7 +4908,7 @@ function doCatchyTuneChoice(teamName, dieValue, allDice, btnEl) {
   B.catchyTuneLockedDie[teamName] = dieValue;
   const teamColor = teamName === 'red' ? 'red-text' : 'blue-text';
   narrate(`<b class="${teamColor}">Catchy Tune</b> — locked a <b>${dieValue}</b> for next roll!`);
-  log(`<span class="log-ability">Laura</span> — Catchy Tune! Locked die: <span class="log-ms">${dieValue}</span> for next roll.`);
+  bLog(`<span class="log-ability">Laura</span> — Catchy Tune! Locked die: <span class="log-ms">${dieValue}</span> for next roll.`);
   showAbilityCallout('LOCKED!', 'var(--rare)', `Die ${dieValue} locked for next roll!`, teamName);
   ct.continuation();
 }
@@ -4969,7 +4969,7 @@ function doGaleForcePickerChoice(idx) {
   renderBattle();
 
   narrate(`<b class="${winTeamColor}">Gus</b> — Gale Force! <b class="${loseTeamColor}">${newGhost.name}</b> blown in — takes ${dmg} damage!${newGhost.ko ? ' <b>KO!</b>' : ''}`);
-  log(`<span class="log-ability">Gus</span> — Gale Force! ${oldName} forced to bench — ${newGhost.name} enters and takes <span class="log-dmg">${dmg} damage!</span>${newGhost.ko ? ' <span class="log-ko">KO!</span>' : ' ' + newGhost.hp + ' HP left'}`);
+  bLog(`<span class="log-ability">Gus</span> — Gale Force! ${oldName} forced to bench — ${newGhost.name} enters and takes <span class="log-dmg">${dmg} damage!</span>${newGhost.ko ? ' <span class="log-ko">KO!</span>' : ' ' + newGhost.hp + ' HP left'}`);
 
   // Fire entry effects for the newly-active ghost, then continue
   setTimeout(() => {
@@ -5142,7 +5142,7 @@ function rollReady(team) {
         const piperG = active(B[piperOppName]);
         if (piperG && piperG.id === 107 && !piperG.ko) {
           B.romyPrediction[team] = -1; // blocked — no die matches -1
-          log(`<span class="log-ability">Piper</span> — Slick Coat! <span class="log-ability">${romyCheckG.name}'s</span> Valley Guardian prediction is negated!`);
+          bLog(`<span class="log-ability">Piper</span> — Slick Coat! <span class="log-ability">${romyCheckG.name}'s</span> Valley Guardian prediction is negated!`);
           // Fall through — Romy modal block below sees romyPrediction != null and skips
         }
       }
@@ -5446,8 +5446,8 @@ function doTeamRoll(team, btn) {
   B.lastRollDiceCount[team] = diceCount; // Frederick (27) — track for next round
   if (team === 'red') { B.redDice = dice; } else { B.blueDice = dice; }
 
-  if (lockedDie !== null && !override) log(`<span class="log-ability">Laura</span> — Catchy Tune! Locked die: <span class="log-ms">${lockedDie}</span> carried over.`);
-  if (override) log(`<span class="log-ability">Bouril</span> — Slumber! Auto-rolled [1,2,3]!`);
+  if (lockedDie !== null && !override) bLog(`<span class="log-ability">Laura</span> — Catchy Tune! Locked die: <span class="log-ms">${lockedDie}</span> carried over.`);
+  if (override) bLog(`<span class="log-ability">Bouril</span> — Slumber! Auto-rolled [1,2,3]!`);
 
   // Animate: show rolling then reveal
   const f = active(B[team]);
@@ -5614,7 +5614,7 @@ function openDuelPhasePrimers(team) {
     if (piperOppG && piperOppG.id === 107 && !piperOppG.ko) {
       B.romyPrediction[team] = -1; // sentinel: -1 never matches any die
       narrate(`<b class="${oppTeamName}-text">Piper</b> — Slick Coat! Romy's Valley Guardian is negated!`);
-      log(`<span class="log-ability">Piper</span> — Slick Coat! Romy's Valley Guardian prediction negated in Duel Phase.`);
+      bLog(`<span class="log-ability">Piper</span> — Slick Coat! Romy's Valley Guardian prediction negated in Duel Phase.`);
       // fall through to next primer check
     } else {
       disableDone();
@@ -5706,7 +5706,7 @@ function openDuelPhasePrimers(team) {
     // Auto-skip: opponent has no alive sideline ghosts
     if (aliveSideline.length === 0) {
       narrate(`<b class="${team}-text">Raditz</b> — Hunt primed, but the opponent has no sideline ghosts to swap in.`);
-      log(`Raditz — Hunt skipped in Duel Phase: opponent has no alive sideline.`);
+      bLog(`Raditz — Hunt skipped in Duel Phase: opponent has no alive sideline.`);
       return false; // auto-skipped, no primer opened
     }
 
@@ -5801,7 +5801,7 @@ function openDuelPhasePrimers(team) {
       if (_baseDiceBoo < 2) {
         // Auto-skip: no dice to trade
         narrate(`<b class="${team}-text">Boo Brothers</b> — Teamwork ready, but base dice (${_baseDiceBoo}) too low to trade.`);
-        log(`Boo Brothers — Teamwork auto-skipped in Duel Phase: base dice ${_baseDiceBoo} < 2.`);
+        bLog(`Boo Brothers — Teamwork auto-skipped in Duel Phase: base dice ${_baseDiceBoo} < 2.`);
         return false;
       }
       if (!B.preRoll) B.preRoll = { red: null, blue: null };
@@ -5902,7 +5902,7 @@ function enterDuelPhase(priority) {
     ? `<b class="${priority}-text">${activeName}</b> stands as the underdog — first move!`
     : `<b class="${priority}-text">${activeName}</b> licks their wounds — first move this round!`;
   narrate(msg);
-  log(`<span class="log-ability">DUEL PHASE</span> — ${activeName} (${priority}) moves first.`);
+  bLog(`<span class="log-ability">DUEL PHASE</span> — ${activeName} (${priority}) moves first.`);
   renderBattle();
   renderDuelUI();
   _runDuelTeamTurn(priority);
@@ -5920,7 +5920,7 @@ function duelPhaseReady(team) {
     const nextActive = active(B[nextTeam]);
     const nextName = nextActive ? nextActive.name : nextTeam;
     narrate(`<b class="${nextTeam}-text">${nextName}</b> — your response!`);
-    log(`<span class="log-ability">DUEL PHASE</span> — ${nextName} (${nextTeam}) responds.`);
+    bLog(`<span class="log-ability">DUEL PHASE</span> — ${nextName} (${nextTeam}) responds.`);
     renderBattle();
     renderDuelUI();
     _runDuelTeamTurn(nextTeam);
@@ -6114,7 +6114,7 @@ function doHandLimitDiscard(teamName, resourceKey) {
   if ((team.resources[resourceKey] || 0) <= 0) return;
   team.resources[resourceKey]--;
   const info = HAND_RESOURCE_LABELS[resourceKey];
-  log(`<span class="log-ability">Hand Limit</span> — ${teamName === 'red' ? 'Red' : 'Blue'} discards ${info.emoji} ${info.name}! (${getHandSize(team)}/${B.HAND_LIMIT})`);
+  bLog(`<span class="log-ability">Hand Limit</span> — ${teamName === 'red' ? 'Red' : 'Blue'} discards ${info.emoji} ${info.name}! (${getHandSize(team)}/${B.HAND_LIMIT})`);
   renderBattle();
   // Still over? Re-render the modal
   if (getHandSize(team) > B.HAND_LIMIT) {
@@ -6183,7 +6183,7 @@ function doPreRollSetup() {
         if (f && !f.ko) {
           f.hp = Math.max(0, f.hp - msDmg);
           if (f.hp <= 0) { f.ko = true; f.killedBy = -1; }
-          log(`<span class="log-dmg">Moonstone Sickness!</span> ${f.name} takes ${msDmg} damage! ${f.ko ? '<span class="log-ko">KO!</span>' : f.hp + ' HP left'}`);
+          bLog(`<span class="log-dmg">Moonstone Sickness!</span> ${f.name} takes ${msDmg} damage! ${f.ko ? '<span class="log-ko">KO!</span>' : f.hp + ' HP left'}`);
           narrate(`<b style="color:var(--moonstone)">Moonstone Sickness!</b> <b class="${teamKey}-text">${f.name}</b> takes ${msDmg} damage!${f.ko ? ' <b>KO!</b>' : ''}`);
           preRollCallouts.push(['MOONSTONE SICKNESS!', 'var(--moonstone)', `${f.name} takes ${msDmg} damage!`, teamKey]);
           playDamageSfx(msDmg);
@@ -6218,7 +6218,7 @@ function doPreRollSetup() {
           ef.hp = Math.max(0, ef.hp - fredDmg);
           if (ef.hp <= 0) { ef.hp = 0; ef.ko = true; ef.killedBy = 27; }
           preRollCallouts.push(['CAREFUL!', 'var(--common)', `${fFred.name} — Enemy rolled ${enemyLastDice} dice last round! ${extraDice} extra × 2 = ${fredDmg} damage!`, tNameFred]);
-          log(`<span class="log-ability">${fFred.name}</span> — Careful! Enemy rolled ${enemyLastDice} dice (${extraDice} extra) → <span class="log-dmg">${fredDmg} damage to ${ef.name}!</span> ${ef.ko ? '<span class="log-ko">KO!</span>' : ef.hp + ' HP left'}`);
+          bLog(`<span class="log-ability">${fFred.name}</span> — Careful! Enemy rolled ${enemyLastDice} dice (${extraDice} extra) → <span class="log-dmg">${fredDmg} damage to ${ef.name}!</span> ${ef.ko ? '<span class="log-ko">KO!</span>' : ef.hp + ' HP left'}`);
           playDamageSfx(fredDmg);
           hitDamage(enemyNameFred);
         }
@@ -6239,20 +6239,20 @@ function doPreRollSetup() {
         // Masked Hero (55) — Underdog: immune to before-roll damage
         if (maskedHeroImmune(ef)) {
           preRollCallouts.push(['UNDERDOG!', 'var(--uncommon)', `${ef.name} — immune to before-roll damage!`, enemyName]);
-          log(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to ${f.name}'s Swarm!`);
+          bLog(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to ${f.name}'s Swarm!`);
           return;
         }
         ef.hp = Math.max(0, ef.hp - 1);
         if (ef.hp <= 0) { ef.ko = true; ef.killedBy = (f.originalId || f.id); }
         preRollCallouts.push(['SWARM!', 'var(--uncommon)', `${f.name} — 1 damage to ${ef.name}!`, tNamePre]);
-        log(`<span class="log-ability">${f.name}</span> — Swarm! <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+        bLog(`<span class="log-ability">${f.name}</span> — Swarm! <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
         playDamageSfx(1);
         hitDamage(enemyName);
         // Simon (24) — Brew Time: gain 1 Sacred Fire when taking ANY damage
         if (ef.id === 24 && !ef.ko) {
           B[enemyName].resources.fire += 2;
           preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-          log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+2 Sacred Fire!</span>`);
+          bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+2 Sacred Fire!</span>`);
         }
         // Collect Knight reactions via temp queue mode so they splice AFTER SWARM! in preRollCallouts
         const _swarmSavedKQ = abilityQueue;
@@ -6268,23 +6268,23 @@ function doPreRollSetup() {
           ef.hp = Math.max(0, ef.hp - 1);
           if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
           preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNamePre]);
-          log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+          bLog(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(enemyName);
           popSidelineCard(B[tNamePre], 436);
           if (ef.id === 24 && !ef.ko) {
             B[enemyName].resources.fire += 2;
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-            log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+            bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
         } else if (!ef.ko && hasAlive(B[tNamePre], 436) && hasSideline(B[enemyName], 45)) {
           const cornGhostPS = getSidelineGhost(B[enemyName], 45);
           preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS ? cornGhostPS.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyName]);
-          log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
+          bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
         }
       }
     } else if (f.id === 304 && !f.ko && dylanNegates(enemy)) {
-      log(`<span class="log-ability">${f.name}</span> — Swarm blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
+      bLog(`<span class="log-ability">${f.name}</span> — Swarm blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
       B.piperBlockedThisRound[tNamePre] = true; // v640: Slick Coat gate
     }
   });
@@ -6302,7 +6302,7 @@ function doPreRollSetup() {
         // Masked Hero (55) — immune to before-roll damage
         if (maskedHeroImmune(ef)) {
           preRollCallouts.push(['UNDERDOG!', 'var(--uncommon)', `${ef.name} — immune to Meltdown!`, tNameShade]);
-          log(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to Shade's Shadow Meltdown!`);
+          bLog(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to Shade's Shadow Meltdown!`);
           return;
         }
         const preHp = ef.hp;
@@ -6313,7 +6313,7 @@ function doPreRollSetup() {
           ? `Shade's Shadow finishes ${ef.name}! (${preHp} HP → KO!)`
           : `Shade's Shadow chips ${ef.name}! (${preHp} → ${ef.hp} HP)`;
         preRollCallouts.push(['MELTDOWN!', 'var(--rare)', meltMsg, tNameShade]);
-        log(`<span class="log-ability">Shade's Shadow</span> (sideline) — Meltdown! Enemy below 4 HP — <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+        bLog(`<span class="log-ability">Shade's Shadow</span> (sideline) — Meltdown! Enemy below 4 HP — <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
         playDamageSfx(1);
         hitDamage(enemyName);
         popSidelineCard(team, 205);
@@ -6321,7 +6321,7 @@ function doPreRollSetup() {
         if (ef.id === 24 && !ef.ko) {
           B[enemyName].resources.fire += 2;
           preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-          log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+2 Sacred Fire!</span>`);
+          bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+2 Sacred Fire!</span>`);
         }
         // Collect Knight reactions via temp queue mode so they splice AFTER MELTDOWN! in preRollCallouts
         // (not in queue mode → checkKnightEffects fires showAbilityCallout directly, stomping MELTDOWN!)
@@ -6338,7 +6338,7 @@ function doPreRollSetup() {
           ef.hp = Math.max(0, ef.hp - 1);
           if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
           preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNameShade]);
-          log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+          bLog(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(enemyName);
           popSidelineCard(B[tNameShade], 436);
@@ -6346,22 +6346,22 @@ function doPreRollSetup() {
           if (ef.id === 24 && !ef.ko) {
             B[enemyName].resources.fire += 2;
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-            log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+            bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
         } else if (!ef.ko && hasAlive(B[tNameShade], 436) && hasSideline(enemy, 45)) {
           const cornGhostPS2 = getSidelineGhost(enemy, 45);
           preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS2 ? cornGhostPS2.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyName]);
-          log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
+          bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
         }
       }
     } else if (hasSideline(team, 205) && dylanNegates(enemy)) {
-      log(`<span class="log-ability">Shade's Shadow</span> — Meltdown blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
+      bLog(`<span class="log-ability">Shade's Shadow</span> — Meltdown blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
       B.piperBlockedThisRound[tNameShade] = true; // v640: Slick Coat gate
     } else if (hasSideline(team, 205) && corneliusBlocksShadow) {
       const cornGhostSS = getSidelineGhost(enemy, 45);
       const enemyNameSS = enemy === B.red ? 'red' : 'blue';
       preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostSS ? cornGhostSS.name : 'Cornelius'} blocks Shade's Shadow Meltdown!`, enemyNameSS]);
-      log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! <span class="log-ability">Shade's Shadow</span> Meltdown blocked!`);
+      bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! <span class="log-ability">Shade's Shadow</span> Meltdown blocked!`);
       B.piperBlockedThisRound[tNameShade] = true; // v640: Slick Coat gate
     }
   });
@@ -6376,13 +6376,13 @@ function doPreRollSetup() {
       if (!ef.ko) {
         // Piper (107) — Slick Coat: negates Haunt
         if (ef.id === 107 && !ef.ko) {
-          log(`<span class="log-ability">Piper</span> — Slick Coat! Shade's Haunt is negated.`);
+          bLog(`<span class="log-ability">Piper</span> — Slick Coat! Shade's Haunt is negated.`);
         } else {
           const enemyName = enemy === B.red ? 'red' : 'blue';
           // Masked Hero (55) — immune to before-roll damage
           if (maskedHeroImmune(ef)) {
             preRollCallouts.push(['UNDERDOG!', 'var(--uncommon)', `${ef.name} — immune to Haunt!`, enemyName]);
-            log(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to Shade's Haunt!`);
+            bLog(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to Shade's Haunt!`);
             return;
           }
           const preHp = ef.hp;
@@ -6392,14 +6392,14 @@ function doPreRollSetup() {
             ? `Shade haunts ${ef.name}! (${preHp} HP → KO!)`
             : `Shade haunts ${ef.name}! (${preHp} → ${ef.hp} HP)`;
           preRollCallouts.push(['HAUNT!', 'var(--legendary)', hauntMsg, tNameHaunt]);
-          log(`<span class="log-ability">Shade</span> — Haunt! <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+          bLog(`<span class="log-ability">Shade</span> — Haunt! <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(enemyName);
           // Simon (24) — Brew Time: gain 1 Sacred Fire when taking ANY damage
           if (ef.id === 24 && !ef.ko) {
             B[enemyName].resources.fire += 2;
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-            log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+            bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
           // Collect Knight reactions via temp queue mode so they splice AFTER HAUNT! in preRollCallouts
           const _hauntSavedKQ = abilityQueue;
@@ -6415,25 +6415,25 @@ function doPreRollSetup() {
             ef.hp = Math.max(0, ef.hp - 1);
             if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
             preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNameHaunt]);
-            log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+            bLog(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
             playDamageSfx(1);
             hitDamage(enemyName);
             popSidelineCard(B[tNameHaunt], 436);
             if (ef.id === 24 && !ef.ko) {
               B[enemyName].resources.fire += 2;
               preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-              log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+              bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
             }
           } else if (!ef.ko && hasAlive(B[tNameHaunt], 436) && hasSideline(enemy, 45)) {
             const cornGhostPS3 = getSidelineGhost(enemy, 45);
             const enemyNameHaunt = enemy === B.red ? 'red' : 'blue';
             preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS3 ? cornGhostPS3.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyNameHaunt]);
-            log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
+            bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
           }
         }
       }
     } else if (abilityIdOf(f) === 111 && !f.ko && dylanNegates(enemy)) {
-      log(`<span class="log-ability">Shade</span> — Haunt blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
+      bLog(`<span class="log-ability">Shade</span> — Haunt blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
       B.piperBlockedThisRound[tNameHaunt] = true; // v640: Slick Coat gate
     }
   });
@@ -6466,7 +6466,7 @@ function doPreRollSetup() {
               ? `${f.name} counters! 3 damage to ${lucyAttacker.name}! (${undPreL} HP → KO!)`
               : `${f.name} counters! 3 damage to ${lucyAttacker.name}! (${undPreL} → ${lucyAttacker.hp} HP)`;
             preRollCallouts.push(['UNDERDOG!', 'var(--uncommon)', undMsgL, tNameLucyTarget]);
-            log(`<span class="log-ability">${f.name}</span> — Underdog! 3 counter-damage to ${lucyAttacker.name}!`);
+            bLog(`<span class="log-ability">${f.name}</span> — Underdog! 3 counter-damage to ${lucyAttacker.name}!`);
             playDamageSfx(3);
             hitDamage(tNameLucyActor);
             if (lucyAttacker.ko) {
@@ -6482,14 +6482,14 @@ function doPreRollSetup() {
           ? `${abilityLabel} burns ${f.name}! (${preHp} HP → KO!)`
           : `${abilityLabel} burns ${f.name}! (${preHp} → ${f.hp} HP)`;
         preRollCallouts.push([splashName, splashColor, lucyMsg, tNameLucyActor]);
-        log(`<span class="log-ability">${abilityLabel}</span> — <span class="log-dmg">${pendingDmg} damage to ${f.name}!</span> ${f.ko?'<span class="log-ko">KO!</span>':f.hp+' HP left'}`);
+        bLog(`<span class="log-ability">${abilityLabel}</span> — <span class="log-dmg">${pendingDmg} damage to ${f.name}!</span> ${f.ko?'<span class="log-ko">KO!</span>':f.hp+' HP left'}`);
         playDamageSfx(pendingDmg);
         hitDamage(tNameLucyTarget);
         // Simon (24) — Brew Time: gain 1 Sacred Fire when taking ANY damage
         if (f.id === 24 && !f.ko) {
           B[tNameLucyTarget].resources.fire += 2;
           preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, tNameLucyTarget]);
-          log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+          bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
         }
         // Princess Shade (436) — Bounty: +1 additional damage on pre-roll chip, works from sideline OR active (blocked by Cornelius)
         if (!f.ko && hasAlive(B[tNameLucyActor], 436) && !hasSideline(B[tNameLucyTarget], 45)) {
@@ -6497,7 +6497,7 @@ function doPreRollSetup() {
           f.hp = Math.max(0, f.hp - 1);
           if (f.hp <= 0) { f.ko = true; f.killedBy = 436; }
           preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${f.name}!`, tNameLucyActor]);
-          log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${f.name}!</span> ${f.ko?'<span class="log-ko">KO!</span>':f.hp+' HP left'}`);
+          bLog(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${f.name}!</span> ${f.ko?'<span class="log-ko">KO!</span>':f.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(tNameLucyTarget);
           popSidelineCard(B[tNameLucyActor], 436);
@@ -6505,12 +6505,12 @@ function doPreRollSetup() {
           if (f.id === 24 && !f.ko) {
             B[tNameLucyTarget].resources.fire++;
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, tNameLucyTarget]);
-            log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+            bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
         } else if (!f.ko && hasAlive(B[tNameLucyActor], 436) && hasSideline(B[tNameLucyTarget], 45)) {
           const cornGhostPSL = getSidelineGhost(B[tNameLucyTarget], 45);
           preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPSL ? cornGhostPSL.name : 'Cornelius'} blocks Princess Shade's Bounty!`, tNameLucyTarget]);
-          log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
+          bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
         }
         // Knight reactions on Lucy's side (the actor). Temp queue mode so reactions
         // splice AFTER BLUE FIRE! in preRollCallouts instead of stomping it.
@@ -6523,7 +6523,7 @@ function doPreRollSetup() {
         abilityQueue = _lucySavedKQ;
       }
     } else {
-      log(`<span class="log-ability">Lucy</span> — Blue Fire blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
+      bLog(`<span class="log-ability">Lucy</span> — Blue Fire blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
       B.piperBlockedThisRound[tNameLucyActor] = true; // v640: Slick Coat gate
     }
     B.pendingLucyDmg[tNameLucyTarget] = 0; // consume regardless (applied, negated, or target KO'd)
@@ -6539,14 +6539,14 @@ function doPreRollSetup() {
       const ef = active(enemy);
       if (!ef.ko) {
         if (dylanNegates(enemy)) {
-          log(`<span class="log-ability">Splinter</span> — Toxic Fumes blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
+          bLog(`<span class="log-ability">Splinter</span> — Toxic Fumes blocked by <span class="log-ability">Dylan's Scarecrow</span>!`);
           B.piperBlockedThisRound[tNameSplinter] = true; // v640: Slick Coat gate
         } else {
           const enemyName = enemy === B.red ? 'red' : 'blue';
           // Masked Hero (55) — immune to before-roll damage
           if (maskedHeroImmune(ef)) {
             preRollCallouts.push(['UNDERDOG!', 'var(--uncommon)', `${ef.name} — immune to Toxic Fumes!`, enemyName]);
-            log(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to Splinter's Toxic Fumes!`);
+            bLog(`<span class="log-ability">${ef.name}</span> — Underdog! Immune to Splinter's Toxic Fumes!`);
             return;
           }
           const preHp = ef.hp;
@@ -6556,13 +6556,13 @@ function doPreRollSetup() {
             ? `Toxic Fumes choke ${ef.name}! (${preHp} HP → KO!)`
             : `Toxic Fumes choke ${ef.name}! (${preHp} → ${ef.hp} HP)`;
           preRollCallouts.push(['TOXIC FUMES!', 'var(--ghost-rare)', fumesMsg, tNameSplinter]);
-          log(`<span class="log-ability">Splinter</span> — Toxic Fumes! <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+          bLog(`<span class="log-ability">Splinter</span> — Toxic Fumes! <span class="log-dmg">1 damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
           playDamageSfx(1);
           hitDamage(enemyName);
           if (ef.id === 24 && !ef.ko) {
             B[enemyName].resources.fire += 2;
             preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-            log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+            bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
           }
           const _splinterSavedKQ = abilityQueue;
           abilityQueue = [];
@@ -6577,19 +6577,19 @@ function doPreRollSetup() {
             ef.hp = Math.max(0, ef.hp - 1);
             if (ef.hp <= 0) { ef.ko = true; ef.killedBy = 436; }
             preRollCallouts.push(['BOUNTY!', 'var(--rare)', `Princess Shade — +1 additional damage to ${ef.name}!`, tNameSplinter]);
-            log(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
+            bLog(`<span class="log-ability">Princess Shade</span> — Bounty! <span class="log-dmg">+1 additional damage to ${ef.name}!</span> ${ef.ko?'<span class="log-ko">KO!</span>':ef.hp+' HP left'}`);
             playDamageSfx(1);
             hitDamage(enemyName);
             popSidelineCard(B[tNameSplinter], 436);
             if (ef.id === 24 && !ef.ko) {
               B[enemyName].resources.fire += 2;
               preRollCallouts.push(['BREW TIME!', 'var(--uncommon)', `Simon — Took pre-roll damage → +2 Sacred Fire!`, enemyName]);
-              log(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
+              bLog(`<span class="log-ability">Simon</span> — Brew Time! Took pre-roll damage → <span class="log-ms">+1 Sacred Fire!</span>`);
             }
           } else if (!ef.ko && hasAlive(B[tNameSplinter], 436) && hasSideline(enemy, 45)) {
             const cornGhostPS4 = getSidelineGhost(enemy, 45);
             preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostPS4 ? cornGhostPS4.name : 'Cornelius'} blocks Princess Shade's Bounty!`, enemyName]);
-            log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
+            bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Princess Shade Bounty blocked!`);
           }
         }
       }
@@ -6608,7 +6608,7 @@ function doPreRollSetup() {
       f.ko = true;
       f.killedBy = 97; // self-sacrifice
       preRollCallouts.push(['PURE HEART!', 'var(--ghost-rare)', `${f.name} — The sacrifice is complete. The final roll was played.`, tNameToby]);
-      log(`<span class="log-ability">${f.name}</span> — Pure Heart! Toby is defeated before rolling (sacrifice).`);
+      bLog(`<span class="log-ability">${f.name}</span> — Pure Heart! Toby is defeated before rolling (sacrifice).`);
     }
   });
 
@@ -6625,7 +6625,7 @@ function doPreRollSetup() {
         ef.ko = true;
         ef.killedBy = 84;
         preRollCallouts.push(['HIDDEN WEAKNESS!', 'var(--rare)', `${ef.name} has ${preHp} HP — exposed and destroyed!`, team === B.red ? 'red' : 'blue']);
-        log(`<span class="log-ability">${f.name}</span> — Hidden Weakness! ${ef.name} had ${preHp} HP (≥12) — <span class="log-ko">instant KO!</span>`);
+        bLog(`<span class="log-ability">${f.name}</span> — Hidden Weakness! ${ef.name} had ${preHp} HP (≥12) — <span class="log-ko">instant KO!</span>`);
       }
     }
   });
@@ -6689,7 +6689,7 @@ function doPreRollSetup() {
       const cnt = B.committed[tName].harrison;
       B.committed[tName].harrison = 0; // reset after use
       preRollCallouts.push(['ASCEND!', 'var(--rare)', `${f.name} — ${cnt} seed${cnt>1?'s':''} → +${cnt} dice!`, team === B.red ? 'red' : 'blue']);
-      log(`<span class="log-ability">${f.name}</span> — Ascend! Spent ${cnt} Healing Seed${cnt>1?'s':''} for +${cnt} extra dice!`);
+      bLog(`<span class="log-ability">${f.name}</span> — Ascend! Spent ${cnt} Healing Seed${cnt>1?'s':''} for +${cnt} extra dice!`);
       // Knight reactions to Ascend — collect via temporary queue then splice into preRollCallouts
       // so HEAVY AIR! / RETRIBUTION! plays sequentially AFTER ASCEND!, not as a simultaneous stomp
       const _savedAscendAQ = abilityQueue;
@@ -6736,11 +6736,11 @@ function doPreRollSetup() {
     const tName = team === B.red ? 'red' : 'blue';
     if (f.id === 309 && B.committed[tName].auntSusan > 0) {
       B.auntSusanBonus[tName] = B.committed[tName].auntSusan;
-      log(`<span class="log-ability">${f.name}</span> — Harvest Dance! Spent ${B.committed[tName].auntSusan} Healing Seed${B.committed[tName].auntSusan>1?'s':''} for +${B.committed[tName].auntSusan * 2} damage!`);
+      bLog(`<span class="log-ability">${f.name}</span> — Harvest Dance! Spent ${B.committed[tName].auntSusan} Healing Seed${B.committed[tName].auntSusan>1?'s':''} for +${B.committed[tName].auntSusan * 2} damage!`);
     }
     if (f.id === 309 && B.committed[tName].auntSusanHeal > 0) {
       B.auntSusanHealBonus[tName] = B.committed[tName].auntSusanHeal;
-      log(`<span class="log-ability">${f.name}</span> — Harvest Dance! Spent ${B.committed[tName].auntSusanHeal} Healing Seed${B.committed[tName].auntSusanHeal>1?'s':''} for +${B.committed[tName].auntSusanHeal * 2} HP!`);
+      bLog(`<span class="log-ability">${f.name}</span> — Harvest Dance! Spent ${B.committed[tName].auntSusanHeal} Healing Seed${B.committed[tName].auntSusanHeal>1?'s':''} for +${B.committed[tName].auntSusanHeal * 2} HP!`);
     }
   });
 
@@ -6764,14 +6764,14 @@ function doPreRollSetup() {
       const klRed = active(B.red);
       if (klRed.id === 402 && !klRed.ko) {
         redCount += B.retributionDice.red;
-        log(`<span class="log-ability">Knight Light</span> — Retribution! <span class="log-ms">+${B.retributionDice.red} bonus dice!</span>`);
+        bLog(`<span class="log-ability">Knight Light</span> — Retribution! <span class="log-ms">+${B.retributionDice.red} bonus dice!</span>`);
       }
     }
     if (B.retributionDice.blue > 0) {
       const klBlue = active(B.blue);
       if (klBlue.id === 402 && !klBlue.ko) {
         blueCount += B.retributionDice.blue;
-        log(`<span class="log-ability">Knight Light</span> — Retribution! <span class="log-ms">+${B.retributionDice.blue} bonus dice!</span>`);
+        bLog(`<span class="log-ability">Knight Light</span> — Retribution! <span class="log-ms">+${B.retributionDice.blue} bonus dice!</span>`);
       }
     }
     B.retributionDice = { red: 0, blue: 0 };
@@ -6789,7 +6789,7 @@ function doPreRollSetup() {
           const camG = camTeam.ghosts.find(g => g.id === 25 && !g.ko);
           const loc = camTeam.ghosts[camTeam.activeIdx]?.id === 25 ? 'active' : 'sideline';
           preRollCallouts.push(['UNSTOPPABLE FORCE!', 'var(--common)', `${camG.name} (${loc}) — Opponent used specials! +${B.cameronBonusDice[tName]} bonus dice!`, tName]);
-          log(`<span class="log-ability">${camG.name}</span> — Unstoppable Force! <span class="log-ms">+${B.cameronBonusDice[tName]} bonus dice</span> from opponent specials!`);
+          bLog(`<span class="log-ability">${camG.name}</span> — Unstoppable Force! <span class="log-ms">+${B.cameronBonusDice[tName]} bonus dice</span> from opponent specials!`);
         }
         B.cameronBonusDice[tName] = 0;
       }
@@ -6816,7 +6816,7 @@ function doPreRollSetup() {
       else blueCount = 1;
       f.maximoFirstRoll = false;
       preRollCallouts.push(['NAP!', 'var(--common)', `${f.name} — still napping, rolling only 1 die!`, tName]);
-      log(`<span class="log-ability">${f.name}</span> is still napping — rolling only 1 die!`);
+      bLog(`<span class="log-ability">${f.name}</span> is still napping — rolling only 1 die!`);
     }
   });
 
@@ -6828,7 +6828,7 @@ function doPreRollSetup() {
       if (tName === 'red') redCount += 2;
       else blueCount += 2;
       f.reddFirstRoll = false;
-      log(`<span class="log-ability">${f.name}</span> — Notorious! Rolling with +2 bonus dice!`);
+      bLog(`<span class="log-ability">${f.name}</span> — Notorious! Rolling with +2 bonus dice!`);
     }
   });
 
@@ -6844,7 +6844,7 @@ function doPreRollSetup() {
       f.dallasQuickDraw--;
       const rollsLeft = f.dallasQuickDraw;
       preRollCallouts.push(['QUICK DRAW!', 'var(--uncommon)', `${f.name} — stole 1 die from opponent! (${rollsLeft} roll${rollsLeft !== 1 ? 's' : ''} of Quick Draw left)`, team === B.red ? 'red' : 'blue']);
-      log(`<span class="log-ability">${f.name}</span> — Quick Draw! Opponent rolls 1 fewer die. (${rollsLeft} uses left)`);
+      bLog(`<span class="log-ability">${f.name}</span> — Quick Draw! Opponent rolls 1 fewer die. (${rollsLeft} uses left)`);
     }
   });
 
@@ -6860,7 +6860,7 @@ function doPreRollSetup() {
       if (dylanNegates(oppTeam)) {
         const oppLabel = oppTeamName.charAt(0).toUpperCase() + oppTeamName.slice(1);
         preRollCallouts.push(['BLOCKED!', 'var(--text2)', `${oppLabel} — Scarecrow/Slick Coat negates Timber's Howl!`, oppTeamName]);
-        log(`<span class="log-ability">${oppLabel}</span> — Dylan/Piper negates Timber's Howl!`);
+        bLog(`<span class="log-ability">${oppLabel}</span> — Dylan/Piper negates Timber's Howl!`);
         B.piperBlockedThisRound[team === B.red ? 'red' : 'blue'] = true; // v640: Slick Coat gate
         return;
       }
@@ -6873,7 +6873,7 @@ function doPreRollSetup() {
         else blueCount = Math.max(1, blueCount - 1);
         const oppLabel = oppTeamName.charAt(0).toUpperCase() + oppTeamName.slice(1);
         preRollCallouts.push(['HOWL!', 'var(--legendary)', `${oppLabel} has no specials — forced to roll 1 fewer die!`, team === B.red ? 'red' : 'blue']);
-        log(`<span class="log-ability">${oppLabel}</span> has no specials — forced to roll 1 fewer die under Timber's Howl!`);
+        bLog(`<span class="log-ability">${oppLabel}</span> has no specials — forced to roll 1 fewer die under Timber's Howl!`);
         // Knight reactions to forced Howl — collect via temporary queue then splice into preRollCallouts
         const timberTeamName = team === B.red ? 'red' : 'blue';
         const _savedKQ = abilityQueue;
@@ -6901,7 +6901,7 @@ function doPreRollSetup() {
       if (dylanNegates(oppTeam)) {
         const oppLabel = oppTeamName.charAt(0).toUpperCase() + oppTeamName.slice(1);
         preRollCallouts.push(['BLOCKED!', 'var(--text2)', `${oppLabel} — Scarecrow/Slick Coat negates Ryder's Toll!`, oppTeamName]);
-        log(`<span class="log-ability">${oppLabel}</span> — Dylan/Piper negates Ryder's Toll!`);
+        bLog(`<span class="log-ability">${oppLabel}</span> — Dylan/Piper negates Ryder's Toll!`);
         B.piperBlockedThisRound[team === B.red ? 'red' : 'blue'] = true;
         return;
       }
@@ -6922,7 +6922,7 @@ function doPreRollSetup() {
       if (oppTeamName === 'red') redCount = Math.max(1, redCount - 1);
       else blueCount = Math.max(1, blueCount - 1);
       preRollCallouts.push(['SLICK COAT!', 'var(--ghost-rare)', `${f.name} — negation + enemy rolls 1 fewer die!`, team === B.red ? 'red' : 'blue']);
-      log(`<span class="log-ability">${f.name}</span> — Slick Coat! Negated enemy effect + -1 enemy die.`);
+      bLog(`<span class="log-ability">${f.name}</span> — Slick Coat! Negated enemy effect + -1 enemy die.`);
     }
   });
 
@@ -6936,7 +6936,7 @@ function doPreRollSetup() {
     if (!f.ko && f.hp < 3 && hasSideline(team, 100)) {
       if (corneliusBlocksSpark) {
         const cornGhost = getSidelineGhost(enemyTeamObj, 45);
-        log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! <span class="log-ability">Cyboo</span> Spark blocked for ${f.name}!`);
+        bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! <span class="log-ability">Cyboo</span> Spark blocked for ${f.name}!`);
         const blockedByName = cornGhost ? cornGhost.name : 'Cornelius';
         preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${blockedByName} blocks Cyboo's Spark on ${f.name}!`, tName === 'red' ? 'blue' : 'red']);
       } else {
@@ -6944,7 +6944,7 @@ function doPreRollSetup() {
         else blueCount += 1;
         const cybGhost = getSidelineGhost(team, 100);
         preRollCallouts.push(['SPARK!', 'var(--ghost-rare)', `${cybGhost ? cybGhost.name : 'Cyboo'} (sideline) — ${f.name} is at ${f.hp} HP! +1 bonus die!`, tName]);
-        log(`<span class="log-ability">Cyboo</span> (sideline) — Spark! ${f.name} at ${f.hp} HP → +1 die!`);
+        bLog(`<span class="log-ability">Cyboo</span> (sideline) — Spark! ${f.name} at ${f.hp} HP → +1 die!`);
       }
     }
   });
@@ -6965,13 +6965,13 @@ function doPreRollSetup() {
         if (ejOnSideline && hasSideline(enemyTeamObj, 45)) {
           const cornGhost = getSidelineGhost(enemyTeamObj, 45);
           preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhost ? cornGhost.name : 'Cornelius'} blocks Explorer Jeff's Treasure Hunter!`, tName === 'red' ? 'blue' : 'red']);
-          log(`<span class="log-ability">Cornelius</span> — Antidote! Explorer Jeff Treasure Hunter blocked.`);
+          bLog(`<span class="log-ability">Cornelius</span> — Antidote! Explorer Jeff Treasure Hunter blocked.`);
         } else {
           if (tName === 'red') redCount += 1;
           else blueCount += 1;
           const loc = ejActive ? 'in play' : 'sideline';
           preRollCallouts.push(['TREASURE HUNTER!', 'var(--uncommon)', `Explorer Jeff (${loc}) — ${types} specials held! +1 die!`, tName]);
-          log(`<span class="log-ability">Explorer Jeff</span> (${loc}) — Treasure Hunter! ${types} different specials → +1 die!`);
+          bLog(`<span class="log-ability">Explorer Jeff</span> (${loc}) — Treasure Hunter! ${types} different specials → +1 die!`);
         }
       }
     }
@@ -6988,7 +6988,7 @@ function doPreRollSetup() {
       if (hasSideline(enemyTeamObj, 45)) {
         const cornGhostShoo = getSidelineGhost(enemyTeamObj, 45);
         preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostShoo ? cornGhostShoo.name : 'Cornelius'} (sideline) — blocks Shoo's Alpine Air on ${f.name}!`, team === B.red ? 'blue' : 'red']);
-        log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Shoo Alpine Air blocked for ${f.name}.`);
+        bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Shoo Alpine Air blocked for ${f.name}.`);
       } else {
         const shooHpBefore = f.hp;
         f.shooAlpineUsed = true;
@@ -6997,12 +6997,12 @@ function doPreRollSetup() {
           f.hp = Math.max(0, f.hp - 2);
           if (f.hp <= 0) { f.hp = 0; f.ko = true; f.killedBy = 59; }
           preRollCallouts.push(['MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Alpine Air cursed! ${f.name} takes 2 damage! (${shooHpBefore}→${f.hp} HP)`, team === B.red ? 'blue' : 'red']);
-          log(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Alpine Air flipped to damage. ${f.name} ${shooHpBefore} → ${f.hp} HP.`);
+          bLog(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Alpine Air flipped to damage. ${f.name} ${shooHpBefore} → ${f.hp} HP.`);
         } else {
           f.hp += 2;
           const overShoo = f.hp > f.maxHp;
           preRollCallouts.push(['ALPINE AIR!', 'var(--common)', `${shooGhost ? shooGhost.name : 'Shoo'} (sideline) — ${f.name} below 4 HP! +2 HP! (${shooHpBefore}→${f.hp}/${f.maxHp}${overShoo ? ' · overclocked!' : ''})`, team === B.red ? 'red' : 'blue']);
-          log(`<span class="log-ability">Shoo</span> (sideline) — Alpine Air! ${f.name} at ${shooHpBefore} HP → +2 HP (${f.hp}/${f.maxHp}${overShoo ? ' overclocked!' : ''}). Used!`);
+          bLog(`<span class="log-ability">Shoo</span> (sideline) — Alpine Air! ${f.name} at ${shooHpBefore} HP → +2 HP (${f.hp}/${f.maxHp}${overShoo ? ' overclocked!' : ''}). Used!`);
         }
       }
     }
@@ -7018,13 +7018,13 @@ function doPreRollSetup() {
       if (hasSideline(enemyTeamObjNeedle, 45)) {
         const cornGhostNeedle = getSidelineGhost(enemyTeamObjNeedle, 45);
         preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostNeedle ? cornGhostNeedle.name : 'Cornelius'} (sideline) — blocks Needle's Big Bro on ${f.name}!`, tName === 'red' ? 'blue' : 'red']);
-        log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Needle Big Bro blocked for ${f.name}.`);
+        bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Needle Big Bro blocked for ${f.name}.`);
       } else {
         if (tName === 'red') redCount += 1;
         else blueCount += 1;
         const needleGhost = getSidelineGhost(team, 21);
         preRollCallouts.push(['BIG BRO!', 'var(--common)', `${needleGhost ? needleGhost.name : 'Needle'} (sideline) — ${f.name} is in play! +1 bonus die!`, tName]);
-        log(`<span class="log-ability">Needle</span> (sideline) — Big Bro! ${f.name} is in play → +1 die!`);
+        bLog(`<span class="log-ability">Needle</span> (sideline) — Big Bro! ${f.name} is in play → +1 die!`);
       }
     }
   });
@@ -7054,7 +7054,7 @@ function doPreRollSetup() {
         }
         const enemyTName = tName === 'red' ? 'blue' : 'red';
         preRollCallouts.push(['BLOCKED!', 'var(--text2)', `${enemyTName.charAt(0).toUpperCase() + enemyTName.slice(1)} — Scarecrow/Slick Coat negates Bonzai!`, enemyTName]);
-        log(`<span class="log-ability">${enemyTName.charAt(0).toUpperCase() + enemyTName.slice(1)}</span> — Dylan/Piper negates Miyoshi's Bonzai! HP refunded.`);
+        bLog(`<span class="log-ability">${enemyTName.charAt(0).toUpperCase() + enemyTName.slice(1)}</span> — Dylan/Piper negates Miyoshi's Bonzai! HP refunded.`);
         B.piperBlockedThisRound[tName] = true;
         B.bonzaiBtnDice[tName] = 0;
       } else {
@@ -7070,13 +7070,13 @@ function doPreRollSetup() {
   if (B.gordokDieBonus && B.gordokDieBonus.red > 0) {
     redCount += B.gordokDieBonus.red;
     preRollCallouts.push(['RIVER TERROR!', 'var(--rare)', `Gordok — stolen resources! +${B.gordokDieBonus.red} bonus die!`, 'red']);
-    log(`<span class="log-ability">Gordok</span> — River Terror! +${B.gordokDieBonus.red} bonus die this roll.`);
+    bLog(`<span class="log-ability">Gordok</span> — River Terror! +${B.gordokDieBonus.red} bonus die this roll.`);
     B.gordokDieBonus.red = 0;
   }
   if (B.gordokDieBonus && B.gordokDieBonus.blue > 0) {
     blueCount += B.gordokDieBonus.blue;
     preRollCallouts.push(['RIVER TERROR!', 'var(--rare)', `Gordok — stolen resources! +${B.gordokDieBonus.blue} bonus die!`, 'blue']);
-    log(`<span class="log-ability">Gordok</span> — River Terror! +${B.gordokDieBonus.blue} bonus die this roll.`);
+    bLog(`<span class="log-ability">Gordok</span> — River Terror! +${B.gordokDieBonus.blue} bonus die this roll.`);
     B.gordokDieBonus.blue = 0;
   }
 
@@ -7084,13 +7084,13 @@ function doPreRollSetup() {
   if (B.foremanDieBonus && B.foremanDieBonus.red > 0) {
     redCount += B.foremanDieBonus.red;
     preRollCallouts.push(['BLUEPRINT!', 'var(--rare)', `Foreman — Win bonus! +${B.foremanDieBonus.red} die!`, 'red']);
-    log(`<span class="log-ability">Foreman</span> — Blueprint! +${B.foremanDieBonus.red} bonus die this roll.`);
+    bLog(`<span class="log-ability">Foreman</span> — Blueprint! +${B.foremanDieBonus.red} bonus die this roll.`);
     B.foremanDieBonus.red = 0;
   }
   if (B.foremanDieBonus && B.foremanDieBonus.blue > 0) {
     blueCount += B.foremanDieBonus.blue;
     preRollCallouts.push(['BLUEPRINT!', 'var(--rare)', `Foreman — Win bonus! +${B.foremanDieBonus.blue} die!`, 'blue']);
-    log(`<span class="log-ability">Foreman</span> — Blueprint! +${B.foremanDieBonus.blue} bonus die this roll.`);
+    bLog(`<span class="log-ability">Foreman</span> — Blueprint! +${B.foremanDieBonus.blue} bonus die this roll.`);
     B.foremanDieBonus.blue = 0;
   }
 
@@ -7102,12 +7102,12 @@ function doPreRollSetup() {
   if (B.flameBladeSwing && B.flameBladeSwing.red) {
     redCount += 1;
     preRollCallouts.push(['FLAME BLADE!', 'var(--rare)', `Flame Blade swinging — +1 die this roll!`, 'red']);
-    log(`<span class="log-ability">Flame Blade</span> — swinging! <span class="log-ms">+1 die</span> this roll.`);
+    bLog(`<span class="log-ability">Flame Blade</span> — swinging! <span class="log-ms">+1 die</span> this roll.`);
   }
   if (B.flameBladeSwing && B.flameBladeSwing.blue) {
     blueCount += 1;
     preRollCallouts.push(['FLAME BLADE!', 'var(--rare)', `Flame Blade swinging — +1 die this roll!`, 'blue']);
-    log(`<span class="log-ability">Flame Blade</span> — swinging! <span class="log-ms">+1 die</span> this roll.`);
+    bLog(`<span class="log-ability">Flame Blade</span> — swinging! <span class="log-ms">+1 die</span> this roll.`);
   }
 
   // Young Cap (429) — Energize: +1 die per Healing Seed spent this pre-roll
@@ -7129,7 +7129,7 @@ function doPreRollSetup() {
     if (active(B.red).id === 68 && !active(B.red).ko) {
       redCount += B.letsDanceBonus.red;
       preRollCallouts.push(["LET'S DANCE!", 'var(--rare)', `${active(B.red).name} — Last round's doubles! +${B.letsDanceBonus.red} bonus die!`, 'red']);
-      log(`<span class="log-ability">${active(B.red).name}</span> — Let's Dance! +${B.letsDanceBonus.red} bonus die from last doubles!`);
+      bLog(`<span class="log-ability">${active(B.red).name}</span> — Let's Dance! +${B.letsDanceBonus.red} bonus die from last doubles!`);
     }
     B.letsDanceBonus.red = 0;
   }
@@ -7137,7 +7137,7 @@ function doPreRollSetup() {
     if (active(B.blue).id === 68 && !active(B.blue).ko) {
       blueCount += B.letsDanceBonus.blue;
       preRollCallouts.push(["LET'S DANCE!", 'var(--rare)', `${active(B.blue).name} — Last round's doubles! +${B.letsDanceBonus.blue} bonus die!`, 'blue']);
-      log(`<span class="log-ability">${active(B.blue).name}</span> — Let's Dance! +${B.letsDanceBonus.blue} bonus die from last doubles!`);
+      bLog(`<span class="log-ability">${active(B.blue).name}</span> — Let's Dance! +${B.letsDanceBonus.blue} bonus die from last doubles!`);
     }
     B.letsDanceBonus.blue = 0;
   }
@@ -7147,7 +7147,7 @@ function doPreRollSetup() {
     if (active(B.red).id === 15 && !active(B.red).ko) {
       redCount += B.winstonDiceBonus.red;
       preRollCallouts.push(['SCHEME!', 'var(--common)', `Winston — +${B.winstonDiceBonus.red} bonus dice!`, 'red']);
-      log(`<span class="log-ability">Winston</span> — Scheme! +${B.winstonDiceBonus.red} bonus dice from last win!`);
+      bLog(`<span class="log-ability">Winston</span> — Scheme! +${B.winstonDiceBonus.red} bonus dice from last win!`);
     }
     B.winstonDiceBonus.red = 0;
   }
@@ -7155,7 +7155,7 @@ function doPreRollSetup() {
     if (active(B.blue).id === 15 && !active(B.blue).ko) {
       blueCount += B.winstonDiceBonus.blue;
       preRollCallouts.push(['SCHEME!', 'var(--common)', `Winston — +${B.winstonDiceBonus.blue} bonus dice!`, 'blue']);
-      log(`<span class="log-ability">Winston</span> — Scheme! +${B.winstonDiceBonus.blue} bonus dice from last win!`);
+      bLog(`<span class="log-ability">Winston</span> — Scheme! +${B.winstonDiceBonus.blue} bonus dice from last win!`);
     }
     B.winstonDiceBonus.blue = 0;
   }
@@ -7164,13 +7164,13 @@ function doPreRollSetup() {
   if (B.lucasKindlingBonus && B.lucasKindlingBonus.red > 0) {
     redCount += B.lucasKindlingBonus.red;
     preRollCallouts.push(['KINDLING!', 'var(--rare)', `Lucas — Kindling! +${B.lucasKindlingBonus.red} bonus die!`, 'red']);
-    log(`<span class="log-ability">Lucas</span> — Kindling! +${B.lucasKindlingBonus.red} bonus die this roll.`);
+    bLog(`<span class="log-ability">Lucas</span> — Kindling! +${B.lucasKindlingBonus.red} bonus die this roll.`);
     B.lucasKindlingBonus.red = 0;
   }
   if (B.lucasKindlingBonus && B.lucasKindlingBonus.blue > 0) {
     blueCount += B.lucasKindlingBonus.blue;
     preRollCallouts.push(['KINDLING!', 'var(--rare)', `Lucas — Kindling! +${B.lucasKindlingBonus.blue} bonus die!`, 'blue']);
-    log(`<span class="log-ability">Lucas</span> — Kindling! +${B.lucasKindlingBonus.blue} bonus die this roll.`);
+    bLog(`<span class="log-ability">Lucas</span> — Kindling! +${B.lucasKindlingBonus.blue} bonus die this roll.`);
     B.lucasKindlingBonus.blue = 0;
   }
 
@@ -7187,13 +7187,13 @@ function doPreRollSetup() {
   if (B.hexDieRemoval && B.hexDieRemoval.red > 0) {
     redCount = Math.max(1, redCount - B.hexDieRemoval.red);
     preRollCallouts.push(['HEX!', 'var(--uncommon)', `Mable Stadango — Hex! Red loses ${B.hexDieRemoval.red} die this roll!`, 'blue']);
-    log(`<span class="log-ability">Mable Stadango</span> — Hex! <span class="log-dmg">Red loses ${B.hexDieRemoval.red} die this roll!</span>`);
+    bLog(`<span class="log-ability">Mable Stadango</span> — Hex! <span class="log-dmg">Red loses ${B.hexDieRemoval.red} die this roll!</span>`);
     B.hexDieRemoval.red = 0;
   }
   if (B.hexDieRemoval && B.hexDieRemoval.blue > 0) {
     blueCount = Math.max(1, blueCount - B.hexDieRemoval.blue);
     preRollCallouts.push(['HEX!', 'var(--uncommon)', `Mable Stadango — Hex! Blue loses ${B.hexDieRemoval.blue} die this roll!`, 'red']);
-    log(`<span class="log-ability">Mable Stadango</span> — Hex! <span class="log-dmg">Blue loses ${B.hexDieRemoval.blue} die this roll!</span>`);
+    bLog(`<span class="log-ability">Mable Stadango</span> — Hex! <span class="log-dmg">Blue loses ${B.hexDieRemoval.blue} die this roll!</span>`);
     B.hexDieRemoval.blue = 0;
   }
 
@@ -7204,7 +7204,7 @@ function doPreRollSetup() {
     if (f.id === 447 && !f.ko && team.resources.moonstone > 0) {
       if (tName === 'red') redCount += 2; else blueCount += 2;
       preRollCallouts.push(['WISDOM!', 'var(--rare)', `${f.name} — Holding Moonstone! +2 dice!`, tName]);
-      log(`<span class="log-ability">${f.name}</span> — Wisdom! Holding <span class="log-ms">Moonstone</span> → +2 dice!`);
+      bLog(`<span class="log-ability">${f.name}</span> — Wisdom! Holding <span class="log-ms">Moonstone</span> → +2 dice!`);
     }
   });
 
@@ -7222,7 +7222,7 @@ function doPreRollSetup() {
       if (B.willowLostLast[tNameW]) {
         const cornG = getSidelineGhost(enemy, 45);
         preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornG ? cornG.name : 'Cornelius'} blocks Willow's Joy of Painting!`, enemyName]);
-        log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Willow Joy of Painting blocked!`);
+        bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Willow Joy of Painting blocked!`);
       }
       // Skip — Cornelius negates
     } else if ((hasWillowActive || hasWillowSideline) && B.willowLostLast[tNameW]) {
@@ -7230,7 +7230,7 @@ function doPreRollSetup() {
       const wName = hasWillowActive ? f.name : (getSidelineGhost(team, 435) || {}).name || 'Willow';
       const wLabel = hasWillowActive ? '' : ' (sideline)';
       preRollCallouts.push(['JOY OF PAINTING!', 'var(--ghost-rare)', `${wName}${wLabel} — Lost last roll! +1 die!`, tNameW]);
-      log(`<span class="log-ability">${wName}${wLabel}</span> — Joy of Painting! Lost last roll → +1 die!`);
+      bLog(`<span class="log-ability">${wName}${wLabel}</span> — Joy of Painting! Lost last roll → +1 die!`);
       // Knight Terror (401) / Knight Light (402) react to this ability
       checkKnightEffects(tNameW, wName);
     }
@@ -7242,7 +7242,7 @@ function doPreRollSetup() {
     redCount += B.dreamCatBonus.red;
     if (dcRed && dcRed.id === 28 && !dcRed.ko) {
       preRollCallouts.push(['JINX!', 'var(--common)', `${dcRed.name} — Both rolled doubles! +${B.dreamCatBonus.red} bonus die!`, 'red']);
-      log(`<span class="log-ability">${dcRed.name}</span> — Jinx! Both doubles → +${B.dreamCatBonus.red} bonus die this round.`);
+      bLog(`<span class="log-ability">${dcRed.name}</span> — Jinx! Both doubles → +${B.dreamCatBonus.red} bonus die this round.`);
     }
     B.dreamCatBonus.red = 0;
   }
@@ -7251,7 +7251,7 @@ function doPreRollSetup() {
     blueCount += B.dreamCatBonus.blue;
     if (dcBlue && dcBlue.id === 28 && !dcBlue.ko) {
       preRollCallouts.push(['JINX!', 'var(--common)', `${dcBlue.name} — Both rolled doubles! +${B.dreamCatBonus.blue} bonus die!`, 'blue']);
-      log(`<span class="log-ability">${dcBlue.name}</span> — Jinx! Both doubles → +${B.dreamCatBonus.blue} bonus die this round.`);
+      bLog(`<span class="log-ability">${dcBlue.name}</span> — Jinx! Both doubles → +${B.dreamCatBonus.blue} bonus die this round.`);
     }
     B.dreamCatBonus.blue = 0;
   }
@@ -7268,11 +7268,11 @@ function doPreRollSetup() {
       if (hasSideline(enemyTeamObjZ, 45)) {
         const cornGhostZ = getSidelineGhost(enemyTeamObjZ, 45);
         preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornGhostZ ? cornGhostZ.name : 'Cornelius'} blocks Zach's Craftsman die bonus!`, tNameZ === 'red' ? 'blue' : 'red']);
-        log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Zach Craftsman die bonus blocked for ${fZ.name}.`);
+        bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Zach Craftsman die bonus blocked for ${fZ.name}.`);
       } else {
         if (tNameZ === 'red') redCount++; else blueCount++;
         preRollCallouts.push(['CRAFTSMAN!', 'var(--rare)', `Zach (sideline) — Guard Thomas +1 die!`, tNameZ]);
-        log(`<span class="log-ability">Zach</span> (sideline) — Craftsman! Guard Thomas +1 die.`);
+        bLog(`<span class="log-ability">Zach</span> (sideline) — Craftsman! Guard Thomas +1 die.`);
       }
     }
   });
@@ -7285,7 +7285,7 @@ function doPreRollSetup() {
       if (oppSue && oppSue.hp > fSue.hp) {
         if (tNameSue === 'red') redCount++; else blueCount++;
         preRollCallouts.push(['HIDDEN WEAKNESS!', 'var(--uncommon)', `${fSue.name} — enemy has more HP! +1 die!`, tNameSue]);
-        log(`<span class="log-ability">${fSue.name}</span> — Hidden Weakness! Enemy HP (${oppSue.hp}) > Sue (${fSue.hp}) → +1 die!`);
+        bLog(`<span class="log-ability">${fSue.name}</span> — Hidden Weakness! Enemy HP (${oppSue.hp}) > Sue (${fSue.hp}) → +1 die!`);
       }
     }
   });
@@ -7296,7 +7296,7 @@ function doPreRollSetup() {
     redCount += B.scallywagsFrenzyBonus.red;
     if (scRed && scRed.id === 19 && !scRed.ko) {
       preRollCallouts.push(['FRENZY!', 'var(--common)', `${scRed.name} — All dice were under 4! +${B.scallywagsFrenzyBonus.red} bonus die!`, 'red']);
-      log(`<span class="log-ability">${scRed.name}</span> — Frenzy! All dice under 4 last round → +${B.scallywagsFrenzyBonus.red} bonus die.`);
+      bLog(`<span class="log-ability">${scRed.name}</span> — Frenzy! All dice under 4 last round → +${B.scallywagsFrenzyBonus.red} bonus die.`);
     }
     B.scallywagsFrenzyBonus.red = 0;
   }
@@ -7305,7 +7305,7 @@ function doPreRollSetup() {
     blueCount += B.scallywagsFrenzyBonus.blue;
     if (scBlue && scBlue.id === 19 && !scBlue.ko) {
       preRollCallouts.push(['FRENZY!', 'var(--common)', `${scBlue.name} — All dice were under 4! +${B.scallywagsFrenzyBonus.blue} bonus die!`, 'blue']);
-      log(`<span class="log-ability">${scBlue.name}</span> — Frenzy! All dice under 4 last round → +${B.scallywagsFrenzyBonus.blue} bonus die.`);
+      bLog(`<span class="log-ability">${scBlue.name}</span> — Frenzy! All dice under 4 last round → +${B.scallywagsFrenzyBonus.blue} bonus die.`);
     }
     B.scallywagsFrenzyBonus.blue = 0;
   }
@@ -7313,7 +7313,7 @@ function doPreRollSetup() {
   // Committed Surge: +1 die per surge
   if (B.committed.red.surge > 0) {
     redCount += B.committed.red.surge;
-    log(`<span class="log-ability">Red</span> committed <span class="log-ms">${B.committed.red.surge} Surge</span> → +${B.committed.red.surge} dice!`);
+    bLog(`<span class="log-ability">Red</span> committed <span class="log-ms">${B.committed.red.surge} Surge</span> → +${B.committed.red.surge} dice!`);
     const borisRedG = B.red.ghosts.find(g => g.id === 343 && !g.ko);
     if (borisRedG) {
       const borisRedPre = borisRedG.hp;
@@ -7322,7 +7322,7 @@ function doPreRollSetup() {
         borisRedG.hp = Math.max(0, borisRedG.hp - 2);
         if (borisRedG.hp <= 0) { borisRedG.hp = 0; borisRedG.ko = true; borisRedG.killedBy = 59; }
         preRollCallouts.push(['MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Fortify cursed! ${borisRedG.name} takes 2 damage! (${borisRedPre}→${borisRedG.hp} HP)`, 'blue']);
-        log(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Boris Fortify flipped to damage. ${borisRedG.name} ${borisRedPre} → ${borisRedG.hp} HP.`);
+        bLog(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Boris Fortify flipped to damage. ${borisRedG.name} ${borisRedPre} → ${borisRedG.hp} HP.`);
       } else {
         triggerBorisHook(B.red);
         const oc = borisRedG.hp > borisRedG.maxHp;
@@ -7332,7 +7332,7 @@ function doPreRollSetup() {
   }
   if (B.committed.blue.surge > 0) {
     blueCount += B.committed.blue.surge;
-    log(`<span class="log-ability">Blue</span> committed <span class="log-ms">${B.committed.blue.surge} Surge</span> → +${B.committed.blue.surge} dice!`);
+    bLog(`<span class="log-ability">Blue</span> committed <span class="log-ms">${B.committed.blue.surge} Surge</span> → +${B.committed.blue.surge} dice!`);
     const borisBlueG = B.blue.ghosts.find(g => g.id === 343 && !g.ko);
     if (borisBlueG) {
       const borisBlueRePre = borisBlueG.hp;
@@ -7341,7 +7341,7 @@ function doPreRollSetup() {
         borisBlueG.hp = Math.max(0, borisBlueG.hp - 2);
         if (borisBlueG.hp <= 0) { borisBlueG.hp = 0; borisBlueG.ko = true; borisBlueG.killedBy = 59; }
         preRollCallouts.push(['MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Fortify cursed! ${borisBlueG.name} takes 2 damage! (${borisBlueRePre}→${borisBlueG.hp} HP)`, 'red']);
-        log(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Boris Fortify flipped to damage. ${borisBlueG.name} ${borisBlueRePre} → ${borisBlueG.hp} HP.`);
+        bLog(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Boris Fortify flipped to damage. ${borisBlueG.name} ${borisBlueRePre} → ${borisBlueG.hp} HP.`);
       } else {
         triggerBorisHook(B.blue);
         const oc = borisBlueG.hp > borisBlueG.maxHp;
@@ -7355,14 +7355,14 @@ function doPreRollSetup() {
     if (B.iceBladeForgedPermanent && B.iceBladeForgedPermanent.red) {
       redCount += 1;
       preRollCallouts.push(['ICE BLADE!', 'var(--ghost-rare)', `Ice Blade swinging — +1 die this roll!`, 'red']);
-      log(`<span class="log-ability">Ice Blade</span> — swinging! <span class="log-ice">+1 die</span> this roll (and +2 damage on win).`);
+      bLog(`<span class="log-ability">Ice Blade</span> — swinging! <span class="log-ice">+1 die</span> this roll (and +2 damage on win).`);
     }
   }
   if (B.committed.blue.zainBlade > 0 || (B.iceBladeSwing && B.iceBladeSwing.blue)) {
     if (B.iceBladeForgedPermanent && B.iceBladeForgedPermanent.blue) {
       blueCount += 1;
       preRollCallouts.push(['ICE BLADE!', 'var(--ghost-rare)', `Ice Blade swinging — +1 die this roll!`, 'blue']);
-      log(`<span class="log-ability">Ice Blade</span> — swinging! <span class="log-ice">+1 die</span> this roll (and +2 damage on win).`);
+      bLog(`<span class="log-ability">Ice Blade</span> — swinging! <span class="log-ice">+1 die</span> this roll (and +2 damage on win).`);
     }
   }
 
@@ -7379,12 +7379,12 @@ function doPreRollSetup() {
           f.hp = Math.max(0, f.hp - 1);
           if (f.hp <= 0) { f.hp = 0; f.ko = true; f.killedBy = 59; }
           preRollCallouts.push(['MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Seeker cursed! ${f.name} takes 1 damage! (${seekerHpBefore}→${f.hp} HP)`, team === B.red ? 'blue' : 'red']);
-          log(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Seeker flipped to damage. ${f.name} ${seekerHpBefore} → ${f.hp} HP.`);
+          bLog(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Seeker flipped to damage. ${f.name} ${seekerHpBefore} → ${f.hp} HP.`);
         } else {
           f.hp += 1;
           const seekerOver = f.hp > f.maxHp;
           preRollCallouts.push(['SEEKER!', 'var(--rare)', `${f.name} — HP below enemy! +1 HP (${seekerHpBefore}→${f.hp}/${f.maxHp}${seekerOver ? ' · overclocked!' : ''})`, team === B.red ? 'red' : 'blue']);
-          log(`<span class="log-ability">${f.name}</span> — Seeker! HP below enemy → +1 HP (${f.hp}/${f.maxHp}${seekerOver ? ' overclocked!' : ''})`);
+          bLog(`<span class="log-ability">${f.name}</span> — Seeker! HP below enemy → +1 HP (${f.hp}/${f.maxHp}${seekerOver ? ' overclocked!' : ''})`);
         }
       }
     }
@@ -7397,7 +7397,7 @@ function doPreRollSetup() {
       const tName = team === B.red ? 'red' : 'blue';
       team.resources.luckyStone = (team.resources.luckyStone || 0) + 1;
       preRollCallouts.push(['STEADY!', 'var(--common)', `${f.name} — +1 Lucky Stone! (${team.resources.luckyStone} total)`, tName]);
-      log(`<span class="log-ability">${f.name}</span> — Steady! +1 Lucky Stone (${team.resources.luckyStone} total)`);
+      bLog(`<span class="log-ability">${f.name}</span> — Steady! +1 Lucky Stone (${team.resources.luckyStone} total)`);
       collectKC(tName, f.name);
       // Sandwiches (33) — Dependable: opponent mirrors the Lucky Stone gain
       if (hasOnTeam(opp(team), 33)) {
@@ -7424,7 +7424,7 @@ function doPreRollSetup() {
         if (tName === 'red') redCount += sidelineCount;
         else blueCount += sidelineCount;
         preRollCallouts.push(['FEAST!', 'var(--uncommon)', `${f.name} — ${sidelineCount} enemy sideline effect${sidelineCount > 1 ? 's' : ''}! +${sidelineCount} dice!`, tName]);
-        log(`<span class="log-ability">${f.name}</span> — Feast! ${sidelineCount} enemy sideline effect${sidelineCount > 1 ? 's' : ''} → +${sidelineCount} dice!`);
+        bLog(`<span class="log-ability">${f.name}</span> — Feast! ${sidelineCount} enemy sideline effect${sidelineCount > 1 ? 's' : ''} → +${sidelineCount} dice!`);
       }
     }
   });
@@ -7441,7 +7441,7 @@ function doPreRollSetup() {
         if (tName === 'red') redCount  = oppCount;
         else                 blueCount = oppCount;
         preRollCallouts.push(['GRACE!', 'var(--rare)', `${f.name} — matching opponent's ${oppCount} dice!`, tName]);
-        log(`<span class="log-ability">${f.name}</span> — Grace! Matching opponent's ${oppCount} dice!`);
+        bLog(`<span class="log-ability">${f.name}</span> — Grace! Matching opponent's ${oppCount} dice!`);
       }
     }
   });
@@ -7458,7 +7458,7 @@ function doPreRollSetup() {
       const outF = active(team);
       const enemyF = active(enemyTName === 'red' ? B.red : B.blue);
       preRollCallouts.push(['THIEF!', 'var(--uncommon)', `${outF.name} — removed 1 die from ${enemyF.name}! They roll 1 fewer die!`, tName]);
-      log(`<span class="log-ability">${outF.name}</span> — Thief! ${enemyF.name} rolls 1 fewer die this round!`);
+      bLog(`<span class="log-ability">${outF.name}</span> — Thief! ${enemyF.name} rolls 1 fewer die this round!`);
       B.outlawStolenDie[tName] = 0;
     }
   });
@@ -7475,7 +7475,7 @@ function doPreRollSetup() {
         const cornF = getSidelineGhost(enemyTeamObj, 45);
         const cornName = cornF ? cornF.name : 'Cornelius';
         preRollCallouts.push(['ANTIDOTE!', 'var(--uncommon)', `${cornName} neutralizes Suspicious Jeff's Snicker — die theft blocked!`, enemyTName]);
-        log(`<span class="log-ability">Cornelius</span> — Antidote! Suspicious Jeff's Snicker die theft blocked!`);
+        bLog(`<span class="log-ability">Cornelius</span> — Antidote! Suspicious Jeff's Snicker die theft blocked!`);
       } else {
         if (enemyTName === 'red') redCount = Math.max(1, redCount - B.jeffSnicker[tName]);
         else blueCount = Math.max(1, blueCount - B.jeffSnicker[tName]);
@@ -7485,7 +7485,7 @@ function doPreRollSetup() {
         const enemyF = active(enemyTeamObj);
         const jeffName = jeffF ? jeffF.name : 'Suspicious Jeff';
         preRollCallouts.push(['SNICKER!', 'var(--uncommon)', `${jeffName} (sideline) — Win stole 1 die from ${enemyF ? enemyF.name : 'opponent'}! They roll 1 fewer die!`, tName]);
-        log(`<span class="log-ability">${jeffName}</span> — Snicker! ${enemyF ? enemyF.name : 'Opponent'} rolls 1 fewer die this round!`);
+        bLog(`<span class="log-ability">${jeffName}</span> — Snicker! ${enemyF ? enemyF.name : 'Opponent'} rolls 1 fewer die this round!`);
       }
       B.jeffSnicker[tName] = 0;
     }
@@ -7501,7 +7501,7 @@ function doPreRollSetup() {
       const hugoF = active(opp(team)); // Hugo is on the opposing team
       const penF = active(team);
       preRollCallouts.push(['WRECKAGE!', 'var(--uncommon)', `${hugoF ? hugoF.name + ' — Wreckage!' : 'Wreckage!'} ${penF.name} rolls 1 fewer die for attacking Hugo!`, tName === 'red' ? 'blue' : 'red']);
-      log(`<span class="log-ability">Hugo</span> — Wreckage! ${penF.name} rolls 1 fewer die this round!`);
+      bLog(`<span class="log-ability">Hugo</span> — Wreckage! ${penF.name} rolls 1 fewer die this round!`);
       B.hugoWreckage[tName] = 0;
     }
   });
@@ -7516,7 +7516,7 @@ function doPreRollSetup() {
       const floopF = active(opp(team)); // Floop is on the opposing team
       const penF = active(team);
       preRollCallouts.push(['MUCK!', 'var(--common)', `${floopF ? floopF.name + ' — Muck!' : 'Muck!'} ${penF.name} rolled doubles last round — they lose 1 die!`, tName === 'red' ? 'blue' : 'red']);
-      log(`<span class="log-ability">${floopF ? floopF.name : 'Floop'}</span> — Muck! ${penF.name} rolled doubles → 1 fewer die this round.`);
+      bLog(`<span class="log-ability">${floopF ? floopF.name : 'Floop'}</span> — Muck! ${penF.name} rolled doubles → 1 fewer die this round.`);
       B.floopMuck[tName] = 0;
     }
   });
@@ -7532,7 +7532,7 @@ function doPreRollSetup() {
         if (tName === 'red') redCount += bonus;
         else blueCount += bonus;
         preRollCallouts.push(['GLACIAL POUNDING!', 'var(--uncommon)', `Marcus's revenge! ${curF.name} gets +${bonus} bonus dice!`, tName]);
-        log(`<span class="log-ability">Marcus</span> — Glacial Pounding! ${curF.name} gets +${bonus} bonus dice from last round's big hit!`);
+        bLog(`<span class="log-ability">Marcus</span> — Glacial Pounding! ${curF.name} gets +${bonus} bonus dice from last round's big hit!`);
       }
       B.marcusGlacialBonus[tName] = 0;
     }
@@ -7548,7 +7548,7 @@ function doPreRollSetup() {
       const f = active(team);
       const loF = active(opp(team));
       preRollCallouts.push(['HEINOUS!', 'var(--common)', `${f.name} — ${locked} dice locked out by ${loF ? loF.name + "'s" : ''} Heinous! Rolling fewer dice!`, tName === 'red' ? 'blue' : 'red']);
-      log(`<span class="log-ability">${f.name}</span> — Heinous lockout! ${locked} dice unavailable this round.`);
+      bLog(`<span class="log-ability">${f.name}</span> — Heinous lockout! ${locked} dice unavailable this round.`);
       B.logeyLockout[tName] = 0;
     }
   });
@@ -7563,7 +7563,7 @@ function doPreRollSetup() {
         else blueCount = oppCount;
         const f = active(B[tName]);
         preRollCallouts.push(['MASK OF NIGHT!', 'var(--rare)', `🌙 Mask of Night — ${f.name} mirrors the enemy! Rolling ${oppCount} dice!`, tName]);
-        log(`<span class="log-ability">Mask of Night</span> — ${f.name} rolls ${oppCount} dice (matching opponent)!`);
+        bLog(`<span class="log-ability">Mask of Night</span> — ${f.name} rolls ${oppCount} dice (matching opponent)!`);
       }
     }
   });
@@ -7580,7 +7580,7 @@ function doPreRollSetup() {
       if (B.round === 1) {
         preRollCallouts.push(['GOLDEN DICE!', 'var(--legendary)', `🎲 Golden Dice — ${f.name} rolls +1 die every round this fight!`, tName]);
       }
-      log(`<span class="log-ability">Golden Dice</span> — 🎲 +1 die for ${tName}!`);
+      bLog(`<span class="log-ability">Golden Dice</span> — 🎲 +1 die for ${tName}!`);
     }
   });
 
@@ -7595,7 +7595,7 @@ function doPreRollSetup() {
         else blueCount = 3;
         const enemyF = active(team === B.red ? B.blue : B.red);
         preRollCallouts.push(['CAREFUL!', 'var(--common)', `${fredF.name} — Careful! ${enemyF ? enemyF.name : 'Opponent'} capped at 3 dice!`, enemyTName === 'red' ? 'blue' : 'red']);
-        log(`<span class="log-ability">${fredF.name}</span> — Careful! Opponent capped at 3 dice this round.`);
+        bLog(`<span class="log-ability">${fredF.name}</span> — Careful! Opponent capped at 3 dice this round.`);
       }
     }
   });
@@ -7609,7 +7609,7 @@ function doPreRollSetup() {
         else blueCount = Math.max(0, blueCount - penalty);
         const penaltyF = active(B[tName]);
         preRollCallouts.push(['FROSTBITTEN!', '#3b82f6', `${penaltyF.name} — Frostbite! -${penalty} dice this roll!`, tName]);
-        log(`<span class="log-ability" style="color:#60a5fa">${penaltyF.name}</span> — Frostbitten! -${penalty} dice this roll.`);
+        bLog(`<span class="log-ability" style="color:#60a5fa">${penaltyF.name}</span> — Frostbitten! -${penalty} dice this roll.`);
         B.frostbiteDicePenalty[tName] = 0; // consumed — one roll only
       }
     });
@@ -7626,7 +7626,7 @@ function doPreRollSetup() {
       if (tName === 'red') redCount = 0;
       else blueCount = 0;
       preRollCallouts.push(['STONE FORM!', 'var(--common)', `${f.name} — Don't roll! Singles → negate + 3 counter!`, tName]);
-      log(`<span class="log-ability">${f.name}</span> — Stone Form! Doesn't roll this round.`);
+      bLog(`<span class="log-ability">${f.name}</span> — Stone Form! Doesn't roll this round.`);
     }
   });
 
@@ -7697,7 +7697,7 @@ function doPostRollAndResolve(redDice, blueDice) {
       dice.sort((a, b) => a - b);
       if (converted > 0) {
         queueAbility('LUCKY!', 'var(--ghost-rare)', `${f.name} — ${converted} one${converted > 1 ? 's' : ''} became 5${converted > 1 ? 's' : ''}! 🍀`, () => { renderDice(redDice, blueDice); renderBattle(); }, tName);
-        log(`<span class="log-ability">${f.name}</span> — Lucky! ${converted} one${converted > 1 ? 's' : ''} → 5${converted > 1 ? 's' : ''}! 🍀`);
+        bLog(`<span class="log-ability">${f.name}</span> — Lucky! ${converted} one${converted > 1 ? 's' : ''} → 5${converted > 1 ? 's' : ''}! 🍀`);
       }
     }
   });
@@ -7715,7 +7715,7 @@ function doPostRollAndResolve(redDice, blueDice) {
         const f = active(team);
         queueAbility('MASK OF DAY!', 'var(--rare)', `☀️ Mask of Day — ${f.name} rolled ${lowRolls} low die${lowRolls>1?'s':''}! +${lowRolls} Burn!`, () => {
           _modTeam.resources.burn = (_modTeam.resources.burn || 0) + _modLow;
-          log(`<span class="log-ability">Mask of Day</span> — Rolled ${_modLow} low die${_modLow>1?'s':''}! <span class="log-dmg">+${_modLow} Burn!</span>`);
+          bLog(`<span class="log-ability">Mask of Day</span> — Rolled ${_modLow} low die${_modLow>1?'s':''}! <span class="log-dmg">+${_modLow} Burn!</span>`);
           renderBattle();
         }, _modTName);
       }
@@ -7737,7 +7737,7 @@ function doPostRollAndResolve(redDice, blueDice) {
           _tremTeam.resources.luckyStone += _tremFours;
           // Update lsAvailable so post-roll Lucky Stone window sees new stones
           if (B.lsAvailable) B.lsAvailable[tNameHank] = (B.lsAvailable[tNameHank] || 0) + _tremFours;
-          log(`<span class="log-ability">${_tremName}</span> — Tremor! Gained <span class="log-ms">${_tremFours} Lucky Stone${_tremFours>1?'s':''}</span>!`);
+          bLog(`<span class="log-ability">${_tremName}</span> — Tremor! Gained <span class="log-ms">${_tremFours} Lucky Stone${_tremFours>1?'s':''}</span>!`);
           renderBattle();
         }, tNameHank);
         checkKnightEffects(tNameHank, f.name);
@@ -7771,7 +7771,7 @@ function doPostRollAndResolve(redDice, blueDice) {
       const _natSandOpp = opp(team);
       queueAbility('MATERIALIZATION!', 'var(--ghost-rare)', `${f.name} — Even doubles! +1 Moonstone!`, () => {
         _natTeam.resources.moonstone = Math.min((_natTeam.resources.moonstone || 0) + 1, 1);
-        log(`<span class="log-ability">${_natName}</span> — Materialization! Even doubles → <span class="log-ms">+1 Moonstone</span>!`);
+        bLog(`<span class="log-ability">${_natName}</span> — Materialization! Even doubles → <span class="log-ms">+1 Moonstone</span>!`);
         renderBattle();
       }, tNameNat);
       checkKnightEffects(tNameNat, f.name);
@@ -7793,7 +7793,7 @@ function doPostRollAndResolve(redDice, blueDice) {
       const _kapSandTotal = _kapSandOpp.resources.healingSeed + 1;
       queueAbility('POLLINATE!', 'var(--uncommon)', `${f.name} — opponent's doubles = free Healing Seed!`, () => {
         _kapTeam.resources.healingSeed++;
-        log(`<span class="log-ability">${_kapName}</span> — Pollinate! Opponent rolled doubles → gained <span class="log-ms">1 Healing Seed</span>!`);
+        bLog(`<span class="log-ability">${_kapName}</span> — Pollinate! Opponent rolled doubles → gained <span class="log-ms">1 Healing Seed</span>!`);
         renderBattle();
       }, tNameKap);
       checkKnightEffects(tNameKap, f.name);
@@ -7819,7 +7819,7 @@ function doPostRollAndResolve(redDice, blueDice) {
       const cjLabel = cjSideline && !cjActive ? `${_cjName} (sideline)` : _cjName;
       queueAbility('FINAL STRIKE!', 'var(--rare)', `${cjLabel} — Triples! +2 Sacred Fires!`, () => {
         _cjTeam.resources.fire += 2;
-        log(`<span class="log-ability">${cjLabel}</span> — Final Strike! Triples+ → gained <span class="log-ms">2 Sacred Fires</span>!`);
+        bLog(`<span class="log-ability">${cjLabel}</span> — Final Strike! Triples+ → gained <span class="log-ms">2 Sacred Fires</span>!`);
         if (cjSideline && !cjActive) popSidelineCard(team, 443);
         renderBattle();
       }, tNameCJ);
@@ -7840,7 +7840,7 @@ function doPostRollAndResolve(redDice, blueDice) {
         const _champName = f.name;
         queueAbility('THRILL!', 'var(--ghost-rare)', `${f.name} — Doubles detected! +1 Surge!`, () => {
           _champTeam.resources.surge++;
-          log(`<span class="log-ability">${_champName}</span> — Thrill! Doubles → gained <span class="log-ms">1 Surge</span>!`);
+          bLog(`<span class="log-ability">${_champName}</span> — Thrill! Doubles → gained <span class="log-ms">1 Surge</span>!`);
           renderBattle();
         }, tNameChamp);
         checkKnightEffects(tNameChamp, f.name);
@@ -7859,7 +7859,7 @@ function doPostRollAndResolve(redDice, blueDice) {
       team.resources.ice = (team.resources.ice || 0) + 1;
       creditGhost(tNameCam, 25, 'ice', 1);
       queueAbility("WINTER'S HARVEST!", '#3b82f6', `${fCam.name} — Doubles! +1 Frostbite + 1 Ice Shard!`, () => { renderBattle(); }, tNameCam);
-      log(`<span class="log-ability" style="color:#60a5fa">${fCam.name}</span> — Winter's Harvest! Doubles → +1 Frostbite + 1 Ice Shard!`);
+      bLog(`<span class="log-ability" style="color:#60a5fa">${fCam.name}</span> — Winter's Harvest! Doubles → +1 Frostbite + 1 Ice Shard!`);
       checkKnightEffects(tNameCam, fCam.name);
     }
   });
@@ -7875,7 +7875,7 @@ function doPostRollAndResolve(redDice, blueDice) {
       if (isTripleOrBetter(enemyRollType)) {
         team.resources.fire = (team.resources.fire || 0) + 2;
         queueAbility('BREW TIME!', 'var(--uncommon)', `Simon — Enemy rolled ${enemyRollType}! +2 Sacred Fire!`, null, tNameSimon);
-        log(`<span class="log-ability">Simon</span> — Brew Time! Enemy rolled ${enemyRollType} → <span class="log-ms">+2 Sacred Fire!</span>`);
+        bLog(`<span class="log-ability">Simon</span> — Brew Time! Enemy rolled ${enemyRollType} → <span class="log-ms">+2 Sacred Fire!</span>`);
         collectKC(tNameSimon, fSimon.name);
       }
     }
@@ -7892,7 +7892,7 @@ function doPostRollAndResolve(redDice, blueDice) {
         if (!team.resources.burn) team.resources.burn = 0;
         team.resources.burn += threeCount;
         queueAbility('UNDERDOG!', 'var(--uncommon)', `${f.name} — ${threeCount} three${threeCount > 1 ? 's' : ''} rolled! +${threeCount} Burn!`, null, tNameMH);
-        log(`<span class="log-ability">${f.name}</span> — Underdog! Rolled ${threeCount} three${threeCount > 1 ? 's' : ''} → <span class="log-dmg">+${threeCount} Burn!</span>`);
+        bLog(`<span class="log-ability">${f.name}</span> — Underdog! Rolled ${threeCount} three${threeCount > 1 ? 's' : ''} → <span class="log-dmg">+${threeCount} Burn!</span>`);
         collectKC(tNameMH, f.name);
       }
     }
@@ -7911,7 +7911,7 @@ function doPostRollAndResolve(redDice, blueDice) {
         _rTeam.resources.ice += 1;
         if (!_rTeam.resources.burn) _rTeam.resources.burn = 0;
         _rTeam.resources.burn += 1;
-        log(`<span class="log-ability">${_rName}</span> — Mixup! Doubles → gained <span class="log-ms">1 Ice Shard</span> & <span class="log-dmg">1 Burn</span>!`);
+        bLog(`<span class="log-ability">${_rName}</span> — Mixup! Doubles → gained <span class="log-ms">1 Ice Shard</span> & <span class="log-dmg">1 Burn</span>!`);
         renderBattle();
       }, tNameRonan);
       checkKnightEffects(tNameRonan, f.name);
@@ -8127,22 +8127,22 @@ function applyMoonstoneSickness(team) {
   if (mode === 'A') {
     t.moonstoneSickness = (t.moonstoneSickness || 0) + 1;
     const totalPerTurn = t.moonstoneSickness * 2;
-    log(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take ${totalPerTurn} damage before every roll for the rest of the game.`);
+    bLog(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take ${totalPerTurn} damage before every roll for the rest of the game.`);
     narrate(`<b class="${team}-text" style="color:var(--moonstone)">Moonstone Sickness!</b> ${totalPerTurn} damage before every roll!`);
   } else if (mode === 'D' || mode === 'G') {
     t.moonstoneSickness = (t.moonstoneSickness || 0) + 1;
     const totalPerTurn = t.moonstoneSickness * 1;
     const clearNote = mode === 'G' ? ' (clears on KO)' : '';
-    log(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take ${totalPerTurn} damage before every roll${clearNote}.`);
+    bLog(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take ${totalPerTurn} damage before every roll${clearNote}.`);
     narrate(`<b class="${team}-text" style="color:var(--moonstone)">Moonstone Sickness!</b> ${totalPerTurn} damage before every roll!${clearNote}`);
   } else if (mode === 'B') {
     t.moonstoneSicknessCount = (t.moonstoneSicknessCount || 0) + 1;
     t.moonstoneSicknessPending = t.moonstoneSicknessCount * 2;
-    log(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take ${t.moonstoneSicknessPending} damage before next roll.`);
+    bLog(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take ${t.moonstoneSicknessPending} damage before next roll.`);
     narrate(`<b class="${team}-text" style="color:var(--moonstone)">Moonstone Sickness!</b> ${t.moonstoneSicknessPending} damage before next roll!`);
   } else if (mode === 'C') {
     t.moonstoneSicknessPending = 3;
-    log(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take 3 damage before next roll.`);
+    bLog(`<span class="log-dmg">Moonstone Sickness!</span> ${team.toUpperCase()} will take 3 damage before next roll.`);
     narrate(`<b class="${team}-text" style="color:var(--moonstone)">Moonstone Sickness!</b> 3 damage before next roll!`);
   }
 }
@@ -8165,7 +8165,7 @@ function showMoonstoneChoice(team, dice) {
       if (oppF && !oppF.ko) {
         oppF.hp = Math.max(0, oppF.hp - roll);
         if (oppF.hp <= 0) { oppF.ko = true; oppF.killedBy = -1; }
-        log(`<span class="log-ms">Moonstone Blast!</span> Blue rolled <b>${roll}</b> — ${oppF.name} takes <span class="log-dmg">${roll} damage!</span>${oppF.ko ? ' <span class="log-ko">KO!</span>' : ' ' + oppF.hp + ' HP left'}`);
+        bLog(`<span class="log-ms">Moonstone Blast!</span> Blue rolled <b>${roll}</b> — ${oppF.name} takes <span class="log-dmg">${roll} damage!</span>${oppF.ko ? ' <span class="log-ko">KO!</span>' : ' ' + oppF.hp + ' HP left'}`);
         narrate(`<b style="color:var(--moonstone)">Moonstone Blast!</b> <b class="blue-text">Blue</b> rolled <b class="gold">${roll}</b> — <b class="red-text">${oppF.name}</b> takes ${roll} damage!`);
         playDamageSfx(roll);
         hitDamage(oppTeam);
@@ -8189,7 +8189,7 @@ function showMoonstoneChoice(team, dice) {
       else if (pick.key === 'maskOfNight') { if (!B.sophiaMask) B.sophiaMask={red:null,blue:null}; if (!B.sophiaMaskActive) B.sophiaMaskActive={red:false,blue:false}; B.sophiaMask[team]='night'; B.sophiaMaskActive[team]=true; }
       else if (pick.key === 'hammer') { if (!B.carpenterHammer) B.carpenterHammer={red:false,blue:false}; B.carpenterHammer[team]=true; }
       else if (pick.key === 'torch') { if (!B.welderTorch) B.welderTorch={red:false,blue:false}; B.welderTorch[team]=true; }
-      log(`<span class="log-ms">Moonstone → Item!</span> Blue receives <b>${pick.name}</b>! ${pick.desc}`);
+      bLog(`<span class="log-ms">Moonstone → Item!</span> Blue receives <b>${pick.name}</b>! ${pick.desc}`);
       narrate(`<b style="color:var(--moonstone)">Moonstone → Item!</b> <b class="blue-text">Blue</b> receives <b>${pick.name}</b>!`);
       B.pendingMoonstone = null;
       renderBattle();
@@ -8214,7 +8214,7 @@ function showMoonstoneChoice(team, dice) {
     B[team].resources.moonstone--;
     applyMoonstoneSickness(team);
     triggerCameronSpecialWatch(team, true); // Cameron (25) — Unstoppable Force (immediate post-roll die)
-    log(`<span class="log-ms">${team.toUpperCase()} uses Moonstone!</span> Changed die ${worstVal} → 6!`);
+    bLog(`<span class="log-ms">${team.toUpperCase()} uses Moonstone!</span> Changed die ${worstVal} → 6!`);
     narrate(`<b class="${team}-text">Blue</b> uses <b style="color:var(--moonstone)">Moonstone!</b> ${worstVal} → 6!`);
     B.pendingMoonstone = null;
     renderDice(B.redDice, B.blueDice);
@@ -8240,7 +8240,7 @@ function showMoonstoneChoice(team, dice) {
     renderBattle();
     const teamLabel = team.charAt(0).toUpperCase() + team.slice(1);
     narrate(`<b class="${team}-text">${teamLabel}</b> has a <b style="color:var(--moonstone)">Moonstone!</b>&nbsp;Click it to use!`);
-    log(`<span class="log-ms">${team.toUpperCase()} has a Moonstone!</span> Click it to use — 5 seconds!`);
+    bLog(`<span class="log-ms">${team.toUpperCase()} has a Moonstone!</span> Click it to use — 5 seconds!`);
     showSkipBtn(() => skipMoonstone());
     const resEl = document.getElementById(team + '-resources');
     const msEl = resEl.querySelector('.res-tile.moonstone');
@@ -8263,7 +8263,7 @@ function showMoonstoneChoice(team, dice) {
           f.usedMagicTouch = true;
           magicTouchFired = true;
           showAbilityCallout('MAGIC TOUCH!', 'var(--moonstone)', `${f.name} — Moonstone used without discarding!`, team);
-          log(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
+          bLog(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
         } else {
           t.resources.moonstone--;
           playSfx('sfxSpecial', 0.5);
@@ -8276,7 +8276,7 @@ function showMoonstoneChoice(team, dice) {
           oppF.hp = Math.max(0, oppF.hp - roll);
           if (oppF.hp <= 0) { oppF.ko = true; oppF.killedBy = -1; }
           showAbilityCallout('MOONSTONE BLAST!', 'var(--moonstone)', `Rolled a ${roll} — ${oppF.name} takes ${roll} damage!`, team);
-          log(`<span class="log-ms">Moonstone Blast!</span> Rolled <b>${roll}</b> — ${oppF.name} takes <span class="log-dmg">${roll} damage!</span>${oppF.ko ? ' <span class="log-ko">KO!</span>' : ' ' + oppF.hp + ' HP left'}`);
+          bLog(`<span class="log-ms">Moonstone Blast!</span> Rolled <b>${roll}</b> — ${oppF.name} takes <span class="log-dmg">${roll} damage!</span>${oppF.ko ? ' <span class="log-ko">KO!</span>' : ' ' + oppF.hp + ' HP left'}`);
           narrate(`<b style="color:var(--moonstone)">Moonstone Blast!</b> Rolled <b class="gold">${roll}</b> — <b class="${oppTeam}-text">${oppF.name}</b> takes ${roll} damage!${oppF.ko ? ' <b>KO!</b>' : ''}`);
           playDamageSfx(roll);
           hitDamage(oppTeam);
@@ -8318,7 +8318,7 @@ function showMoonstoneChoice(team, dice) {
     renderBattle();
     const teamLabel = team.charAt(0).toUpperCase() + team.slice(1);
     narrate(`<b class="${team}-text">${teamLabel}</b> has a <b style="color:var(--moonstone)">Moonstone!</b>&nbsp;Click it to choose an item!`);
-    log(`<span class="log-ms">${team.toUpperCase()} has a Moonstone!</span> Click it to choose an item — 5 seconds!`);
+    bLog(`<span class="log-ms">${team.toUpperCase()} has a Moonstone!</span> Click it to choose an item — 5 seconds!`);
     showSkipBtn(() => skipMoonstone());
     const resEl = document.getElementById(team + '-resources');
     const msEl = resEl.querySelector('.res-tile.moonstone');
@@ -8358,7 +8358,7 @@ function showMoonstoneChoice(team, dice) {
 
   const teamLabel = team.charAt(0).toUpperCase() + team.slice(1);
   narrate(`<b class="${team}-text">${teamLabel}</b> has a <b style="color:var(--moonstone)">Moonstone!</b>&nbsp;Click it to use!`);
-  log(`<span class="log-ms">${team.toUpperCase()} has a Moonstone!</span> Click it to use — 5 seconds!`);
+  bLog(`<span class="log-ms">${team.toUpperCase()} has a Moonstone!</span> Click it to use — 5 seconds!`);
 
   const diceEl = document.getElementById(team + '-dice');
   const resEl = document.getElementById(team + '-resources');
@@ -8505,7 +8505,7 @@ function pickMsValue(val) {
     f.usedMagicTouch = true;
     magicTouchFired = true;
     showAbilityCallout('MAGIC TOUCH!', 'var(--moonstone)', `${f.name} — Moonstone used without discarding!`, team);
-    log(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
+    bLog(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
   } else {
     t.resources.moonstone--;
     playSfx('sfxSpecial', 0.5);
@@ -8524,7 +8524,7 @@ function pickMsValue(val) {
   renderDice(B.redDice, B.blueDice);
 
   const teamLabel = team.charAt(0).toUpperCase() + team.slice(1);
-  log(`<span class="log-ms">Moonstone used!</span> ${team.toUpperCase()} changed die to ${val} → [${ms.dice.join(', ')}]`);
+  bLog(`<span class="log-ms">Moonstone used!</span> ${team.toUpperCase()} changed die to ${val} → [${ms.dice.join(', ')}]`);
   narrate(`<b style="color:var(--moonstone)">Moonstone!</b>&nbsp;<b class="${team}-text">${teamLabel}</b> changes die to <b class="gold">${val}</b>! → [${ms.dice.join(', ')}]`);
   B.pendingMoonstone = null;
 
@@ -8556,7 +8556,7 @@ function pickMsValue(val) {
     g.ability = "Fiendship"; g.abilityDesc = "+2 bonus damage!";
     g.art = "art/originals/doom.jpg"; g.rarity = "legendary"; g.ko = false;
     queueAbility('TRANSFORMATION!', 'var(--legendary)', 'Bigsby sacrifices himself — DOOM rises!', null, team);
-    log(`<span class="log-ability">Bigsby</span> — Omen! <span class="log-dmg">DOOM has arrived!</span>`);
+    bLog(`<span class="log-ability">Bigsby</span> — Omen! <span class="log-dmg">DOOM has arrived!</span>`);
     checkRipagooTransform(team);
     renderBattle();
   }
@@ -8645,7 +8645,7 @@ function pickMoonstoneItem(key, team) {
     f.usedMagicTouch = true;
     magicTouchFired = true;
     showAbilityCallout('MAGIC TOUCH!', 'var(--moonstone)', `${f.name} — Moonstone used without discarding!`, team);
-    log(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
+    bLog(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
   } else {
     t.resources.moonstone--;
     playSfx('sfxSpecial', 0.5);
@@ -8677,7 +8677,7 @@ function pickMoonstoneItem(key, team) {
   }
 
   showAbilityCallout(item.emoji + ' ' + item.name.toUpperCase() + '!', item.color, `${f.name} receives ${item.name}!`, team);
-  log(`<span class="log-ms">Moonstone → Item!</span> ${team.toUpperCase()} receives <b>${item.name}</b>! ${item.desc}`);
+  bLog(`<span class="log-ms">Moonstone → Item!</span> ${team.toUpperCase()} receives <b>${item.name}</b>! ${item.desc}`);
   narrate(`<b style="color:var(--moonstone)">Moonstone → Item!</b> <b class="${team}-text">${f.name}</b> receives <b style="color:${item.color}">${item.name}</b>!`);
   renderBattle();
   B.pendingMoonstone = null;
@@ -8707,7 +8707,7 @@ function skipMoonstone() {
   const resEl = document.getElementById(team + '-resources');
   const msEl = resEl && resEl.querySelector('.res-tile.moonstone');
   if (msEl) { msEl.classList.remove('rerollable'); msEl.onclick = null; msEl.style.cursor = ''; clearMsCountdown(msEl); }
-  log(`<span style="color:var(--text2)">${team.toUpperCase()} holds their Moonstone.</span>`);
+  bLog(`<span style="color:var(--text2)">${team.toUpperCase()} holds their Moonstone.</span>`);
   B.pendingMoonstone = null;
 
   const blueMsSkip = B.msAvailable ? B.msAvailable.blue : 0;
@@ -8737,7 +8737,7 @@ function skipMoonstone() {
 function startSimultaneousMoonstoneWindows() {
   B.phase = 'moonstone-shared';
   narrate(`<b class="red-text">Red</b> and <b class="blue-text">Blue</b> both have a <b style="color:var(--moonstone)">Moonstone!</b> Click yours to use it!`);
-  log(`<span class="log-ms">Both teams have Moonstones!</span> Click yours to use — 5 seconds!`);
+  bLog(`<span class="log-ms">Both teams have Moonstones!</span> Click yours to use — 5 seconds!`);
 
   const redResEl = document.getElementById('red-resources');
   const blueResEl = document.getElementById('blue-resources');
@@ -8782,7 +8782,7 @@ function startSimultaneousMoonstoneWindows() {
       clearInterval(lsSharedTimer); lsSharedTimer = null;
       if (!state.closed) {
         closeShared();
-        log(`<span style="color:var(--text2)">Both teams passed on their Moonstones.</span>`);
+        bLog(`<span style="color:var(--text2)">Both teams passed on their Moonstones.</span>`);
         checkLuckyStones();
       }
     } else {
@@ -8891,7 +8891,7 @@ function startSameTeamSpecialsWindow(team, finalCallback) {
       if (remaining <= 0 || state.closed) {
         clearInterval(sharedTimer); sharedTimer = null;
         if (!state.closed) {
-          log(`<span style="color:var(--text2)">${team.toUpperCase()} specials window expired.</span>`);
+          bLog(`<span style="color:var(--text2)">${team.toUpperCase()} specials window expired.</span>`);
           closeWindow();
         }
       } else {
@@ -8972,7 +8972,7 @@ function startSameTeamSpecialsWindow(team, finalCallback) {
               state.msUsed = true;
               state.picking = false;
               B.pendingMoonstone = null;
-              log(`<span style="color:var(--text2)">${team.toUpperCase()} holds their Moonstone.</span>`);
+              bLog(`<span style="color:var(--text2)">${team.toUpperCase()} holds their Moonstone.</span>`);
               if (checkStillAvailable()) {
                 refreshLsTile();
                 startTimer(Math.max(3, getSpecialsTimerSecs() - 2));
@@ -8998,7 +8998,7 @@ function startSameTeamSpecialsWindow(team, finalCallback) {
           state.msUsed = true;
           state.picking = false;
           B.pendingMoonstone = null;
-          log(`<span style="color:var(--text2)">${team.toUpperCase()} holds their Moonstone.</span>`);
+          bLog(`<span style="color:var(--text2)">${team.toUpperCase()} holds their Moonstone.</span>`);
           if (checkStillAvailable()) {
             refreshLsTile();
             startTimer(Math.max(3, getSpecialsTimerSecs() - 2));
@@ -9064,7 +9064,7 @@ function startSameTeamSpecialsWindow(team, finalCallback) {
         clearLsCountdown();
         clearDiceClickable(team);
         state.picking = false;
-        log(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
+        bLog(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
         if (checkStillAvailable()) {
           refreshLsTile();
           if (!state.msUsed && B[team].resources.moonstone > 0) {
@@ -9125,7 +9125,7 @@ function pickMsValueUnified(val) {
     f.usedMagicTouch = true;
     magicTouchFired = true;
     showAbilityCallout('MAGIC TOUCH!', 'var(--moonstone)', `${f.name} — Moonstone used without discarding!`, team);
-    log(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
+    bLog(`<span class="log-ability">${f.name}</span> — Magic Touch! Used Moonstone without discarding it!`);
   } else {
     t.resources.moonstone--;
     playSfx('sfxSpecial', 0.5);
@@ -9143,7 +9143,7 @@ function pickMsValueUnified(val) {
   renderDice(B.redDice, B.blueDice);
 
   const teamLabel = team.charAt(0).toUpperCase() + team.slice(1);
-  log(`<span class="log-ms">Moonstone used!</span> ${team.toUpperCase()} changed die to ${val} → [${ms.dice.join(', ')}]`);
+  bLog(`<span class="log-ms">Moonstone used!</span> ${team.toUpperCase()} changed die to ${val} → [${ms.dice.join(', ')}]`);
   narrate(`<b style="color:var(--moonstone)">Moonstone!</b>&nbsp;<b class="${team}-text">${teamLabel}</b> changes die to <b class="gold">${val}</b>! → [${ms.dice.join(', ')}]`);
   B.pendingMoonstone = null;
 
@@ -9169,7 +9169,7 @@ function pickMsValueUnified(val) {
     g.ability = "Fiendship"; g.abilityDesc = "+2 bonus damage!";
     g.art = "art/originals/doom.jpg"; g.rarity = "legendary"; g.ko = false;
     queueAbility('TRANSFORMATION!', 'var(--legendary)', 'Bigsby sacrifices himself — DOOM rises!', null, team);
-    log(`<span class="log-ability">Bigsby</span> — Omen! <span class="log-dmg">DOOM has arrived!</span>`);
+    bLog(`<span class="log-ability">Bigsby</span> — Omen! <span class="log-dmg">DOOM has arrived!</span>`);
     checkRipagooTransform(team);
     renderBattle();
   }
@@ -9204,7 +9204,7 @@ function startCrossTypeSpecialsWindow(msTeam, lsTeam) {
       applyMoonstoneSickness('blue'); // Moonstone Sickness
       triggerCameronSpecialWatch('blue', true); // Cameron (25) — Unstoppable Force (immediate post-roll die)
       B.blueDice = dice;
-      log(`<span class="log-ms">BLUE uses Moonstone!</span> Changed ${worstVal} → 6!`);
+      bLog(`<span class="log-ms">BLUE uses Moonstone!</span> Changed ${worstVal} → 6!`);
       renderDice(B.redDice, B.blueDice);
     }
     // Auto-use blue's lucky stone
@@ -9217,7 +9217,7 @@ function startCrossTypeSpecialsWindow(msTeam, lsTeam) {
         dice.sort((a, b) => a - b);
         B.blue.resources.luckyStone--;
         B.blueDice = dice;
-        log(`<span class="log-ms">BLUE uses Lucky Stone!</span> Rerolled ${worstVal}!`);
+        bLog(`<span class="log-ms">BLUE uses Lucky Stone!</span> Rerolled ${worstVal}!`);
         renderDice(B.redDice, B.blueDice);
       }
     }
@@ -9315,7 +9315,7 @@ function startCrossTypeSpecialsWindow(msTeam, lsTeam) {
       clearInterval(lsSharedTimer); lsSharedTimer = null;
       if (!state.closed) {
         closeBoth();
-        log(`<span style="color:var(--text2)">Both teams passed on their specials.</span>`);
+        bLog(`<span style="color:var(--text2)">Both teams passed on their specials.</span>`);
         resolveRound();
       }
     } else {
@@ -9415,7 +9415,7 @@ function startCrossTypeSpecialsWindow(msTeam, lsTeam) {
           clearInterval(lsCountdownTimer); lsCountdownTimer = null;
           clearLsCountdown();
           clearDiceClickable(lsTeam);
-          log(`<span style="color:var(--text2)">${lsTeam.toUpperCase()} didn't pick a die in time.</span>`);
+          bLog(`<span style="color:var(--text2)">${lsTeam.toUpperCase()} didn't pick a die in time.</span>`);
           afterLs();
         } else {
           showLsCountdown(lsDiceEl, pickRemaining);
@@ -9454,7 +9454,7 @@ function pvpWaitForBlueSpecials() {
   if (!blueHadMS && !blueHadLS) { resolveRound(); return; }
 
   // Wait for Blue's specialsDone signal (with timeout safety)
-  log(`<span style="color:var(--text2)">Waiting for Blue's specials...</span>`);
+  bLog(`<span style="color:var(--text2)">Waiting for Blue's specials...</span>`);
   let resolved = false;
   const finish = (blueDice) => {
     if (resolved) return;
@@ -9481,7 +9481,7 @@ function pvpWaitForBlueSpecials() {
   // Safety timeout — if Blue disconnects or something breaks, don't deadlock
   const safetyTimeout = setTimeout(() => {
     if (!resolved) {
-      log(`<span style="color:var(--text2)">Blue specials timed out — resolving with current dice.</span>`);
+      bLog(`<span style="color:var(--text2)">Blue specials timed out — resolving with current dice.</span>`);
       finish(null);
     }
   }, 15000);
@@ -9594,7 +9594,7 @@ function startSimultaneousLuckyStoneWindows() {
         clearInterval(lsSharedTimer); lsSharedTimer = null;
         document.querySelectorAll('.ls-shared-cd').forEach(el => el.remove());
         if (!state.closed) {
-          log(`<span style="color:var(--text2)">Lucky Stone window expired.</span>`);
+          bLog(`<span style="color:var(--text2)">Lucky Stone window expired.</span>`);
           closeShared();
         }
       } else {
@@ -9667,7 +9667,7 @@ function startSimultaneousLuckyStoneWindows() {
         if (pickRem <= 0) {
           clearLsCountdown();
           clearDiceClickable(team);
-          log(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
+          bLog(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
           state.pickingTeam = null;
           if (team === 'red') state.redDone = true; else state.blueDone = true;
           if (!state.closed) {
@@ -9696,12 +9696,12 @@ function startSimultaneousLuckyStoneWindows() {
         const newVal = Math.floor(Math.random() * 6) + 1;
         dice[worstIdx] = newVal;
         dice.sort((a, b) => a - b);
-        log(`<span class="log-ms">BLUE uses Lucky Stone!</span> Rerolled ${worstVal} → ${newVal}!`);
+        bLog(`<span class="log-ms">BLUE uses Lucky Stone!</span> Rerolled ${worstVal} → ${newVal}!`);
         narrate(`<b class="blue-text">Blue</b> uses <b class="gold">Lucky Stone!</b> ${worstVal} → ${newVal}!`);
         renderDice(B.redDice, B.blueDice);
         renderBattle();
       } else {
-        log(`<span style="color:var(--text2)">BLUE holds Lucky Stone (${worstVal} is good enough).</span>`);
+        bLog(`<span style="color:var(--text2)">BLUE holds Lucky Stone (${worstVal} is good enough).</span>`);
       }
     }
     // Mark blue as done — clear its tile
@@ -9734,13 +9734,13 @@ function showFlickPicker(team, callback) {
     const oldVal = myDice[0];
     myDice[0] = Math.floor(Math.random() * 6) + 1;
     myDice.sort((a, b) => a - b);
-    log(`<span class="log-ability">Charlie</span> — Rush! Flicked ${oldVal} → <b>${myDice[0]}</b>!`);
+    bLog(`<span class="log-ability">Charlie</span> — Rush! Flicked ${oldVal} → <b>${myDice[0]}</b>!`);
     if (oppDice.length > 0) {
       const ti = oppDice.length - 1;
       const tOld = oppDice[ti];
       oppDice[ti] = Math.floor(Math.random() * 6) + 1;
       oppDice.sort((a, b) => a - b);
-      log(`<span class="log-ability">Charlie</span> — Contact! ${oppTeam} die ${tOld} → <b>${oppDice[oppDice.length-1]}</b>!`);
+      bLog(`<span class="log-ability">Charlie</span> — Contact! ${oppTeam} die ${tOld} → <b>${oppDice[oppDice.length-1]}</b>!`);
     }
     B.redDice = B.pendingResolve.redDice;
     B.blueDice = B.pendingResolve.blueDice;
@@ -9751,7 +9751,7 @@ function showFlickPicker(team, callback) {
   }
 
   narrate(`<b class="${team}-text">${teamLabel}</b> — <b style="color:#f59e0b">Rush!</b> Grab &amp; fling your lowest die!`);
-  log(`<span class="log-ability">Charlie</span> — Rush! Flick activated!`);
+  bLog(`<span class="log-ability">Charlie</span> — Rush! Flick activated!`);
   showAbilityCallout('RUSH!', '#f59e0b', 'Charlie — Fling a die!', team);
 
   // 1. Kill 3D dice, render flat
@@ -10063,11 +10063,11 @@ function showFlickPicker(team, callback) {
     B.blueDice = B.pendingResolve.blueDice;
 
     if (changed > 0) {
-      log(`<span class="log-ability">Charlie</span> — Flick! <b>${changed}</b> dice changed! → Red [${B.redDice.join(',')}] Blue [${B.blueDice.join(',')}]`);
+      bLog(`<span class="log-ability">Charlie</span> — Flick! <b>${changed}</b> dice changed! → Red [${B.redDice.join(',')}] Blue [${B.blueDice.join(',')}]`);
       narrate(`<b style="color:#f59e0b">Flick!</b> ${changed} dice changed!`);
     } else {
       // MISS! — didn't hit any dice
-      log(`<span class="log-ability">Charlie</span> — Flick missed! No contact.`);
+      bLog(`<span class="log-ability">Charlie</span> — Flick missed! No contact.`);
       showAbilityCallout('MISS!', '#ef4444', 'Charlie whiffed the Flick!', flickerBody ? flickerBody.team : team);
       narrate(`<b style="color:#ef4444">MISS!</b> Charlie whiffed the Flick!`);
     }
@@ -10091,7 +10091,7 @@ function showFlickPicker(team, callback) {
       removeListeners();
       restoreLayout();
       renderDice(B.redDice, B.blueDice);
-      log(`<span style="color:var(--text2)">Charlie didn't Flick in time.</span>`);
+      bLog(`<span style="color:var(--text2)">Charlie didn't Flick in time.</span>`);
       B.redDice = B.pendingResolve.redDice;
       B.blueDice = B.pendingResolve.blueDice;
       callback();
@@ -10115,12 +10115,12 @@ function startLuckyStoneWindow(team, callback) {
         const newVal = Math.floor(Math.random() * 6) + 1;
         dice[worstIdx] = newVal;
         dice.sort((a, b) => a - b);
-        log(`<span class="log-ms">${team.toUpperCase()} uses Lucky Stone!</span> Rerolled ${worstVal} → ${newVal}!`);
+        bLog(`<span class="log-ms">${team.toUpperCase()} uses Lucky Stone!</span> Rerolled ${worstVal} → ${newVal}!`);
         narrate(`<b class="${team}-text">Blue</b> uses <b class="gold">Lucky Stone!</b> ${worstVal} → ${newVal}!`);
         renderDice(B.redDice, B.blueDice);
         renderBattle();
       } else {
-        log(`<span style="color:var(--text2)">${team.toUpperCase()} holds Lucky Stone (${worstVal} is good enough).</span>`);
+        bLog(`<span style="color:var(--text2)">${team.toUpperCase()} holds Lucky Stone (${worstVal} is good enough).</span>`);
       }
     }
     setTimeout(() => callback(), spd(800));
@@ -10141,7 +10141,7 @@ function startLuckyStoneWindow(team, callback) {
     const resEl = document.getElementById(team + '-resources');
     const lsEl = resEl && resEl.querySelector('.res-tile.luckyStone');
     if (lsEl) { lsEl.classList.remove('rerollable'); lsEl.onclick = null; lsEl.style.cursor = ''; }
-    log(`<span style="color:var(--text2)">${team.toUpperCase()} skipped Lucky Stone.</span>`);
+    bLog(`<span style="color:var(--text2)">${team.toUpperCase()} skipped Lucky Stone.</span>`);
     callback();
   };
   showSkipBtn(skipLs);
@@ -10178,7 +10178,7 @@ function startLuckyStoneWindow(team, callback) {
         if (pickRemaining <= 0) {
           clearLsCountdown();
           clearDiceClickable(team);
-          log(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
+          bLog(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
           callback();
         } else {
           showLsCountdown(diceEl, pickRemaining);
@@ -10205,7 +10205,7 @@ function startLuckyStoneWindow(team, callback) {
       clearLsCountdown();
       clearDiceClickable(team);
       if (lsEl) { lsEl.classList.remove('rerollable'); lsEl.onclick = null; }
-      log(`<span style="color:var(--text2)">${team.toUpperCase()} didn't use their Lucky Stone.</span>`);
+      bLog(`<span style="color:var(--text2)">${team.toUpperCase()} didn't use their Lucky Stone.</span>`);
       callback();
     } else {
       showLsCountdown(countdownTarget, remaining);
@@ -10368,7 +10368,7 @@ function doLuckyReroll(team, dieIndex, dice, callback) {
       else { B.pendingResolve.blueDice = dice; B.blueDice = dice; }
       // Grant Healing Seed
       B[team].resources.healingSeed++;
-      log(`<span class="log-ability">${twylaFighter.name}</span> — Lucky Dance! <span class="log-heal">+1 Healing Seed!</span> <span class="log-ice">+1 bonus die (${bonusDie})!</span>`);
+      bLog(`<span class="log-ability">${twylaFighter.name}</span> — Lucky Dance! <span class="log-heal">+1 Healing Seed!</span> <span class="log-ice">+1 bonus die (${bonusDie})!</span>`);
       showAbilityCallout('LUCKY DANCE!', 'var(--rare)', `${twylaFighter.name} — +1 die and +1 Healing Seed!`, team);
       // Re-render dice to show the new bonus die
       renderDice(
@@ -10377,7 +10377,7 @@ function doLuckyReroll(team, dieIndex, dice, callback) {
       );
     }
 
-    log(`<span class="log-ms">Lucky Stone!</span> ${team.charAt(0).toUpperCase()+team.slice(1)} rerolled ${oldVal} → <b>${newVal}</b> → [${dice.join(', ')}]`);
+    bLog(`<span class="log-ms">Lucky Stone!</span> ${team.charAt(0).toUpperCase()+team.slice(1)} rerolled ${oldVal} → <b>${newVal}</b> → [${dice.join(', ')}]`);
     narrate(`<b class="gold">Lucky Stone!</b> Rerolled ${oldVal} → <b>${newVal}</b>!`);
     renderBattle();
 
@@ -10404,7 +10404,7 @@ function doLuckyReroll(team, dieIndex, dice, callback) {
           if (pickRem <= 0) {
             clearLsCountdown();
             clearDiceClickable(team);
-            log(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
+            bLog(`<span style="color:var(--text2)">${team.toUpperCase()} didn't pick a die in time.</span>`);
             callback();
           } else {
             showLsCountdown(diceElInner, pickRem);
@@ -10526,7 +10526,7 @@ function resolveRound() {
     _resolveRoundImpl();
   } catch (err) {
     console.error('[resolveRound CRASH]', err);
-    try { log(`<span class="log-dmg">INTERNAL ERROR</span> in resolveRound: ${err && err.message ? err.message : String(err)} — game recovered, please roll again.`); } catch (_) {}
+    try { bLog(`<span class="log-dmg">INTERNAL ERROR</span> in resolveRound: ${err && err.message ? err.message : String(err)} — game recovered, please roll again.`); } catch (_) {}
     try { narrate(`<b class="gold">⚠ Round resolution crashed</b> — <span style="color:var(--text2)">${err && err.message ? err.message : 'unknown error'}</span>`); } catch (_) {}
     // Force the game out of 'resolving' so roll buttons come back alive
     try {
@@ -10591,7 +10591,7 @@ function _resolveRoundImpl() {
           if (team === 'red') { blueDice.splice(0, blueDice.length, ...filtered); }
           else { redDice.splice(0, redDice.length, ...filtered); }
           blackoutCallouts.push({ name: 'BLACKOUT!', color: 'var(--rare)', desc: `Smudge — ${removed} dice showing ${num} vanished!`, team: team });
-          log(`<span class="log-ability">Smudge</span> — Blackout! Named ${num} — <span class="log-dmg">${removed} opponent dice removed!</span>`);
+          bLog(`<span class="log-ability">Smudge</span> — Blackout! Named ${num} — <span class="log-dmg">${removed} opponent dice removed!</span>`);
         }
         // No callout if opponent didn't roll the number — silent miss, don't interrupt the flow
       }
@@ -10636,7 +10636,7 @@ function _resolveRoundImpl() {
 
   const rR = classify(redDice), bR = classify(blueDice);
   if (!sylviaResuming) {
-    log(`Red [${redDice.join(',')}] <span style="color:var(--text2)">(${rR.type} ${rR.value})</span> vs Blue [${blueDice.join(',')}] <span style="color:var(--text2)">(${bR.type} ${bR.value})</span>`);
+    bLog(`Red [${redDice.join(',')}] <span style="color:var(--text2)">(${rR.type} ${rR.value})</span> vs Blue [${blueDice.join(',')}] <span style="color:var(--text2)">(${bR.type} ${bR.value})</span>`);
   }
 
   // Captain James (443) — Final Strike: triples or higher → gain 2 Sacred Fires
@@ -10772,7 +10772,7 @@ function _resolveRoundImpl() {
     // Mark both active ghosts as having rolled (so Ambush/Lurk don't fire next round).
     active(B.red)._rolledOnce = true;
     active(B.blue)._rolledOnce = true;
-    log(`<span class="log-ability">TIE!</span> No damage dealt.`);
+    bLog(`<span class="log-ability">TIE!</span> No damage dealt.`);
     narrate(`Both roll ${describeRoll(rR)} — <b class="gold">a standoff!</b> No damage dealt.`);
     playSfx('sfxSpecial', 0.3);
 
@@ -10792,7 +10792,7 @@ function _resolveRoundImpl() {
         queueAbility('ROARING CROWD!', 'var(--common)', `Tweak and Twonk — Tie! +4 Surge! (${surgeTotal} total)`, () => {
           team.resources.surge += 4;
           popSidelineCard(team, 303);
-          log(`<span class="log-ability">Tweak and Twonk</span> (sideline) — Roaring Crowd! Tie → gained <span class="log-ms">4 Surge</span>!`);
+          bLog(`<span class="log-ability">Tweak and Twonk</span> (sideline) — Roaring Crowd! Tie → gained <span class="log-ms">4 Surge</span>!`);
           renderBattle();
         }, tNameTie);
         // Knight reactions must be queued WHILE abilityQueueMode===true (not inside onShow
@@ -10820,7 +10820,7 @@ function _resolveRoundImpl() {
         queueAbility('CHIRP!', 'var(--common)', `${jimmyGhost.name} — Tie! +3 Lucky Stones + 1 Magic Firefly! (${lsTotal} LS, ${ffTotal} FF)`, () => {
           team.resources.luckyStone += 3;
           team.resources.firefly = (team.resources.firefly || 0) + 1;
-          log(`<span class="log-ability">${jimmyGhost.name}</span> — Chirp! Tie → gained <span class="log-ms">3 Lucky Stones</span> + <span class="log-ms">1 Magic Firefly</span>!`);
+          bLog(`<span class="log-ability">${jimmyGhost.name}</span> — Chirp! Tie → gained <span class="log-ms">3 Lucky Stones</span> + <span class="log-ms">1 Magic Firefly</span>!`);
           renderBattle();
         }, tNameJim);
         checkKnightEffects(tNameJim, jimmyGhost.name);
@@ -10852,7 +10852,7 @@ function _resolveRoundImpl() {
               t.resources.firefly += 1;
             });
             goobActiveGhost.hp += 5;
-            log(`<span class="log-ability">${goobName}</span> — Dance Party! Both teams gain <span class="log-ms">+1 Magic Firefly!</span> <span class="log-heal">${goobActiveGhost.name} +5 HP!</span>`);
+            bLog(`<span class="log-ability">${goobName}</span> — Dance Party! Both teams gain <span class="log-ms">+1 Magic Firefly!</span> <span class="log-heal">${goobActiveGhost.name} +5 HP!</span>`);
             renderBattle();
           }, tNameGoob);
           checkKnightEffects(tNameGoob, goobName);
@@ -10869,7 +10869,7 @@ function _resolveRoundImpl() {
         B.letsDanceBonus[tNameKai] = (B.letsDanceBonus[tNameKai] || 0) + 1;
         queueAbility("LET'S DANCE!", 'var(--rare)', `${f.name} — Doubles on a tie! +1 die next roll!`, null, tNameKai);
         checkKnightEffects(tNameKai, f.name);
-        log(`<span class="log-ability">${f.name}</span> — Let's Dance! Doubles tie → +1 die next round.`);
+        bLog(`<span class="log-ability">${f.name}</span> — Let's Dance! Doubles tie → +1 die next round.`);
       }
     });
 
@@ -10881,7 +10881,7 @@ function _resolveRoundImpl() {
       if (f.id === 43 && !f.ko && outRoll.type === 'doubles') {
         B.outlawStolenDie[tNameOut] = (B.outlawStolenDie[tNameOut] || 0) + 1;
         queueAbility('THIEF!', 'var(--uncommon)', `${f.name} — Doubles tie! Stealing 1 die from enemy next round!`, null, tNameOut);
-        log(`<span class="log-ability">${f.name}</span> — Thief! Doubles tie → steal 1 enemy die next round.`);
+        bLog(`<span class="log-ability">${f.name}</span> — Thief! Doubles tie → steal 1 enemy die next round.`);
         checkKnightEffects(tNameOut, f.name);
       }
     });
@@ -10896,7 +10896,7 @@ function _resolveRoundImpl() {
         B.haywireDamageBonus[tNameHW] = 2;
         B.haywireUsed[tNameHW] = true;
         queueAbility('WILD CHORDS!', 'var(--rare)', `${f.name} — Triples or better on a tie! +1 permanent die AND Haywire gains +2 damage for the rest of the game! (Once per game)`, null, tNameHW);
-        log(`<span class="log-ability">${f.name}</span> — Wild Chords! Triples or better tie → +1 permanent die + Haywire +2 damage for the rest of the game!`);
+        bLog(`<span class="log-ability">${f.name}</span> — Wild Chords! Triples or better tie → +1 permanent die + Haywire +2 damage for the rest of the game!`);
         checkKnightEffects(tNameHW, f.name);
       }
     });
@@ -10910,7 +10910,7 @@ function _resolveRoundImpl() {
         B.scallywagsFrenzyBonus[tNameSC] = (B.scallywagsFrenzyBonus[tNameSC] || 0) + 1;
         team.resources.surge = (team.resources.surge || 0) + 1;
         queueAbility('FRENZY!', 'var(--common)', `${f.name} — All dice under 4 on a tie! +1 die next roll + 1 Surge!`, null, tNameSC);
-        log(`<span class="log-ability">${f.name}</span> — Frenzy! Tie: all dice under 4 → +1 die next round + <span class="log-ms">+1 Surge</span>.`);
+        bLog(`<span class="log-ability">${f.name}</span> — Frenzy! Tie: all dice under 4 → +1 die next round + <span class="log-ms">+1 Surge</span>.`);
         checkKnightEffects(tNameSC, f.name);
       }
     });
@@ -10925,7 +10925,7 @@ function _resolveRoundImpl() {
         if (enemyRoll.type === 'doubles') {
           B.floopMuck[enemyTName] = (B.floopMuck[enemyTName] || 0) + 1;
           queueAbility('MUCK!', 'var(--common)', `${f.name} — ${active(enemyTeam).name} rolled doubles on a tie! They lose 1 die next round!`, null, team === B.red ? 'red' : 'blue');
-          log(`<span class="log-ability">${f.name}</span> — Muck! ${active(enemyTeam).name} rolled doubles → -1 die next round.`);
+          bLog(`<span class="log-ability">${f.name}</span> — Muck! ${active(enemyTeam).name} rolled doubles → -1 die next round.`);
           checkKnightEffects(team === B.red ? 'red' : 'blue', f.name);
         }
       }
@@ -10942,7 +10942,7 @@ function _resolveRoundImpl() {
         if (locked > 0) {
           B.logeyLockout[enemyTName] = (B.logeyLockout[enemyTName] || 0) + locked;
           queueAbility('HEINOUS!', 'var(--common)', `${f.name} — Tie! ${locked} of ${active(enemyTeam).name}'s dice (5+) locked out next roll!`, null, team === B.red ? 'red' : 'blue');
-          log(`<span class="log-ability">${f.name}</span> — Heinous! Tie: locked ${locked} of enemy's 5+ dice.`);
+          bLog(`<span class="log-ability">${f.name}</span> — Heinous! Tie: locked ${locked} of enemy's 5+ dice.`);
           checkKnightEffects(team === B.red ? 'red' : 'blue', f.name);
         }
       }
@@ -10960,7 +10960,7 @@ function _resolveRoundImpl() {
         const sableName = hasSableActive ? f.name : (getSidelineGhost(team, 413) || { name: 'Sable' }).name;
         const sableLoc = hasSableActive ? '' : ' (sideline)';
         queueAbility('SMOLDERING SOUL!', 'var(--uncommon)', `${sableName}${sableLoc} — All dice odd! +1 Sacred Fire!`, null, tNameSable);
-        log(`<span class="log-ability">${sableName}</span> — Smoldering Soul! All dice odd → <span class="log-ms">+1 Sacred Fire!</span>`);
+        bLog(`<span class="log-ability">${sableName}</span> — Smoldering Soul! All dice odd → <span class="log-ms">+1 Sacred Fire!</span>`);
         checkKnightEffects(tNameSable, sableName);
       }
     });
@@ -10976,7 +10976,7 @@ function _resolveRoundImpl() {
         B.pipDieRemoval[oppName] = (B.pipDieRemoval[oppName] || 0) + 1;
         team.resources.fire += 2;
         queueAbility('TOASTED!', 'var(--rare)', `${f.name} — ${pipRoll.type}! Enemy permanently loses 1 die + 2 Sacred Fires! (Once per game)`, null, tNamePip);
-        log(`<span class="log-ability">${f.name}</span> — Toasted! ${pipRoll.type} → enemy -1 die permanently + <span class="log-ms">+2 Sacred Fires!</span>`);
+        bLog(`<span class="log-ability">${f.name}</span> — Toasted! ${pipRoll.type} → enemy -1 die permanently + <span class="log-ms">+2 Sacred Fires!</span>`);
         checkKnightEffects(tNamePip, f.name);
       }
     });
@@ -10990,7 +10990,7 @@ function _resolveRoundImpl() {
           const tNameDC = team === B.red ? 'red' : 'blue';
           B.dreamCatBonus[tNameDC] = (B.dreamCatBonus[tNameDC] || 0) + 1;
           queueAbility('JINX!', 'var(--common)', `${f.name} — Both teams rolled doubles on a tie! +1 die next round!`, null, tNameDC);
-          log(`<span class="log-ability">${f.name}</span> — Jinx! Both rolled doubles (tie) → +1 die next round.`);
+          bLog(`<span class="log-ability">${f.name}</span> — Jinx! Both rolled doubles (tie) → +1 die next round.`);
           checkKnightEffects(tNameDC, f.name);
         }
       });
@@ -11007,12 +11007,12 @@ function _resolveRoundImpl() {
           const opaFlippedTie = Math.max(0, f.hp - 1);
           const opaGhostTie = f;
           queueAbility('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Rest cursed! ${f.name} takes 1 damage! (${f.hp}→${opaFlippedTie} HP)`, () => { opaGhostTie.hp = opaFlippedTie; if (opaGhostTie.hp <= 0) { opaGhostTie.hp = 0; opaGhostTie.ko = true; opaGhostTie.killedBy = 59; } renderBattle(); }, tNameOpaTie);
-          log(`<span class="log-ability">${f.name}</span> — Rest! Mr Filbert curses → -1 HP (${opaFlippedTie} HP).`);
+          bLog(`<span class="log-ability">${f.name}</span> — Rest! Mr Filbert curses → -1 HP (${opaFlippedTie} HP).`);
         } else {
           const opaNewHpTie = f.hp + 1;
           const opaOverTie = opaNewHpTie > f.maxHp;
           queueAbility('REST!', 'var(--uncommon)', `${f.name} — Tie! +1 HP! (${f.hp}→${opaNewHpTie} HP${opaOverTie ? ' · overclocked!' : ''})`, () => { f.hp++; renderBattle(); }, tNameOpaTie);
-          log(`<span class="log-ability">${f.name}</span> — Rest! Tie → +1 HP (${opaNewHpTie} HP${opaOverTie ? ' overclocked!' : ''}).`);
+          bLog(`<span class="log-ability">${f.name}</span> — Rest! Tie → +1 HP (${opaNewHpTie} HP${opaOverTie ? ' overclocked!' : ''}).`);
         }
         checkKnightEffects(tNameOpaTie, f.name);
       }
@@ -11030,18 +11030,18 @@ function _resolveRoundImpl() {
         const cornGhostAO = getSidelineGhost(aoEnemy, 45);
         queueAbility('ANTIDOTE!', 'var(--uncommon)', `${cornGhostAO ? cornGhostAO.name : 'Cornelius'} (sideline) — blocks Ancient One's Friend to All on ${f.name}!`, () => { renderBattle(); }, tNameAO);
         checkKnightEffects(tNameAO, cornGhostAO ? cornGhostAO.name : 'Cornelius');
-        log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Friend to All blocked for ${f.name}.`);
+        bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Friend to All blocked for ${f.name}.`);
       } else if (hasSideline(aoEnemy, 59)) {
         const aoFlipped = Math.max(0, f.hp - 3);
         queueAbility('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Friend to All cursed! ${f.name} takes 3 damage! (${f.hp}→${aoFlipped} HP)`, () => { f.hp = Math.max(0, f.hp - 3); if (f.hp <= 0) { f.hp = 0; f.ko = true; f.killedBy = 59; } renderBattle(); }, tNameAO);
         checkKnightEffects(tNameAO, 'Mr Filbert');
-        log(`<span class="log-ability">${f.name}</span> — Friend to All! Mr Filbert curses → -3 HP (${aoFlipped} HP).`);
+        bLog(`<span class="log-ability">${f.name}</span> — Friend to All! Mr Filbert curses → -3 HP (${aoFlipped} HP).`);
       } else {
         const aoNewHp = f.hp + 3;
         const aoOver = aoNewHp > f.maxHp;
         queueAbility('FRIEND TO ALL!', 'var(--common)', `Ancient One — Tie! ${f.name} gains +3 HP! (${f.hp}→${aoNewHp} HP${aoOver ? ' · overclocked!' : ''})`, () => { f.hp += 3; renderBattle(); }, tNameAO);
         checkKnightEffects(tNameAO, 'Ancient One');
-        log(`<span class="log-ability">${f.name}</span> — Friend to All! Tie → +3 HP (${aoNewHp} HP${aoOver ? ' overclocked!' : ''}).`);
+        bLog(`<span class="log-ability">${f.name}</span> — Friend to All! Tie → +3 HP (${aoNewHp} HP${aoOver ? ' overclocked!' : ''}).`);
       }
     });
 
@@ -11056,7 +11056,7 @@ function _resolveRoundImpl() {
         queueAbility('NAP!', 'var(--common)', `${f.name} — +1 Healing Seed and +1 Lucky Stone while napping!`, () => {
           team.resources.healingSeed++;
           team.resources.luckyStone++;
-          log(`<span class="log-ability">${f.name}</span> — Nap! Gained <span class="log-ms">1 Healing Seed</span> + <span class="log-ms">1 Lucky Stone</span>.`);
+          bLog(`<span class="log-ability">${f.name}</span> — Nap! Gained <span class="log-ms">1 Healing Seed</span> + <span class="log-ms">1 Lucky Stone</span>.`);
           renderBattle();
         }, tNameMax);
         // Knight reactions must be queued WHILE abilityQueueMode===true (not inside onShow
@@ -11081,7 +11081,7 @@ function _resolveRoundImpl() {
         dupyFrolicKO = true;
         playDamageSfx();
         queueAbility('FROLIC!', 'var(--common)', `${f.name} — Tie! ${ef.name} instantly KO'd!`, () => { hitDamage(tNameDupy); renderBattle(); }, tNameDupy);
-        log(`<span class="log-ability">${f.name}</span> — Frolic! Tie → ${ef.name} <span class="log-ko">instantly KO'd!</span>`);
+        bLog(`<span class="log-ability">${f.name}</span> — Frolic! Tie → ${ef.name} <span class="log-ko">instantly KO'd!</span>`);
         checkKnightEffects(tNameDupy, f.name);
       }
     });
@@ -11203,7 +11203,7 @@ function _resolveRoundImpl() {
   // Antoinette (82) — Grace: +1 damage on doubles
   if (wF.id === 82 && !wF.ko && wR.type === 'doubles') {
     dmg += 1;
-    log(`<span class="log-ability">${wF.name}</span> — Grace! Doubles → +1 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Grace! Doubles → +1 damage!`);
   }
 
   // Boo Brothers (17) — Teamwork damage bonus: +1 if they used the ability this round
@@ -11212,7 +11212,7 @@ function _resolveRoundImpl() {
     dmg += 1;
     booTeamworkDmgTriggered = true;
     B.booTeamworkDmgBonus[winTeamName] = 0;
-    log(`<span class="log-ability">${wF.name}</span> — Teamwork Bonus! Used ability → +1 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Teamwork Bonus! Used ability → +1 damage!`);
   }
   // Clear unused Boo Brothers bonus on loss
   if (lF.id === 17 && B.booTeamworkDmgBonus && B.booTeamworkDmgBonus[loseTeamName] > 0) {
@@ -11226,7 +11226,7 @@ function _resolveRoundImpl() {
     if (zippaSeeds > 0) {
       zippaGlimmerBonus = zippaSeeds;
       dmg += zippaSeeds;
-      log(`<span class="log-ability">${wF.name}</span> — Glimmer! ${zippaSeeds} Healing Seed${zippaSeeds>1?'s':''} → +${zippaSeeds} damage!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Glimmer! ${zippaSeeds} Healing Seed${zippaSeeds>1?'s':''} → +${zippaSeeds} damage!`);
     }
   }
 
@@ -11248,7 +11248,7 @@ function _resolveRoundImpl() {
   // Champ (438) — Thrill (A): immune to damage from Specials (committed resources)
   const champImmuneToSpecials = lF.id === 438 && !lF.ko;
   if (champImmuneToSpecials && (B.committed[winTeamName].ice > 0 || B.committed[winTeamName].fire > 0 || B.committed[winTeamName].surge > 0)) {
-    log(`<span class="log-ability">${lF.name}</span> — Thrill! Immune to all committed resource damage!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Thrill! Immune to all committed resource damage!`);
   }
 
   // Committed Ice Shards: +1 per shard (Skylar Winter Barrage: +2 each)
@@ -11262,7 +11262,7 @@ function _resolveRoundImpl() {
       skylarTriggered = true;
       collectKC(winTeamName, wF.name);
     }
-    log(`<span class="log-ms">Ice Shards committed!</span> <span class="log-dmg">+${iceDmg} damage!</span>${skylarActive ? ' (Winter Barrage ×2!)' : ''}`);
+    bLog(`<span class="log-ms">Ice Shards committed!</span> <span class="log-dmg">+${iceDmg} damage!</span>${skylarActive ? ' (Winter Barrage ×2!)' : ''}`);
   }
   // Committed Sacred Fires: +3 per fire (Tyler 105 Heating Up: ×2 = +6 per fire)
   // Rook (416) — Charcoal: immune to Sacred Fire damage when Rook is the LOSER/target
@@ -11281,20 +11281,20 @@ function _resolveRoundImpl() {
       collectKC(winTeamName, wF.name);
     }
     const lucyShadowTag = lucyShadowBoost === 2 ? ' (Mentor ×2!)' : '';
-    log(`<span class="log-ms">Sacred Fires committed!</span> <span class="log-dmg">+${fireDmg} damage!</span>${tylerWins ? ' (Heating Up ×2!)' : ''}${lucyShadowTag}`);
+    bLog(`<span class="log-ms">Sacred Fires committed!</span> <span class="log-dmg">+${fireDmg} damage!</span>${tylerWins ? ' (Heating Up ×2!)' : ''}${lucyShadowTag}`);
 
     // Eternal Flame (406) — Sacred Fires not discarded (grant deferred to ETERNAL FLAME! onShow)
   }
   // Rook (416) — Charcoal: Sacred Fire immunity log
   if (B.committed[winTeamName].fire > 0 && lF.id === 416) {
-    log(`<span class="log-ability">${lF.name}</span> — Charcoal! Immune to Sacred Fire damage!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Charcoal! Immune to Sacred Fire damage!`);
   }
 
   // Aunt Susan (309) — +2 damage per seed committed (also blocked by Champ Thrill)
   if (B.auntSusanBonus[winTeamName] > 0 && !champImmuneToSpecials) {
     const susanDmg = B.auntSusanBonus[winTeamName] * 2;
     dmg += susanDmg;
-    log(`<span class="log-ability">${wF.name}</span> — Harvest Dance! <span class="log-dmg">+${susanDmg} bonus damage!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Harvest Dance! <span class="log-dmg">+${susanDmg} bonus damage!</span>`);
   }
 
   // Rook (416) — Charcoal: Win: +1 dmg per Surge committed this round (also blocked by Champ Thrill)
@@ -11302,7 +11302,7 @@ function _resolveRoundImpl() {
     const rookSurgeDmg = B.committed[winTeamName].surge;
     dmg += rookSurgeDmg;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Charcoal! <span class="log-dmg">+${rookSurgeDmg} damage</span> from ${rookSurgeDmg} Surge committed!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Charcoal! <span class="log-dmg">+${rookSurgeDmg} damage</span> from ${rookSurgeDmg} Surge committed!`);
   }
 
   // Haywire (78) — Wild Chords permanent +2 damage on any winning roll (after trigger)
@@ -11310,7 +11310,7 @@ function _resolveRoundImpl() {
   if (wF.id === 78 && !wF.ko && (B.haywireDamageBonus[winTeamName] || 0) > 0) {
     const hwDmg = B.haywireDamageBonus[winTeamName];
     dmg += hwDmg;
-    log(`<span class="log-ability">${wF.name}</span> — Wild Chords damage! <span class="log-dmg">+${hwDmg} damage!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Wild Chords damage! <span class="log-dmg">+${hwDmg} damage!</span>`);
   }
 
   // v386: collectKC + resolveKnightCallouts moved to ~line 8125, before any ability
@@ -11328,21 +11328,21 @@ function _resolveRoundImpl() {
     dmg -= 2; // triples base 3 → singles base 1; committed ice/fire bonuses untouched
     mercyTriggered = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Mercy! Enemy triples converted to [1,2,3]! Base damage reduced 3 → 1!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Mercy! Enemy triples converted to [1,2,3]! Base damage reduced 3 → 1!`);
   }
 
   // Bigsby (424) — Omen: Win: +1 damage
   if (abilityIdOf(wF) === 424 && !wF.ko) {
     dmg += 1;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Omen! <span class="log-dmg">+1 damage!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Omen! <span class="log-dmg">+1 damage!</span>`);
   }
 
   // Michael (445) — Torrent: Even doubles → +2 damage
   if (wF.id === 445 && !wF.ko && wR.type === 'doubles' && wR.value % 2 === 0) {
     dmg += 2;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Torrent! Even doubles → <span class="log-dmg">+2 damage!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Torrent! Even doubles → <span class="log-dmg">+2 damage!</span>`);
   }
 
   // Twyla (417) — Lucky Dance: MOVED to dice count section (v674 rework: Lucky Stones give dice + Healing Seeds, not damage + HP)
@@ -11374,7 +11374,7 @@ function _resolveRoundImpl() {
     dmg *= 3;
     stoneColdTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — One-two-one! Double 1s → 3X damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — One-two-one! Double 1s → 3X damage!`);
   }
 
   // Larry (35) — Flying Kick: triples deal 3X damage
@@ -11385,7 +11385,7 @@ function _resolveRoundImpl() {
     dmg *= 3;
     larryTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Flying Kick! Triples → 3X damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Flying Kick! Triples → 3X damage!`);
   }
 
   // Buttons (8) — Perfect Plan: triple 6s deal +15 bonus damage.
@@ -11398,7 +11398,7 @@ function _resolveRoundImpl() {
     dmg += 15;
     buttonsTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Perfect Plan! Triple 6s! ${buttonsBaseDmg} + 15 = ${dmg} damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Perfect Plan! Triple 6s! ${buttonsBaseDmg} + 15 = ${dmg} damage!`);
   }
 
   // Nikon (2) — Ambush: first roll win deals 3X damage
@@ -11410,7 +11410,7 @@ function _resolveRoundImpl() {
     dmg *= 3;
     nikonTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Ambush! First roll ambush → 3X damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Ambush! First roll ambush → 3X damage!`);
   }
 
   // Cave Dweller (46) — Lurk: first roll win deals 3X damage
@@ -11422,7 +11422,7 @@ function _resolveRoundImpl() {
     dmg *= 3;
     caveDwellerTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Lurk! First roll ambush → 3X damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Lurk! First roll ambush → 3X damage!`);
   }
 
   // Doom (112) — Fiendship: every win deals +2 bonus damage
@@ -11439,16 +11439,16 @@ function _resolveRoundImpl() {
   if (abilityIdOf(wF) === 108 && !wF.ko) {
     lucyTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Blue Fire! Gain <span class="log-ms">1 Sacred Fire</span>!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Blue Fire! Gain <span class="log-ms">1 Sacred Fire</span>!`);
     // Lucy's Shadow (439) — Mentor: +1 extra Sacred Fire when Lucy wins
     // Cornelius (45) Antidote blocks Lucy's Shadow sideline effect
     const corneliusBlocksLucyShadowFire = hasSideline(loseTeam, 45);
     if (hasSideline(winTeam, 439) && !corneliusBlocksLucyShadowFire) {
       lucyShadowExtraFire = true;
-      log(`<span class="log-ability">Lucy's Shadow</span> — Mentor! +1 extra Sacred Fire!`);
+      bLog(`<span class="log-ability">Lucy's Shadow</span> — Mentor! +1 extra Sacred Fire!`);
     } else if (hasSideline(winTeam, 439) && corneliusBlocksLucyShadowFire) {
       const cornGhostLS = getSidelineGhost(loseTeam, 45);
-      log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Lucy's Shadow Mentor blocked!`);
+      bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Lucy's Shadow Mentor blocked!`);
     }
   }
 
@@ -11457,7 +11457,7 @@ function _resolveRoundImpl() {
   if (wF.id === 440 && !wF.ko && ['doubles','triples','quads','penta'].includes(wR.type)) {
     gomTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Chaos! Win with doubles → <span class="log-ms">+1 Sacred Fire</span>!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Chaos! Win with doubles → <span class="log-ms">+1 Sacred Fire</span>!`);
   }
 
   // Humar (336) — Meteor: Win → opponent takes 2 damage before next roll + gain 1 Burn (was Lucy's old ability, buffed 1→2 dmg)
@@ -11468,7 +11468,7 @@ function _resolveRoundImpl() {
     winTeam.resources.burn += 1;
     humarTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Meteor! <span class="log-dmg">2 delayed damage</span> + <span class="log-dmg">1 Burn</span>!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Meteor! <span class="log-dmg">2 delayed damage</span> + <span class="log-dmg">1 Burn</span>!`);
   }
 
   // Wim (65) — Slash: all winning dice odd → +5 damage
@@ -11479,7 +11479,7 @@ function _resolveRoundImpl() {
     dmg += 5;
     wimTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Slash! All dice odd → +5 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Slash! All dice odd → +5 damage!`);
   }
 
   // Snorton (67) — Fissure: two or more 6s in winning dice → +5 damage
@@ -11490,7 +11490,7 @@ function _resolveRoundImpl() {
     dmg += 5;
     snortonTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Fissure! Two 6s → +5 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Fissure! Two 6s → +5 damage!`);
   }
 
   // Pelter (86) — Snowball: doubles win → +2 bonus damage
@@ -11501,7 +11501,7 @@ function _resolveRoundImpl() {
     dmg += 2;
     pelterTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Snowball! Doubles win → +2 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Snowball! Doubles win → +2 damage!`);
   }
 
   // Calvin & Anna (91) — Frost Surge: +1 Ice Shard for each Frostbite stack on enemy sideline (on win)
@@ -11515,7 +11515,7 @@ function _resolveRoundImpl() {
     if (totalFrostbite > 0) {
       calvinAnnaIceGain = totalFrostbite;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability" style="color:#60a5fa">${wF.name}</span> — Frost Surge! ${totalFrostbite} Frostbite on enemy sideline → +${totalFrostbite} Ice Shard${totalFrostbite > 1 ? 's' : ''}!`);
+      bLog(`<span class="log-ability" style="color:#60a5fa">${wF.name}</span> — Frost Surge! ${totalFrostbite} Frostbite on enemy sideline → +${totalFrostbite} Ice Shard${totalFrostbite > 1 ? 's' : ''}!`);
     }
   }
 
@@ -11530,7 +11530,7 @@ function _resolveRoundImpl() {
     dmg += 5;
     docTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Savage! Doubles win → +5 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Savage! Doubles win → +5 damage!`);
   }
 
   // Charlie (18) — Rush is now a Flick ability (triggers on loss in resolveRound)
@@ -11546,7 +11546,7 @@ function _resolveRoundImpl() {
     dmg *= 2;
     billBobTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Bait n Switch! Below 4 HP → 2X damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Bait n Switch! Below 4 HP → 2X damage!`);
   }
 
   // Alucard (38) — Colony Call: doubles win → +2 damage per alive sideline ghost. Once per game.
@@ -11561,7 +11561,7 @@ function _resolveRoundImpl() {
       alucardTriggered = true;
       B.alucardUsed[winTeamName] = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Colony Call! ${alucardSidelineCount} sideline ghost${alucardSidelineCount>1?'s':''} × 2 = +${alucardSidelineCount*2} damage!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Colony Call! ${alucardSidelineCount} sideline ghost${alucardSidelineCount>1?'s':''} × 2 = +${alucardSidelineCount*2} damage!`);
     }
   }
 
@@ -11577,7 +11577,7 @@ function _resolveRoundImpl() {
       for (let t = 0; t < castleGuardsThreeCount; t++) dmg *= 2;
       castleGuardsTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Flamethrower! ${castleGuardsThreeCount} three${castleGuardsThreeCount>1?'s':''} → ${castleGuardsBaseDmg} × ${Math.pow(2,castleGuardsThreeCount)} = ${dmg} damage!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Flamethrower! ${castleGuardsThreeCount} three${castleGuardsThreeCount>1?'s':''} → ${castleGuardsBaseDmg} × ${Math.pow(2,castleGuardsThreeCount)} = ${dmg} damage!`);
     }
   }
 
@@ -11590,7 +11590,7 @@ function _resolveRoundImpl() {
     dmg += 2;
     teamZippyTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Teamwork! Singles win → +2 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Teamwork! Singles win → +2 damage!`);
   }
 
   // Ridley (462) — Nimble: singles +1 damage, doubles +2 damage.
@@ -11605,7 +11605,7 @@ function _resolveRoundImpl() {
       dmg += ridleyBonus;
       ridleyTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Nimble! ${wR.type === 'singles' ? 'Singles' : 'Doubles'} → +${ridleyBonus} damage!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Nimble! ${wR.type === 'singles' ? 'Singles' : 'Doubles'} → +${ridleyBonus} damage!`);
     }
   }
 
@@ -11615,7 +11615,7 @@ function _resolveRoundImpl() {
     dmg += 2;
     carpenterTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Apprentice! Singles win → +2 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Apprentice! Singles win → +2 damage!`);
   }
 
   // Carpenter's Hammer (permanent item) — +2 damage on singles for ANY active ghost on the team
@@ -11623,7 +11623,7 @@ function _resolveRoundImpl() {
   if (B.carpenterHammer && B.carpenterHammer[winTeamName] && wR.type === 'singles' && wF.id !== 449) {
     dmg += 2;
     carpenterHammerTriggered = true;
-    log(`<span class="log-ability">Carpenter's Hammer</span> — +2 singles damage!`);
+    bLog(`<span class="log-ability">Carpenter's Hammer</span> — +2 singles damage!`);
   }
 
   // Greg (49) — Chase: if Greg has more HP than the opposing ghost, rolls deal 2X damage.
@@ -11635,7 +11635,7 @@ function _resolveRoundImpl() {
     dmg *= 2;
     gregTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Chase! Greg has ${wF.hp} HP vs enemy ${lF.hp} HP → 2X damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Chase! Greg has ${wF.hp} HP vs enemy ${lF.hp} HP → 2X damage!`);
   }
 
   // Tommy Salami (30) — Regulator: bonus dice from chain-6s were already added in checkTommyRegulator.
@@ -11674,7 +11674,7 @@ function _resolveRoundImpl() {
     dmg = Math.max(dmg, lF.hp); // guarantee KO via normal damage resolution at Beat 3
     pureHeartKO = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Pure Heart! Instant KO — ${lF.name} is defeated!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Pure Heart! Instant KO — ${lF.name} is defeated!`);
   }
 
   // Zain (206) — Ice Blade: permanent +2 damage on ALL winning rolls once forged AND swinging
@@ -11690,7 +11690,7 @@ function _resolveRoundImpl() {
   if (B.sophiaMask && B.sophiaMask[winTeamName] === 'night' && B.sophiaMaskActive[winTeamName]) {
     dmg += 1;
     maskOfNightDmgTriggered = true;
-    log(`<span class="log-ability">Mask of Night</span> — 🌙 +1 damage!`);
+    bLog(`<span class="log-ability">Mask of Night</span> — 🌙 +1 damage!`);
   }
 
   // Valkin's Crystal (raid item) — doubles deal +1 bonus damage
@@ -11698,7 +11698,7 @@ function _resolveRoundImpl() {
   if (B.valkinShard && B.valkinShard[winTeamName] && wR.type === 'doubles' && dmg > 0) {
     dmg += 1;
     valkinShardTriggered = true;
-    log(`<span class="log-ability">Valkin's Crystal</span> — 💀 Doubles → +1 damage!`);
+    bLog(`<span class="log-ability">Valkin's Crystal</span> — 💀 Doubles → +1 damage!`);
   }
 
   // Flame Blade: +3 Burn on win when swinging
@@ -11707,7 +11707,7 @@ function _resolveRoundImpl() {
     if (!winTeam.resources.burn) winTeam.resources.burn = 0;
     winTeam.resources.burn += 3;
     flameBladeWinTriggered = true;
-    log(`<span class="log-ability">Flame Blade</span> — Win while swinging! <span class="log-dmg">+3 Burn!</span>`);
+    bLog(`<span class="log-ability">Flame Blade</span> — Win while swinging! <span class="log-dmg">+3 Burn!</span>`);
   }
 
   // Red Hunter (345) — if opponent has any specials (resources, including committed): +3 damage
@@ -11763,9 +11763,9 @@ function _resolveRoundImpl() {
     sylviaDodgeRolls = [rolledValue];
     if (sylviaDodged) {
       dmg = 0;
-      log(`<span class="log-ability">${lF.name}</span> — Porpoise! Rolled [${rolledValue}] — <span class="log-ms">ALL DAMAGE NEGATED!</span>`);
+      bLog(`<span class="log-ability">${lF.name}</span> — Porpoise! Rolled [${rolledValue}] — <span class="log-ms">ALL DAMAGE NEGATED!</span>`);
     } else {
-      log(`<span class="log-ability">${lF.name}</span> — Porpoise dodge: [${rolledValue}] (needed 5 or 6).`);
+      bLog(`<span class="log-ability">${lF.name}</span> — Porpoise dodge: [${rolledValue}] (needed 5 or 6).`);
     }
     collectKC(loseTeamName, lF.name);
   }
@@ -11780,13 +11780,13 @@ function _resolveRoundImpl() {
   if (hasSideline(winTeam, 95) && wR.type === 'doubles' && !wF.ko) {
     if (corneliusBlocksRally) {
       const cornGhost2 = getSidelineGhost(loseTeam, 45);
-      log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! <span class="log-ability">Tabitha</span> Rally blocked!`);
+      bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! <span class="log-ability">Tabitha</span> Rally blocked!`);
     } else {
       dmg += 2;
       tabithaTriggered = true;
       const tabithaGhost = getSidelineGhost(winTeam, 95);
       collectKC(winTeamName, 'Tabitha', tabithaGhost);
-      log(`<span class="log-ability">Tabitha</span> (sideline) — Rally! Doubles win gets +2 damage!`);
+      bLog(`<span class="log-ability">Tabitha</span> (sideline) — Rally! Doubles win gets +2 damage!`);
     }
   }
 
@@ -11803,8 +11803,8 @@ function _resolveRoundImpl() {
       admiralTriggered = true;
       const admiralGhost = getSidelineGhost(winTeam, 71);
       collectKC(winTeamName, 'Admiral', admiralGhost);
-      log(`<span class="log-ability">Admiral</span> (sideline) — Comrades! Even doubles → +2 damage!`);
-    } else { corneliusSidelineBlockedList.push('Admiral'); log(`<span class="log-ability">Cornelius</span> — Antidote! Admiral Comrades blocked.`); }
+      bLog(`<span class="log-ability">Admiral</span> (sideline) — Comrades! Even doubles → +2 damage!`);
+    } else { corneliusSidelineBlockedList.push('Admiral'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Admiral Comrades blocked.`); }
   }
 
   // Explorer Jeff (455) — Treasure Hunter: sideline & in play, +1 damage if 3+ different specials held
@@ -11818,7 +11818,7 @@ function _resolveRoundImpl() {
     if (ejTypes >= 3) {
       // Cornelius only blocks sideline, not in-play
       if (ejOnSidelineDmg && !ejActiveDmg && corneliusBlocksRally) {
-        corneliusSidelineBlockedList.push('Explorer Jeff'); log(`<span class="log-ability">Cornelius</span> — Antidote! Explorer Jeff Treasure Hunter blocked.`);
+        corneliusSidelineBlockedList.push('Explorer Jeff'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Explorer Jeff Treasure Hunter blocked.`);
       } else {
         explorerJeffBaseDmg = dmg;
         dmg += 1;
@@ -11826,7 +11826,7 @@ function _resolveRoundImpl() {
         const loc = ejActiveDmg ? 'in play' : 'sideline';
         if (ejOnSidelineDmg && !ejActiveDmg) { const ejGhost = getSidelineGhost(winTeam, 455); collectKC(winTeamName, 'Explorer Jeff', ejGhost); }
         else { collectKC(winTeamName, wF.name); }
-        log(`<span class="log-ability">Explorer Jeff</span> (${loc}) — Treasure Hunter! ${ejTypes} specials → +1 damage!`);
+        bLog(`<span class="log-ability">Explorer Jeff</span> (${loc}) — Treasure Hunter! ${ejTypes} specials → +1 damage!`);
       }
     }
   }
@@ -11842,8 +11842,8 @@ function _resolveRoundImpl() {
       darkJeffTriggered = true;
       const djGhost = getSidelineGhost(winTeam, 74);
       collectKC(winTeamName, 'Dark Jeff', djGhost);
-      log(`<span class="log-ability">Dark Jeff</span> (sideline) — Cackle! +1 damage to all rolls!`);
-    } else { corneliusSidelineBlockedList.push('Dark Jeff'); log(`<span class="log-ability">Cornelius</span> — Antidote! Dark Jeff Cackle blocked.`); }
+      bLog(`<span class="log-ability">Dark Jeff</span> (sideline) — Cackle! +1 damage to all rolls!`);
+    } else { corneliusSidelineBlockedList.push('Dark Jeff'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Dark Jeff Cackle blocked.`); }
   }
 
   // Bilbo (80) — Little Buddy: while on the sideline, your ghost in play gains +2 damage on singles wins.
@@ -11857,8 +11857,8 @@ function _resolveRoundImpl() {
       bilboTriggered = true;
       const bilboGhost = getSidelineGhost(winTeam, 80);
       collectKC(winTeamName, 'Bilbo', bilboGhost);
-      log(`<span class="log-ability">Bilbo</span> (sideline) — Little Buddy! Singles win → +2 damage!`);
-    } else { corneliusSidelineBlockedList.push('Bilbo'); log(`<span class="log-ability">Cornelius</span> — Antidote! Bilbo Little Buddy blocked.`); }
+      bLog(`<span class="log-ability">Bilbo</span> (sideline) — Little Buddy! Singles win → +2 damage!`);
+    } else { corneliusSidelineBlockedList.push('Bilbo'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Bilbo Little Buddy blocked.`); }
   }
 
   // Pale Nimbus (88) — Hidden Storm: while on the sideline, +2 damage if winning dice sum < 7.
@@ -11872,8 +11872,8 @@ function _resolveRoundImpl() {
       paleNimbusTriggered = true;
       const pnGhost = getSidelineGhost(winTeam, 88);
       collectKC(winTeamName, 'Pale Nimbus', pnGhost);
-      log(`<span class="log-ability">Pale Nimbus</span> (sideline) — Hidden Storm! Roll sum ${winDice.reduce((s,d)=>s+d,0)} < 7 → +2 damage!`);
-    } else { corneliusSidelineBlockedList.push('Pale Nimbus'); log(`<span class="log-ability">Cornelius</span> — Antidote! Pale Nimbus Hidden Storm blocked.`); }
+      bLog(`<span class="log-ability">Pale Nimbus</span> (sideline) — Hidden Storm! Roll sum ${winDice.reduce((s,d)=>s+d,0)} < 7 → +2 damage!`);
+    } else { corneliusSidelineBlockedList.push('Pale Nimbus'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Pale Nimbus Hidden Storm blocked.`); }
   }
 
   // Laura (79) — Catchy Tune: Sideline & In Play: roll a straight to unlock permanently.
@@ -11886,7 +11886,7 @@ function _resolveRoundImpl() {
       const lauraG = wF.id === 79 ? wF : (getSidelineGhost(winTeam, 79) || { name: 'Laura' });
       const lauraLoc = wF.id === 79 ? '' : ' (sideline)';
       collectKC(winTeamName, lauraG.name);
-      log(`<span class="log-ability">${lauraG.name}${lauraLoc}</span> — Catchy Tune unlocked! Straight [${[...winDice].sort((a,b)=>a-b).join('-')}]! Choose a die to lock after each roll!`);
+      bLog(`<span class="log-ability">${lauraG.name}${lauraLoc}</span> — Catchy Tune unlocked! Straight [${[...winDice].sort((a,b)=>a-b).join('-')}]! Choose a die to lock after each roll!`);
       popSidelineCard(winTeam, 79);
     } else { corneliusSidelineBlockedList.push('Laura'); }
   }
@@ -11899,7 +11899,7 @@ function _resolveRoundImpl() {
       const lauraGL = lF.id === 79 ? lF : (getSidelineGhost(loseTeam, 79) || { name: 'Laura' });
       const lauraLocL = lF.id === 79 ? '' : ' (sideline)';
       collectKC(loseTeamName, lauraGL.name);
-      log(`<span class="log-ability">${lauraGL.name}${lauraLocL}</span> — Catchy Tune unlocked! Straight [${[...loseDice].sort((a,b)=>a-b).join('-')}]! Choose a die to lock after each roll!`);
+      bLog(`<span class="log-ability">${lauraGL.name}${lauraLocL}</span> — Catchy Tune unlocked! Straight [${[...loseDice].sort((a,b)=>a-b).join('-')}]! Choose a die to lock after each roll!`);
       popSidelineCard(loseTeam, 79);
     }
   }
@@ -11922,13 +11922,13 @@ function _resolveRoundImpl() {
     const garyWinGhost = winGaryActive ? wF : getSidelineGhost(winTeam, 92);
     collectKC(winTeamName, 'Gary', garyWinGhost);
     const winLoc = winGaryActive ? 'active' : 'sideline';
-    log(`<span class="log-ability">Gary</span> (${winLoc}) — Lucky Novice! ${garyOnesWin} rolled 1${garyOnesWin > 1 ? 's' : ''} → +${garyIceWin} Ice Shards!`);
+    bLog(`<span class="log-ability">Gary</span> (${winLoc}) — Lucky Novice! ${garyOnesWin} rolled 1${garyOnesWin > 1 ? 's' : ''} → +${garyIceWin} Ice Shards!`);
   }
   if (garyOnesLose > 0) {
     const garyLoseGhost = loseGaryActive ? lF : getSidelineGhost(loseTeam, 92);
     collectKC(loseTeamName, 'Gary', garyLoseGhost);
     const loseLoc = loseGaryActive ? 'active' : 'sideline';
-    log(`<span class="log-ability">Gary</span> (${loseLoc}) — Lucky Novice! ${garyOnesLose} rolled 1${garyOnesLose > 1 ? 's' : ''} → +${garyIceLose} Ice Shards!`);
+    bLog(`<span class="log-ability">Gary</span> (${loseLoc}) — Lucky Novice! ${garyOnesLose} rolled 1${garyOnesLose > 1 ? 's' : ''} → +${garyIceLose} Ice Shards!`);
   }
 
   // Pelter (86) — Snowball Fight: Sideline & In Play, gain 1 Frostbite for each 1 rolled (win or lose)
@@ -11941,7 +11941,7 @@ function _resolveRoundImpl() {
     const pelterG = winPelterActive ? wF : (getSidelineGhost(winTeam, 86) || { name: 'Pelter' });
     const pelterLoc = winPelterActive ? '' : ' (sideline)';
     collectKC(winTeamName, pelterG.name, winPelterSide ? pelterG : undefined);
-    log(`<span class="log-ability" style="color:#60a5fa">${pelterG.name}${pelterLoc}</span> — Snowball Fight! ${pelterOnesWin} rolled 1${pelterOnesWin > 1 ? 's' : ''} → +${pelterOnesWin} Frostbite!`);
+    bLog(`<span class="log-ability" style="color:#60a5fa">${pelterG.name}${pelterLoc}</span> — Snowball Fight! ${pelterOnesWin} rolled 1${pelterOnesWin > 1 ? 's' : ''} → +${pelterOnesWin} Frostbite!`);
   }
   const losePelterActive = lF.id === 86 && !lF.ko;
   const losePelterSide = hasSideline(loseTeam, 86);
@@ -11953,7 +11953,7 @@ function _resolveRoundImpl() {
     const pelterGL = losePelterActive ? lF : (getSidelineGhost(loseTeam, 86) || { name: 'Pelter' });
     const pelterLocL = losePelterActive ? '' : ' (sideline)';
     collectKC(loseTeamName, pelterGL.name, losePelterSide ? pelterGL : undefined);
-    log(`<span class="log-ability" style="color:#60a5fa">${pelterGL.name}${pelterLocL}</span> — Snowball Fight! ${pelterOnesLose} rolled 1${pelterOnesLose > 1 ? 's' : ''} → +${pelterOnesLose} Frostbite!`);
+    bLog(`<span class="log-ability" style="color:#60a5fa">${pelterGL.name}${pelterLocL}</span> — Snowball Fight! ${pelterOnesLose} rolled 1${pelterOnesLose > 1 ? 's' : ''} → +${pelterOnesLose} Frostbite!`);
   }
 
   // Bandit Pete (93) — Bandit: while on the sideline, if either player rolls only 2 dice, active ghost gains +3 damage.
@@ -11968,8 +11968,8 @@ function _resolveRoundImpl() {
       const bpGhost = getSidelineGhost(winTeam, 93);
       collectKC(winTeamName, 'Bandit Pete', bpGhost);
       const bpWho = winDice.length === 2 ? 'Your ghost rolled only 2 dice' : 'Opponent rolled only 2 dice';
-      log(`<span class="log-ability">Bandit Pete</span> (sideline) — Bandit! ${bpWho} → +3 damage!`);
-    } else { corneliusSidelineBlockedList.push('Bandit Pete'); log(`<span class="log-ability">Cornelius</span> — Antidote! Bandit Pete Bandit blocked.`); }
+      bLog(`<span class="log-ability">Bandit Pete</span> (sideline) — Bandit! ${bpWho} → +3 damage!`);
+    } else { corneliusSidelineBlockedList.push('Bandit Pete'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Bandit Pete Bandit blocked.`); }
   }
 
   // Zach (87) — Craftsman: while on the sideline, Guard Thomas gains +3 damage on Doubles.
@@ -11983,8 +11983,8 @@ function _resolveRoundImpl() {
       zachCraftsmanTriggered = true;
       const zachGhost = getSidelineGhost(winTeam, 87);
       collectKC(winTeamName, 'Zach', zachGhost);
-      log(`<span class="log-ability">Zach</span> (sideline) — Craftsman! Guard Thomas doubles → +3 damage!`);
-    } else { corneliusSidelineBlockedList.push('Zach'); log(`<span class="log-ability">Cornelius</span> — Antidote! Zach Craftsman blocked.`); }
+      bLog(`<span class="log-ability">Zach</span> (sideline) — Craftsman! Guard Thomas doubles → +3 damage!`);
+    } else { corneliusSidelineBlockedList.push('Zach'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Zach Craftsman blocked.`); }
   }
 
   // Lou (32) — Bros: while on the sideline, Grawr (id=34) gains +1 Damage and +1 Health on Winning Rolls.
@@ -11996,8 +11996,8 @@ function _resolveRoundImpl() {
       louBrosBaseDmg = dmg;
       dmg += 1;
       louBrosTriggered = true;
-      log(`<span class="log-ability">Lou</span> (sideline) — Bros! Grawr wins → +1 damage!`);
-    } else { corneliusSidelineBlockedList.push('Lou'); log(`<span class="log-ability">Cornelius</span> — Antidote! Lou Bros blocked.`); }
+      bLog(`<span class="log-ability">Lou</span> (sideline) — Bros! Grawr wins → +1 damage!`);
+    } else { corneliusSidelineBlockedList.push('Lou'); bLog(`<span class="log-ability">Cornelius</span> — Antidote! Lou Bros blocked.`); }
   }
 
   // Chip (16) — Acrobatic Dive: even rolled doubles add +3 damage if you deal damage.
@@ -12011,7 +12011,7 @@ function _resolveRoundImpl() {
     dmg += 3;
     chipTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Acrobatic Dive! Even doubles → +3 damage! (${chipBaseDmg} + 3 = ${dmg})`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Acrobatic Dive! Even doubles → +3 damage! (${chipBaseDmg} + 3 = ${dmg})`);
   }
 
   // Yawn Eater (464) — Feast: odd doubles deal +1 damage
@@ -12021,7 +12021,7 @@ function _resolveRoundImpl() {
     dmg += 1;
     yawnEaterOddTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Feast! Odd doubles → +1 damage! (${yeBaseDmg} + 1 = ${dmg})`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Feast! Odd doubles → +1 damage! (${yeBaseDmg} + 1 = ${dmg})`);
   }
 
   // Dealer (37) — House Rules WIN: straight → +3 damage.
@@ -12031,7 +12031,7 @@ function _resolveRoundImpl() {
     dmg += 3;
     dealerWinTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — House Rules! Straight [${[...winDice].sort((a,b)=>a-b).join(', ')}] → +3 damage! (${dealerWinBase} + 3 = ${dmg})`);
+    bLog(`<span class="log-ability">${wF.name}</span> — House Rules! Straight [${[...winDice].sort((a,b)=>a-b).join(', ')}] → +3 damage! (${dealerWinBase} + 3 = ${dmg})`);
   }
 
   // Dark Fang (202) — Pressure: Win: +1 damage per KO'd ghost this game (both teams)
@@ -12044,7 +12044,7 @@ function _resolveRoundImpl() {
       dmg += deathHowlKOs;
       deathHowlTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Pressure! ${deathHowlKOs} KO'd ghost${deathHowlKOs > 1 ? 's' : ''} → +${deathHowlKOs} damage! (${dhBaseDmg} + ${deathHowlKOs} = ${dmg})`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Pressure! ${deathHowlKOs} KO'd ghost${deathHowlKOs > 1 ? 's' : ''} → +${deathHowlKOs} damage! (${dhBaseDmg} + ${deathHowlKOs} = ${dmg})`);
     }
   }
 
@@ -12055,7 +12055,7 @@ function _resolveRoundImpl() {
     dmg += 2;
     wandererTriggered = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Curiosity! Straight [${[...winDice].sort((a,b)=>a-b).join(', ')}] → +2 damage! (${wandererBaseDmg} + 2 = ${dmg})`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Curiosity! Straight [${[...winDice].sort((a,b)=>a-b).join(', ')}] → +2 damage! (${wandererBaseDmg} + 2 = ${dmg})`);
   }
 
   // Ancient Librarian (3) — Knowledge: for each 2 rolled by BOTH players combined, add +1 damage (only if winning ghost deals damage).
@@ -12070,7 +12070,7 @@ function _resolveRoundImpl() {
       dmg += librarianTwos;
       librarianTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Knowledge! ${librarianTwos} two${librarianTwos > 1 ? 's' : ''} rolled (both teams) → +${librarianTwos} damage!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Knowledge! ${librarianTwos} two${librarianTwos > 1 ? 's' : ''} rolled (both teams) → +${librarianTwos} damage!`);
     }
   }
 
@@ -12086,7 +12086,7 @@ function _resolveRoundImpl() {
       dmg += sparkyOneCount * 3;
       sparkyTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Tinder! ${sparkyOneCount} rolled 1${sparkyOneCount > 1 ? 's' : ''} × 3 = +${sparkyOneCount * 3} damage!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Tinder! ${sparkyOneCount} rolled 1${sparkyOneCount > 1 ? 's' : ''} × 3 = +${sparkyOneCount * 3} damage!`);
     }
   }
 
@@ -12095,7 +12095,7 @@ function _resolveRoundImpl() {
   if (wF.id === 101 && !wF.ko && B.splinterActivated && !B.splinterActivated[winTeamName]) {
     B.splinterActivated[winTeamName] = true;
     splinterJustActivated = true;
-    log(`<span class="log-ability">${wF.name}</span> — Toxic Fumes! Activated — 1 pre-roll damage every round from here on.`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Toxic Fumes! Activated — 1 pre-roll damage every round from here on.`);
   }
 
   // Kodako (1) — Swift WIN case: rolling 1-2-3 (all three values present) while winning → deal exactly 4 damage (overrides all modifiers)
@@ -12104,7 +12104,7 @@ function _resolveRoundImpl() {
     dmg = 4;
     kodakoSwiftWin = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Swift! 1-2-3 combo → exactly 4 damage!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Swift! 1-2-3 combo → exactly 4 damage!`);
   }
 
   // Guard Thomas (41) — Stoic: while Guard Thomas has less than 6 HP, singles rolls deal 0 damage to him.
@@ -12113,7 +12113,7 @@ function _resolveRoundImpl() {
   if (lF.id === 41 && !lF.ko && lF.hp < 6 && wR.type === 'singles' && dmg > 0 && !cameronUnnegatable) {
     guardThomasStoic = true;
     dmg = 0;
-    log(`<span class="log-ability">${lF.name}</span> — Stoic! Below 6 HP — immune to singles! ${wF.name}'s singles roll blocked!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Stoic! Below 6 HP — immune to singles! ${wF.name}'s singles roll blocked!`);
   }
 
   // Bogey (53) — Bogus: REACTIVE reflect — player sees incoming damage and chooses whether to bounce it.
@@ -12146,7 +12146,7 @@ function _resolveRoundImpl() {
       bogeyReflected = true;
       B.bogeyUsed[loseTeamName] = true;   // once per game — never offered again
       collectKC(loseTeamName, lF.name, lF);
-      log(`<span class="log-ability">${lF.name}</span> — Bogus! ${bogeyReflectDmg} damage reflected back to ${wF.name}!`);
+      bLog(`<span class="log-ability">${lF.name}</span> — Bogus! ${bogeyReflectDmg} damage reflected back to ${wF.name}!`);
     }
     // bogeyChoice === 'no': dmg falls through unchanged, bogeyUsed stays false (reflect preserved)
   }
@@ -12157,7 +12157,7 @@ function _resolveRoundImpl() {
     dmg = 0; // Kodako takes nothing — Swift counters the hit
     kodakoSwiftLose = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Swift! 1-2-3 while losing → negate damage, deal 4 back to ${wF.name}!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Swift! 1-2-3 while losing → negate damage, deal 4 back to ${wF.name}!`);
   }
 
   // Patrick (10) — Stone Form: losing to a singles roll negates all incoming damage and deals 3 counter-damage back to the winner.
@@ -12169,7 +12169,7 @@ function _resolveRoundImpl() {
     dmg = 0; // Patrick takes nothing — Stone Form counters singles
     patrickStoneForm = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Stone Form! Singles roll negated — dealing 3 back to ${wF.name}!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Stone Form! Singles roll negated — dealing 3 back to ${wF.name}!`);
   }
 
   // Dealer (37) — House Rules LOSE: straight (consecutive, no repeats) → negate all incoming damage.
@@ -12178,7 +12178,7 @@ function _resolveRoundImpl() {
     dmg = 0;
     dealerHouseRules = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — House Rules! Straight [${[...loseDice].sort((a,b)=>a-b).join(', ')}] — ${wF.name}'s attack negated!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — House Rules! Straight [${[...loseDice].sort((a,b)=>a-b).join(', ')}] — ${wF.name}'s attack negated!`);
   }
 
   // Sky (72) — Elusive: if incoming damage is greater than 2, negate it and deal counter die damage.
@@ -12199,7 +12199,7 @@ function _resolveRoundImpl() {
       winTeamName: winTeamName
     };
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Elusive! ${skyElusiveBlockedDmg} incoming damage > 2 — ${wF.name}'s hit negated! Counter die pending.`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Elusive! ${skyElusiveBlockedDmg} incoming damage > 2 — ${wF.name}'s hit negated! Counter die pending.`);
   }
 
   // City Cyboo (77) — Barrier: takes no damage from enemy doubles.
@@ -12211,7 +12211,7 @@ function _resolveRoundImpl() {
     dmg = 0;
     cityCybooBarrier = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Barrier! Enemy doubles blocked! ${cityCybooBlockedDmg} damage negated!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Barrier! Enemy doubles blocked! ${cityCybooBlockedDmg} damage negated!`);
   }
 
   // Puff (5) — Cute: enemy doubles and triples deal -1 damage (minimum 0).
@@ -12223,7 +12223,7 @@ function _resolveRoundImpl() {
     dmg = Math.max(0, dmg - 1);
     puffCute = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Cute! ${wR.type} roll softened — ${puffCuteOriginalDmg} → ${dmg} damage!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Cute! ${wR.type} roll softened — ${puffCuteOriginalDmg} → ${dmg} damage!`);
   }
 
   // King Jay (106) — Reflection: lose the roll & loser's dice total = 7 → reflect all damage back to winner
@@ -12236,7 +12236,7 @@ function _resolveRoundImpl() {
     dmg = 0; // loser takes nothing — all damage goes back
     kingJayReflected = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Reflection! Dice total = 7! ${kingJayReflectDmg} damage reflected back to ${wF.name}!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Reflection! Dice total = 7! ${kingJayReflectDmg} damage reflected back to ${wF.name}!`);
   }
 
   // Gus (31) — Gale Force: reactive post-win timed button.
@@ -12295,7 +12295,7 @@ function _resolveRoundImpl() {
     B.fangUndercoverSwapPending = loseTeamName; // signal drain callback to show ghost-picker
     dmg = 0; // Fang takes no damage — dodge activated
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Skilled Coward! Dodge activated! Fang will swap to the sideline!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Skilled Coward! Dodge activated! Fang will swap to the sideline!`);
   }
   if (B.fangUndercoverArmed) { B.fangUndercoverArmed[loseTeamName] = false; B.fangUndercoverArmed[winTeamName] = false; } // clear any unused arm
 
@@ -12309,13 +12309,13 @@ function _resolveRoundImpl() {
     dmg = 0; // Mirror Matt takes nothing
     mirrorMattReflected = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — SEVEN YEARS! ${wR.type} reflected! <span class="log-dmg">${mirrorMattReflectDmg} damage bounced to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':wF.hp+' HP left'}`);
+    bLog(`<span class="log-ability">${lF.name}</span> — SEVEN YEARS! ${wR.type} reflected! <span class="log-dmg">${mirrorMattReflectDmg} damage bounced to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':wF.hp+' HP left'}`);
   }
 
   // Garrick (427) — Watchfire: Lose: -1 damage (damage reduction)
   if (lF.id === 427 && !lF.ko && dmg > 0) {
     dmg = Math.max(0, dmg - 1);
-    log(`<span class="log-ability">${lF.name}</span> — Watchfire! Absorbs 1 damage. (${dmg > 0 ? dmg + ' damage remaining' : 'All damage absorbed!'})`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Watchfire! Absorbs 1 damage. (${dmg > 0 ? dmg + ' damage remaining' : 'All damage absorbed!'})`);
   }
 
   // Gordok (430) — River Terror: Win: you MAY steal 2 resources instead of dealing damage (player choice)
@@ -12344,7 +12344,7 @@ function _resolveRoundImpl() {
         B.gordokDieBonus[winTeamName] = 1;
         winTeam.resources.moonstone++;
         collectKC(winTeamName, wF.name);
-        log(`<span class="log-ability">${wF.name}</span> — River Terror! Stole ${gordokStolenList.join(', ')} instead of dealing damage! <span class="log-ice">+1 die next roll!</span> <span class="log-ms">+1 Moonstone!</span>`);
+        bLog(`<span class="log-ability">${wF.name}</span> — River Terror! Stole ${gordokStolenList.join(', ')} instead of dealing damage! <span class="log-ice">+1 die next roll!</span> <span class="log-ms">+1 Moonstone!</span>`);
       } else {
         // Human player: defer to modal choice
         B.gordokPending = { winTeam, winTeamName, loseTeam, lF, wF, dmg, resume: null };
@@ -12365,7 +12365,7 @@ function _resolveRoundImpl() {
         dmg = 0;
         wiseAlSqualled = true;
         collectKC(winTeamName, wF.name);
-        log(`<span class="log-ability">${wF.name}</span> — Squall! <span class="log-ice">+4 Ice Shards</span> instead of dealing damage!`);
+        bLog(`<span class="log-ability">${wF.name}</span> — Squall! <span class="log-ice">+4 Ice Shards</span> instead of dealing damage!`);
       }
     } else {
       // Human player: defer to modal choice
@@ -12385,7 +12385,7 @@ function _resolveRoundImpl() {
       dmg = 0;
       sophiaMasqueraded = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Masquerade! Gained <b>🌙 Mask of Night</b> instead of dealing damage! (Roll the same number of dice as the enemy ghost, +1 damage)`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Masquerade! Gained <b>🌙 Mask of Night</b> instead of dealing damage! (Roll the same number of dice as the enemy ghost, +1 damage)`);
     } else {
       // Human player: defer to modal choice
       B.sophiaPending = { winTeam, winTeamName, loseTeam, lF, wF, dmg, resume: null };
@@ -12401,7 +12401,7 @@ function _resolveRoundImpl() {
   if (dmg > 0) {
     lF.hp = Math.max(0, lF.hp - dmg);
     if (lF.hp <= 0) { lF.ko = true; lF.killedBy = (wF.originalId || wF.id); }
-    log(`<span class="log-dmg">${wF.name} deals ${dmg} to ${lF.name}!</span> ${lF.ko?'<span class="log-ko">KO!</span>':lF.hp+' HP left'}`);
+    bLog(`<span class="log-dmg">${wF.name} deals ${dmg} to ${lF.name}!</span> ${lF.ko?'<span class="log-ko">KO!</span>':lF.hp+' HP left'}`);
 
   // Resolve deferred Heavy Air hits — only if Knight Terror survived this round's damage
   if (pendingHeavyAirHits.length > 0) {
@@ -12416,7 +12416,7 @@ function _resolveRoundImpl() {
         if (!hit.target.ko) {
           hit.target.hp = Math.max(0, hit.target.hp - 2);
           if (hit.target.hp <= 0) { hit.target.ko = true; hit.target.killedBy = 401; }
-          log(`<span class="log-ability">Knight Terror</span> — Heavy Air! <span class="log-dmg">${hit.targetName} loses 2 HP!</span> ${hit.target.ko ? '<span class="log-ko">KO!</span>' : hit.target.hp + ' HP left'}`);
+          bLog(`<span class="log-ability">Knight Terror</span> — Heavy Air! <span class="log-dmg">${hit.targetName} loses 2 HP!</span> ${hit.target.ko ? '<span class="log-ko">KO!</span>' : hit.target.hp + ' HP left'}`);
         }
       }
     } else {
@@ -12430,7 +12430,7 @@ function _resolveRoundImpl() {
     pendingHeavyAirHits.length = 0;
   }
   } else if (!mirrorMattReflected && !gordokStole && !wiseAlSqualled && !kingJayReflected && !guardianFairyAbsorbed && !bogeyReflected && !kodakoSwiftLose && !patrickStoneForm && !dealerHouseRules && !skyElusive && !cityCybooBarrier && !puffCute && !fangUndercoverActivated) {
-    log(`${wF.name} wins but deals 0 damage.`);
+    bLog(`${wF.name} wins but deals 0 damage.`);
   }
 
   // Jasper (428) — Flame Dive: Win: interactive bonus die reveal (Balatron-style)
@@ -12467,7 +12467,7 @@ function _resolveRoundImpl() {
   if (kingJayReflected && kingJayReflectDmg > 0) {
     kingJayHpAfter = Math.max(0, wF.hp - kingJayReflectDmg);
     if (kingJayHpAfter <= 0) { wF.ko = true; wF.killedBy = lF.id; }
-    log(`<span class="log-dmg">${lF.name} reflects ${kingJayReflectDmg} back! ${wF.name} takes the hit!</span> ${wF.ko?'<span class="log-ko">KO!</span>':kingJayHpAfter+' HP left'}`);
+    bLog(`<span class="log-dmg">${lF.name} reflects ${kingJayReflectDmg} back! ${wF.name} takes the hit!</span> ${wF.ko?'<span class="log-ko">KO!</span>':kingJayHpAfter+' HP left'}`);
   }
 
   // Bogey reflected damage — applies to the winner (lF takes 0; wF eats the full hit)
@@ -12476,7 +12476,7 @@ function _resolveRoundImpl() {
   if (bogeyReflected && bogeyReflectDmg > 0) {
     bogeyHpAfter = Math.max(0, wF.hp - bogeyReflectDmg);
     if (bogeyHpAfter <= 0) { wF.ko = true; wF.killedBy = lF.id; }
-    log(`<span class="log-dmg">${lF.name} — BOGUS! ${bogeyReflectDmg} damage bounced back to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':bogeyHpAfter+' HP left'}`);
+    bLog(`<span class="log-dmg">${lF.name} — BOGUS! ${bogeyReflectDmg} damage bounced back to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':bogeyHpAfter+' HP left'}`);
   }
 
   // Kodako (1) — Swift lose counter: 4 damage dealt back to the winner
@@ -12486,7 +12486,7 @@ function _resolveRoundImpl() {
   if (kodakoSwiftLose) {
     swiftLoseHpAfter = Math.max(0, wF.hp - 4);
     if (swiftLoseHpAfter <= 0) { wF.ko = true; wF.killedBy = lF.id; }
-    log(`<span class="log-dmg">${lF.name} — Swift counter! 4 damage to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':swiftLoseHpAfter+' HP left'}`);
+    bLog(`<span class="log-dmg">${lF.name} — Swift counter! 4 damage to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':swiftLoseHpAfter+' HP left'}`);
   }
 
   // Patrick (10) — Stone Form counter: 3 damage dealt back to the winner for throwing a singles roll
@@ -12495,7 +12495,7 @@ function _resolveRoundImpl() {
   if (patrickStoneForm) {
     stoneFormHpAfter = Math.max(0, wF.hp - patrickStoneDmg);
     if (stoneFormHpAfter <= 0) { wF.ko = true; wF.killedBy = lF.id; }
-    log(`<span class="log-dmg">${lF.name} — Stone Form counter! ${patrickStoneDmg} damage to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':stoneFormHpAfter+' HP left'}`);
+    bLog(`<span class="log-dmg">${lF.name} — Stone Form counter! ${patrickStoneDmg} damage to ${wF.name}!</span> ${wF.ko?'<span class="log-ko">KO!</span>':stoneFormHpAfter+' HP left'}`);
   }
 
   // Cameron (25) — Unstoppable Force: damage cannot be negated (cameronUnnegatable flag set above,
@@ -12504,7 +12504,7 @@ function _resolveRoundImpl() {
   if (cameronUnnegatable && !wF.ko && dmg > 0) {
     cameronUnstoppableLogged = true;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Unstoppable Force! Damage cannot be negated!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Unstoppable Force! Damage cannot be negated!`);
   }
 
   // Pudge self-damage (game state — HP mutation deferred to BELLY FLOP! onShow)
@@ -12516,7 +12516,7 @@ function _resolveRoundImpl() {
     pudgeHpAfter = Math.max(0, wF.hp - 1); // compute only — HP bar deferred to onShow
     if (pudgeHpAfter <= 0) { wF.ko = true; wF.killedBy = -1; } // ko flag synchronous (Cameron check); killedBy=-1 = self-inflicted (Belly Flop), so no kill credit goes to the loser
     pudgeSelfDmgApplied = true;
-    log(`<span class="log-dmg">${wF.name} takes 1 self-damage from Belly Flop!</span> ${wF.ko?'<span class="log-ko">KO!</span>':pudgeHpAfter+' HP left'}`);
+    bLog(`<span class="log-dmg">${wF.name} takes 1 self-damage from Belly Flop!</span> ${wF.ko?'<span class="log-ko">KO!</span>':pudgeHpAfter+' HP left'}`);
   }
 
   // Prince Balatron (113) — Party Time: lose & survive → player rolls 1 counter die
@@ -12560,7 +12560,7 @@ function _resolveRoundImpl() {
     bubbleBoysName = lF.name;
     bubbleBoysEnemyName = wF.name;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Pop! ${wF.name} rolled triples — Bubble Boys burst!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Pop! ${wF.name} rolled triples — Bubble Boys burst!`);
   }
   // Case 2: Bubble Boys won, but the losing roll was also triples (enemy still activated Pop)
   if (wF.id === 44 && !wF.ko && lR.type === 'triples') {
@@ -12571,7 +12571,7 @@ function _resolveRoundImpl() {
     bubbleBoysName = wF.name;
     bubbleBoysEnemyName = lF.name;
     collectKC(winTeamName, wF.name);
-    log(`<span class="log-ability">${wF.name}</span> — Pop! ${lF.name} rolled triples — Bubble Boys burst even in victory!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Pop! ${lF.name} rolled triples — Bubble Boys burst even in victory!`);
   }
 
   // Night Master (103) — Bullseye: win with doubles → destroy an enemy sideline ghost that has < 4 HP
@@ -12586,7 +12586,7 @@ function _resolveRoundImpl() {
       bsCandidate.ko = true;
       bsCandidate.killedBy = 103;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Bullseye! ${bsCandidate.name} (${bullseyeTarget.priorHp} HP) sniped from the enemy sideline!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Bullseye! ${bsCandidate.name} (${bullseyeTarget.priorHp} HP) sniped from the enemy sideline!`);
     }
   }
 
@@ -12607,7 +12607,7 @@ function _resolveRoundImpl() {
       const slicerGhost = slicerActive ? wF : getSidelineGhost(winTeam, 460);
       const slicerLabel = slicerSideline && !slicerActive ? `${slicerGhost.name} (sideline)` : slicerGhost.name;
       collectKC(winTeamName, slicerLabel);
-      log(`<span class="log-ability">${slicerLabel}</span> — Parting Gift! ${best.name} (${slicerTarget.priorHp} HP) destroyed from the enemy sideline!`);
+      bLog(`<span class="log-ability">${slicerLabel}</span> — Parting Gift! ${best.name} (${slicerTarget.priorHp} HP) destroyed from the enemy sideline!`);
     }
   }
 
@@ -12632,12 +12632,12 @@ function _resolveRoundImpl() {
       if (floraFlippedTo <= 0) { wF.ko = true; wF.killedBy = 59; } // KO flag synchronous (Cameron check)
       floraFlipped = true; floraFlippedName = wF.name; floraFlippedFrom = flBefore;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Restore! Mr Filbert curses it → -2 HP! (${flBefore} → ${floraFlippedTo})`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Restore! Mr Filbert curses it → -2 HP! (${flBefore} → ${floraFlippedTo})`);
     } else {
       floraRestoredHp = wF.hp + 2; // compute only — defer mutation to onShow
       floraRestoredName = wF.name; floraRestored = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Restore! Doubles win → +2 HP! (${flBefore} → ${floraRestoredHp}/${wF.maxHp}${floraRestoredHp > wF.maxHp ? ' overclocked!' : ''})`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Restore! Doubles win → +2 HP! (${flBefore} → ${floraRestoredHp}/${wF.maxHp}${floraRestoredHp > wF.maxHp ? ' overclocked!' : ''})`);
     }
   }
   if (lF.id === 75 && !lF.ko && lR.type === 'doubles') {
@@ -12648,12 +12648,12 @@ function _resolveRoundImpl() {
       if (floraFlippedTo <= 0) { lF.ko = true; lF.killedBy = 59; } // KO flag synchronous
       floraFlipped = true; floraFlippedName = lF.name; floraFlippedFrom = flBefore;
       collectKC(loseTeamName, lF.name);
-      log(`<span class="log-ability">${lF.name}</span> — Restore! Mr Filbert curses it → -2 HP! (${flBefore} → ${floraFlippedTo})`);
+      bLog(`<span class="log-ability">${lF.name}</span> — Restore! Mr Filbert curses it → -2 HP! (${flBefore} → ${floraFlippedTo})`);
     } else {
       floraRestoredHp = lF.hp + 2; // compute only — defer mutation to onShow
       floraRestoredName = lF.name; floraRestored = true;
       collectKC(loseTeamName, lF.name);
-      log(`<span class="log-ability">${lF.name}</span> — Restore! Rolled doubles → +2 HP even in defeat! (${flBefore} → ${floraRestoredHp}/${lF.maxHp}${floraRestoredHp > lF.maxHp ? ' overclocked!' : ''})`);
+      bLog(`<span class="log-ability">${lF.name}</span> — Restore! Rolled doubles → +2 HP even in defeat! (${flBefore} → ${floraRestoredHp}/${lF.maxHp}${floraRestoredHp > lF.maxHp ? ' overclocked!' : ''})`);
     }
   }
 
@@ -12668,7 +12668,7 @@ function _resolveRoundImpl() {
   if (lF.id === 29) {
     sadSalTriggered = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Tough Job! Lost the roll → +1 Ice Shard!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Tough Job! Lost the roll → +1 Ice Shard!`);
   }
 
   // Hugo (52) — Wreckage: when Hugo takes real roll damage, the attacker loses 1 die next roll
@@ -12678,7 +12678,7 @@ function _resolveRoundImpl() {
     B.hugoWreckage[winTeamName] = (B.hugoWreckage[winTeamName] || 0) + 1;
     hugoWreckageTriggered = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Wreckage! Took ${dmg} damage → ${wF.name} loses 1 die next roll!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Wreckage! Took ${dmg} damage → ${wF.name} loses 1 die next roll!`);
   }
 
   // Marcus (57) — Glacial Pounding: if Marcus (loser) took 3+ real damage, the PLAYER gains +4 bonus dice next roll
@@ -12689,7 +12689,7 @@ function _resolveRoundImpl() {
     B.marcusGlacialBonus[loseTeamName] = (B.marcusGlacialBonus[loseTeamName] || 0) + 4;
     marcusGlacialTriggered = true;
     collectKC(loseTeamName, lF.name);
-    log(`<span class="log-ability">${lF.name}</span> — Glacial Pounding! Took ${dmg} damage → +4 bonus dice next roll!`);
+    bLog(`<span class="log-ability">${lF.name}</span> — Glacial Pounding! Took ${dmg} damage → +4 bonus dice next roll!`);
   }
 
   // Troubling Haters (83) — Growing Mob: win with 4+ damage → +2 HP (overclocks per v294)
@@ -12703,11 +12703,11 @@ function _resolveRoundImpl() {
     if (filbertCursesWin) {
       growingMobHpAfter = Math.max(0, wF.hp - 2); growingMobFlipped = true; growingMobTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Growing Mob! Mr Filbert curses it → -2 HP! (${gmBefore} → ${growingMobHpAfter})`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Growing Mob! Mr Filbert curses it → -2 HP! (${gmBefore} → ${growingMobHpAfter})`);
     } else {
       growingMobHpAfter = wF.hp + 2; growingMobTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Growing Mob! Dealt ${dmg} damage → +2 HP! (${gmBefore} → ${growingMobHpAfter}/${wF.maxHp}${growingMobHpAfter > wF.maxHp ? ' overclocked!' : ''})`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Growing Mob! Dealt ${dmg} damage → +2 HP! (${gmBefore} → ${growingMobHpAfter}/${wF.maxHp}${growingMobHpAfter > wF.maxHp ? ' overclocked!' : ''})`);
     }
   }
 
@@ -12723,11 +12723,11 @@ function _resolveRoundImpl() {
     if (filbertCursesWin) {
       munchHpAfter = Math.max(0, wF.hp - 4); munchFlipped = true; munchScrapTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Scraps! Mr Filbert curses it → -4 HP! (${munchHpBefore} → ${munchHpAfter})`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Scraps! Mr Filbert curses it → -4 HP! (${munchHpBefore} → ${munchHpAfter})`);
     } else {
       munchHpAfter = wF.hp + 4; munchScrapTriggered = true;
       collectKC(winTeamName, wF.name);
-      log(`<span class="log-ability">${wF.name}</span> — Scraps! ${lF.name} defeated → +4 HP! (${munchHpBefore} → ${munchHpAfter}/${wF.maxHp}${munchHpAfter > wF.maxHp ? ' overclocked!' : ''})`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Scraps! ${lF.name} defeated → +4 HP! (${munchHpBefore} → ${munchHpAfter}/${wF.maxHp}${munchHpAfter > wF.maxHp ? ' overclocked!' : ''})`);
     }
   }
 
@@ -12778,12 +12778,12 @@ function _resolveRoundImpl() {
         if (filbertFlips) {
           const hpAfter = Math.max(0, hpBefore - healAmt);
           B.auntSusanHealResult[tn] = { f, healAmt, before: hpBefore, after: hpAfter, filbertFlipped: true };
-          log(`<span class="log-ability">Mr Filbert</span> — Harvest Dance cursed! ${f.name} takes ${healAmt} damage! (${hpBefore}→${hpAfter} HP)`);
+          bLog(`<span class="log-ability">Mr Filbert</span> — Harvest Dance cursed! ${f.name} takes ${healAmt} damage! (${hpBefore}→${hpAfter} HP)`);
         } else {
           const hpAfter = hpBefore + healAmt;
           const susanOver = hpAfter > f.maxHp;
           B.auntSusanHealResult[tn] = { f, healAmt, before: hpBefore, after: hpAfter, overclocked: susanOver };
-          log(`<span class="log-heal">${f.name}</span> — Harvest Dance! Healed +${healAmt} HP (${hpBefore}→${hpAfter}/${f.maxHp})${susanOver ? ' · overclocked!' : ''}!`);
+          bLog(`<span class="log-heal">${f.name}</span> — Harvest Dance! Healed +${healAmt} HP (${hpBefore}→${hpAfter}/${f.maxHp})${susanOver ? ' · overclocked!' : ''}!`);
         }
       }
     }
@@ -12807,7 +12807,7 @@ function _resolveRoundImpl() {
     if (lF.id === 23) {
       powderFinalGiftTriggered = true;
       collectKC(loseTeamName, lF.name); // Knight reactions fire on FINAL GIFT! (same pattern as Granny/Chagrin KO paths)
-      log(`<span class="log-ability">${lF.name}</span> — Final Gift! KO'd... leaving 3 Ice Shards for the next ghost.`);
+      bLog(`<span class="log-ability">${lF.name}</span> — Final Gift! KO'd... leaving 3 Ice Shards for the next ghost.`);
     }
     if (lF.id === 404) { collectKC(loseTeamName, lF.name); } // Chagrin on-KO surge → BITTER END! onShow below
   }
@@ -13043,10 +13043,10 @@ function _resolveRoundImpl() {
       const louFlipped = Math.max(0, wF.hp - 1);
       const louGhost = wF;
       queueAbility('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Bros heal cursed! ${wF.name} takes 1 damage instead! (${wF.hp}→${louFlipped} HP)`, () => { louGhost.hp = louFlipped; if (louGhost.hp <= 0) { louGhost.hp = 0; louGhost.ko = true; louGhost.killedBy = 59; } renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">Lou</span> (sideline) — Bros heal cursed by Mr Filbert! ${wF.name} loses 1 HP.`);
+      bLog(`<span class="log-ability">Lou</span> (sideline) — Bros heal cursed by Mr Filbert! ${wF.name} loses 1 HP.`);
     } else {
       queueAbility('BROS!', 'var(--common)', `Lou (sideline) — ${wF.name} wins! ${louBrosBaseDmg} + 1 = ${dmg} damage! +1 HP! (${louHpBefore}→${louHpAfter} HP${louOver ? ' · overclocked!' : ''})`, () => { wF.hp++; renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">Lou</span> (sideline) — Bros! Grawr wins → +1 HP (${louHpBefore}→${louHpAfter}${louOver ? ' overclocked!' : ''}).`);
+      bLog(`<span class="log-ability">Lou</span> (sideline) — Bros! Grawr wins → +1 HP (${louHpBefore}→${louHpAfter}${louOver ? ' overclocked!' : ''}).`);
     }
   }
   // Lou knight reactions already collected via collectKC at game-state section (~line 9577) — do NOT double-fire here
@@ -13129,7 +13129,7 @@ function _resolveRoundImpl() {
     const _etFlameCount = B.committed[winTeamName].fire;
     queueAbility('ETERNAL FLAME!', 'var(--uncommon)', `Fed and Hayden — ${_etFlameCount} Sacred Fire${_etFlameCount > 1 ? 's' : ''} preserved!`, () => {
       _etFlameTeam.resources.fire += _etFlameCount;
-      log(`<span class="log-ability">Fed and Hayden</span> — Eternal Flame! ${_etFlameCount} Sacred Fire${_etFlameCount > 1 ? 's' : ''} not discarded! (${_etFlameTeam.resources.fire} total)`);
+      bLog(`<span class="log-ability">Fed and Hayden</span> — Eternal Flame! ${_etFlameCount} Sacred Fire${_etFlameCount > 1 ? 's' : ''} not discarded! (${_etFlameTeam.resources.fire} total)`);
       renderBattle();
     }, winTeamName);
     checkKnightEffects(winTeamName, 'Fed and Hayden'); // Knight Terror/Light react to ETERNAL FLAME!
@@ -13308,7 +13308,7 @@ function _resolveRoundImpl() {
   if (wF.id === 91) {
     if (!winTeam.resources.frostbite) winTeam.resources.frostbite = 0;
     queueAbility('FROST SURGE!', '#3b82f6', `${wF.name} — Win! +1 Frostbite!`, () => { winTeam.resources.frostbite += 1; renderBattle(); }, winTeamName);
-    log(`<span class="log-ability" style="color:#60a5fa">${wF.name}</span> — Frost Surge! +1 Frostbite!`);
+    bLog(`<span class="log-ability" style="color:#60a5fa">${wF.name}</span> — Frost Surge! +1 Frostbite!`);
     if (sandwichForLose) {
       if (!loseTeam.resources.frostbite) loseTeam.resources.frostbite = 0;
       queueAbility('DEPENDABLE!', 'var(--common)', `Sandwiches — mirrors Frost Surge! +1 Frostbite!`, () => { loseTeam.resources.frostbite += 1; renderBattle(); }, loseTeamName);
@@ -13327,7 +13327,7 @@ function _resolveRoundImpl() {
     const dylanName = (wF.id === 301) ? wF.name : (getSidelineGhost(winTeam, 301) || {}).name || 'Dylan';
     const dylanLabel = (wF.id === 301) ? '' : ' (sideline)';
     queueAbility('STRAW GUARDIAN!', 'var(--common)', `${dylanName}${dylanLabel} — Win! +1 Burn!`, () => { winTeam.resources.burn += 1; renderBattle(); }, winTeamName);
-    log(`<span class="log-ability">${dylanName}${dylanLabel}</span> — Straw Guardian! Gain <span class="log-dmg">1 Burn</span>!`);
+    bLog(`<span class="log-ability">${dylanName}${dylanLabel}</span> — Straw Guardian! Gain <span class="log-dmg">1 Burn</span>!`);
   }
   // Foreman (451) — Blueprint: win → +1 die next turn
   if (wF.id === 451 && !wF.ko) {
@@ -13335,19 +13335,19 @@ function _resolveRoundImpl() {
     B.foremanDieBonus[winTeamName] = (B.foremanDieBonus[winTeamName] || 0) + 1;
     collectKC(winTeamName, wF.name);
     queueAbility('BLUEPRINT!', 'var(--rare)', `${wF.name} — Win! +1 die next turn!`, null, winTeamName);
-    log(`<span class="log-ability">${wF.name}</span> — Blueprint! <span class="log-ms">+1 die next turn!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Blueprint! <span class="log-ms">+1 die next turn!</span>`);
   }
   // Welder (450) — Arc: wins give 1 Burn (active Welder only, not duplicated by Torch)
   if (wF.id === 450 && !wF.ko) {
     if (!winTeam.resources.burn) winTeam.resources.burn = 0;
     queueAbility('ARC!', 'var(--uncommon)', `${wF.name} — Win! +1 Burn!`, () => { winTeam.resources.burn += 1; renderBattle(); }, winTeamName);
-    log(`<span class="log-ability">${wF.name}</span> — Arc! Gain <span class="log-dmg">1 Burn</span>!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Arc! Gain <span class="log-dmg">1 Burn</span>!`);
   }
   // Welder's Torch (permanent item) — wins give 1 Burn for ANY active ghost on the team
   if (B.welderTorch && B.welderTorch[winTeamName] && wF.id !== 450) {
     if (!winTeam.resources.burn) winTeam.resources.burn = 0;
     queueAbility("WELDER'S TORCH!", 'var(--rare)', `Welder's Torch — Win! +1 Burn!`, () => { winTeam.resources.burn += 1; renderBattle(); }, winTeamName);
-    log(`<span class="log-ability">Welder's Torch</span> — Win! <span class="log-dmg">+1 Burn!</span>`);
+    bLog(`<span class="log-ability">Welder's Torch</span> — Win! <span class="log-dmg">+1 Burn!</span>`);
   }
   // Roger (54) — Tempest: win with 4+ dice containing 2 different pairs → +3 Sacred Fires
   if (wF.id === 54 && !wF.ko && winDice && winDice.length >= 4) {
@@ -13369,7 +13369,7 @@ function _resolveRoundImpl() {
   if (wF.id === 107 && !wF.ko && wR.type === 'singles') {
     if (!winTeam.resources.frostbite) winTeam.resources.frostbite = 0;
     queueAbility('SACRED WATERS!', 'var(--ghost-rare)', `${wF.name} — Singles win! +1 Sacred Fire + 1 Frostbite!`, () => { winTeam.resources.fire++; winTeam.resources.frostbite++; renderBattle(); }, winTeamName);
-    log(`<span class="log-ability">${wF.name}</span> — Sacred Waters! Singles win → <span class="log-ms">+1 Sacred Fire</span> + <span class="log-ice">+1 Frostbite!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Sacred Waters! Singles win → <span class="log-ms">+1 Sacred Fire</span> + <span class="log-ice">+1 Frostbite!</span>`);
     collectKC(winTeamName, wF.name);
   }
   // Opa (48) — Rest: win → gain +1 HP (overclocks! Rule #9 — do NOT add Math.min cap)
@@ -13379,12 +13379,12 @@ function _resolveRoundImpl() {
       const opaFlipped = Math.max(0, wF.hp - 1);
       const opaGhost = wF;
       queueAbility('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Rest cursed! ${wF.name} takes 1 damage! (${wF.hp}→${opaFlipped} HP)`, () => { opaGhost.hp = opaFlipped; if (opaGhost.hp <= 0) { opaGhost.hp = 0; opaGhost.ko = true; opaGhost.killedBy = 59; } renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Rest! Mr Filbert curses → -1 HP (${opaFlipped} HP).`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Rest! Mr Filbert curses → -1 HP (${opaFlipped} HP).`);
     } else {
       const opaNewHp = wF.hp + 1;
       const opaOver = opaNewHp > wF.maxHp;
       queueAbility('REST!', 'var(--uncommon)', `${wF.name} — Won! +1 HP! (${wF.hp}→${opaNewHp} HP${opaOver ? ' · overclocked!' : ''})`, () => { wF.hp++; renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Rest! Win → +1 HP (${opaNewHp} HP${opaOver ? ' overclocked!' : ''}).`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Rest! Win → +1 HP (${opaNewHp} HP${opaOver ? ' overclocked!' : ''}).`);
     }
   }
   if (wF.id === 48 && !wF.ko) checkKnightEffects(winTeamName, wF.name); // Knight Terror/Light react to REST! (both heal and Filbert-curse branches)
@@ -13394,17 +13394,17 @@ function _resolveRoundImpl() {
       const cornVillager = getSidelineGhost(loseTeam, 45);
       const antidoteNameV = cornVillager ? cornVillager.name : 'Cornelius';
       queueAbility('ANTIDOTE!', 'var(--uncommon)', `${antidoteNameV} neutralizes Villager's Hospitality — heal blocked!`, null, winTeamName);
-      log(`<span class="log-ability">Cornelius</span> — Antidote! Villager Hospitality blocked.`);
+      bLog(`<span class="log-ability">Cornelius</span> — Antidote! Villager Hospitality blocked.`);
     } else if (filbertCursesWin) {
       const villagerFlipped = Math.max(0, wF.hp - 1);
       const villagerGhost = wF;
       queueAbility('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Hospitality cursed! ${wF.name} takes 1 damage! (${wF.hp}→${villagerFlipped} HP)`, () => { villagerGhost.hp = villagerFlipped; if (villagerGhost.hp <= 0) { villagerGhost.hp = 0; villagerGhost.ko = true; villagerGhost.killedBy = 59; } renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Hospitality! Filbert curses → -1 HP (${villagerFlipped} HP).`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Hospitality! Filbert curses → -1 HP (${villagerFlipped} HP).`);
     } else {
       const villagerNewHp = wF.hp + 1;
       const vilOver = villagerNewHp > wF.maxHp;
       queueAbility('HOSPITALITY!', 'var(--common)', `Villager — ${wF.name} wins! +1 HP from the sideline! (${wF.hp}→${villagerNewHp} HP${vilOver ? ' · overclocked!' : ''})`, () => { guardedHeal(wF, 1, winTeamName); renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Hospitality! Villager sideline → +1 HP (${villagerNewHp} HP${vilOver ? ' overclocked!' : ''}).`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Hospitality! Villager sideline → +1 HP (${villagerNewHp} HP${vilOver ? ' overclocked!' : ''}).`);
     }
   }
   if (hasSideline(winTeam, 11) && !wF.ko) checkKnightEffects(winTeamName, wF.name); // Knight Terror/Light react to HOSPITALITY! (all branches)
@@ -13423,17 +13423,17 @@ function _resolveRoundImpl() {
       const cornJeffery = getSidelineGhost(loseTeam, 45);
       const antidoteNameJ = cornJeffery ? cornJeffery.name : 'Cornelius';
       queueAbility('ANTIDOTE!', 'var(--uncommon)', `${antidoteNameJ} neutralizes Jeffery's Chuckle — heal blocked!`, null, winTeamName);
-      log(`<span class="log-ability">Cornelius</span> — Antidote! Jeffery Chuckle blocked.`);
+      bLog(`<span class="log-ability">Cornelius</span> — Antidote! Jeffery Chuckle blocked.`);
     } else if (filbertCursesWin) {
       const jeffFlipped = Math.max(0, wF.hp - 3);
       const jeffGhost = wF;
       queueAbility('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Chuckle cursed! ${wF.name} takes 3 damage! (${wF.hp}→${jeffFlipped} HP)`, () => { jeffGhost.hp = jeffFlipped; if (jeffGhost.hp <= 0) { jeffGhost.hp = 0; jeffGhost.ko = true; jeffGhost.killedBy = 59; } renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Chuckle! Filbert curses → -3 HP (${jeffFlipped} HP).`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Chuckle! Filbert curses → -3 HP (${jeffFlipped} HP).`);
     } else {
       const jeffNewHp = wF.hp + 3;
       const jeffOver = jeffNewHp > wF.maxHp;
       queueAbility('CHUCKLE!', 'var(--common)', `Jeffery — ${wF.name} wins! +3 HP from the sideline! (${wF.hp}→${jeffNewHp} HP${jeffOver ? ' · overclocked!' : ''})`, () => { wF.hp += 3; renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Chuckle! Jeffery sideline → +3 HP (${jeffNewHp} HP${jeffOver ? ' overclocked!' : ''}).`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Chuckle! Jeffery sideline → +3 HP (${jeffNewHp} HP${jeffOver ? ' overclocked!' : ''}).`);
     }
   }
   if (hasSideline(winTeam, 14) && !wF.ko && lF.ko) checkKnightEffects(winTeamName, wF.name); // Knight Terror/Light react to CHUCKLE! (all branches, KO-gated)
@@ -13442,10 +13442,10 @@ function _resolveRoundImpl() {
     if (filbertCursesWin) {
       const calFlipped = Math.max(0, wF.hp - 1);
       queueAbility('MASK MERCHANT!', 'var(--uncommon)', `Mr Filbert — Overclock cursed! ${wF.name} takes 1 damage! (${wF.hp}→${calFlipped} HP)`, () => { wF.hp = calFlipped; if (wF.hp <= 0) { wF.hp = 0; wF.ko = true; wF.killedBy = 59; } renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Calvin Overclock flipped to damage. ${wF.name} ${wF.hp} → ${calFlipped} HP.`);
+      bLog(`<span class="log-ability">Mr Filbert</span> — Mask Merchant! Calvin Overclock flipped to damage. ${wF.name} ${wF.hp} → ${calFlipped} HP.`);
     } else {
       queueAbility('OVERCLOCK!', 'var(--uncommon)', `${wF.name} — Win heals 1 HP + 1 Healing Seed! ${wF.hp}→${wF.hp + 1} HP${wF.hp + 1 > wF.maxHp ? ' · overclocked!' : ''}`, () => { guardedHeal(wF, 1, winTeamName); winTeam.resources.healingSeed++; renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Overclock! +1 HP (${wF.hp + 1} HP${wF.hp + 1 > wF.maxHp ? ' overclocked!' : ''}) + <span class="log-heal">+1 Healing Seed!</span>`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Overclock! +1 HP (${wF.hp + 1} HP${wF.hp + 1 > wF.maxHp ? ' overclocked!' : ''}) + <span class="log-heal">+1 Healing Seed!</span>`);
     }
   }
   // Calvin knight reactions already collected via collectKC at game-state section (line ~10077) — do NOT double-fire here
@@ -13464,12 +13464,12 @@ function _resolveRoundImpl() {
   if (corneliusBlocksFJWin && countVal(winDice, 6) > 0) {
     const cornGhostFJW = getSidelineGhost(loseTeam, 45);
     queueAbility('ANTIDOTE!', 'var(--uncommon)', `${cornGhostFJW ? cornGhostFJW.name : 'Cornelius'} blocks Farmer Jeff's Harvest!`, null, loseTeamName);
-    log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Farmer Jeff Harvest blocked!`);
+    bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Farmer Jeff Harvest blocked!`);
   }
   if (corneliusBlocksFJLose && countVal(loseDice, 6) > 0) {
     const cornGhostFJL = getSidelineGhost(winTeam, 45);
     queueAbility('ANTIDOTE!', 'var(--uncommon)', `${cornGhostFJL ? cornGhostFJL.name : 'Cornelius'} blocks Farmer Jeff's Harvest!`, null, winTeamName);
-    log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Farmer Jeff Harvest blocked!`);
+    bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Farmer Jeff Harvest blocked!`);
   }
   if (hasFJWin && countVal(winDice, 6) > 0) {
     const sx = countVal(winDice, 6);
@@ -13541,7 +13541,7 @@ function _resolveRoundImpl() {
     } else if (hasSideline(loseTeam, 310) && corneliusBlocksGrannyLose) {
       const cornGhostGrL = getSidelineGhost(winTeam, 45);
       queueAbility('ANTIDOTE!', 'var(--uncommon)', `${cornGhostGrL ? cornGhostGrL.name : 'Cornelius'} blocks Granny's Bedtime Story!`, null, winTeamName);
-      log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Granny Bedtime Story blocked!`);
+      bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Granny Bedtime Story blocked!`);
     }
     if (lF.id === 404) { queueAbility('BITTER END!', 'var(--rare)', `${lF.name} — KO'd but still gains 1 Surge!`, () => { loseTeam.resources.surge++; renderBattle(); }, loseTeamName); }
     if (lF.id === 404 && sandwichForWin) queueAbility('DEPENDABLE!', 'var(--common)', `Sandwiches — mirrors Bitter End (KO)! +1 Surge! (${winTeam.resources.surge + 1} total)`, () => { winTeam.resources.surge++; renderBattle(); }, winTeamName);
@@ -13561,7 +13561,7 @@ function _resolveRoundImpl() {
   } else if (wF.ko && hasSideline(winTeam, 310) && corneliusBlocksGrannyWin) {
     const cornGhostGrW = getSidelineGhost(loseTeam, 45);
     queueAbility('ANTIDOTE!', 'var(--uncommon)', `${cornGhostGrW ? cornGhostGrW.name : 'Cornelius'} blocks Granny's Bedtime Story!`, null, loseTeamName);
-    log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Granny Bedtime Story blocked!`);
+    bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Granny Bedtime Story blocked!`);
   }
 
   // Powder (23) — Final Gift: KO'd → loseTeam gains 3 Ice Shards (onShow deferred for visual sync)
@@ -13582,10 +13582,10 @@ function _resolveRoundImpl() {
         winTeam.resources.burn += 2;
         renderBattle();
       }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Well Read! +1 Healing Seed + 2 Burn!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Well Read! +1 Healing Seed + 2 Burn!`);
     } else {
       queueAbility('WELL READ!', 'var(--uncommon)', `${wF.name} — Win! +1 Healing Seed!`, () => { winTeam.resources.healingSeed++; renderBattle(); }, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Well Read! +1 Healing Seed!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Well Read! +1 Healing Seed!`);
     }
     checkKnightEffects(winTeamName, wF.name);
   }
@@ -13601,7 +13601,7 @@ function _resolveRoundImpl() {
       winTeam.resources.burn += 1;
       renderBattle();
     }, winTeamName);
-    log(`<span class="log-ability">${wF.name}</span> — Hex! Win → +1 Burn!`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Hex! Win → +1 Burn!`);
     checkKnightEffects(winTeamName, wF.name);
   }
   // Mable Stadango (446) — Hex: in play only, no sideline win trigger
@@ -13612,7 +13612,7 @@ function _resolveRoundImpl() {
     const _starSandOpp = opp(winTeam);
     queueAbility('MOONBEAM!', 'var(--rare)', `${wF.name} — Doubles+ Win! +1 Magic Firefly!`, () => {
       _starWTeam.resources.firefly = (_starWTeam.resources.firefly || 0) + 1;
-      log(`<span class="log-ability">${wF.name}</span> — Moonbeam! +1 Magic Firefly!`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Moonbeam! +1 Magic Firefly!`);
       renderBattle();
     }, winTeamName);
     checkKnightEffects(winTeamName, wF.name);
@@ -13627,7 +13627,7 @@ function _resolveRoundImpl() {
         const lF = active(loseTeam);
         if (lF && !lF.ko) {
           lF.hp = Math.max(0, lF.hp - harveyDmg);
-          log(`<span class="log-ability">${wF.name}</span> — Harvest Moon! ${fives} five${fives > 1 ? 's' : ''} → <span class="log-dmg">${harveyDmg} bonus damage</span> + <span class="log-ms">1 Moonstone</span>!`);
+          bLog(`<span class="log-ability">${wF.name}</span> — Harvest Moon! ${fives} five${fives > 1 ? 's' : ''} → <span class="log-dmg">${harveyDmg} bonus damage</span> + <span class="log-ms">1 Moonstone</span>!`);
           if (lF.hp <= 0) { lF.ko = true; }
         }
         winTeam.resources.moonstone = Math.min((winTeam.resources.moonstone || 0) + 1, 1);
@@ -13653,7 +13653,7 @@ function _resolveRoundImpl() {
   // Garrick (427) — Watchfire: Win + KO → +1 Sacred Fire
   if (wF.id === 427 && !wF.ko && lF.ko) {
     queueAbility('WATCHFIRE!', 'var(--uncommon)', `${wF.name} — KO! +1 Sacred Fire!`, () => { winTeam.resources.fire++; renderBattle(); }, winTeamName);
-    log(`<span class="log-ability">${wF.name}</span> — Watchfire! KO → <span class="log-ms">+1 Sacred Fire!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Watchfire! KO → <span class="log-ms">+1 Sacred Fire!</span>`);
     checkKnightEffects(winTeamName, wF.name);
   }
 
@@ -13664,12 +13664,12 @@ function _resolveRoundImpl() {
     const nyxG = getSidelineGhost(winTeam, 415);
     const nyxName = nyxG ? nyxG.name : 'Nyx & Bessie';
     queueAbility('MOO! CAW!', 'var(--uncommon)', `${nyxName} (sideline) — KO! +4 Healing Seeds!`, () => { winTeam.resources.healingSeed += 4; renderBattle(); }, winTeamName);
-    log(`<span class="log-ability">${nyxName}</span> — Moo! Caw! KO → <span class="log-heal">+4 Healing Seeds!</span>`);
+    bLog(`<span class="log-ability">${nyxName}</span> — Moo! Caw! KO → <span class="log-heal">+4 Healing Seeds!</span>`);
     checkKnightEffects(winTeamName, wF.name);
   } else if (hasSideline(winTeam, 415) && !wF.ko && lF.ko && corneliusBlocksNyx) {
     const cornGhostNyx = getSidelineGhost(loseTeam, 45);
     queueAbility('ANTIDOTE!', 'var(--uncommon)', `${cornGhostNyx ? cornGhostNyx.name : 'Cornelius'} blocks Nyx & Bessie's Moo! Caw!!`, null, loseTeamName);
-    log(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Nyx & Bessie Moo! Caw! blocked!`);
+    bLog(`<span class="log-ability">Cornelius</span> (sideline) — Antidote! Nyx & Bessie Moo! Caw! blocked!`);
   }
 
   // Valkin the Grand (432) — Grand Spoils: active Valkin KO → full resource suite (includes Frostbite)
@@ -13683,7 +13683,7 @@ function _resolveRoundImpl() {
       winTeam.resources.healingSeed += 2;
       renderBattle();
     }, winTeamName);
-    log(`<span class="log-ability">${wF.name}</span> — Grand Spoils! KO → <span class="log-ms">+1🔥 +2❄️ +1❄️FB +1🌙 +2🌱!</span>`);
+    bLog(`<span class="log-ability">${wF.name}</span> — Grand Spoils! KO → <span class="log-ms">+1🔥 +2❄️ +1❄️FB +1🌙 +2🌱!</span>`);
     checkKnightEffects(winTeamName, wF.name);
   }
 
@@ -13707,7 +13707,7 @@ function _resolveRoundImpl() {
       bt.ko = false;
       bt.hp = 1;
       winTeam.resources.firefly = Math.min((winTeam.resources.firefly || 0) + 1, 1); // v736: was 3
-      log(`<span class="log-ability">Bo</span> — Miracle! <span class="log-heal">${bt.name} revived at 1 HP!</span> <span class="log-ms">+1 Magic Firefly!</span>`);
+      bLog(`<span class="log-ability">Bo</span> — Miracle! <span class="log-heal">${bt.name} revived at 1 HP!</span> <span class="log-ms">+1 Magic Firefly!</span>`);
       if (lucasActive) {
         // Lucas (433) — Kindling: revived ghost enters play at 4 HP, Bo to sideline, +1 die next roll
         bt.hp += 3; // 1 + 3 = 4 HP total
@@ -13715,7 +13715,7 @@ function _resolveRoundImpl() {
         if (revivedIdx !== -1) winTeam.activeIdx = revivedIdx; // swap revived ghost to active
         if (!B.lucasKindlingBonus) B.lucasKindlingBonus = { red: 0, blue: 0 };
         B.lucasKindlingBonus[winTeamName] = 1; // +1 die next roll
-        log(`<span class="log-ability">Lucas</span> — Kindling! <span class="log-heal">${bt.name} charges into play at ${bt.hp} HP! +1 die next roll!</span>`);
+        bLog(`<span class="log-ability">Lucas</span> — Kindling! <span class="log-heal">${bt.name} charges into play at ${bt.hp} HP! +1 die next roll!</span>`);
         queueAbility('KINDLING!', 'var(--rare)', `Lucas — ${bt.name} charges into play at ${bt.hp} HP! +3 HP, +1 die next roll!`, null, winTeamName);
       }
       renderBattle();
@@ -13732,7 +13732,7 @@ function _resolveRoundImpl() {
       const ctx = f === wF ? 'Winner doubles' : 'Loser doubles still counts';
       queueAbility("LET'S DANCE!", 'var(--rare)', `${f.name} — ${ctx}! +1 die next roll!`, null, tNameKai);
       checkKnightEffects(tNameKai, f.name); // Knight Terror / Knight Light react to LET'S DANCE!
-      log(`<span class="log-ability">${f.name}</span> — Let's Dance! Doubles → +1 die next round.`);
+      bLog(`<span class="log-ability">${f.name}</span> — Let's Dance! Doubles → +1 die next round.`);
     }
   });
 
@@ -13748,7 +13748,7 @@ function _resolveRoundImpl() {
     const ctx = f === wF ? 'Winner doubles' : (f.ko ? 'Final doubles' : 'Loser doubles');
     queueAbility('THIEF!', 'var(--uncommon)', `${f.name} — ${ctx}! Stealing 1 die from enemy next round!`, null, myTName);
     checkKnightEffects(myTName, f.name);
-    log(`<span class="log-ability">${f.name}</span> — Thief! ${ctx} → steal 1 enemy die next round.`);
+    bLog(`<span class="log-ability">${f.name}</span> — Thief! ${ctx} → steal 1 enemy die next round.`);
   });
 
   // Suspicious Jeff (61) — Snicker: sideline passive — when your ghost DEFEATS an enemy ghost (lF.ko), steal 1 enemy die next roll.
@@ -13758,7 +13758,7 @@ function _resolveRoundImpl() {
     const jeffName = jeffSideF ? jeffSideF.name : 'Suspicious Jeff';
     B.jeffSnicker[winTeamName] = (B.jeffSnicker[winTeamName] || 0) + 1;
     queueAbility('SNICKER!', 'var(--uncommon)', `${jeffName} (sideline) — Your ghost won! Stealing 1 die from ${lF.name} next round!`, null, winTeamName);
-    log(`<span class="log-ability">${jeffName}</span> — Snicker! Win → steal 1 enemy die next round.`);
+    bLog(`<span class="log-ability">${jeffName}</span> — Snicker! Win → steal 1 enemy die next round.`);
   }
 
   // Haywire (78) — Wild Chords: rolling triples or better grants +1 permanent die AND Haywire +2 damage for the rest of the game (once per game, win or lose)
@@ -13771,7 +13771,7 @@ function _resolveRoundImpl() {
       B.haywireDamageBonus[tNameHW] = 2;
       B.haywireUsed[tNameHW] = true;
       queueAbility('WILD CHORDS!', 'var(--rare)', `${f.name} — Triples or better! +1 permanent die AND Haywire gains +2 damage for the rest of the game! (Once per game)`, null, tNameHW);
-      log(`<span class="log-ability">${f.name}</span> — Wild Chords! Triples or better → +1 permanent die + Haywire +2 damage for the rest of the game!`);
+      bLog(`<span class="log-ability">${f.name}</span> — Wild Chords! Triples or better → +1 permanent die + Haywire +2 damage for the rest of the game!`);
       checkKnightEffects(tNameHW, f.name);
     }
   });
@@ -13788,7 +13788,7 @@ function _resolveRoundImpl() {
       const sableName = hasSableActive ? f.name : (getSidelineGhost(team, 413) || { name: 'Sable' }).name;
       const sableLoc = hasSableActive ? '' : ' (sideline)';
       queueAbility('SMOLDERING SOUL!', 'var(--uncommon)', `${sableName}${sableLoc} — All dice odd! +1 Sacred Fire!`, null, tNameSable);
-      log(`<span class="log-ability">${sableName}</span> — Smoldering Soul! All dice odd → <span class="log-ms">+1 Sacred Fire!</span>`);
+      bLog(`<span class="log-ability">${sableName}</span> — Smoldering Soul! All dice odd → <span class="log-ms">+1 Sacred Fire!</span>`);
       checkKnightEffects(tNameSable, sableName);
     }
   });
@@ -13804,7 +13804,7 @@ function _resolveRoundImpl() {
       B.pipDieRemoval[oppName] = (B.pipDieRemoval[oppName] || 0) + 1;
       team.resources.fire += 2;
       queueAbility('TOASTED!', 'var(--rare)', `${f.name} — ${pipRoll.type}! Enemy permanently loses 1 die + 2 Sacred Fires! (Once per game)`, null, tNamePip);
-      log(`<span class="log-ability">${f.name}</span> — Toasted! ${pipRoll.type} → enemy -1 die permanently + <span class="log-ms">+2 Sacred Fires!</span>`);
+      bLog(`<span class="log-ability">${f.name}</span> — Toasted! ${pipRoll.type} → enemy -1 die permanently + <span class="log-ms">+2 Sacred Fires!</span>`);
       checkKnightEffects(tNamePip, f.name);
     }
   });
@@ -13819,7 +13819,7 @@ function _resolveRoundImpl() {
       if (ownRoll.type === 'doubles' && foeRoll.type === 'doubles') {
         B.dreamCatBonus[tNameDC] = (B.dreamCatBonus[tNameDC] || 0) + 2;
         queueAbility('JINX!', 'var(--common)', `${f.name} — Both teams rolled doubles! +2 dice next round!`, null, tNameDC);
-        log(`<span class="log-ability">${f.name}</span> — Jinx! Both rolled doubles → +2 dice next round.`);
+        bLog(`<span class="log-ability">${f.name}</span> — Jinx! Both rolled doubles → +2 dice next round.`);
         checkKnightEffects(tNameDC, f.name);
       }
     }
@@ -13838,7 +13838,7 @@ function _resolveRoundImpl() {
     _scTeam.resources.surge = (_scTeam.resources.surge || 0) + 1;
     const ctx = f === wF ? 'Win' : (f.ko ? 'Down' : 'Loss');
     queueAbility('FRENZY!', 'var(--common)', `${f.name} — ${ctx}! All dice under 4! +1 die next roll + 1 Surge!`, null, myTName);
-    log(`<span class="log-ability">${f.name}</span> — Frenzy! ${ctx}: all dice under 4 → +1 die next round + <span class="log-ms">+1 Surge</span>.`);
+    bLog(`<span class="log-ability">${f.name}</span> — Frenzy! ${ctx}: all dice under 4 → +1 die next round + <span class="log-ms">+1 Surge</span>.`);
     checkKnightEffects(myTName, f.name);
   });
 
@@ -13854,7 +13854,7 @@ function _resolveRoundImpl() {
     const ctx = f === wF ? 'Win' : (f.ko ? 'Down' : 'Loss');
     const enemyName = f === wF ? lF.name : wF.name;
     queueAbility('MUCK!', 'var(--common)', `${f.name} — ${ctx}! ${enemyName} rolled doubles → they lose 1 die next round!`, null, myTName);
-    log(`<span class="log-ability">${f.name}</span> — Muck! ${enemyName} rolled doubles → -1 die next round.`);
+    bLog(`<span class="log-ability">${f.name}</span> — Muck! ${enemyName} rolled doubles → -1 die next round.`);
     checkKnightEffects(myTName, f.name);
   });
 
@@ -13866,7 +13866,7 @@ function _resolveRoundImpl() {
       B.logeyLockout[loseTeamName] = (B.logeyLockout[loseTeamName] || 0) + locked;
       const wCtx = wF.ko ? 'Down' : 'Win';
       queueAbility('HEINOUS!', 'var(--common)', `${wF.name} — ${wCtx}! ${locked} of ${lF.name}'s 5+ dice locked out next roll!`, null, winTeamName);
-      log(`<span class="log-ability">${wF.name}</span> — Heinous! ${wCtx}: locked ${locked} of ${lF.name}'s 5+ dice.`);
+      bLog(`<span class="log-ability">${wF.name}</span> — Heinous! ${wCtx}: locked ${locked} of ${lF.name}'s 5+ dice.`);
     }
   }
   if (lF.id === 26) {
@@ -13875,7 +13875,7 @@ function _resolveRoundImpl() {
       B.logeyLockout[winTeamName] = (B.logeyLockout[winTeamName] || 0) + locked;
       const lCtx = lF.ko ? 'Down' : 'Loss';
       queueAbility('HEINOUS!', 'var(--common)', `${lF.name} — ${lCtx}! ${locked} of ${wF.name}'s 5+ dice locked out next roll!`, null, loseTeamName);
-      log(`<span class="log-ability">${lF.name}</span> — Heinous! ${lCtx}: locked ${locked} of ${wF.name}'s 5+ dice.`);
+      bLog(`<span class="log-ability">${lF.name}</span> — Heinous! ${lCtx}: locked ${locked} of ${wF.name}'s 5+ dice.`);
     }
   }
 
@@ -14104,7 +14104,7 @@ function _resolveRoundImpl() {
         const _barnabyWin = active(loseTeam);
         if (_barnabyWin && _barnabyWin.id === 326 && !_barnabyWin.ko && winstonSchemeSideline.length > 0) {
           queueAbility('STUBBORN!', 'var(--uncommon)', `${_barnabyWin.name} — Stubborn! Winston's Scheme is blocked!`, null, loseTeamName);
-          log(`<span class="log-ability">Barnaby</span> — Stubborn! Winston Scheme blocked — ${_barnabyWin.name} cannot be forced out.`);
+          bLog(`<span class="log-ability">Barnaby</span> — Stubborn! Winston Scheme blocked — ${_barnabyWin.name} cannot be forced out.`);
           checkTysonHop();
           return;
         }
@@ -14132,7 +14132,7 @@ function _resolveRoundImpl() {
           const _barnabyGF = active(loseTeam);
           if (_barnabyGF && _barnabyGF.id === 326 && !_barnabyGF.ko) {
             queueAbility('STUBBORN!', 'var(--uncommon)', `${_barnabyGF.name} — Stubborn! Gus's Gale Force is blocked!`, () => {
-              log(`<span class="log-ability">Barnaby</span> — Stubborn! Gale Force blocked — ${_barnabyGF.name} takes ${galeForceDmg} damage directly.`);
+              bLog(`<span class="log-ability">Barnaby</span> — Stubborn! Gale Force blocked — ${_barnabyGF.name} takes ${galeForceDmg} damage directly.`);
               _barnabyGF.hp = Math.max(0, _barnabyGF.hp - galeForceDmg);
               if (_barnabyGF.hp <= 0) { _barnabyGF.ko = true; _barnabyGF.killedBy = 31; }
               renderBattle();
@@ -14154,7 +14154,7 @@ function _resolveRoundImpl() {
               if (autoTarget.hp <= 0) { autoTarget.hp = 0; autoTarget.ko = true; autoTarget.killedBy = 31; }
             }
             renderBattle();
-            log(`<span class="log-ability">Gus</span> — Gale Force! ${autoTarget.name} was the only option — enters and takes <span class="log-dmg">${galeForceDmg} damage!</span>${autoTarget.ko ? ' <span class="log-ko">KO!</span>' : ' ' + autoTarget.hp + ' HP left'}`);
+            bLog(`<span class="log-ability">Gus</span> — Gale Force! ${autoTarget.name} was the only option — enters and takes <span class="log-dmg">${galeForceDmg} damage!</span>${autoTarget.ko ? ' <span class="log-ko">KO!</span>' : ' ' + autoTarget.hp + ' HP left'}`);
             const entryCount = triggerEntry(loseTeam, false);
             afterEntryWithJenkins(entryCount, afterFangUndercover);
             return;
@@ -14297,7 +14297,7 @@ function handleKOs() {
       // Mode G: clear moonstone sickness on KO
       const msModeKO = document.getElementById('moonstoneModeSelect')?.value || 'D';
       if (msModeKO === 'G' && t.moonstoneSickness > 0) {
-        log(`<span style="color:var(--moonstone)">Moonstone Sickness cleared!</span> ${team.toUpperCase()}'s sickness lifts with ${f.name}'s defeat.`);
+        bLog(`<span style="color:var(--moonstone)">Moonstone Sickness cleared!</span> ${team.toUpperCase()}'s sickness lifts with ${f.name}'s defeat.`);
         t.moonstoneSickness = 0;
       }
       const alive = t.ghosts.filter((g,i) => i !== t.activeIdx && !g.ko);
@@ -14398,7 +14398,7 @@ function doKoSwap(team, idx) {
   // Returning from sideline = full HP
   f.hp = f.maxHp;
 
-  log(`<span class="log-ko">${fallen.name} is down!</span> <span class="log-ability">${f.name} enters at full HP!</span>`);
+  bLog(`<span class="log-ko">${fallen.name} is down!</span> <span class="log-ability">${f.name} enters at full HP!</span>`);
   const entryCalloutCount = triggerEntry(t, skipEntry);
 
   renderBattle();
@@ -14653,9 +14653,9 @@ function doSwap(team, idx) {
   // Returning from sideline = full HP
   f.hp = f.maxHp;
 
-  log(`<span class="log-ability">${oldName} swaps out — ${f.name} enters at full HP!</span>`);
+  bLog(`<span class="log-ability">${oldName} swaps out — ${f.name} enters at full HP!</span>`);
   if (skipEntry) {
-    log(`<span class="log-ability">Tyson</span> — Hop! No entry effects triggered.`);
+    bLog(`<span class="log-ability">Tyson</span> — Hop! No entry effects triggered.`);
   }
   const entryCount = triggerEntry(t, skipEntry);
 
@@ -14940,7 +14940,7 @@ function queueAbility(name, color, desc, onShow, team) {
 function drainAbilityQueue(callback) {
   abilityQueueMode = false;
   if (abilityQueue.length === 0) {
-    try { callback(); } catch (e) { console.error('[drainAbilityQueue empty-callback CRASH]', e); try { log(`<span class="log-dmg">ERROR in post-drain callback:</span> ${e && e.message ? e.message : String(e)}`); } catch (_) {} try { B.phase = 'ready'; resetRollButtons(); renderBattle(); } catch (_) {} }
+    try { callback(); } catch (e) { console.error('[drainAbilityQueue empty-callback CRASH]', e); try { bLog(`<span class="log-dmg">ERROR in post-drain callback:</span> ${e && e.message ? e.message : String(e)}`); } catch (_) {} try { B.phase = 'ready'; resetRollButtons(); renderBattle(); } catch (_) {} }
     return;
   }
   let i = 0;
@@ -14956,7 +14956,7 @@ function drainAbilityQueue(callback) {
       setTimeout(() => {
         try { callback(); } catch (e) {
           console.error('[drainAbilityQueue callback CRASH]', e);
-          try { log(`<span class="log-dmg">ERROR in post-drain callback:</span> ${e && e.message ? e.message : String(e)}`); } catch (_) {}
+          try { bLog(`<span class="log-dmg">ERROR in post-drain callback:</span> ${e && e.message ? e.message : String(e)}`); } catch (_) {}
           try { B.phase = 'ready'; resetRollButtons(); renderBattle(); } catch (_) {}
         }
       }, spd(1500));
@@ -14967,7 +14967,7 @@ function drainAbilityQueue(callback) {
     // kill the whole cinematic queue and freeze the game.
     try { showAbilityCallout(a.name, a.color, a.desc, a.team); } catch (e) { console.error('[showAbilityCallout CRASH]', a, e); }
     if (a.onShow) {
-      try { a.onShow(); } catch (e) { console.error('[ability onShow CRASH]', a.name, e); try { log(`<span class="log-dmg">ERROR in ${a.name} onShow:</span> ${e && e.message ? e.message : String(e)}`); } catch (_) {} }
+      try { a.onShow(); } catch (e) { console.error('[ability onShow CRASH]', a.name, e); try { bLog(`<span class="log-dmg">ERROR in ${a.name} onShow:</span> ${e && e.message ? e.message : String(e)}`); } catch (_) {} }
     }
     setTimeout(next, spd(1300));
   }
@@ -16858,18 +16858,18 @@ function aiCommitSpecials(team) {
         if (!B.burnSource[enemyTeamName][target.index]) B.burnSource[enemyTeamName][target.index] = {};
         B.burnSource[enemyTeamName][target.index][burnPlacerId] = (B.burnSource[enemyTeamName][target.index][burnPlacerId] || 0) + 1;
         const totalBurn = B.burn[enemyTeamName][target.index];
-        log(`<span class="log-ability">BURN!</span> AI placed on <span class="log-dmg">${target.ghost.name}</span>! (${totalBurn} total)`);
+        bLog(`<span class="log-ability">BURN!</span> AI placed on <span class="log-dmg">${target.ghost.name}</span>! (${totalBurn} total)`);
         // Mable (446) Hex: burn placement = enemy -1 die
         const mableActive = active(B[team]);
         if (mableActive && mableActive.id === 446 && !mableActive.ko) {
           if (!B.hexDieRemoval) B.hexDieRemoval = { red: 0, blue: 0 };
           B.hexDieRemoval[enemyTeamName] = (B.hexDieRemoval[enemyTeamName] || 0) + 1;
-          log(`<span class="log-ability">${mableActive.name}</span> — Hex! Burn placed → enemy -1 die next roll!`);
+          bLog(`<span class="log-ability">${mableActive.name}</span> — Hex! Burn placed → enemy -1 die next roll!`);
         }
       }
     } else {
       // No sideline targets — discard unplaceable burn so it doesn't block the game
-      log(`<span class="log-ability">BURN</span> — no enemy sideline targets, ${r.burn} Burn fizzles!`);
+      bLog(`<span class="log-ability">BURN</span> — no enemy sideline targets, ${r.burn} Burn fizzles!`);
       r.burn = 0;
     }
   }
@@ -16896,10 +16896,10 @@ function aiCommitSpecials(team) {
         if (!B.frostbiteSource[enemyTeamNameFb][target.index]) B.frostbiteSource[enemyTeamNameFb][target.index] = {};
         B.frostbiteSource[enemyTeamNameFb][target.index][fbPlacerId] = (B.frostbiteSource[enemyTeamNameFb][target.index][fbPlacerId] || 0) + 1;
         const totalFb = B.frostbite[enemyTeamNameFb][target.index];
-        log(`<span class="log-ability">FROSTBITE!</span> AI placed on <span class="log-dmg">${target.ghost.name}</span>! (${totalFb} total)`);
+        bLog(`<span class="log-ability">FROSTBITE!</span> AI placed on <span class="log-dmg">${target.ghost.name}</span>! (${totalFb} total)`);
       }
     } else {
-      log(`<span class="log-ability">FROSTBITE</span> — no enemy sideline targets, ${r.frostbite} Frostbite fizzles!`);
+      bLog(`<span class="log-ability">FROSTBITE</span> — no enemy sideline targets, ${r.frostbite} Frostbite fizzles!`);
       r.frostbite = 0;
     }
   }
