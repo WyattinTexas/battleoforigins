@@ -5,11 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BOO Battle Network</title>
 <script>
-// Auto-refresh stale cache: fetches a tiny version file and reloads if outdated
+// Auto-refresh stale cache: reload at most once per session if outdated.
+// Loop guard: if HTML and cache-version.txt come from different CDN edges
+// (split-brain during deploy), an unguarded reload loops forever. We remember
+// which remote version we reloaded for; if the same mismatch reappears after
+// the reload, we log and stop rather than reload again.
 (function(){
   const LOCAL_V = 'v2.61'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
-    if (v.trim() !== LOCAL_V && v.trim().startsWith('v')) location.reload(true);
+    const remote = v.trim();
+    if (remote === LOCAL_V || !remote.startsWith('v')) return;
+    if (sessionStorage.getItem('cv_reload_done') === remote) {
+      console.warn('[cache-version] Mismatch persists after reload (HTML=' + LOCAL_V + ', remote=' + remote + ') — staying.');
+      return;
+    }
+    sessionStorage.setItem('cv_reload_done', remote);
+    location.reload(true);
   }).catch(() => {});
 })();
 </script>
