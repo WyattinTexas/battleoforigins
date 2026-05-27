@@ -200,7 +200,7 @@ function renderRaidLobby(userBadges) {
     bossesHtml += `<div class="book-boss ${locked ? 'locked' : ''} ${defeated ? 'defeated' : ''}"
                         onclick="${locked ? '' : `selectRaid('${raidId}')`}">
       <div class="book-boss-art">
-        <img src="${boss.bossGhost.art}" alt="${boss.name}" onerror="this.src='../testroom/art/timber.jpg'">
+        <img src="${boss.bossGhost.art}" alt="${boss.name}" onerror="this.src='../testroom/art/missing.svg'">
         ${locked ? '<div class="book-boss-lock">&#x1F512;</div>' : ''}
         ${defeated ? '<div class="book-boss-check">&#x2714;</div>' : ''}
         <div class="book-boss-overlay">
@@ -280,7 +280,7 @@ function selectRaid(raidId) {
         const g = getGhost(id);
         if (!g) return '';
         return `<div class="raid-team-slot ${g.rarity}">
-          <img src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/timber.jpg'">
+          <img src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/missing.svg'">
           <span>${g.name}</span>
         </div>`;
       }).join('')
@@ -293,7 +293,7 @@ function selectRaid(raidId) {
       <button class="raid-back-btn" onclick="showRaidLobby()">&#x2190; Back</button>
       <div class="raid-queue-header">
         <img class="raid-queue-boss-art" src="${boss.bossGhost.art}" alt="${boss.name}"
-             onerror="this.src='../testroom/art/timber.jpg'">
+             onerror="this.src='../testroom/art/missing.svg'">
         <div class="raid-queue-boss-info">
           <h2>${boss.name}</h2>
           <div class="raid-boss-title">${boss.title}</div>
@@ -483,7 +483,7 @@ function renderRaidTeamPicker() {
     const selected = raidTeamPicks.includes(g.id);
     html += `<div class="raid-pick-card ${selected ? 'selected' : ''} ${g.rarity}"
                   onclick="toggleRaidPick(${g.id})">
-      <img src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/timber.jpg'">
+      <img src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/missing.svg'">
       <div class="raid-pick-name">${g.name}</div>
       <div class="raid-pick-hp">${g.maxHp} HP</div>
     </div>`;
@@ -519,7 +519,7 @@ function updateRaidSelectedTeam() {
     const g = getGhost(id);
     if (!g) return;
     html += `<div class="raid-team-slot ${g.rarity}">
-      <img src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/timber.jpg'">
+      <img src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/missing.svg'">
       <span>${g.name}</span>
     </div>`;
   });
@@ -697,7 +697,7 @@ function showRaidCountdown(data) {
   Object.entries(players).forEach(([slot, p]) => {
     const teamIcons = (p.team || []).map(id => {
       const g = getGhost(id);
-      return g ? `<img class="raid-countdown-ghost" src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/timber.jpg'">` : '';
+      return g ? `<img class="raid-countdown-ghost" src="${g.art}" alt="${g.name}" onerror="this.src='../testroom/art/missing.svg'">` : '';
     }).join('');
     playersHtml += `<div class="raid-countdown-player">
       <div class="raid-countdown-slot">#${parseInt(slot) + 1}</div>
@@ -710,7 +710,7 @@ function showRaidCountdown(data) {
     <div class="raid-countdown-screen">
       <div class="raid-countdown-boss">
         <img class="raid-countdown-boss-art" src="${boss.bossGhost.art}" alt="${boss.name}"
-             onerror="this.src='../testroom/art/timber.jpg'">
+             onerror="this.src='../testroom/art/missing.svg'">
         <h1 class="raid-countdown-boss-name">${boss.name}</h1>
         <div class="raid-countdown-boss-title">${boss.title}</div>
         <div class="raid-countdown-personality">${boss.personality.toUpperCase()}</div>
@@ -870,7 +870,7 @@ function renderRaidBattleSpectator(snapshot) {
       <div class="raid-spec-player">
         <div class="raid-spec-name">${snapshot.playerName || 'Raider'}</div>
         <div class="raid-spec-ghost">
-          <img class="raid-spec-art" src="${pGhost.art || '../testroom/art/timber.jpg'}" alt="${pGhost.name}">
+          <img class="raid-spec-art" src="${pGhost.art || '../testroom/art/missing.svg'}" alt="${pGhost.name}">
           <div class="raid-spec-ghost-name">${pGhost.name || '???'}</div>
           <div class="raid-spec-hp">
             <div class="raid-spec-hp-fill" style="width:${(pGhost.hp / pGhost.maxHp * 100) || 0}%;background:#e74c3c"></div>
@@ -887,7 +887,7 @@ function renderRaidBattleSpectator(snapshot) {
       <div class="raid-spec-boss">
         <div class="raid-spec-name">${bGhost.isBoss ? 'BOSS' : 'MINION'}</div>
         <div class="raid-spec-ghost">
-          <img class="raid-spec-art" src="${bGhost.art || '../testroom/art/timber.jpg'}" alt="${bGhost.name}">
+          <img class="raid-spec-art" src="${bGhost.art || '../testroom/art/missing.svg'}" alt="${bGhost.name}">
           <div class="raid-spec-ghost-name">${bGhost.name || '???'}</div>
           <div class="raid-spec-hp">
             <div class="raid-spec-hp-fill" style="width:${(bGhost.hp / bGhost.maxHp * 100) || 0}%;background:#8e44ad"></div>
@@ -948,7 +948,7 @@ function showMinionWaveIntro(waveMinions, callback) {
       <h2 class="raid-wave-title">MINION WAVE!</h2>
       <div class="raid-wave-minions">
         ${waveMinions.map(m => `<div class="raid-wave-minion">
-          <img src="${m.art}" alt="${m.name}" onerror="this.src='../testroom/art/timber.jpg'">
+          <img src="${m.art}" alt="${m.name}" onerror="this.src='../testroom/art/missing.svg'">
           <span>${m.name}</span>
         </div>`).join('')}
       </div>
@@ -1288,7 +1288,7 @@ function showRaidWaitingRoom(instanceId, raidData) {
   const bossName = document.getElementById('raid-wr-boss-name');
   const bossTitle = document.getElementById('raid-wr-boss-title');
   const bossQuote = document.getElementById('raid-wr-boss-quote');
-  if (bossArt) { bossArt.src = boss.bossGhost.art || '../testroom/art/timber.jpg'; bossArt.alt = boss.name; }
+  if (bossArt) { bossArt.src = boss.bossGhost.art || '../testroom/art/missing.svg'; bossArt.alt = boss.name; }
   if (bossName) bossName.textContent = boss.name;
   if (bossTitle) bossTitle.textContent = boss.title;
   if (bossQuote) bossQuote.textContent = '"' + (boss.dialogue?.intro || 'Prepare yourselves.') + '"';
@@ -1353,7 +1353,7 @@ function renderWaitingRoomPlayers(players) {
     const isMe = p.uid === user?.uid;
     const teamHtml = (p.team || []).map(id => {
       const g = typeof getGhost === 'function' ? getGhost(id) : null;
-      return g ? `<img src="${g.art}" alt="${g.name}" title="${g.name}" onerror="this.src='../testroom/art/timber.jpg'">` : '';
+      return g ? `<img src="${g.art}" alt="${g.name}" title="${g.name}" onerror="this.src='../testroom/art/missing.svg'">` : '';
     }).join('');
 
     html += `<div class="raid-wr-player ${isMe ? 'is-me' : ''}">

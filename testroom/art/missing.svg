@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f1840"/>
+      <stop offset="100%" stop-color="#0d0820"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <rect x="14" y="14" width="372" height="372" fill="none" stroke="#5a4a7a" stroke-width="3" stroke-dasharray="10 8" rx="6"/>
+  <text x="200" y="260" font-family="Georgia, 'Times New Roman', serif" font-size="280" font-weight="bold" fill="#d4a040" text-anchor="middle" opacity="0.85">?</text>
+  <text x="200" y="340" font-family="'Inter', system-ui, sans-serif" font-size="22" font-weight="700" letter-spacing="4" fill="#8678a8" text-anchor="middle">MISSING ART</text>
+</svg>

@@ -216,7 +216,7 @@ function showPackOpening(cards, item) {
       const cardEl = document.createElement('div');
       cardEl.className = `raid-pack-card ${card.rarity}`;
       cardEl.innerHTML = `
-        <img src="${card.art}" alt="${card.name}" onerror="this.src='../testroom/art/timber.jpg'">
+        <img src="${card.art}" alt="${card.name}" onerror="this.src='../testroom/art/missing.svg'">
         <div class="raid-pack-card-name">${card.name}</div>
         <div class="raid-pack-card-rarity">${card.rarity.toUpperCase()}</div>`;
       container.appendChild(cardEl);
