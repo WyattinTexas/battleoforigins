@@ -699,7 +699,9 @@ function handleActiveFight(data) {
 
   try {
     if (isMyTurn) {
+      const _prevRole = _currentRaidRole;
       _currentRaidRole = 'fighter';
+      try { console.log('[RAID] [ROLLDIAG] role→fighter mySlot=' + mySlot + ' currentIdx=' + currentIdx + ' turnCounter=' + turnCounter + ' prevRole=' + _prevRole); } catch(e){}
       // Clean up spectator overlay if transitioning from spectator → fighter
       if (typeof hideRaidSpectatorOverlay === 'function') hideRaidSpectatorOverlay();
       // Clean up any previous battle
@@ -715,7 +717,9 @@ function handleActiveFight(data) {
       if (leaveBtn) leaveBtn.style.display = '';
       startMyRaidFight(data);
     } else {
+      const _prevRole = _currentRaidRole;
       _currentRaidRole = 'spectator';
+      try { console.log('[RAID] [ROLLDIAG] role→spectator mySlot=' + mySlot + ' currentIdx=' + currentIdx + ' turnCounter=' + turnCounter + ' prevRole=' + _prevRole); } catch(e){}
       setupSpectatorView(data, currentIdx, players);
     }
   } finally {
