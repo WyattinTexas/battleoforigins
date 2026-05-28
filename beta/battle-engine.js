@@ -5420,9 +5420,8 @@ function rollReady(team) {
 }
 
 function doTeamRoll(team, btn) {
-  try { console.log('[RAID] [ROLLDIAG] doTeamRoll entry team=' + team + ' phase=' + (B && B.phase) + ' hasPreRoll=' + !!(B && B.preRoll) + ' resolved=' + (B && B.preRoll && B.preRoll.resolved) + ' redDicePR=' + (B && B.preRoll && B.preRoll.red && B.preRoll.red.dice) + ' blueDicePR=' + (B && B.preRoll && B.preRoll.blue && B.preRoll.blue.dice) + ' role=' + (typeof _currentRaidRole !== 'undefined' ? _currentRaidRole : 'n/a') + ' RM=' + RAID_MODE + ' wRM=' + window.RAID_MODE); } catch(e){}
   // Guard: B or preRoll may have been cleared (round-end, raid sync, etc.)
-  if (!B || !B.preRoll || !B.preRoll[team]) { try { console.log('[RAID] [ROLLDIAG] doTeamRoll GUARD-RETURN team=' + team + ' B=' + !!B + ' preRoll=' + !!(B && B.preRoll) + ' preRollTeam=' + !!(B && B.preRoll && B.preRoll[team])); } catch(e){} return; }
+  if (!B || !B.preRoll || !B.preRoll[team]) return;
 
   // Duel Phase intercept: if a modal primer resolved during Duel Phase, the
   // choice handler calls doTeamRoll() as its "proceed" signal. We catch that
@@ -5470,7 +5469,6 @@ function doTeamRoll(team, btn) {
 
     // Check if both have rolled — guard against double-resolution
     if (B.preRoll && B.preRoll.red.dice && B.preRoll.blue.dice && !B.preRoll.resolved) {
-      try { console.log('[RAID] [ROLLDIAG] both-rolled-check PASS team=' + team + ' red=' + JSON.stringify(B.preRoll.red.dice) + ' blue=' + JSON.stringify(B.preRoll.blue.dice)); } catch(e){}
       B.preRoll.resolved = true;
       // Use 1800ms if EITHER team rolled triples/quads/penta — the banner for the
       // first roller fires at T+700ms and lasts 1700ms (1200ms show + 500ms fade),
@@ -5482,8 +5480,6 @@ function doTeamRoll(team, btn) {
       setTimeout(() => {
         doPostRollAndResolve(B.preRoll.red.dice, B.preRoll.blue.dice);
       }, spd(eitherTripled ? 1800 : 1400));
-    } else {
-      try { console.log('[RAID] [ROLLDIAG] both-rolled-check SKIP team=' + team + ' hasPreRoll=' + !!B.preRoll + ' redD=' + (B.preRoll && B.preRoll.red && B.preRoll.red.dice) + ' blueD=' + (B.preRoll && B.preRoll.blue && B.preRoll.blue.dice) + ' resolved=' + (B.preRoll && B.preRoll.resolved)); } catch(e){}
     }
   }, spd(700));
 }
@@ -7682,7 +7678,6 @@ function doPreRollSetup() {
 // POST-ROLL TRIGGERS (split out for staged timing)
 // ========================================
 function doPostRollAndResolve(redDice, blueDice) {
-  try { console.log('[RAID] [ROLLDIAG] doPostRollAndResolve entry red=' + JSON.stringify(redDice) + ' blue=' + JSON.stringify(blueDice) + ' role=' + (typeof _currentRaidRole !== 'undefined' ? _currentRaidRole : 'n/a') + ' RM=' + RAID_MODE + ' wRM=' + window.RAID_MODE); } catch(e){}
   // Queue post-roll ability callouts so they play one at a time
   abilityQueue = [];
   abilityQueueMode = true;

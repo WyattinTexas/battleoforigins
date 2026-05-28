@@ -208,7 +208,11 @@ function initRaidBattleInPage(raidData, enemyGhosts, playerTeam, isWave) {
   window.BOSS_MODE = true;
   window.RAID_MODE = true;
   window.IS_WAVE_FIGHT = !!isWave;
-  // MP_MODE must be true for the blue AI to respond to red's roll
+  // Keep module-level RAID_MODE / MP_MODE (in battle-engine.js) in lockstep
+  // with window.* — otherwise code that reads the unqualified name sees stale
+  // `false`. Drift caused the doTeamRoll ROLLDIAG to report RM=false wRM=true
+  // 2026-05-28 even mid-raid.
+  if (typeof RAID_MODE !== 'undefined') RAID_MODE = true;
   if (typeof MP_MODE !== 'undefined') MP_MODE = true;
 
   // ── 5. Build BOSS_RAID_DATA from the live raidBattleState ────
@@ -540,6 +544,8 @@ function cleanupRaidBattle() {
   window.BOSS_RAID_DATA = null;
   window.IS_WAVE_FIGHT = false;
   window._raidSkipEntry = false;
+  // Keep module-level RAID_MODE in lockstep with window.RAID_MODE (see entry path)
+  if (typeof RAID_MODE !== 'undefined') RAID_MODE = false;
 
   // ── Hide raid screen ──────────────────────────────────────────
   const raidScreen = document.getElementById('raid-screen');
