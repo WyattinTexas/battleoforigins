@@ -11,7 +11,7 @@
 // which remote version we reloaded for; if the same mismatch reappears after
 // the reload, we log and stop rather than reload again.
 (function(){
-  const LOCAL_V = 'v2.72'; // MUST match BBN_VERSION — bump both together
+  const LOCAL_V = 'v2.73'; // MUST match BBN_VERSION — bump both together
   fetch('cache-version.txt?t=' + Date.now()).then(r => r.text()).then(v => {
     const remote = v.trim();
     if (remote === LOCAL_V || !remote.startsWith('v')) return;
@@ -6472,19 +6472,19 @@ button, .card-cell, .ghost-card, .roster-panel, .pvp-sideline-ghost, .ko-option,
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <!-- Card Data -->
-<script src="cards.js?v=v2.72"></script>
+<script src="cards.js?v=v2.73"></script>
 
 <!-- Battle Engine -->
-<script src="battle-engine.js?v=v2.72"></script>
+<script src="battle-engine.js?v=v2.73"></script>
 
 <!-- Raid System -->
-<script src="raid-engine.js?v=v2.72"></script>
-<script src="raid-ui.js?v=v2.72"></script>
-<script src="raid-shop.js?v=v2.72"></script>
-<script src="raid-battle-bridge.js?v=v2.72"></script>
+<script src="raid-engine.js?v=v2.73"></script>
+<script src="raid-ui.js?v=v2.73"></script>
+<script src="raid-shop.js?v=v2.73"></script>
+<script src="raid-battle-bridge.js?v=v2.73"></script>
 
 <script>
-const BBN_VERSION = 'v2.72';
+const BBN_VERSION = 'v2.73';
 document.addEventListener('DOMContentLoaded', () => {
   const vEl = document.getElementById('bbn-version');
   if (vEl) vEl.textContent = BBN_VERSION;

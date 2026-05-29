@@ -16307,10 +16307,18 @@ function aiTick() {
   // v2.47: In multi-player raid mode, the direct rollReady('red') hook in
   // raid-battle-bridge.js handles Blue's roll. Letting aiTick ALSO schedule
   // a Blue roll caused double-roll races where dice got regenerated and
-  // resolution skipped, leaving the player to click ROLL again. Skip the
-  // aiTick blue-roll branch in that case.
-  const _raidSkipBlueRoll = window.RAID_MODE && window.currentRaid &&
-    Object.keys(window.currentRaid.players || {}).length > 1;
+  // resolution skipped, leaving the player to click ROLL again.
+  //
+  // v2.73: REVERTED the v2.72 skip. v2.72 mirrored window.currentRaid so this
+  // guard finally evaluated true and aiTick stopped scheduling Blue — but the
+  // bridge hook is NOT a reliable boss roller (it bails at raid-battle-bridge.js
+  // line ~864 whenever rollBlueBtn is disabled/locked, which it is in raid UI).
+  // Result: the boss (Blue) never rolled at all — Red rolled, phase stuck at
+  // 'rolling', no damage applied. aiTick is the authoritative boss roller in
+  // raids; it must keep firing. The genuine double-roll fix is the doPreRollSetup
+  // re-run guard in rollReady() (v2.72 Fix 4) + the `B.preRoll.blue.dice` already-
+  // rolled checks below — those prevent the double-roll without orphaning Blue.
+  const _raidSkipBlueRoll = false;
   if (!_raidSkipBlueRoll && (B.phase === 'ready' || B.phase === 'rolling')) {
     const blueBtn = document.getElementById('rollBlueBtn');
     if (blueBtn && !blueBtn.disabled && !blueBtn.classList.contains('locked')) {
