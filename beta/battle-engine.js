@@ -5074,6 +5074,19 @@ function rollReady(team) {
   // calloutCount — exact same bug class as the v305 teamLabel freeze.
   let calloutCount = 0;
   let preRollDelay = 0;
+  // v2.72 DOUBLE-ROLL GUARD: round-end always nulls B.preRoll, so a clean new round
+  // has phase==='ready' WITH B.preRoll===null. If we instead see phase==='ready' while a
+  // pre-roll already exists with one team's dice rolled, the phase regressed mid-round (a
+  // delayed rollReady('blue') from the aiTick/bridge path fired after the prior resolution).
+  // Re-running doPreRollSetup() here is exactly what nulls the live dice and produces the
+  // stuck split state (B.preRoll.red.dice=null while blue.dice=[...]). Reuse the existing
+  // preRoll instead: flip back to 'rolling' so the block below is skipped and the requested
+  // team rolls into the live preRoll. Belt-and-suspenders alongside the window.currentRaid mirror.
+  if (B.phase === 'ready' && B.preRoll &&
+      ((B.preRoll.red && B.preRoll.red.dice) || (B.preRoll.blue && B.preRoll.blue.dice))) {
+    console.warn('[double-roll-guard] phase regressed to ready with a live preRoll; reusing it instead of re-running doPreRollSetup', { team });
+    B.phase = 'rolling';
+  }
   if (B.phase === 'ready') {
     calloutCount = doPreRollSetup();
     if (B.phase !== 'ready') return; // pre-roll interrupted — KO-swap, game-over, or other phase change

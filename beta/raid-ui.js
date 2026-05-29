@@ -1269,6 +1269,7 @@ function checkForActiveRaids() {
 
 function spectateRaid(instanceId) {
   currentRaid = { instanceId };
+  window.currentRaid = currentRaid; // v2.72: keep window mirror in sync
   showRaidScreen(instanceId);
   enterRaidScreen(instanceId);
 

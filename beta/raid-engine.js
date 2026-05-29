@@ -319,6 +319,7 @@ function getPlayerHpMultiplier(playerCount) {
 
 // ─── RAID STATE ─────────────────────────────────────────────────
 let currentRaid = null;       // Active raid instance data
+window.currentRaid = currentRaid; // v2.72: mirror to window — aiTick guard (battle-engine.js) reads window.currentRaid; keep both in sync to stop double-roll
 let raidListeners = {};       // Firebase listener handles
 let heartbeatTimer = null;    // Heartbeat interval ID
 let raidBattleState = null;   // Local battle state for the fighting player
@@ -392,6 +393,7 @@ function startQueueListener(raidId) {
           if (inst && inst.status !== 'complete' && inst.status !== 'abandoned') {
             console.log('[RAID] Queue cleared — entering raid via failsafe:', activeId);
             currentRaid = { instanceId: activeId, ...inst };
+            window.currentRaid = currentRaid; // v2.72: keep window mirror in sync
             enterRaidScreen(activeId);
           }
         }
@@ -573,6 +575,7 @@ function startActiveRaidListener() {
     }
 
     currentRaid = { instanceId, ...instance };
+    window.currentRaid = currentRaid; // v2.72: keep window mirror in sync
     enterRaidScreen(instanceId);
   });
 }
@@ -606,6 +609,7 @@ function enterRaidScreen(instanceId) {
     if (!data) return;
 
     currentRaid = { instanceId, ...data };
+    window.currentRaid = currentRaid; // v2.72: live Firebase listener — refreshes window mirror on every snapshot
 
     switch (data.status) {
       case 'countdown':
@@ -1749,6 +1753,7 @@ function cleanupRaid() {
   raidListeners = {};
   stopHeartbeat();
   currentRaid = null;
+  window.currentRaid = currentRaid; // v2.72: clear window mirror on raid teardown
   raidBattleState = null;
   window.BOSS_MODE = false;
   window.BOSS_RAID_DATA = null;
