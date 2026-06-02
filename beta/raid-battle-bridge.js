@@ -683,7 +683,14 @@ function injectRaidReturnButton() {
           }
         }
         const poolMax = currentRaid.bossMaxHp || 15;
-        const poolNow = Math.max(0, Math.round(poolMax * (bossHpNow / bossMaxGhostHp)));
+        // Clamp poolNow to the pool this turn STARTED at: the lossy pool<->ghost
+        // round-trip (Math.round on both ends + Math.max(1) floor) can recompute
+        // poolNow HIGHER than the start pool, "healing" the boss by rounding and
+        // inflating cumulative damage past the boss's max HP. The boss cannot gain
+        // HP during a player's turn. (If a boss-heal ability is ever implemented,
+        // revisit this clamp.)
+        const _startPool = (window._raidTurnStartPool != null) ? window._raidTurnStartPool : poolMax;
+        const poolNow = Math.min(_startPool, Math.max(0, Math.round(poolMax * (bossHpNow / bossMaxGhostHp))));
 
         // Stop AI and snapshot sync
         if (typeof stopBlueAI === 'function') stopBlueAI();
@@ -701,7 +708,7 @@ function injectRaidReturnButton() {
         // This player's damage = pool drop during their turn (in pool units).
         // baseline was captured in initRaidBattleInPage as the bossCurrentHp
         // the player started with; poolNow was computed above.
-        const turnDamage = Math.max(0, (window._raidTurnStartPool || 0) - poolNow);
+        const turnDamage = Math.max(0, _startPool - poolNow);
 
         // Save player ghost state (with identity for transforms)
         // IMPORTANT: Firebase rejects undefined — coerce every field
@@ -1005,9 +1012,14 @@ function injectRaidReturnButton() {
 
       // Calculate new boss pool HP from the boss ghost's current HP
       const poolMax = currentRaid.bossMaxHp || 15;
-      const poolNow = Math.max(0, Math.round(poolMax * (bossHpNow / bossMaxGhostHpForTurn)));
+      // Clamp poolNow to the pool this turn STARTED at — the lossy pool<->ghost
+      // round-trip can otherwise recompute poolNow higher than the start pool,
+      // "healing" the boss by rounding and inflating total damage past max HP.
+      // (See matching clamp in the showGameOver hook above.)
+      const _startPool = (window._raidTurnStartPool != null) ? window._raidTurnStartPool : poolMax;
+      const poolNow = Math.min(_startPool, Math.max(0, Math.round(poolMax * (bossHpNow / bossMaxGhostHpForTurn))));
       // Per-turn damage in POOL units (matches what the player sees drop).
-      const turnDamage = Math.max(0, (window._raidTurnStartPool || 0) - poolNow);
+      const turnDamage = Math.max(0, _startPool - poolNow);
 
       // ATOMIC write: player ghost state + fighter advance in ONE update
       // Prevents race where listener fires on index change before ghost state is saved
