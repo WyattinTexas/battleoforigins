@@ -179,14 +179,22 @@ function initRaidBattleInPage(raidData, enemyGhosts, playerTeam, isWave) {
     if (typeof GHOSTS !== 'undefined') {
       const idx = GHOSTS.findIndex(gh => gh.id === g.id);
       if (idx >= 0) {
-        // Save original and override with boss version
+        // Save original and override with boss version.
+        // Carry baseId so abilityIdOf() routes the boss's ability by its real
+        // card id (e.g. 110) instead of the synthetic raid id (e.g. 9205) —
+        // without this, NO boss ability fires (it's keyed on baseId).
         _originalGhostData[g.id] = { ...GHOSTS[idx] };
-        GHOSTS[idx] = { ...GHOSTS[idx], maxHp: g.maxHp, art: g.art || GHOSTS[idx].art };
+        GHOSTS[idx] = { ...GHOSTS[idx], maxHp: g.maxHp, art: g.art || GHOSTS[idx].art,
+                        ...(g.baseId != null ? { baseId: g.baseId } : {}) };
         _registeredRaidGhostIds.push(g.id);
       } else {
-        // Ghost doesn't exist at all — add it
+        // Ghost doesn't exist at all — add it.
+        // baseId is REQUIRED for the boss's ability to fire: abilityIdOf() keys
+        // on baseId, so a boss registered without it routes by the synthetic
+        // raid id and its ability silently never triggers.
         GHOSTS.push({
           id: g.id,
+          baseId: g.baseId,
           name: g.name,
           rarity: g.rarity || 'legendary',
           maxHp: g.maxHp,

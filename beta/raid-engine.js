@@ -471,7 +471,14 @@ async function tryCreateRaidInstance(raidId, players) {
   if (!result.committed) return; // Another client beat us
 
   const playerCount = players.length;
-  const scaledHp = Math.round(bossConfig.bossGhost.maxHp * getPlayerHpMultiplier(playerCount));
+  // HP SCALING DISABLED 2026-06-02 (Wyatt): boss pool = its base ghost maxHp,
+  // flat regardless of player count. Rationale: (1) the old pool<->ghost 2x
+  // mapping double-counted damage (tracker showed 60 for 30 real dmg); pool ==
+  // ghostMax makes the conversion 1:1 so the damage tracker is accurate. (2)
+  // difficulty should come from boss design (some bosses NEED a team), not
+  // invisible auto-scaling. getPlayerHpMultiplier() kept for a possible future
+  // revisit. To re-enable: multiply by getPlayerHpMultiplier(playerCount).
+  const scaledHp = bossConfig.bossGhost.maxHp;
 
   // Create instance
   const instanceRef = db.ref('mp/raids/instances').push();

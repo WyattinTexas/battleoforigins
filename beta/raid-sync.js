@@ -325,7 +325,11 @@ const RaidSync = {
     if (!result.committed) return;
 
     const playerCount = players.length;
-    const scaledHp = Math.round(bossConfig.bossGhost.maxHp * getPlayerHpMultiplier(playerCount));
+    // HP SCALING DISABLED 2026-06-02 (Wyatt) — see matching note in
+    // raid-engine.js tryCreateRaidInstance. Boss pool = base ghost maxHp, flat
+    // per player count, so the damage tracker is 1:1 with real damage. This is
+    // the SECOND creation path; both must stay in sync.
+    const scaledHp = bossConfig.bossGhost.maxHp;
 
     const instanceRef = db.ref('mp/raids/instances').push();
     const instanceId = instanceRef.key;
