@@ -2,6 +2,15 @@
    RAID ARENA CSS — extracted from testroom, scoped to #raid-screen
    ============================================================ */
 
+/* --- Battle View Wrapper --- */
+#raid-screen #battle-view {
+  height:100dvh; max-height:100dvh; overflow:hidden;
+  display:flex; flex-direction:column;
+}
+#raid-screen #battle-view .arena-board {
+  flex:1; min-height:0;
+}
+
 /* --- Arena Board --- */
 #raid-screen .arena-board {
   max-width:1400px; margin:0 auto;
@@ -13,7 +22,7 @@
   border-radius:20px; border:1px solid rgba(126,232,250,0.15); padding:16px; overflow:hidden;
   display:flex; flex-direction:row; align-items:stretch; gap:12px; position:relative;
   box-shadow:0 0 60px rgba(0,0,0,0.8), inset 0 0 120px rgba(126,232,250,0.04);
-  max-height:calc(100vh - 40px);
+  height:calc(100vh - 40px); max-height:100dvh; box-sizing:border-box;
 }
 /* Subtle star field overlay */
 #raid-screen .arena-board::before {
@@ -34,7 +43,7 @@
 /* --- Team Columns --- */
 #raid-screen .team-column {
   flex:1; display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center;
-  min-width:0;
+  min-width:0; min-height:0; overflow:hidden;
 }
 #raid-screen .team-battle-row { display:flex; gap:12px; align-items:center; justify-content:center; }
 #raid-screen .sideline-stack { display:flex; flex-direction:column; gap:6px; }
@@ -43,7 +52,7 @@
 /* --- Arena Center --- */
 #raid-screen .arena-center {
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
-  min-width:220px; padding:0 4px; flex-shrink:0;
+  min-width:clamp(140px, 15vw, 220px); width:clamp(140px, 15vw, 260px); padding:0 4px; flex-shrink:1;
 }
 #raid-screen .arena-mid { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; }
 
@@ -63,14 +72,14 @@
 
 /* --- Fighter Slot --- */
 #raid-screen .fighter-slot {
-  width:240px; flex-shrink:0;
+  width:clamp(140px, 16vw, 240px); flex-shrink:1; min-width:120px;
   position:relative;
   overflow:visible !important;
   background: linear-gradient(180deg, #1e1828 0%, #100a18 100%);
   border-radius:14px;
   border-width:2px;
-  margin-left:22px;
-  margin-right:22px;
+  margin-left:clamp(4px, 1vw, 22px);
+  margin-right:clamp(4px, 1vw, 22px);
 }
 #raid-screen .fighter-slot.team-red {
   background: linear-gradient(180deg, #281620 0%, #100610 100%) !important;
@@ -132,7 +141,7 @@
 
 /* --- Sideline Slot --- */
 #raid-screen .sideline-slot {
-  width:150px; flex-shrink:0;
+  width:clamp(80px, 10vw, 150px); flex-shrink:1; min-width:60px;
   transition:transform 0.3s, z-index 0s, opacity 0.25s;
   background: linear-gradient(180deg, rgba(28, 22, 38, 0.92), rgba(14, 10, 22, 0.92));
   border:1px solid rgba(212, 160, 64, 0.22) !important;
@@ -269,13 +278,13 @@
 #raid-screen .dice-row.dice-red { justify-content:flex-start; padding-left:8px; }
 #raid-screen .dice-row.dice-blue { justify-content:flex-end; padding-right:8px; }
 #raid-screen .die {
-  width:56px; height:56px;
+  width:clamp(34px, 3.5vw, 56px); height:clamp(34px, 3.5vw, 56px);
   background: linear-gradient(165deg, #f4ecd8 0%, #e8dcb8 35%, #d8c894 70%, #b8a878 100%);
   border:1px solid rgba(120, 80, 30, 0.5);
   border-radius:11px;
   display:flex; align-items:center; justify-content:center;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size:28px; font-weight:800;
+  font-size:clamp(16px, 1.8vw, 28px); font-weight:800;
   color:#3a1f08;
   letter-spacing:-0.5px;
   transition:all .3s; user-select:none;
@@ -625,7 +634,7 @@
 /* --- Resources --- */
 #raid-screen .resources { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
 #raid-screen .res-tile {
-  width:48px; height:56px;
+  width:clamp(28px, 3.2vw, 48px); height:clamp(32px, 3.8vw, 56px);
   border-radius:8px;
   border:1px solid rgba(212, 160, 64, 0.28);
   background: linear-gradient(180deg, rgba(28, 22, 38, 0.9), rgba(14, 10, 22, 0.9));
@@ -1316,20 +1325,15 @@
    No scrolling on 390x844 viewport
    ============================================================ */
 
-@media (min-width:1121px) and (max-width:1300px) {
-  #raid-screen .fighter-slot { width:200px; }
-  #raid-screen .sideline-slot { width:120px; }
-  #raid-screen .team-battle-row { gap:8px; }
-}
-
-@media (min-width:901px) and (max-width:1120px) {
-  #raid-screen .fighter-slot { width:180px; }
-  #raid-screen .sideline-slot { width:100px; }
-  #raid-screen .team-battle-row { gap:6px; }
+/* Tablet bridge: compress text when cards shrink */
+@media (min-width:701px) and (max-width:900px) {
+  #raid-screen .fighter-slot .ci-desc { display:none; }
+  #raid-screen .sideline-slot .ci-desc { -webkit-line-clamp:1; }
   #raid-screen .fighter-slot .card-name-banner { font-size:13px; padding:6px 8px; }
+  #raid-screen .team-battle-row { gap:6px; }
 }
 
-@media (max-width:900px) {
+@media (max-width:700px) {
   /* --- Arena Board: vertical stack, fill viewport, no scroll --- */
   #raid-screen .arena-board {
     flex-direction:column !important; height:100dvh !important; overflow:hidden !important;
@@ -1363,12 +1367,12 @@
 
   /* --- OPPONENT: top of screen — CSS Grid layout --- */
   #raid-screen #blue-team-column {
-    order:-1 !important; flex:0 0 auto !important;
+    order:-1 !important; flex:0 1 auto !important; min-height:0 !important;
     background:rgba(233,69,96,0.04) !important;
     border:1px solid rgba(233,69,96,0.10) !important;
     border-radius:8px !important; padding:3px 6px !important;
     display:grid !important;
-    grid-template-columns:50px 1fr 50px !important;
+    grid-template-columns:clamp(40px, 12vw, 60px) 1fr clamp(40px, 12vw, 60px) !important;
     grid-template-areas:"opp-sl-l opp-fighter opp-sl-r" "opp-sl-l opp-info opp-sl-r" !important;
     gap:3px !important; align-items:center !important; justify-items:center !important;
   }
@@ -1378,13 +1382,13 @@
   #raid-screen #blue-sl-right { grid-area:opp-sl-r !important; }
   #raid-screen #blue-team-column .fighter-slot {
     grid-area:opp-fighter !important;
-    width:170px !important; margin:0 auto !important;
+    width:clamp(120px, 28vw, 200px) !important; margin:0 auto !important;
   }
   #raid-screen #blue-team-column .team-info {
     grid-area:opp-info !important; min-width:0 !important; width:100% !important; text-align:center !important;
   }
   /* Sideline card styling */
-  #raid-screen #blue-team-column .sideline-slot { width:46px !important; border-radius:8px; flex-shrink:0; }
+  #raid-screen #blue-team-column .sideline-slot { width:clamp(40px, 12vw, 80px) !important; border-radius:8px; flex-shrink:0; }
   #raid-screen #blue-team-column .sideline-slot .card-name-banner {
     font-size:8px; padding:2px 3px; white-space:normal; text-align:center; line-height:1.15;
   }
@@ -1427,15 +1431,16 @@
 
   /* --- PLAYER (red-team-column): bottom of screen — CSS Grid layout --- */
   #raid-screen #red-team-column {
-    order:1 !important; flex:1 1 auto !important;
+    order:1 !important; flex:1 1 0 !important; min-height:0 !important;
     background:rgba(59,130,246,0.05) !important;
     border:1px solid rgba(59,130,246,0.10) !important;
     border-radius:8px !important; padding:3px 6px !important;
     display:grid !important;
-    grid-template-columns:50px 1fr 50px !important;
+    grid-template-columns:clamp(40px, 12vw, 60px) 1fr clamp(40px, 12vw, 60px) !important;
     grid-template-areas:"my-sl-l my-fighter my-sl-r" "my-sl-l my-info my-sl-r" ". my-abilities ." ". my-btn ." !important;
     gap:3px !important;
     align-content:center !important; align-items:center !important; justify-items:center !important;
+    overflow:hidden !important;
   }
 
   /* Dissolve battle-row so children participate in grid */
@@ -1446,7 +1451,7 @@
   #raid-screen #red-sl-right { grid-area:my-sl-r !important; }
   #raid-screen #red-team-column .fighter-slot {
     grid-area:my-fighter !important;
-    width:200px !important; margin:0 auto !important;
+    width:clamp(120px, 28vw, 200px) !important; margin:0 auto !important;
   }
   #raid-screen #red-team-column .team-info {
     grid-area:my-info !important; min-width:0 !important; width:100% !important; text-align:center !important;
@@ -1456,7 +1461,7 @@
   }
 
   /* Player bench cards: 90px compact with ability name */
-  #raid-screen #red-team-column .sideline-slot { width:46px !important; border-radius:8px; flex-shrink:0; }
+  #raid-screen #red-team-column .sideline-slot { width:clamp(40px, 12vw, 80px) !important; border-radius:8px; flex-shrink:0; }
   #raid-screen #red-team-column .sideline-slot .card-name-banner {
     font-size:8px; padding:2px 3px; white-space:normal; text-align:center; line-height:1.15;
   }
@@ -1601,7 +1606,7 @@
     display:flex !important; flex-direction:column !important; gap:2px !important;
   }
   #raid-screen #blue-team-column .fighter-slot {
-    width:80px !important; margin:0 !important;
+    width:clamp(60px, 12vh, 100px) !important; margin:0 !important;
   }
   #raid-screen #blue-team-column .fighter-slot .card-name-banner { font-size:8px; padding:2px 4px; }
   #raid-screen #blue-team-column .fighter-slot .ability-banner { display:none !important; }
@@ -1610,7 +1615,7 @@
   #raid-screen #blue-team-column .fighter-slot .card-img,
   #raid-screen #blue-team-column .fighter-slot .card-img-placeholder { aspect-ratio:1; }
   #raid-screen #blue-team-column .sideline-slot {
-    width:40px !important; border-radius:6px;
+    width:clamp(30px, 8vh, 50px) !important; border-radius:6px;
   }
   #raid-screen #blue-team-column .sideline-slot .card-name-banner {
     font-size:6px; padding:1px 2px; white-space:normal; text-align:center; line-height:1.1;
@@ -1657,7 +1662,7 @@
     display:flex !important; flex-direction:column !important; gap:2px !important;
   }
   #raid-screen #red-team-column .fighter-slot {
-    width:80px !important; margin:0 !important;
+    width:clamp(60px, 12vh, 100px) !important; margin:0 !important;
   }
   #raid-screen #red-team-column .fighter-slot .card-name-banner { font-size:8px; padding:2px 4px; }
   #raid-screen #red-team-column .fighter-slot .ability-banner { display:none !important; }
@@ -1666,7 +1671,7 @@
   #raid-screen #red-team-column .fighter-slot .card-img,
   #raid-screen #red-team-column .fighter-slot .card-img-placeholder { aspect-ratio:1; }
   #raid-screen #red-team-column .sideline-slot {
-    width:40px !important; border-radius:6px;
+    width:clamp(30px, 8vh, 50px) !important; border-radius:6px;
   }
   #raid-screen #red-team-column .sideline-slot .card-name-banner {
     font-size:6px; padding:1px 2px; white-space:normal; text-align:center; line-height:1.1;
@@ -1758,7 +1763,7 @@
   #raid-screen .dice-stack { padding:8px 14px; gap:6px; border-radius:10px; }
   #raid-screen .dice-row { gap:3px; }
   #raid-screen .die {
-    width:34px; height:34px; font-size:16px; border-radius:7px;
+    width:clamp(28px, 6vh, 38px); height:clamp(28px, 6vh, 38px); font-size:clamp(12px, 3vh, 16px); border-radius:7px;
   }
   #raid-screen .die.rolling { will-change:transform; }
 
