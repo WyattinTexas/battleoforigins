@@ -433,7 +433,7 @@ function initRaidBattleInPage(raidData, enemyGhosts, playerTeam, isWave) {
     if (redDiceEl) redDiceEl.innerHTML = '';
     if (blueDiceEl) blueDiceEl.innerHTML = '';
     // Also clear any 3D physics dice lingering on the board
-    document.querySelectorAll('.die-physics').forEach(el => el.remove());
+    document.querySelectorAll('.die-physics').forEach(el => { if (el.parentNode) el.remove(); });
 
     // Re-render with correct HP (dice won't show because B.redDice/blueDice are null)
     renderBattle();

@@ -9857,7 +9857,7 @@ function showFlickPicker(team, callback) {
   // -- Restore helper --
   const restoreLayout = () => {
     clearLsCountdown();
-    flickEls.forEach(el => el.remove()); // remove 3D physics dice
+    flickEls.forEach(el => { if (el.parentNode) el.remove(); }); // remove 3D physics dice
     redRow.style.visibility = '';
     blueRow.style.visibility = '';
     board.style.overflow = '';
