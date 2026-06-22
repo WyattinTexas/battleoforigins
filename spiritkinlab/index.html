@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spiritkin Lab — Card Art Progress</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a12;
+    color: #e8e8f0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 48px 24px 32px;
+    background: linear-gradient(180deg, #14142a 0%, #0a0a12 100%);
+    border-bottom: 1px solid #222240;
+  }
+
+  header h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #c084fc, #818cf8, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  header .subtitle {
+    font-size: 1rem;
+    color: #888;
+    font-weight: 400;
+  }
+
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .stat { text-align: center; }
+
+  .stat .num {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #a78bfa;
+  }
+
+  .stat .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #666;
+    margin-top: 2px;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 24px;
+    flex-wrap: wrap;
+  }
+
+  .controls button {
+    padding: 8px 18px;
+    border: 1px solid #333;
+    border-radius: 20px;
+    background: #151525;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  .controls button:hover,
+  .controls button.active {
+    background: #a78bfa;
+    color: #0a0a12;
+    border-color: #a78bfa;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #12121f;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #1e1e35;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 32px rgba(167, 139, 250, 0.15);
+    border-color: #a78bfa44;
+  }
+
+  .card .img-wrap {
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: #0d0d18;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .card .img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .card .img-wrap.missing {
+    color: #444;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .card .img-wrap.dragover {
+    border: 3px dashed #a78bfa;
+    background: #1a1a30;
+  }
+
+  .card .img-wrap.dragover::after {
+    content: 'Drop image here';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a30ee;
+    color: #a78bfa;
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-style: normal;
+    z-index: 5;
+  }
+
+  /* Replace overlay on hover */
+  .card .replace-overlay {
+    position: absolute;
+    inset: 0;
+    background: #000b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .card:hover .replace-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .replace-overlay .replace-btn {
+    padding: 10px 20px;
+    background: #a78bfa;
+    color: #0a0a12;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .replace-overlay .replace-btn:hover {
+    background: #c4b5fd;
+  }
+
+  .replace-overlay .replace-hint {
+    margin-top: 8px;
+    font-size: 0.7rem;
+    color: #888;
+  }
+
+  .card .updated-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #a78bfa;
+    color: #0a0a12;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    z-index: 3;
+  }
+
+  .card .info {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card .info .name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .card .info .badge {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge.done { background: #166534; color: #4ade80; }
+  .badge.missing { background: #7f1d1d; color: #fca5a5; }
+  .badge.replaced { background: #1e3a5f; color: #60a5fa; }
+
+  .card .number {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #000a;
+    color: #888;
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 3;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000c;
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 32px;
+  }
+
+  .lightbox.open { display: flex; }
+
+  .lightbox img {
+    max-height: 75vh;
+    max-width: 85vw;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+
+  .lightbox .lb-name {
+    margin-top: 16px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #e8e8f0;
+  }
+
+  .lightbox .lb-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .lightbox .lb-actions button {
+    padding: 8px 18px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #1a1a2e;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  .lightbox .lb-actions button:hover {
+    background: #a78bfa;
+    color: #0a0a12;
+    border-color: #a78bfa;
+  }
+
+  .lightbox .lb-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    font-size: 2rem;
+    color: #888;
+    cursor: pointer;
+    background: none;
+    border: none;
+    line-height: 1;
+  }
+
+  .lightbox .lb-close:hover { color: #fff; }
+
+  .lightbox .lb-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.5rem;
+    color: #666;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 16px;
+  }
+
+  .lightbox .lb-nav:hover { color: #fff; }
+  .lightbox .lb-prev { left: 12px; }
+  .lightbox .lb-next { right: 12px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #166534;
+    color: #4ade80;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* Export bar */
+  .export-bar {
+    display: none;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    background: #14142a;
+    border-top: 1px solid #222240;
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+  }
+
+  .export-bar.visible { display: flex; }
+
+  .export-bar button {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .export-bar .export-btn {
+    background: #a78bfa;
+    color: #0a0a12;
+  }
+
+  .export-bar .export-btn:hover { background: #c4b5fd; }
+
+  .export-bar .reset-btn {
+    background: #2a1a1a;
+    color: #f87171;
+    border: 1px solid #7f1d1d;
+  }
+
+  .export-bar .reset-btn:hover { background: #3a1a1a; }
+
+  .export-bar .change-count {
+    color: #60a5fa;
+    font-size: 0.85rem;
+    align-self: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SPIRITKIN LAB</h1>
+  <div class="subtitle">Human Reillustration Progress &mdash; Card Art Review & Replace</div>
+  <div class="stats">
+    <div class="stat"><div class="num" id="total">0</div><div class="label">Total Cards</div></div>
+    <div class="stat"><div class="num" id="done">0</div><div class="label">Art Complete</div></div>
+    <div class="stat"><div class="num" id="pending">0</div><div class="label">Pending</div></div>
+    <div class="stat"><div class="num" id="pct">0%</div><div class="label">Progress</div></div>
+  </div>
+</header>
+
+<div class="controls">
+  <button class="active" data-filter="all">All</button>
+  <button data-filter="done">Art Complete</button>
+  <button data-filter="missing">Pending</button>
+  <button data-filter="replaced">Replaced</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="export-bar" id="exportBar">
+  <span class="change-count" id="changeCount"></span>
+  <button class="export-btn" onclick="exportChanges()">Download All Replacements (.zip)</button>
+  <button class="reset-btn" onclick="resetAll()">Reset All</button>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">&times;</button>
+  <button class="lb-nav lb-prev" onclick="navLightbox(-1)">&#8249;</button>
+  <button class="lb-nav lb-next" onclick="navLightbox(1)">&#8250;</button>
+  <img id="lb-img" src="" alt="">
+  <div class="lb-name" id="lb-name"></div>
+  <div class="lb-actions">
+    <button onclick="replaceFromLightbox()">Replace Art</button>
+    <button id="lb-revert-btn" style="display:none" onclick="revertFromLightbox()">Revert to Original</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+
+<script>
+const CARDS = [
+  {name:"Kodako",image:"images/kodako.png",done:true},
+  {name:"Nikon",image:"images/nikon.png",done:true},
+  {name:"Ancient Librarian",image:"images/ancient_librarian.png",done:true},
+  {name:"Wanderer",image:"images/wanderer.png",done:true},
+  {name:"Puff",image:"images/puff.png",done:true},
+  {name:"Fang Outside",image:null,done:false},
+  {name:"Fang Undercover",image:"images/fang_undercover.png",done:true},
+  {name:"Buttons",image:"images/buttons.png",done:true},
+  {name:"Little Boo",image:"images/little_boo.png",done:true},
+  {name:"Patrick",image:"images/patrick.png",done:true},
+  {name:"Villager",image:"images/villager.png",done:true},
+  {name:"Dupy",image:"images/dupy.png",done:true},
+  {name:"Shoo",image:"images/shoo.png",done:true},
+  {name:"Jeffery",image:"images/jeffery.png",done:true},
+  {name:"Winston",image:null,done:false},
+  {name:"Chip",image:"images/chip.png",done:true},
+  {name:"Boo Brothers",image:"images/boo_brothers.png",done:true},
+  {name:"Charlie",image:null,done:false},
+  {name:"Grawr",image:"images/grawr.png",done:true},
+  {name:"Larry",image:"images/larry.png",done:true},
+  {name:"Bill & Bob",image:"images/bill_and_bob.jpg",done:true},
+  {name:"Dealer",image:"images/dealer.png",done:true},
+  {name:"Alucard",image:"images/alucard.png",done:true},
+  {name:"Castle Guards",image:"images/castle_guards.png",done:true},
+  {name:"Team Zippy",image:"images/team_zippy.png",done:true},
+  {name:"Guard Thomas",image:"images/guard_thomas.png",done:true},
+  {name:"Doc",image:"images/doc.png",done:true},
+  {name:"Outlaw",image:"images/outlaw.png",done:true},
+  {name:"Bubble Boys",image:"images/bubble_boys.png",done:true},
+  {name:"Cornelius",image:"images/cornelius.png",done:true},
+  {name:"Cave Dweller",image:"images/cave_dweller.png",done:true},
+  {name:"Hermit",image:"images/hermit.png",done:true},
+  {name:"Opa",image:"images/opa.png",done:true},
+  {name:"Jackson",image:"images/jackson.png",done:true},
+  {name:"Raditz",image:"images/raditz.png",done:true},
+  {name:"Doug",image:"images/doug.png",done:true},
+  {name:"Sparky (Chomp)",image:"images/sparky_chomp.png",done:true},
+  {name:"Wim",image:"images/wim.png",done:true},
+  {name:"Munch",image:"images/munch.png",done:true},
+  {name:"Snorton",image:"images/snorton.png",done:true},
+  {name:"Kairan",image:"images/kairan.png",done:true},
+  {name:"Sonya",image:"images/sonya.png",done:true},
+  {name:"Katrina",image:"images/katrina.png",done:true},
+  {name:"Admiral",image:"images/admiral.png",done:true},
+  {name:"Sky",image:null,done:false},
+  {name:"Stone Cold",image:"images/stone_cold.png",done:true},
+  {name:"Flora",image:"images/flora.png",done:true},
+  {name:"Dark Wing",image:"images/dark_wing.png",done:true},
+  {name:"City Cyboo",image:"images/city_cyboo.png",done:true},
+  {name:"Jenkins",image:"images/jenkins.png",done:true},
+  {name:"Tabitha",image:"images/tabitha.png",done:true},
+  {name:"Guardian Fairy",image:"images/guardian_fairy.png",done:true},
+  {name:"Cyboo",image:"images/cyboo.png",done:true},
+  {name:"Splinter",image:"images/splinter.png",done:true},
+  {name:"Bo",image:"images/bo.png",done:true},
+  {name:"Mountain King",image:"images/mountain_king.png",done:true},
+  {name:"Shade (Dusk)",image:"images/shade_dusk.png",done:true},
+  {name:"Doom",image:"images/doom.jpg",done:true},
+];
+
+// Track replacements: cardIndex -> { dataUrl, fileName }
+const replacements = {};
+// Load from localStorage
+const saved = localStorage.getItem('spiritkinlab_replacements');
+if (saved) {
+  try {
+    const parsed = JSON.parse(saved);
+    Object.assign(replacements, parsed);
+  } catch(e) {}
+}
+
+const grid = document.getElementById('grid');
+const fileInput = document.getElementById('fileInput');
+let currentFilter = 'all';
+let visibleCards = [];
+let lbIndex = 0;
+let pendingReplaceIndex = -1; // global card index awaiting file pick
+
+function getDisplayImage(idx) {
+  if (replacements[idx]) return replacements[idx].dataUrl;
+  return CARDS[idx].image;
+}
+
+function isReplaced(idx) {
+  return !!replacements[idx];
+}
+
+function cardHasImage(idx) {
+  return CARDS[idx].done || isReplaced(idx);
+}
+
+function updateStats() {
+  const total = CARDS.length;
+  const doneCount = CARDS.filter((c, i) => c.done || isReplaced(i)).length;
+  const replacedCount = Object.keys(replacements).length;
+  document.getElementById('total').textContent = total;
+  document.getElementById('done').textContent = doneCount;
+  document.getElementById('pending').textContent = total - doneCount;
+  document.getElementById('pct').textContent = Math.round(doneCount / total * 100) + '%';
+
+  const bar = document.getElementById('exportBar');
+  const countEl = document.getElementById('changeCount');
+  if (replacedCount > 0) {
+    bar.classList.add('visible');
+    countEl.textContent = `${replacedCount} replacement${replacedCount > 1 ? 's' : ''} staged`;
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function saveReplacements() {
+  localStorage.setItem('spiritkinlab_replacements', JSON.stringify(replacements));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function render(filter) {
+  currentFilter = filter;
+  visibleCards = [];
+
+  CARDS.forEach((c, i) => {
+    let show = true;
+    if (filter === 'done') show = c.done && !isReplaced(i);
+    else if (filter === 'missing') show = !c.done && !isReplaced(i);
+    else if (filter === 'replaced') show = isReplaced(i);
+    if (show) visibleCards.push({ ...c, globalIndex: i });
+  });
+
+  grid.innerHTML = '';
+  visibleCards.forEach((c, vi) => {
+    const gi = c.globalIndex;
+    const hasImg = cardHasImage(gi);
+    const replaced = isReplaced(gi);
+    const imgSrc = getDisplayImage(gi);
+
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.innerHTML = `
+      <span class="number">#${gi + 1}</span>
+      ${replaced ? '<span class="updated-badge">Updated</span>' : ''}
+      <div class="img-wrap ${hasImg ? '' : 'missing'}" data-gi="${gi}">
+        ${hasImg ? `<img src="${imgSrc}" alt="${c.name}" loading="lazy">` : 'Drop image or click to add'}
+        <div class="replace-overlay">
+          <button class="replace-btn" onclick="event.stopPropagation(); triggerReplace(${gi})">${hasImg ? 'Replace Art' : 'Add Art'}</button>
+          <div class="replace-hint">or drag & drop an image</div>
+          ${replaced ? `<button class="replace-btn" style="margin-top:6px;background:#f87171" onclick="event.stopPropagation(); revertCard(${gi})">Revert</button>` : ''}
+        </div>
+      </div>
+      <div class="info">
+        <span class="name">${c.name}</span>
+        <span class="badge ${replaced ? 'replaced' : (c.done ? 'done' : 'missing')}">${replaced ? 'Replaced' : (c.done ? 'Done' : 'Pending')}</span>
+      </div>
+    `;
+
+    // Click to view in lightbox
+    el.addEventListener('click', (e) => {
+      if (hasImg) openLightbox(vi);
+    });
+
+    // Drag & drop on the img-wrap
+    const wrap = el.querySelector('.img-wrap');
+    wrap.addEventListener('dragover', (e) => { e.preventDefault(); wrap.classList.add('dragover'); });
+    wrap.addEventListener('dragleave', () => wrap.classList.remove('dragover'));
+    wrap.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      wrap.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        replaceCardImage(gi, file);
+      }
+    });
+
+    grid.appendChild(el);
+  });
+}
+
+function triggerReplace(globalIndex) {
+  pendingReplaceIndex = globalIndex;
+  fileInput.click();
+}
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file && pendingReplaceIndex >= 0) {
+    replaceCardImage(pendingReplaceIndex, file);
+  }
+  fileInput.value = '';
+  pendingReplaceIndex = -1;
+});
+
+function replaceCardImage(globalIndex, file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    replacements[globalIndex] = {
+      dataUrl: e.target.result,
+      fileName: file.name,
+      timestamp: new Date().toISOString()
+    };
+    saveReplacements();
+    updateStats();
+    render(currentFilter);
+    showToast(`${CARDS[globalIndex].name} art replaced!`);
+  };
+  reader.readAsDataURL(file);
+}
+
+function revertCard(globalIndex) {
+  delete replacements[globalIndex];
+  saveReplacements();
+  updateStats();
+  render(currentFilter);
+  showToast(`${CARDS[globalIndex].name} reverted to original`);
+}
+
+function openLightbox(visIdx) {
+  const c = visibleCards[visIdx];
+  if (!c) return;
+  const gi = c.globalIndex;
+  if (!cardHasImage(gi)) return;
+  lbIndex = visIdx;
+  document.getElementById('lb-img').src = getDisplayImage(gi);
+  document.getElementById('lb-name').textContent = c.name + (isReplaced(gi) ? ' (Replaced)' : '');
+  document.getElementById('lb-revert-btn').style.display = isReplaced(gi) ? '' : 'none';
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+function navLightbox(dir) {
+  let next = lbIndex + dir;
+  while (next >= 0 && next < visibleCards.length && !cardHasImage(visibleCards[next].globalIndex)) next += dir;
+  if (next >= 0 && next < visibleCards.length) openLightbox(next);
+}
+
+function replaceFromLightbox() {
+  const c = visibleCards[lbIndex];
+  if (c) triggerReplace(c.globalIndex);
+}
+
+function revertFromLightbox() {
+  const c = visibleCards[lbIndex];
+  if (c) {
+    revertCard(c.globalIndex);
+    closeLightbox();
+  }
+}
+
+function resetAll() {
+  if (!confirm('Reset all replacements? This cannot be undone.')) return;
+  Object.keys(replacements).forEach(k => delete replacements[k]);
+  saveReplacements();
+  updateStats();
+  render(currentFilter);
+  showToast('All replacements reset');
+}
+
+async function exportChanges() {
+  const keys = Object.keys(replacements);
+  if (keys.length === 0) return;
+
+  // Build a simple HTML report + download individual images
+  let manifest = 'Spiritkin Lab — Replacement Manifest\n';
+  manifest += `Exported: ${new Date().toLocaleString()}\n`;
+  manifest += `Total replacements: ${keys.length}\n\n`;
+
+  keys.forEach(k => {
+    const c = CARDS[k];
+    const r = replacements[k];
+    manifest += `#${parseInt(k)+1} ${c.name} — ${r.fileName} (replaced ${r.timestamp})\n`;
+  });
+
+  // Download manifest
+  const blob = new Blob([manifest], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'spiritkin-replacements.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  // Download each image
+  for (const k of keys) {
+    const c = CARDS[k];
+    const r = replacements[k];
+    const safeName = c.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const ext = r.fileName.split('.').pop() || 'png';
+    const imgA = document.createElement('a');
+    imgA.href = r.dataUrl;
+    imgA.download = `${safeName}_replacement.${ext}`;
+    imgA.click();
+    await new Promise(res => setTimeout(res, 200));
+  }
+
+  showToast(`Exported ${keys.length} replacement(s)`);
+}
+
+// Global drag-over body styling
+document.body.addEventListener('dragover', (e) => e.preventDefault());
+document.body.addEventListener('drop', (e) => e.preventDefault());
+
+// Keyboard navigation
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target.id === 'lightbox') closeLightbox();
+});
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') navLightbox(-1);
+  if (e.key === 'ArrowRight') navLightbox(1);
+});
+
+document.querySelectorAll('.controls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render(btn.dataset.filter);
+  });
+});
+
+updateStats();
+render('all');
+</script>
+</body>
+</html>
