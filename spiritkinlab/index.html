@@ -214,13 +214,32 @@
   .card .info {
     padding: 12px 14px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 8px;
   }
 
   .card .info .name {
     font-weight: 600;
     font-size: 0.95rem;
+  }
+
+  .card .info .meta {
+    font-size: 0.7rem;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .card .info .lore {
+    font-size: 0.72rem;
+    color: #999;
+    margin-top: 6px;
+    line-height: 1.4;
+    font-style: italic;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .card .info .badge {
@@ -276,6 +295,22 @@
     font-size: 1.3rem;
     font-weight: 700;
     color: #e8e8f0;
+  }
+
+  .lightbox .lb-meta {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #a78bfa;
+  }
+
+  .lightbox .lb-lore {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #aaa;
+    font-style: italic;
+    max-width: 500px;
+    text-align: center;
+    line-height: 1.5;
   }
 
   .lightbox .lb-actions {
@@ -435,6 +470,8 @@
   <button class="lb-nav lb-next" onclick="navLightbox(1)">&#8250;</button>
   <img id="lb-img" src="" alt="">
   <div class="lb-name" id="lb-name"></div>
+  <div class="lb-meta" id="lb-meta"></div>
+  <div class="lb-lore" id="lb-lore"></div>
   <div class="lb-actions">
     <button onclick="replaceFromLightbox()">Replace Art</button>
     <button id="lb-revert-btn" style="display:none" onclick="revertFromLightbox()">Revert to Original</button>
@@ -447,64 +484,64 @@
 
 <script>
 const CARDS = [
-  {name:"Kodako",image:"images/kodako.png",done:true},
-  {name:"Nikon",image:"images/nikon.png",done:true},
-  {name:"Ancient Librarian",image:"images/ancient_librarian.png",done:true},
-  {name:"Wanderer",image:"images/wanderer.png",done:true},
-  {name:"Puff",image:"images/puff.png",done:true},
-  {name:"Fang Outside",image:null,done:false},
-  {name:"Fang Undercover",image:"images/fang_undercover.png",done:true},
-  {name:"Buttons",image:"images/buttons.png",done:true},
-  {name:"Little Boo",image:"images/little_boo.png",done:true},
-  {name:"Patrick",image:"images/patrick.png",done:true},
-  {name:"Villager",image:"images/villager.png",done:true},
-  {name:"Dupy",image:"images/dupy.png",done:true},
-  {name:"Shoo",image:"images/shoo.png",done:true},
-  {name:"Jeffery",image:"images/jeffery.png",done:true},
-  {name:"Winston",image:null,done:false},
-  {name:"Chip",image:"images/chip.png",done:true},
-  {name:"Boo Brothers",image:"images/boo_brothers.png",done:true},
-  {name:"Charlie",image:null,done:false},
-  {name:"Grawr",image:"images/grawr.png",done:true},
-  {name:"Larry",image:"images/larry.png",done:true},
-  {name:"Bill & Bob",image:"images/bill_and_bob.jpg",done:true},
-  {name:"Dealer",image:"images/dealer.png",done:true},
-  {name:"Alucard",image:"images/alucard.png",done:true},
-  {name:"Castle Guards",image:"images/castle_guards.png",done:true},
-  {name:"Team Zippy",image:"images/team_zippy.png",done:true},
-  {name:"Guard Thomas",image:"images/guard_thomas.png",done:true},
-  {name:"Doc",image:"images/doc.png",done:true},
-  {name:"Outlaw",image:"images/outlaw.png",done:true},
-  {name:"Bubble Boys",image:"images/bubble_boys.png",done:true},
-  {name:"Cornelius",image:"images/cornelius.png",done:true},
-  {name:"Cave Dweller",image:"images/cave_dweller.png",done:true},
-  {name:"Hermit",image:"images/hermit.png",done:true},
-  {name:"Opa",image:"images/opa.png",done:true},
-  {name:"Jackson",image:"images/jackson.png",done:true},
-  {name:"Raditz",image:"images/raditz.png",done:true},
-  {name:"Doug",image:"images/doug.png",done:true},
-  {name:"Sparky (Chomp)",image:"images/sparky_chomp.png",done:true},
-  {name:"Wim",image:"images/wim.png",done:true},
-  {name:"Munch",image:"images/munch.png",done:true},
-  {name:"Snorton",image:"images/snorton.png",done:true},
-  {name:"Kairan",image:"images/kairan.png",done:true},
-  {name:"Sonya",image:"images/sonya.png",done:true},
-  {name:"Katrina",image:"images/katrina.png",done:true},
-  {name:"Admiral",image:"images/admiral.png",done:true},
-  {name:"Sky",image:null,done:false},
-  {name:"Stone Cold",image:"images/stone_cold.png",done:true},
-  {name:"Flora",image:"images/flora.png",done:true},
-  {name:"Dark Wing",image:"images/dark_wing.png",done:true},
-  {name:"City Cyboo",image:"images/city_cyboo.png",done:true},
-  {name:"Jenkins",image:"images/jenkins.png",done:true},
-  {name:"Tabitha",image:"images/tabitha.png",done:true},
-  {name:"Guardian Fairy",image:"images/guardian_fairy.png",done:true},
-  {name:"Cyboo",image:"images/cyboo.png",done:true},
-  {name:"Splinter",image:"images/splinter.png",done:true},
-  {name:"Bo",image:"images/bo.png",done:true},
-  {name:"Mountain King",image:"images/mountain_king.png",done:true},
-  {name:"Shade (Dusk)",image:"images/shade_dusk.png",done:true},
-  {name:"Doom",image:"images/doom.jpg",done:true},
+  {name:"Kodako",image:"images/kodako.png",done:true,rarity:"common",maxHp:6,ability:"Swift",abilityDesc:"Roll 1-2-3: negate damage and deal 4 to enemy.",lore:"Encountered in a quiet meadow, guardian of a shrine, swift and agile fighter."},
+  {name:"Nikon",image:"images/nikon.png",done:true,rarity:"common",maxHp:6,ability:"Ambush",abilityDesc:"Win first roll: deal triple damage.",lore:"Encountered in Shadow Town in the evening. Ambushes prey for their souls and money."},
+  {name:"Ancient Librarian",image:"images/ancient_librarian.png",done:true,rarity:"common",maxHp:6,ability:"Knowledge",abilityDesc:"For each 2 rolled by both players, add +1 damage if you deal damage.",lore:"The record keeper of the spirit world, some say the Ancient Librarian is one of the oldest of spirit kin."},
+  {name:"Wanderer",image:"images/wanderer.png",done:true,rarity:"common",maxHp:8,ability:"Curiosity",abilityDesc:"Roll a straight (consecutive sequence, no repeats): deal +2 damage.",lore:"Encountered in the ice wastelands. The Wanderer spends his time observing and actively exploring the spirit world."},
+  {name:"Puff",image:"images/puff.png",done:true,rarity:"common",maxHp:6,ability:"Cute",abilityDesc:"Enemy Doubles and Triples do -1 damage.",lore:"Encountered in The Misty Woods. Puff is a friendly spiritkin who helps Toby find his way."},
+  {name:"Fang Outside",image:null,done:false,rarity:"common",maxHp:2,ability:"Skillful Coward",abilityDesc:"Win: you may switch with a Spiritkin on your sideline after damage.",lore:"Encountered on Valley Road. Fang's prideful combat entertainer ego."},
+  {name:"Fang Undercover",image:"images/fang_undercover.png",done:true,rarity:"common",maxHp:2,ability:"Skilled Coward",abilityDesc:"When taking damage, you may switch Fang Undercover with any sideline Spiritkin and negate damage.",lore:"Encountered on Valley Road. Fang's serious observant spy ego."},
+  {name:"Buttons",image:"images/buttons.png",done:true,rarity:"common",maxHp:1,ability:"Perfect Plan",abilityDesc:"If Buttons rolls triple 6's, deal +15 damage.",lore:"Encountered in Southern Workshop. Buttons is a Tailor with naturally all the best Buttons."},
+  {name:"Little Boo",image:"images/little_boo.png",done:true,rarity:"common",maxHp:2,ability:"Mercy",abilityDesc:"Enemy Triples count as a 1-2-3 roll instead.",lore:"Little Boo is a childlike Spiritkin who loves to play in the leaves of the Autumn Grove."},
+  {name:"Patrick",image:"images/patrick.png",done:true,rarity:"common",maxHp:3,ability:"Stone Form",abilityDesc:"Don't roll. If opponent rolls Singles: negate damage, deal 3.",lore:"Located in the Steppe, Patrick is a stone-like spiritkin who loves to eat rocks...and other spiritkin."},
+  {name:"Villager",image:"images/villager.png",done:true,rarity:"common",maxHp:4,ability:"Hospitality",abilityDesc:"Sideline: your active Spiritkin gains 1 HP on wins.",lore:"Encountered in town. Villager takes Toby in and provides him with a hot shower and refuge from the chaos of the spirit world."},
+  {name:"Dupy",image:"images/dupy.png",done:true,rarity:"common",maxHp:4,ability:"Frolic",abilityDesc:"Tie: instantly KO the enemy Spiritkin.",lore:"Frolicking through the hills, Dupy is a joyful friendly spiritkin."},
+  {name:"Shoo",image:"images/shoo.png",done:true,rarity:"common",maxHp:4,ability:"Alpine Air",abilityDesc:"Sideline: your active Spiritkin gains 2 HP when below 4 HP. Once Per Spiritkin.",lore:"Encountered in the Mountains. Shoo serves as the messenger to the Mountain King."},
+  {name:"Jeffery",image:"images/jeffery.png",done:true,rarity:"common",maxHp:5,ability:"Chuckle",abilityDesc:"Sideline: when your active Spiritkin defeats an enemy, it gains 3 HP.",lore:"Regular Jeffery. Chuckles."},
+  {name:"Winston",image:null,done:false,rarity:"common",maxHp:5,ability:"Scheme",abilityDesc:"Win: you may swap the enemy active Spiritkin with one from their sideline. Gain +2 dice next roll.",lore:"The curator of Dark Castle. Winston though feeble in form, his mindgames are deceptive."},
+  {name:"Chip",image:"images/chip.png",done:true,rarity:"common",maxHp:4,ability:"Acrobatic Dive",abilityDesc:"Even Doubles: +3 damage if you deal damage.",lore:"Encountered at Clair's Ranch. Chip is a young spiritkin who soars across the land, searching for excitement."},
+  {name:"Boo Brothers",image:"images/boo_brothers.png",done:true,rarity:"common",maxHp:5,ability:"Teamwork",abilityDesc:"Before rolling: you may remove 1 die to gain 1 HP. If you do, deal +1 damage this roll.",lore:"The Boo Brothers have continued their life of thievery into the Spirit World. They enjoy pranks, fart jokes, and \"the finer things in life\"."},
+  {name:"Charlie",image:null,done:false,rarity:"common",maxHp:4,ability:"Rush",abilityDesc:"Upon losing a roll, you may Flick one of your dice. Any die hit changes its result on contact.",lore:"Encountered in the rain in Star City. Charlie looks to uncover the secrets of the city."},
+  {name:"Grawr",image:"images/grawr.png",done:true,rarity:"uncommon",maxHp:7,ability:"Menace",abilityDesc:"Entry: deal 1 damage.",lore:"Encountered in the swamps. Grawr is a goofy & menacing spiritkin who devours travelers who take a wrong step. Grawr is close friends with the other swamp spiritkins."},
+  {name:"Larry",image:"images/larry.png",done:true,rarity:"uncommon",maxHp:6,ability:"Flying Kick",abilityDesc:"Triples deal 3X damage.",lore:"Often plays in the lava pits with his pal Kairan. Larry can't fly, but is often seen leaping like a jumping bean."},
+  {name:"Bill & Bob",image:"images/bill_and_bob.jpg",done:true,rarity:"uncommon",maxHp:6,ability:"Bait n Switch",abilityDesc:"Below 4 HP: wins deal 2X damage.",lore:"Encountered in the Dark Woods. Bill & Bob are two brothers who hunt together. Bill is the Brains, Bob is the might."},
+  {name:"Dealer",image:"images/dealer.png",done:true,rarity:"uncommon",maxHp:5,ability:"House Rules",abilityDesc:"Roll a straight: +3 damage and negate all incoming damage.",lore:"The oldest member of the Bandit's Guild. Dealer makes sure the cards are stacked in his favor."},
+  {name:"Alucard",image:"images/alucard.png",done:true,rarity:"uncommon",maxHp:4,ability:"Colony Call",abilityDesc:"Doubles deal +2 damage for each Spiritkin on your sideline. Once Per Game.",lore:"Alucard is a fiend of the Caves. He loves to eat fire flies."},
+  {name:"Castle Guards",image:"images/castle_guards.png",done:true,rarity:"uncommon",maxHp:7,ability:"Flamethrower",abilityDesc:"Each 3 you roll doubles Castle Guards' damage.",lore:"Guards of Dark Castle. The Castle Guards have harnessed the power to swim in lava. Chaotic in nature."},
+  {name:"Team Zippy",image:"images/team_zippy.png",done:true,rarity:"uncommon",maxHp:7,ability:"Teamwork",abilityDesc:"Win with Singles: deal +2 damage.",lore:"Encountered at night. Team Zippy is a force of goofy vicious spiritkin that hunt travelers together."},
+  {name:"Guard Thomas",image:"images/guard_thomas.png",done:true,rarity:"uncommon",maxHp:6,ability:"Stoic",abilityDesc:"Below 6 HP: immune to Singles damage.",lore:"The former Guard Captain of the Royal Manor. Guard Thomas continues to keep watch in the Spirit World."},
+  {name:"Doc",image:"images/doc.png",done:true,rarity:"uncommon",maxHp:2,ability:"Savage",abilityDesc:"+5 damage on Doubles.",lore:"Once a trusted doctor in Port Travels, had fallen to madness. Doc is a feared spiritkin who is quick to devour others on sight. Immediately run for your life."},
+  {name:"Outlaw",image:"images/outlaw.png",done:true,rarity:"uncommon",maxHp:5,ability:"Thief",abilityDesc:"Doubles: remove 1 enemy die next roll.",lore:"Castaway from the Bandit's guild. The Outlaw carries a secret behind his mask."},
+  {name:"Bubble Boys",image:"images/bubble_boys.png",done:true,rarity:"uncommon",maxHp:9,ability:"Pop",abilityDesc:"If the enemy rolls Triples, Bubble Boys are defeated.",lore:"The seven Bubble Boys are known is help keep watch of the Dark Forest. Helping travelers to safety."},
+  {name:"Cornelius",image:"images/cornelius.png",done:true,rarity:"uncommon",maxHp:2,ability:"Antidote",abilityDesc:"Sideline: negate all enemy sideline effects.",lore:"Encountered at the Observatory. Cornelius helps provide Toby is edibles that fight against Doom's fear."},
+  {name:"Cave Dweller",image:"images/cave_dweller.png",done:true,rarity:"uncommon",maxHp:7,ability:"Lurk",abilityDesc:"Deal 3X damage on first roll win.",lore:"The one they call the \"Cave Dweller\" lurks deep in Mountains. It's glowing eyes has scared off countless explorers. The Cave Dweller's form has never been seen."},
+  {name:"Hermit",image:"images/hermit.png",done:true,rarity:"uncommon",maxHp:3,ability:"Solitude",abilityDesc:"Entry: gain 2 HP for each Spiritkin defeated on both teams.",lore:"Encountered deep in the swamp. Hermit resides in a spooky house where he takes care of travelers & enjoys a relaxing day."},
+  {name:"Opa",image:"images/opa.png",done:true,rarity:"uncommon",maxHp:5,ability:"Rest",abilityDesc:"Win or tie: gain 1 HP.",lore:"Encountered at the Hot Springs. Opa appears on cloudy days. Opa's presence gives the water mending properties."},
+  {name:"Jackson",image:"images/jackson.png",done:true,rarity:"uncommon",maxHp:6,ability:"Regrow",abilityDesc:"After your roll, you may spend 1 of Jackson's HP to reroll 1 die.",lore:"A soldier in life, Jackson awoke one day in a Pumkin like form. As a spiritkin, he's learned to cultivate fields."},
+  {name:"Raditz",image:"images/raditz.png",done:true,rarity:"rare",maxHp:6,ability:"Hunt",abilityDesc:"Entry: you may swap the enemy active Spiritkin with one from their sideline.",lore:"The spirit of a wolf who broke a promise with a friendly farmer by eating all his chickens in one night. In the Spirit World, Raditz finds himself as a servant to the Lord of the Dark Castle."},
+  {name:"Doug",image:"images/doug.png",done:true,rarity:"rare",maxHp:3,ability:"Caution",abilityDesc:"Before rolling: Doug may switch with a sideline Spiritkin Once Per Game. Gain 1 extra die next roll.",lore:"Off the harbor of Port Travels, you can find Doug leading adventurous Spiritkin on missions for treasures."},
+  {name:"Sparky",image:"images/sparky_chomp.png",done:true,rarity:"rare",maxHp:4,ability:"Tinder",abilityDesc:"Your rolled 1's add +3 damage each if you deal damage.",lore:"Encountered near Doom's lair. Chaotic, yet playful in nature, Sparky can create flames from his tail."},
+  {name:"Wim",image:"images/wim.png",done:true,rarity:"rare",maxHp:6,ability:"Slash",abilityDesc:"+5 damage when all dice are odd.",lore:"A fierce Apparition of the Mountains. Agile, Silent and Deadly. Wim moves with the icy breeze."},
+  {name:"Munch",image:"images/munch.png",done:true,rarity:"rare",maxHp:6,ability:"Scraps",abilityDesc:"Defeat a Spiritkin: gain 4 HP.",lore:"His chaotic hunger has earned him the nickname \"Munch\". But his real name has been forgotten long ago. He was such a good boy."},
+  {name:"Snorton",image:"images/snorton.png",done:true,rarity:"rare",maxHp:8,ability:"Fissure",abilityDesc:"+5 damage if you roll at least two 6's and deal damage.",lore:"Encountered by the Volcano. Snorton is a soulful massive Spiritkin with the power to split the ground."},
+  {name:"Kairan",image:"images/kairan.png",done:true,rarity:"rare",maxHp:4,ability:"Let's Dance",abilityDesc:"Doubles: +1 die next roll.",lore:"They say the Volcano's erupt because they are dancing with Kairan. He is quite the handful to deal with as a traveler."},
+  {name:"Sonya",image:"images/sonya.png",done:true,rarity:"rare",maxHp:3,ability:"Mesmerize",abilityDesc:"Each roll: you may change 1 die result to a 2.",lore:"Encountered on a starry cold night. Sonya is a spirit that loves to skate on ice."},
+  {name:"Katrina",image:"images/katrina.png",done:true,rarity:"rare",maxHp:5,ability:"Seeker",abilityDesc:"Before rolling: if you have less HP than the enemy, gain 1 HP.",lore:"Encountered in the Library. Katrina is a clever spiritkin who has been overcoving Doom's Plot, The Mountain Kings Role, and the Key to the Great Stairway."},
+  {name:"Admiral",image:"images/admiral.png",done:true,rarity:"rare",maxHp:3,ability:"Comrades",abilityDesc:"Sideline: +2 damage on even Doubles.",lore:"Encountered in the Summer Sky. Admiral is a tactical genius. Though only a few members of his crew entered the spirit world together. Admiral looks to fight against Doom's coming army."},
+  {name:"Sky",image:null,done:false,rarity:"rare",maxHp:4,ability:"Elusive",abilityDesc:"If incoming damage is greater than 2: negate it. Sky rolls 1 die and deals its value as damage.",lore:"Encountered near the Great Stairway. Sky is a fast fiendlike spiritkin who joins Toby's cause to take on the Villians of Dark Castle."},
+  {name:"Stone Cold",image:"images/stone_cold.png",done:true,rarity:"rare",maxHp:7,ability:"One-two-one!",abilityDesc:"Roll double 1's: deal 3X damage.",lore:"The spirit of a great fighter. Stone Cold is the Reining Champion of the Golden Arena. He packs quite the punch."},
+  {name:"Flora",image:"images/flora.png",done:true,rarity:"rare",maxHp:4,ability:"Restore",abilityDesc:"Doubles: gain 2 HP after damage is applied.",lore:"Flora has the power of mending wounds of other spiritkin. She has been trapped in the spiritworld for over a century."},
+  {name:"Dark Wing",image:"images/dark_wing.png",done:true,rarity:"rare",maxHp:2,ability:"Precision",abilityDesc:"Once Per Game: if Dark Wing rolls Singles, reroll all dice.",lore:"Encountered in the High Peaks. Dark Wing has been known to haunt travelers."},
+  {name:"City Cyboo",image:"images/city_cyboo.png",done:true,rarity:"rare",maxHp:1,ability:"Barrier",abilityDesc:"In Play & Sideline: if your active Spiritkin has exactly 1 HP, the opponent loses 1 die.",lore:"Encountered in Star City. City Cyboo is a trapped artificial intelligence from the future who is bound to Star City."},
+  {name:"Jenkins",image:"images/jenkins.png",done:true,rarity:"ghost-rare",maxHp:5,ability:"Greeting",abilityDesc:"Entry: roll 4 dice and deal damage.",lore:"Jenkins is the caretaker of Lar's Homestead. He continues to serve the family even in the spirit world."},
+  {name:"Tabitha",image:"images/tabitha.png",done:true,rarity:"ghost-rare",maxHp:1,ability:"Rally",abilityDesc:"Sideline: +2 damage on Doubles.",lore:"Tabitha is the youngest Princess of Dark Castle. The darkest of spirits obey her every command."},
+  {name:"Guardian Fairy",image:"images/guardian_fairy.png",done:true,rarity:"ghost-rare",maxHp:3,ability:"Wish",abilityDesc:"Sideline: when your active Spiritkin is about to take damage, Guardian Fairy leaps in and takes the hit instead.",lore:"Encountered in the Dark Woods. The Guardian Fairy is one of the watchers of the spirit world. Sacrificing themselves to save Toby from a vicious demise."},
+  {name:"Cyboo",image:"images/cyboo.png",done:true,rarity:"ghost-rare",maxHp:3,ability:"Spark",abilityDesc:"Sideline: your active Spiritkin gains 1 extra die when below 3 HP.",lore:"A artificial intelligence from the future that found themself suddenly in the Spirit World."},
+  {name:"Splinter",image:"images/splinter.png",done:true,rarity:"ghost-rare",maxHp:4,ability:"Toxic Fumes",abilityDesc:"Win: deal 1 damage before each roll.",lore:"Encountered in the tombs of Shadow Town. Splinter tricks his prey before devouring them."},
+  {name:"Bo",image:"images/bo.png",done:true,rarity:"legendary",maxHp:5,ability:"Miracle",abilityDesc:"Defeat a Spiritkin: return one of your defeated Spiritkin to your sideline. Gain 1 Magic Firefly.",lore:"Encountered on a summer night in the fields. Bo watches over the Spirit World. Though limited in form, Bo can restore dead Spiritkins to life."},
+  {name:"Mountain King",image:"images/mountain_king.png",done:true,rarity:"legendary",maxHp:9,ability:"Beast Mode",abilityDesc:"Doubles deal 2X damage.",lore:"The Mountain King is the Guardian of the Magic Stairs that lead back to the land of the living. Rumor is the mountain king is just a child."},
+  {name:"Shade",image:"images/shade_dusk.png",done:true,rarity:"legendary",maxHp:5,ability:"Haunt",abilityDesc:"Before each roll, opponent takes 1 damage.",lore:"Monstrous spirit who haunts the Upper Fields. Thriving off of fear, Shade loves to devour souls during the darkest of stormy nights."},
+  {name:"Doom",image:"images/doom.jpg",done:true,rarity:"legendary",maxHp:7,ability:"Fiendship",abilityDesc:"+2 bonus damage!",lore:"Encountered in Doom's lair located in Volcanic Isles. Doom is a charismatic & Powerful Spiritkin with the power to manipulate lava. Doom and his supportive Hell Worms plot against the Spirit World."},
 ];
 
 // Track replacements: cardIndex -> { dataUrl, fileName }
@@ -601,7 +638,11 @@ function render(filter) {
         </div>
       </div>
       <div class="info">
-        <span class="name">${c.name}</span>
+        <div>
+          <span class="name">${c.name}</span>
+          ${c.rarity ? `<div class="meta">${c.rarity.toUpperCase()} &bull; ${c.maxHp} HP &bull; ${c.ability}</div>` : ''}
+          ${c.lore ? `<div class="lore">${c.lore}</div>` : ''}
+        </div>
         <span class="badge ${replaced ? 'replaced' : (c.done ? 'done' : 'missing')}">${replaced ? 'Replaced' : (c.done ? 'Done' : 'Pending')}</span>
       </div>
     `;
@@ -675,6 +716,8 @@ function openLightbox(visIdx) {
   lbIndex = visIdx;
   document.getElementById('lb-img').src = getDisplayImage(gi);
   document.getElementById('lb-name').textContent = c.name + (isReplaced(gi) ? ' (Replaced)' : '');
+  document.getElementById('lb-meta').textContent = c.rarity ? `${c.rarity.toUpperCase()} \u2022 ${c.maxHp} HP \u2022 ${c.ability}: ${c.abilityDesc}` : '';
+  document.getElementById('lb-lore').textContent = c.lore || '';
   document.getElementById('lb-revert-btn').style.display = isReplaced(gi) ? '' : 'none';
   document.getElementById('lightbox').classList.add('open');
 }
