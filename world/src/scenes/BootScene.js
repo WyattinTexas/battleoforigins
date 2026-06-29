@@ -923,35 +923,34 @@ class BootScene extends Phaser.Scene {
 
         // ── Theatrical delivery — tightened to ~7.5s ──
 
-        // Line 1 — quick fade in
+        const pName = (window.G && G.name) ? G.name : 'Adventurer';
+
+        // Line 1 — Valkin senses a presence
         setTimeout(() => {
-          textEl.textContent = 'A world full of Spiritkin awaits.';
+          textEl.textContent = 'Valkin the Grand senses a presence...';
           textEl.style.opacity = '1';
         }, 500);
-        // Hold... then fade
         setTimeout(() => { textEl.style.opacity = '0'; }, 2000);
 
-        // Line 2 — the threat. Purple glow, bigger
+        // Line 2 — the taunt. Purple glow, bigger. He's talking about you, not to you
         setTimeout(() => {
           textEl.style.fontSize = '26px';
           textEl.style.color = '#bb88ee';
           textEl.style.textShadow = '0 0 40px rgba(160,80,255,0.5)';
-          textEl.textContent = 'Something ancient stirs. Valkin the Grand is watching.';
+          textEl.textContent = `"Welcome, ${pName}! I can't wait to destroy you."`;
           textEl.style.opacity = '1';
         }, 2500);
-        // Hold — let the name sink in
         setTimeout(() => { textEl.style.opacity = '0'; }, 4500);
 
-        // Line 3 — the title drop. Gold. Italic. Big.
+        // Line 3 — the send-off. Gold. Italic. Fun menace
         setTimeout(() => {
           textEl.style.fontSize = '30px';
           textEl.style.fontStyle = 'italic';
           textEl.style.color = '#ffe680';
           textEl.style.textShadow = '0 0 50px rgba(255,200,60,0.4)';
-          textEl.textContent = 'Your battle begins now.';
+          textEl.textContent = '"See you soon."';
           textEl.style.opacity = '1';
         }, 5000);
-        // Final hold — let it land
         setTimeout(() => { textEl.style.opacity = '0'; }, 6500);
 
         // Transition to world

@@ -511,6 +511,8 @@ class WorldScene extends Phaser.Scene {
         zoom: 1.5,
         duration: 2000,
         ease: 'Sine.easeOut',
+        onUpdate: () => { this._repositionMinimap(); },
+        onComplete: () => { this._repositionMinimap(); },
       });
     }
 
