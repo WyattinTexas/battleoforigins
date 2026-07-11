@@ -23,6 +23,7 @@
     if (id === 'play') BOO2B.renderStrip();
     if (id === 'raids' && window.BOO2R) BOO2R.renderMap();
     if (id === 'standings' && window.BOO2ST) BOO2ST.render();
+    if (id === 'store' && window.BOO2ST2) BOO2ST2.render();
     if (id === 'menu') renderMenu();
   }
 

@@ -50,6 +50,7 @@
     const n = String(newName || '').trim().slice(0, 24);
     if (n.length < 3) return false;
     localStorage.setItem('boo2Name', n);
+    localStorage.setItem('boo2Named', '1'); // claimed a name — unlocks the store (Nation-style gate)
     dbUpdate(`players/${uid()}`, { name: n });
     return true;
   }
@@ -171,15 +172,22 @@
   // ── spend/earn stars outside games (raid rewards M2, store M4)
   async function addStars(n) { await dbTxn(`players/${uid()}/stars`, s => (s || 0) + n); await readPlayer(); }
   async function spendStars(n) {
+    // pre-read guard: can't-afford players never reach the txn (FAVOR pattern)
     const cur = (await dbGet(`players/${uid()}/stars`)) || 0;
     if (cur < n) return false;
-    const res = await dbTxn(`players/${uid()}/stars`, s => {
-      if (s === null || s === undefined) s = 0;
-      if (s < n) return; // abort
-      return s - n;
+    // Whole-record txn. CRITICAL: on Firebase's null first-guess return a
+    // provisional stub — returning undefined there aborts BEFORE the server's
+    // real record is consulted (FAVOR meta.js lesson, verified here too).
+    let paid = false;
+    const res = await dbTxn(`players/${uid()}`, p => {
+      if (p === null || p === undefined) { paid = false; return { stars: 0 }; }
+      const s = p.stars || 0;
+      if (s < n) { paid = false; return; } // genuine insufficient funds
+      paid = true;
+      return Object.assign({}, p, { stars: s - n });
     });
-    if (res.committed) await readPlayer();
-    return res.committed;
+    if (res.committed && paid) { await readPlayer(); return true; }
+    return false;
   }
 
   // ── daily settlement (lazy, idempotent — txn claim on settled/{key})

@@ -10,14 +10,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta property="og:title" content="Boo! Spirit Battles">
 <meta property="og:description" content="Collect Spiritkin. Roll dice. Battle friends. Kickstarter Sept 1.">
-<link rel="manifest" href="manifest.json?v=v0.03">
-<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.03">
-<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.03">
+<link rel="manifest" href="manifest.json?v=v0.04">
+<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.04">
+<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.04">
 <script>
 /* cache-version check (beta pattern, boo2-namespaced guard).
    bump-version.sh keeps LOCAL_V + BOO2_VERSION + cache-version.txt + every ?v= in lockstep. */
-const LOCAL_V = 'v0.03';
-const BOO2_VERSION = 'v0.03';
+const LOCAL_V = 'v0.04';
+const BOO2_VERSION = 'v0.04';
 fetch('cache-version.txt?t=' + Date.now())
   .then(r => r.text())
   .then(v => {
@@ -29,8 +29,8 @@ fetch('cache-version.txt?t=' + Date.now())
   }).catch(() => {});
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="engine/raid-arena.css?v=v0.03">
-<link rel="stylesheet" href="css/play.css?v=v0.03">
+<link rel="stylesheet" href="engine/raid-arena.css?v=v0.04">
+<link rel="stylesheet" href="css/play.css?v=v0.04">
 </head>
 <body class="app">
 
@@ -81,7 +81,6 @@ fetch('cache-version.txt?t=' + Date.now())
           <span class="door-label">STORE</span>
           <span class="door-tease">Spend ★ on packs & spirits</span>
         </span>
-        <span class="door-badge">SOON</span>
       </button>
       <button class="door" onclick="BOO2S.showScreen('collection')">
         <img class="door-art" id="doorArtCollection" src="" alt="">
@@ -93,7 +92,7 @@ fetch('cache-version.txt?t=' + Date.now())
     </nav>
 
     <div class="ks-banner">🎃 <b>KICKSTARTER · SEPT 1</b> — Boo! the card game, in real cardboard. Be first in line.</div>
-    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.03 · engine v2.76</div>
+    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.04 · engine v2.76</div>
   </section>
 
   <!-- ══════════ PLAY ══════════ -->
@@ -153,19 +152,14 @@ fetch('cache-version.txt?t=' + Date.now())
     <div id="standList"></div>
   </section>
 
-  <!-- ══════════ STORE (M4) ══════════ -->
+  <!-- ══════════ STORE ══════════ -->
   <section class="screen" id="screen-store">
     <div class="screen-head">
       <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
       <h2>STORE</h2>
       <span class="star-chip">★ <b>0</b></span>
     </div>
-    <div class="poster">
-      <img class="po-art" src="art/booster-pack.webp" alt="">
-      <h3>THE PACK PEDDLER</h3>
-      <p>Earn ★ every battle. Spend them on booster packs and rare spirits. The cart is still rolling into town…</p>
-      <p style="color:var(--ember);font-weight:900">OPENING SOON</p>
-    </div>
+    <div id="storeBody"></div>
   </section>
 
 </main>
@@ -288,7 +282,7 @@ window.showToast = window.showToast || function (m) { console.log('[toast]', m);
 (function () {
   try {
     const x = new XMLHttpRequest();
-    x.open('GET', 'engine/raid-arena-template.html?v=v0.03', false);
+    x.open('GET', 'engine/raid-arena-template.html?v=v0.04', false);
     x.send();
     if (x.status === 200 && x.responseText) {
       document.getElementById('raid-screen').innerHTML = x.responseText;
@@ -297,16 +291,18 @@ window.showToast = window.showToast || function (m) { console.log('[toast]', m);
   } catch (e) { console.warn('[BOO2] sync arena inject failed, shell will retry async', e); }
 })();
 </script>
-<script src="js/data.js?v=v0.03"></script>
-<script src="engine/cards.js?v=v0.03"></script>
-<script src="engine/battle-engine.js?v=v0.03"></script>
-<script src="engine/raid-engine.js?v=v0.03"></script>
-<script src="engine/raid-battle-bridge.js?v=v0.03"></script>
-<script src="js/meta.js?v=v0.03"></script>
-<script src="js/collection.js?v=v0.03"></script>
-<script src="js/battle.js?v=v0.03"></script>
-<script src="js/raids.js?v=v0.03"></script>
-<script src="js/standings.js?v=v0.03"></script>
-<script src="js/shell.js?v=v0.03"></script>
+<script src="js/data.js?v=v0.04"></script>
+<script src="engine/cards.js?v=v0.04"></script>
+<script src="engine/battle-engine.js?v=v0.04"></script>
+<script src="engine/raid-engine.js?v=v0.04"></script>
+<script src="engine/raid-battle-bridge.js?v=v0.04"></script>
+<script src="js/meta.js?v=v0.04"></script>
+<script src="js/collection.js?v=v0.04"></script>
+<script src="js/battle.js?v=v0.04"></script>
+<script src="js/raids.js?v=v0.04"></script>
+<script src="js/standings.js?v=v0.04"></script>
+<script src="js/payments.js?v=v0.04"></script>
+<script src="js/store.js?v=v0.04"></script>
+<script src="js/shell.js?v=v0.04"></script>
 </body>
 </html>
