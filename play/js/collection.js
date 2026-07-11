@@ -28,6 +28,17 @@
   function render() {
     const owned = new Set(BOO2M.ownedIds());
     document.getElementById('collCount').innerHTML = `<b>${owned.size}</b> / ${getActiveGhosts().length}`;
+    // pack shelf: unopened packs wait here, glowing
+    const shelf = document.getElementById('packShelf');
+    if (shelf) {
+      const n = BOO2M.packCount();
+      shelf.innerHTML = n > 0
+        ? `<button class="pack-shelf" onclick="BOO2C.openOwnedPack()">
+             <img src="art/booster-pack.webp" alt="">
+             <span class="ps-label">${n} UNOPENED PACK${n > 1 ? 'S' : ''} — <b>TAP TO OPEN</b></span>
+           </button>`
+        : '';
+    }
     // tabs
     const tabs = document.getElementById('setTabs');
     tabs.innerHTML = BOO2_SETS.map(s => {
@@ -175,5 +186,10 @@
     if (a && a.play) { try { a.volume = vol; a.currentTime = 0; a.play().catch(() => {}); } catch (e) {} }
   }
 
-  window.BOO2C = { render, showSet, teaseLocked, openDetail, closeDetail, openCeremony, burstPack, flipCard, finishCeremony };
+  function openOwnedPack() {
+    if (!BOO2M.takePack()) { showToast('No packs to open — win raids or visit the store'); return; }
+    openCeremony(BOO2M.rollPack(), 'BOOSTER PACK', () => render());
+  }
+
+  window.BOO2C = { render, showSet, teaseLocked, openDetail, closeDetail, openCeremony, burstPack, flipCard, finishCeremony, openOwnedPack };
 })();

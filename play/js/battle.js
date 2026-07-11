@@ -114,15 +114,22 @@
   }
   function closePicker() { document.getElementById('pickerSheet').classList.remove('active'); }
 
-  /* ─────────── quick battle ─────────── */
+  /* ─────────── battle boot (quick battle + campaign intro fights) ─────────── */
   function quickBattle() {
     const t = ensureTeam();
     if (t.length < 3) { showToast('Pick 3 spirits first'); return; }
-    oppName = BOO2M.generateName();
+    startVsTeam(getCuratedTeam(t), BOO2M.generateName());
+  }
+
+  function startVsTeam(blueIds, name) {
+    const t = ensureTeam();
+    if (t.length < 3) { showToast('Pick 3 spirits first'); return; }
+    oppName = name || BOO2M.generateName();
+    BOO2S.ensureArenaFresh(); // cleanupRaidBattle/resetBattle leave inline hides + a gutted #gameOver
     S.redPicks = t.slice();
-    S.bluePicks = getCuratedTeam(S.redPicks);
+    S.bluePicks = blueIds.slice();
     document.body.classList.add('in-battle');
-    // roster titles: the arena's team labels become YOU vs the spooky rival
+    // roster titles: the arena's team labels become YOU vs the rival
     const rt = document.querySelector('.roster-title.red');
     const bt = document.querySelector('.roster-title.blue');
     if (rt) rt.textContent = 'YOU';
@@ -171,12 +178,19 @@
         startBlueAI();
       }
     };
-    // 2. Game over: award ★, retitle for YOU, rewire New Game → /play/.
+    // 2. Game over: campaign fights go to BOO2R; plain quick battles get
+    //    ★ + retitle + button rewire here. Installed AFTER the raid bridge's
+    //    own wrapper, so this runs last and owns the final overlay state.
     const _sgo = window.showGameOver;
     window.showGameOver = function (winner) {
       _sgo(winner);
-      if (window.RAID_MODE || window.MP_MODE || window.LIVE_PVP) return; // quick battles only (M1)
       if (!B || B._boo2Awarded) return;
+      if (window.BOO2R && BOO2R.isActive()) {
+        B._boo2Awarded = true;
+        BOO2R.onGameOver(winner);
+        return;
+      }
+      if (window.RAID_MODE || window.MP_MODE || window.LIVE_PVP) return;
       B._boo2Awarded = true;
       onQuickBattleOver(winner);
     };
@@ -212,5 +226,5 @@
     renderStrip();
   }
 
-  window.BOO2B = { boot, renderStrip, quickBattle, pickSpirit, closePicker, exitBattle };
+  window.BOO2B = { boot, renderStrip, quickBattle, startVsTeam, pickSpirit, closePicker, exitBattle };
 })();

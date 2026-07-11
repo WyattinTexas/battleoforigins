@@ -414,6 +414,74 @@ body.app::after {
 .poster h3 { font-family: 'Creepster', cursive; font-size: 30px; letter-spacing: 3px; color: var(--gold); }
 .poster p { font-size: 13px; font-weight: 700; color: var(--text-dim); max-width: 260px; line-height: 1.5; }
 
+/* ---------- raids map ---------- */
+#raidMap { padding-bottom: 24px; }
+.raid-region { margin-bottom: 18px; }
+.rr-title {
+  font-family: 'Creepster', cursive; font-size: 19px; letter-spacing: 3px;
+  color: var(--rg, var(--gold)); text-shadow: 0 0 14px color-mix(in srgb, var(--rg, var(--gold)) 40%, transparent);
+  margin: 0 2px 10px; padding-bottom: 6px;
+  border-bottom: 1.5px dashed color-mix(in srgb, var(--rg, var(--gold)) 35%, transparent);
+}
+.rr-nodes { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 2px; scrollbar-width: none; }
+.rr-nodes::-webkit-scrollbar { display: none; }
+.raid-path {
+  flex: none; width: 22px; align-self: center; height: 3px;
+  background-image: linear-gradient(90deg, var(--gold-dim) 55%, transparent 55%);
+  background-size: 9px 3px;
+}
+.raid-node {
+  flex: none; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: none; border: none; cursor: pointer; padding: 6px 2px;
+  transition: transform 0.15s;
+}
+.raid-node:active { transform: scale(0.94); }
+.rn-medal {
+  width: 74px; height: 74px; border-radius: 50%; overflow: hidden; display: block;
+  border: 2.5px solid var(--rg, var(--gold)); background: var(--midnight-2);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.55);
+}
+.rn-medal img { width: 100%; height: 100%; object-fit: cover; }
+.raid-node .rn-name { font-weight: 900; font-size: 11.5px; color: var(--text); line-height: 1.15; text-align: center; }
+.raid-node .rn-sub { font-size: 9px; font-weight: 900; letter-spacing: 1px; color: var(--text-dim); }
+.raid-node.locked { cursor: default; }
+.raid-node.locked .rn-medal { border-color: rgba(154,160,180,0.25); }
+.raid-node.locked .rn-medal img { filter: brightness(0.15) saturate(0.1) blur(1.5px); }
+.raid-node.locked .rn-name { color: rgba(154,160,180,0.5); }
+.raid-node.cleared .rn-medal { border-color: var(--wisp); box-shadow: 0 0 16px rgba(126,240,201,0.35); }
+.raid-node.cleared .rn-sub { color: var(--wisp); }
+.raid-node.current .rn-medal { animation: nodePulse 1.6s ease-in-out infinite; border-color: var(--ember); }
+.raid-node.current .rn-sub { color: var(--ember); }
+@keyframes nodePulse {
+  0%, 100% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 10px rgba(255,140,66,0.35); }
+  50% { box-shadow: 0 8px 20px rgba(0,0,0,0.55), 0 0 26px rgba(255,140,66,0.75); }
+}
+.raid-node.finale .rn-medal { width: 92px; height: 92px; border-width: 3px; }
+
+.raid-sheet-body { display: flex; flex-direction: column; align-items: center; text-align: center; overflow-y: auto; }
+.rs-art {
+  width: 148px; height: 148px; border-radius: 20px; object-fit: cover;
+  border: 2px solid var(--gold-dim); box-shadow: 0 16px 38px rgba(0,0,0,0.6); margin-bottom: 10px;
+}
+.rs-name { font-size: 30px; color: var(--gold-bright); letter-spacing: 2.5px; }
+.rs-sub { font-size: 10.5px; font-weight: 900; letter-spacing: 2px; color: var(--text-dim); margin: 2px 0 10px; }
+.rs-line { font-style: italic; font-size: 13.5px; color: var(--text); line-height: 1.5; max-width: 300px; margin-bottom: 10px; }
+.rs-reward {
+  font-size: 12px; font-weight: 900; letter-spacing: 1px; color: var(--gold-bright);
+  border: 1.5px dashed var(--gold-dim); border-radius: 999px; padding: 6px 14px; margin-bottom: 16px;
+}
+
+/* ---------- pack shelf (collection) ---------- */
+.pack-shelf {
+  width: 100%; display: flex; align-items: center; gap: 14px;
+  margin-bottom: 12px; padding: 10px 14px; border-radius: 16px;
+  border: 1.5px solid rgba(240,192,96,0.5); background: rgba(212,160,64,0.08);
+  cursor: pointer; transition: transform 0.15s;
+}
+.pack-shelf:active { transform: scale(0.98); }
+.pack-shelf img { width: 46px; border-radius: 8px; animation: packPulse 1.8s ease-in-out infinite; }
+.pack-shelf .ps-label { font-size: 13px; font-weight: 800; color: var(--gold-bright); letter-spacing: 0.5px; text-align: left; }
+
 /* ---------- toast ---------- */
 #toast {
   position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 28px); transform: translateX(-50%) translateY(20px);

@@ -21,6 +21,7 @@
     if (el) el.classList.add('active');
     if (id === 'collection') BOO2C.render();
     if (id === 'play') BOO2B.renderStrip();
+    if (id === 'raids' && window.BOO2R) BOO2R.renderMap();
     if (id === 'menu') renderMenu();
   }
 
@@ -43,10 +44,13 @@
     setDoorArt('doorArtRaids', findByName('Valkin the Grand').id);
     setDoorArt('doorArtStandings', findByName('The Mountain King').id);
     setDoorArt('doorArtCollection', findByName('Puff').id);
-    setDoorArt('doorArtRaidsPoster', findByName('Valkin the Grand').id);
     setDoorArt('doorArtStandingsPoster', findByName('The Mountain King').id);
     const owned = BOO2M.ownedIds().length;
     document.getElementById('doorCollCount').textContent = `${owned} / ${getActiveGhosts().length} spirits`;
+    if (window.BOO2R) {
+      const badge = document.getElementById('doorRaidsBadge');
+      if (badge) badge.textContent = `${BOO2R.clearedCount()}/${BOO2R.total}`;
+    }
   }
   function setDoorArt(elId, spiritId) {
     const el = document.getElementById(elId);
@@ -77,18 +81,35 @@
   }
   function closeRename() { document.getElementById('renameSheet').classList.remove('active'); }
 
-  /* arena fragment: engine DOM + audio, injected once at boot so
-     resync-beta.sh updates flow without touching index.html */
+  /* arena fragment: engine DOM + audio, injected at boot so
+     resync-beta.sh updates flow without touching index.html.
+     The raw HTML is cached: cleanupRaidBattle() guts #gameOver and
+     leaves inline display:none on #raid-screen/#battle-view, so every
+     battle boot calls ensureArenaFresh() to restore a pristine arena. */
+  let _arenaHtml = null;
   async function injectArena() {
     try {
       const res = await fetch('engine/raid-arena-template.html?v=' + (window.BOO2_VERSION || 'dev'));
-      document.getElementById('raid-screen').innerHTML = await res.text();
+      _arenaHtml = await res.text();
+      document.getElementById('raid-screen').innerHTML = _arenaHtml;
       arenaReady = true;
       document.getElementById('battleBtn').classList.remove('loading');
     } catch (e) {
       console.error('[BOO2] arena inject failed', e);
       showToast('Could not load the arena — check connection & refresh');
     }
+  }
+  function ensureArenaFresh() {
+    const rs = document.getElementById('raid-screen');
+    if (!rs) return;
+    // gutted overlay or first boot → full re-inject from cache
+    const go = rs.querySelector('#gameOver');
+    if (_arenaHtml && (!go || !go.querySelector('#goTitle'))) rs.innerHTML = _arenaHtml;
+    rs.style.display = '';
+    const bv = rs.querySelector('#battle-view');
+    if (bv) bv.style.display = 'block';
+    const goEl = rs.querySelector('#gameOver');
+    if (goEl) { goEl.style.display = ''; goEl.classList.remove('active'); }
   }
 
   function tryBattle() {
@@ -119,6 +140,6 @@
     if (!localStorage.getItem('boo2Welcome')) runWelcome();
   }
 
-  window.BOO2S = { showScreen, refreshChrome, openRename, saveRename, closeRename, tryBattle, acceptWelcome };
+  window.BOO2S = { showScreen, refreshChrome, openRename, saveRename, closeRename, tryBattle, acceptWelcome, ensureArenaFresh };
   document.addEventListener('DOMContentLoaded', boot);
 })();

@@ -10,14 +10,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta property="og:title" content="Boo! Spirit Battles">
 <meta property="og:description" content="Collect Spiritkin. Roll dice. Battle friends. Kickstarter Sept 1.">
-<link rel="manifest" href="manifest.json?v=v0.01">
-<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.01">
-<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.01">
+<link rel="manifest" href="manifest.json?v=v0.02">
+<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.02">
+<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.02">
 <script>
 /* cache-version check (beta pattern, boo2-namespaced guard).
    bump-version.sh keeps LOCAL_V + BOO2_VERSION + cache-version.txt + every ?v= in lockstep. */
-const LOCAL_V = 'v0.01';
-const BOO2_VERSION = 'v0.01';
+const LOCAL_V = 'v0.02';
+const BOO2_VERSION = 'v0.02';
 fetch('cache-version.txt?t=' + Date.now())
   .then(r => r.text())
   .then(v => {
@@ -29,8 +29,8 @@ fetch('cache-version.txt?t=' + Date.now())
   }).catch(() => {});
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="engine/raid-arena.css?v=v0.01">
-<link rel="stylesheet" href="css/play.css?v=v0.01">
+<link rel="stylesheet" href="engine/raid-arena.css?v=v0.02">
+<link rel="stylesheet" href="css/play.css?v=v0.02">
 </head>
 <body class="app">
 
@@ -66,7 +66,7 @@ fetch('cache-version.txt?t=' + Date.now())
           <span class="door-label">RAIDS</span>
           <span class="door-tease">March through the five realms</span>
         </span>
-        <span class="door-badge">SOON</span>
+        <span class="door-badge" id="doorRaidsBadge">0/16</span>
       </button>
       <button class="door" onclick="BOO2S.showScreen('standings')">
         <img class="door-art" id="doorArtStandings" src="" alt="">
@@ -94,7 +94,7 @@ fetch('cache-version.txt?t=' + Date.now())
     </nav>
 
     <div class="ks-banner">🎃 <b>KICKSTARTER · SEPT 1</b> — Boo! the card game, in real cardboard. Be first in line.</div>
-    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.01 · engine v2.76</div>
+    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.02 · engine v2.76</div>
   </section>
 
   <!-- ══════════ PLAY ══════════ -->
@@ -124,22 +124,19 @@ fetch('cache-version.txt?t=' + Date.now())
       <h2>COLLECTION</h2>
       <span class="coll-count" id="collCount"><b>0</b> / 200</span>
     </div>
+    <div id="packShelf"></div>
     <div class="set-tabs" id="setTabs"></div>
     <div class="card-grid" id="collGrid"></div>
   </section>
 
-  <!-- ══════════ RAIDS (M2) ══════════ -->
+  <!-- ══════════ RAIDS ══════════ -->
   <section class="screen" id="screen-raids">
     <div class="screen-head">
       <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
       <h2>RAIDS</h2>
+      <span class="coll-count" id="raidProgress"><b>0</b> / 16 cleared</span>
     </div>
-    <div class="poster">
-      <img class="po-art" id="doorArtRaidsPoster" src="" alt="">
-      <h3>THE REALMS STIR…</h3>
-      <p>Thirteen bosses guard the five realms. March from the Rolling Hills to the Dark Spire, free the spirits, earn ★.</p>
-      <p style="color:var(--ember);font-weight:900">OPENING SOON</p>
-    </div>
+    <div id="raidMap"></div>
   </section>
 
   <!-- ══════════ STANDINGS (M3) ══════════ -->
@@ -199,6 +196,11 @@ fetch('cache-version.txt?t=' + Date.now())
   </div>
 </div>
 
+<div class="sheet" id="raidSheet">
+  <div id="raidSheetBody" class="raid-sheet-body"></div>
+  <button class="ov-close" onclick="BOO2R.closeSheet()" style="margin-top:12px">NOT YET</button>
+</div>
+
 <div class="sheet" id="pickerSheet">
   <h3>CHOOSE A SPIRIT</h3>
   <div class="card-grid" id="pickerGrid"></div>
@@ -221,12 +223,55 @@ fetch('cache-version.txt?t=' + Date.now())
 function switchTab() {}
 window.showToast = window.showToast || function (m) { console.log('[toast]', m); };
 </script>
-<script src="js/data.js?v=v0.01"></script>
-<script src="engine/cards.js?v=v0.01"></script>
-<script src="engine/battle-engine.js?v=v0.01"></script>
-<script src="js/meta.js?v=v0.01"></script>
-<script src="js/collection.js?v=v0.01"></script>
-<script src="js/battle.js?v=v0.01"></script>
-<script src="js/shell.js?v=v0.01"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+/* Firebase boot + the boo2 namespace jail.
+   The engine/raid suite hardcodes db.ref('mp/...') — the wrapper below remaps
+   every such path to boo2/mp/... so /play/ NEVER touches beta's live data.
+   Solo raids keep currentRaid=null so raid Firebase writes stay inert; the
+   SDK still must exist (raid-battle-bridge reads firebase.auth().currentUser
+   unguarded). If the CDN is blocked, a null-object shim keeps battles alive. */
+(function () {
+  const CFG = {
+    apiKey: 'AIzaSyDzYoQqXoOu4uj2wzTwSn6d_gAlo6e8WSI',
+    authDomain: 'testroom-75200.firebaseapp.com',
+    databaseURL: 'https://testroom-75200-default-rtdb.firebaseio.com',
+    projectId: 'testroom-75200',
+  };
+  if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+    try {
+      firebase.initializeApp(CFG);
+      const _db = firebase.database();
+      window.db = { ref: p => _db.ref(String(p).replace(/^mp\//, 'boo2/mp/')) };
+    } catch (e) { console.warn('[BOO2] firebase init failed:', e); }
+  }
+  if (!window.db) {
+    const nullRef = () => ({
+      update: () => Promise.resolve(), set: () => Promise.resolve(), remove: () => Promise.resolve(),
+      push: () => nullRef(), child: () => nullRef(), on: () => {}, off: () => {},
+      once: () => Promise.resolve({ val: () => null, exists: () => false }),
+      get: () => Promise.resolve({ val: () => null, exists: () => false }),
+      transaction: () => Promise.resolve({ committed: false, snapshot: { val: () => null } }),
+    });
+    window.firebase = window.firebase || {};
+    if (!window.firebase.auth) window.firebase.auth = () => ({ currentUser: null });
+    window.firebase.database = window.firebase.database || {};
+    window.firebase.database.ServerValue = window.firebase.database.ServerValue || { increment: x => x, TIMESTAMP: Date.now() };
+    window.db = { ref: nullRef };
+  }
+})();
+</script>
+<script src="js/data.js?v=v0.02"></script>
+<script src="engine/cards.js?v=v0.02"></script>
+<script src="engine/battle-engine.js?v=v0.02"></script>
+<script src="engine/raid-engine.js?v=v0.02"></script>
+<script src="engine/raid-battle-bridge.js?v=v0.02"></script>
+<script src="js/meta.js?v=v0.02"></script>
+<script src="js/collection.js?v=v0.02"></script>
+<script src="js/battle.js?v=v0.02"></script>
+<script src="js/raids.js?v=v0.02"></script>
+<script src="js/shell.js?v=v0.02"></script>
 </body>
 </html>
