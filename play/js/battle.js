@@ -114,12 +114,63 @@
   }
   function closePicker() { document.getElementById('pickerSheet').classList.remove('active'); }
 
-  /* ─────────── battle boot (quick battle + campaign intro fights) ─────────── */
+  /* ─────────── rival personas — the AI is a somebody, not a slot machine ───────────
+     Every quick battle is vs a named rival with a rating near yours and
+     points on the line. Rematch runs it back vs the SAME rival. */
+  const TAUNTS = [
+    'Your spirits look… delicious.',
+    'I have haunted far scarier teams than yours.',
+    'The dice whisper my name. They scream yours.',
+    'Fresh ectoplasm. Finally.',
+    'Boo. Scared yet?',
+    'I never lose. Well. Rarely. Sometimes.',
+    'Rattle rattle, little ghost.',
+    'My grandmother rolls better than you. She is a tombstone.',
+  ];
+  let rival = null;
+
+  function makeRival(myTeam) {
+    const mine = BOO2M.snapshot().rating || 0;
+    const spread = [-40, -20, 5, 25, 60][Math.floor(Math.random() * 5)];
+    return {
+      name: BOO2M.generateName(),
+      rating: Math.max(0, mine + spread + Math.floor(Math.random() * 21) - 10),
+      team: getCuratedTeam(myTeam),
+      taunt: TAUNTS[Math.floor(Math.random() * TAUNTS.length)],
+    };
+  }
+
   function quickBattle() {
     const t = ensureTeam();
     if (t.length < 3) { showToast('Pick 3 spirits first'); return; }
-    startVsTeam(getCuratedTeam(t), BOO2M.generateName());
+    rival = makeRival(t);
+    const me = BOO2M.snapshot();
+    document.getElementById('rivalBody').innerHTML = `
+      <div class="vs-row">
+        <div class="vs-side">
+          <img src="${boo2Art(t[0])}" alt="">
+          <div class="vs-name">${BOO2M.myName()}</div>
+          <div class="vs-rtg">${me.rating} RTG</div>
+        </div>
+        <div class="vs-mark creep">VS</div>
+        <div class="vs-side">
+          <img src="${boo2Art(rival.team[0])}" alt="">
+          <div class="vs-name">${rival.name}</div>
+          <div class="vs-rtg">${rival.rating} RTG</div>
+        </div>
+      </div>
+      <div class="vs-taunt">“${rival.taunt}”</div>
+      <div class="vs-stakes">WIN +${15} RTG &nbsp;·&nbsp; LOSE −${10} RTG</div>
+      <button class="btn-ember" onclick="BOO2B.engageRival()">FIGHT</button>`;
+    document.getElementById('rivalOverlay').classList.add('active');
   }
+
+  function engageRival() {
+    document.getElementById('rivalOverlay').classList.remove('active');
+    if (!rival) return;
+    startVsTeam(rival.team.slice(), rival.name);
+  }
+  function dismissRival() { document.getElementById('rivalOverlay').classList.remove('active'); rival = null; }
 
   function startVsTeam(blueIds, name) {
     const t = ensureTeam();
@@ -143,6 +194,9 @@
     // beta before this flag can flip.
     B.duelPhaseMode = false;
     startBlueAI();
+    // you only ever roll for yourself — the rival rolls their own dice
+    const bb = document.getElementById('rollBlueBtn');
+    if (bb) bb.style.display = 'none';
   }
 
   /* Leave button: two-tap arm instead of a blocking confirm() dialog */
@@ -207,14 +261,15 @@
     if (title) {
       title.textContent = result === 'win' ? 'YOU WIN!' : (result === 'loss' ? `${oppName || 'THE RIVAL'} WINS` : 'DRAW!');
     }
-    const { starDelta } = await BOO2M.postGameResult(result);
+    const { starDelta, ratingDelta } = await BOO2M.postGameResult(result);
     const go = document.getElementById('gameOver');
     const rounds = document.getElementById('goRounds');
     if (go && rounds) {
       go.querySelectorAll('.go-star-award').forEach(c => c.remove()); // overlay persists across rematches
       const chip = document.createElement('div');
       chip.className = 'go-star-award';
-      chip.innerHTML = `+${starDelta} ★ &nbsp;·&nbsp; ${BOO2M.snapshot().stars} ★ total`;
+      const rtg = ratingDelta === 0 ? '' : ` &nbsp;·&nbsp; ${ratingDelta > 0 ? '+' : ''}${ratingDelta} RTG`;
+      chip.innerHTML = `+${starDelta} ★${rtg} &nbsp;·&nbsp; now ${BOO2M.snapshot().rating} RTG`;
       rounds.insertAdjacentElement('afterend', chip);
     }
     // New Game returns to /play/'s team screen, not the engine's picker
@@ -252,5 +307,5 @@
     renderStrip();
   }
 
-  window.BOO2B = { boot, renderStrip, quickBattle, startVsTeam, pickSpirit, closePicker, exitBattle };
+  window.BOO2B = { boot, renderStrip, quickBattle, engageRival, dismissRival, startVsTeam, pickSpirit, closePicker, exitBattle };
 })();

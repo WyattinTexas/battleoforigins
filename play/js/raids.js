@@ -20,7 +20,7 @@
         // tutorial fight into a stalemate vs a starter team — found in test)
         { id: 's1-1', type: 'intro', name: 'Meadow Wisps', team: [9, 8, 12], line: 'Three gentle spirits drift out to test you.', stars: 15 },
         { id: 's1-2', type: 'intro', name: 'Shrine Guards', team: [10, 16, 5], line: 'The shrine does not open for strangers.', stars: 15 },
-        { id: 's1-3', type: 'intro', name: 'The Menace', team: [34, 37, 39], line: 'Something growls beyond the treeline…', stars: 15 },
+        { id: 's1-3', type: 'intro', name: 'The Menace', team: [34, 37, 39], line: 'Something growls beyond the treeline…', stars: 15, packs: 1 },
       ],
     },
     {

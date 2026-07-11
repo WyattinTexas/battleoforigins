@@ -48,7 +48,7 @@
     setDoorArt('doorArtCollection', findByName('Puff').id);
     setDoorArt('doorArtStandingsPoster', findByName('The Mountain King').id);
     const owned = BOO2M.ownedIds().length;
-    document.getElementById('doorCollCount').textContent = `${owned} / ${getActiveGhosts().length} spirits`;
+    document.getElementById('doorCollCount').textContent = `${owned}/${getActiveGhosts().length}`;
     if (window.BOO2R) {
       const badge = document.getElementById('doorRaidsBadge');
       if (badge) badge.textContent = `${BOO2R.clearedCount()}/${BOO2R.total}`;
@@ -131,12 +131,12 @@
   }
   function acceptWelcome() {
     document.getElementById('welcomeOverlay').classList.remove('active');
-    BOO2C.openCeremony(BOO2M.rollWelcomePack(), 'WELCOME PACK', () => {
+    BOO2C.openCeremony(BOO2M.rollWelcomePack(), 'THREE SPIRITS CHOSE YOU', () => {
       localStorage.setItem('boo2Welcome', '1');
       BOO2B.renderStrip();
       renderMenu();
       BOO2ST.checkChallengeParam(); // friend arrived via a challenge link → straight to the duel
-      showToast('Your first three spirits await — GO PLAY!');
+      showToast('Your team is ready — PLAY NOW!');
     });
   }
 

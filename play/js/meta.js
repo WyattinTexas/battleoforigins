@@ -279,14 +279,11 @@
     PACK_SLOTS.forEach(odds => ids.push(rollSlot(odds, ids)));
     return ids;
   }
-  // Welcome pack: 3 fixed modal-free starters + 1 common + 1 uncommon + 1 juicy slot
+  // Welcome pack: exactly the 3 starters — your first team IS the pack.
+  // (Wyatt 7/11: starting with 6 dulls the collection pull; 3 brings you in.)
   const STARTERS = [1, 2, 35]; // Kodako, Nikon, Larry — abilities auto-resolve, great first game
   function rollWelcomePack() {
-    const ids = [...STARTERS];
-    ids.push(rollSlot([['common', 1]], ids));
-    ids.push(rollSlot([['uncommon', 1]], ids));
-    ids.push(rollSlot(PACK_SLOTS[2], ids));
-    return ids;
+    return [...STARTERS];
   }
 
   // ── champion messages (shown by shell at boot when they exist)
