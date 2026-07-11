@@ -1,0 +1,807 @@
+<!-- ============================================================
+     RAID ARENA TEMPLATE — extracted from testroom/index.html
+     This is an HTML fragment for insertion into #raid-screen.
+     NOT a standalone page.
+     ============================================================ -->
+
+<div id="raid-battle-container">
+
+<!-- Leave Raid Button (always visible) -->
+<button id="leaveRaidBtn" onclick="if(confirm('Leave this raid?')){cleanupRaidBattle(); if(typeof showRaidLobby==='function') showRaidLobby();}"
+  style="position:fixed;top:12px;right:12px;z-index:9999;padding:6px 16px;font-size:0.75rem;font-weight:700;
+  background:rgba(231,76,60,0.2);border:1px solid rgba(231,76,60,0.5);color:#e74c3c;border-radius:6px;
+  cursor:pointer;letter-spacing:0.5px;backdrop-filter:blur(4px);">LEAVE RAID</button>
+
+<!-- Raid Boss HP Pool -->
+<div class="rib-boss-pool" id="raid-boss-pool" style="display:none">
+  <div class="rib-boss-pool-fill" id="raid-boss-pool-fill"></div>
+  <div class="rib-boss-pool-text" id="raid-boss-pool-text">BOSS HP</div>
+</div>
+
+<!-- Watching Banner (spectators) -->
+<div id="raidWatchBanner" class="raid-watch-banner" style="display:none">
+  <span id="raidWatchText">Watching...</span>
+</div>
+
+<!-- ============================================================
+     ARENA BOARD
+     ============================================================ -->
+<div id="battle-view">
+  <div class="arena-board">
+    <!-- RED Team — Left -->
+    <div class="team-column" id="red-team-column">
+      <div class="team-battle-row">
+        <div class="sideline-stack">
+          <div id="red-sl-left" class="arena-card sideline-slot"></div>
+          <div id="red-sl-right" class="arena-card sideline-slot"></div>
+        </div>
+        <div id="red-fighter" class="arena-card fighter-slot"></div>
+      </div>
+      <div class="team-info">
+        <div class="hp-bar-wrap"><div class="hp-bar team-red" id="red-hpBar"></div></div>
+        <div class="hp-text"><span class="hp-num" id="red-hpText"></span></div>
+        <div class="resources" id="red-resources"></div>
+      </div>
+      <div id="red-ability-buttons" class="ability-buttons"></div>
+      <button class="action-btn roll-red team-roll" id="rollRedBtn" onclick="rollReady('red')">Red Roll</button>
+      <button class="action-btn duel-done-btn" id="duelDoneRedBtn" onclick="duelPhaseReady('red')" style="display:none;">&#x2713; Ready</button>
+    </div>
+
+    <!-- Center — Dice + Round -->
+    <div class="arena-center">
+      <div class="turn-indicator" id="turnIndicator">Round 1</div>
+      <button id="muteToggle" onclick="toggleMute()" title="Toggle music" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;opacity:0.6;z-index:10;padding:4px;" aria-label="Toggle music">&#x1F50A;</button>
+      <div class="arena-mid">
+        <div class="dice-stack">
+          <div class="dice-row dice-red" id="red-dice"></div>
+          <div class="dice-row dice-blue" id="blue-dice"></div>
+        </div>
+      </div>
+      <div class="ability-callout" id="abilityCallout"></div>
+      <div class="ms-inline-picker" id="msInlinePicker">
+        <h4>Pick a value</h4>
+        <div class="ms-dice-options" id="msInlineOptions"></div>
+      </div>
+    </div>
+
+    <!-- BLUE Team — Right -->
+    <div class="team-column" id="blue-team-column">
+      <div class="team-battle-row">
+        <div id="blue-fighter" class="arena-card fighter-slot"></div>
+        <div class="sideline-stack">
+          <div id="blue-sl-left" class="arena-card sideline-slot"></div>
+          <div id="blue-sl-right" class="arena-card sideline-slot"></div>
+        </div>
+      </div>
+      <div class="team-info">
+        <div class="hp-bar-wrap"><div class="hp-bar team-blue" id="blue-hpBar"></div></div>
+        <div class="hp-text"><span class="hp-num" id="blue-hpText"></span></div>
+        <div class="resources" id="blue-resources"></div>
+      </div>
+      <div id="blue-ability-buttons" class="ability-buttons"></div>
+      <button class="action-btn roll-blue team-roll" id="rollBlueBtn" onclick="rollReady('blue')">Blue Roll</button>
+      <button class="action-btn duel-done-btn" id="duelDoneBlueBtn" onclick="duelPhaseReady('blue')" style="display:none;">&#x2713; Ready</button>
+    </div>
+  </div>
+
+  <!-- Skip Button -->
+  <div style="text-align:center;">
+    <button id="skipSpecialsBtn" onclick="doSkipSpecials()" style="display:none;background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.35);font-size:11px;padding:3px 14px;border-radius:6px;cursor:pointer;margin-bottom:4px;transition:opacity 0.2s;" onmouseenter="this.style.color='rgba(255,255,255,0.7)';this.style.borderColor='rgba(255,255,255,0.35)'" onmouseleave="this.style.color='rgba(255,255,255,0.35)';this.style.borderColor='rgba(255,255,255,0.15)'">Skip</button>
+  </div>
+
+  <!-- Narrator -->
+  <div class="narrator-box">
+    <div class="narrator-inner" id="narrator" aria-live="polite" aria-atomic="true">Pick your teams and battle!</div>
+  </div>
+
+  <!-- Battle Log -->
+  <div class="log-wrap" style="max-height:150px;">
+    <h4>Battle Log</h4>
+    <div id="battleLog" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ABILITY OVERLAYS — every single one
+     ============================================================ -->
+
+<!-- Swap -->
+<div class="swap-overlay" id="swapOverlay">
+  <div class="swap-modal">
+    <h3 id="swapTitle">Swap Ghost</h3>
+    <div id="swapOptions"></div>
+  </div>
+</div>
+
+<!-- Moonstone Picker -->
+<div class="moonstone-picker" id="msPicker">
+  <div class="ms-modal">
+    <h3>&#x1F48E; Moonstone Activated</h3>
+    <p id="msPickerInfo">Choose which die to change, then pick its new value.</p>
+    <div id="msStep1" class="ms-which-die"></div>
+    <div id="msStep2" class="ms-dice-options" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- Steal Picker -->
+<div class="steal-overlay" id="stealOverlay">
+  <div class="steal-modal">
+    <h3>Plunder — Steal a Resource</h3>
+    <div id="stealOptions" class="steal-options"></div>
+  </div>
+</div>
+
+<!-- Ability Splash -->
+<div class="ability-splash" id="abilitySplash">
+  <div class="ability-splash-inner">
+    <div class="ability-splash-name" id="splashName"></div>
+    <div class="ability-splash-desc" id="splashDesc"></div>
+  </div>
+</div>
+
+<!-- Triples Banner + Flash -->
+<div class="triples-banner" id="triplesBanner">TRIPLES!</div>
+<div class="triples-flash" id="triplesFlash"></div>
+
+<!-- ============================================================
+     VS SPLASH — pre-battle start screen
+     ============================================================ -->
+<div class="vs-splash" id="vsSplash">
+  <div class="vs-inner">
+    <div style="text-align:center;">
+      <div class="vs-fighter-name red" id="vsRedName">Red</div>
+      <div class="vs-roster" id="vsRedRoster" style="margin-top:6px; font-size:13px; color:rgba(233,69,96,0.7); font-weight:600; letter-spacing:0.5px;"></div>
+    </div>
+    <div class="vs-text">VS</div>
+    <div style="text-align:center;">
+      <div class="vs-fighter-name blue" id="vsBlueName">Blue</div>
+      <div class="vs-roster" id="vsBlueRoster" style="margin-top:6px; font-size:13px; color:rgba(52,152,219,0.7); font-weight:600; letter-spacing:0.5px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CHOICE / PICKER OVERLAYS (alphabetical by ghost)
+     ============================================================ -->
+
+<!-- Pressure Pick (generic) -->
+<div class="pressure-overlay" id="pressureOverlay">
+  <div class="pressure-modal">
+    <div id="pressureWho" class="pm-who-banner blue">&#x1F3AF; BLUE PICKS</div>
+    <h3 id="pressureTitle">Pressure — Forced Swap</h3>
+    <div class="pm-sub" id="pressureSub">Choose which ghost enters the fight.</div>
+    <div id="pressureOptions"></div>
+  </div>
+</div>
+
+<!-- Selene — Heart of the Hills choice modal -->
+<div class="selene-overlay" id="seleneOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" id="seleneBanner">&#x26F0;&#xFE0F; HEART OF THE HILLS</div>
+    <h3 id="seleneTitle">Selene — Heart of the Hills!</h3>
+    <p class="selene-sub">Doubles! Choose your reward:</p>
+    <div class="selene-options">
+      <button class="selene-opt seed" onclick="doSeleneChoice('seed')">&#x1F331; 2 Healing Seeds</button>
+      <button class="selene-opt ls" onclick="doSeleneChoice('ls')">&#x1F340; 3 Lucky Stones</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pal Al (431) — Squall choice modal -->
+<div class="selene-overlay" id="wiseAlOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#1a3a5c,#2e7dba);">&#x2744;&#xFE0F; SQUALL!</div>
+    <h3>Pal Al wins! Choose:</h3>
+    <p class="selene-sub" id="wiseAlSub">Deal damage or gain Ice Shards?</p>
+    <div class="selene-options">
+      <button class="selene-opt" id="wiseAlDmgBtn" onclick="doWiseAlChoice('damage')">&#x2694;&#xFE0F; Deal Damage</button>
+      <button class="selene-opt" onclick="doWiseAlChoice('ice')" style="background:linear-gradient(135deg,#1a3a5c,#2e7dba);">&#x2744;&#xFE0F; Gain 4 Ice Shards</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sophia (457) — Masquerade choice modal -->
+<div class="selene-overlay" id="sophiaOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#2a1a3a,#6b3aaa);">&#x1F3AD; MASQUERADE!</div>
+    <h3>Sophia wins! Choose a mask:</h3>
+    <p class="selene-sub" id="sophiaSub">Deal damage or gain a mask?</p>
+    <div class="selene-options">
+      <button class="selene-opt" id="sophiaDmgBtn" onclick="doSophiaChoice('damage')">&#x2694;&#xFE0F; Deal Damage</button>
+      <button class="selene-opt" onclick="doSophiaChoice('day')" style="background:linear-gradient(135deg,#b8860b,#ffd700);">&#x2600;&#xFE0F; Mask of Day</button>
+      <button class="selene-opt" onclick="doSophiaChoice('night')" style="background:linear-gradient(135deg,#1a1a3a,#4a4a8a);">&#x1F319; Mask of Night</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gordok (430) — River Terror choice modal -->
+<div class="selene-overlay" id="gordokOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#2a1a0a,#6b3a1a);">&#x1F30A; RIVER TERROR!</div>
+    <h3>Gordok wins! Choose:</h3>
+    <p class="selene-sub" id="gordokSub">Deal damage or steal resources?</p>
+    <div class="selene-options">
+      <button class="selene-opt" id="gordokDmgBtn" onclick="doGordokChoice('damage')">&#x2694;&#xFE0F; Deal Damage</button>
+      <button class="selene-opt" onclick="doGordokChoice('steal')" style="background:linear-gradient(135deg,#2a1a0a,#6b3a1a);">&#x1F30A; Steal Up To 2 Specials</button>
+    </div>
+  </div>
+</div>
+
+<!-- Timber — Howl choice modal -->
+<div class="selene-overlay" id="timberOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" id="timberBanner" style="background:linear-gradient(135deg,#4a2c0a,#7c4a1a);">&#x1F43A; HOWL</div>
+    <h3 id="timberTitle">Timber — Howl!</h3>
+    <p class="selene-sub" id="timberSub">Choose your fate:</p>
+    <div class="selene-options">
+      <button class="selene-opt seed" onclick="doTimberChoice('discard')" id="timberDiscardBtn" style="background:linear-gradient(135deg,#7c2d12,#b45309);">&#x1F48E; Discard 2 Specials</button>
+      <button class="selene-opt ls" onclick="doTimberChoice('die')" style="background:linear-gradient(135deg,#4a2c0a,#78350f);">&#x1F3B2; Roll 1 Fewer Die</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ryder (456) — Toll choice modal -->
+<div class="selene-overlay" id="riderOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" id="riderBanner" style="background:linear-gradient(135deg,#1a1a2e,#4a1942);">&#x2694;&#xFE0F; TOLL</div>
+    <h3 id="riderTitle">Ryder — Toll!</h3>
+    <p class="selene-sub" id="riderSub">Choose your fate:</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doRiderChoice('damage')" style="background:linear-gradient(135deg,#7c1a1a,#c0392b);">&#x1F480; Take 1 Damage</button>
+      <button class="selene-opt" onclick="doRiderChoice('fire')" style="background:linear-gradient(135deg,#4a1942,#7c2d8e);">&#x1F525; Give Ryder +1 Sacred Fire</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sylvia (313) — Porpoise dodge roll modal -->
+<div class="selene-overlay" id="sylviaOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" id="sylviaBanner" style="background:linear-gradient(135deg,#0ea5e9,#0369a1);">&#x1F30A; PORPOISE!</div>
+    <h3 id="sylviaTitle">Sylvia — Porpoise!</h3>
+    <p class="selene-sub" id="sylviaSub">Roll a <b>6</b> to dodge all damage!</p>
+    <div id="sylviaDieWrap" style="display:flex;justify-content:center;align-items:center;margin:18px 0;">
+      <div id="sylviaDie" style="width:84px;height:84px;border-radius:14px;background:linear-gradient(135deg,#bae6fd,#e0f2fe);color:#0c4a6e;font-size:3.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(14,165,233,.55),inset 0 2px 0 rgba(255,255,255,.6);border:3px solid #0ea5e9;">?</div>
+    </div>
+    <div class="selene-options">
+      <button class="selene-opt" id="sylviaRollBtn" onclick="doSylviaRoll()" style="background:linear-gradient(135deg,#0ea5e9,#0369a1);">&#x1F30A; Roll the Die!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Prince Balatron (113) — Party Time counter-die reveal modal -->
+<div class="selene-overlay" id="balatronOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" id="balatronBanner" style="background:linear-gradient(135deg,#a855f7,#6b21a8);">&#x1F389; PARTY TIME!</div>
+    <h3 id="balatronTitle">Prince Balatron — Party Time!</h3>
+    <p class="selene-sub" id="balatronSub">Lost the roll — but the party's not over. Roll the counter die for damage!</p>
+    <div id="balatronDieWrap" style="display:flex;justify-content:center;align-items:center;margin:18px 0;">
+      <div id="balatronDie" style="width:84px;height:84px;border-radius:14px;background:linear-gradient(135deg,#e9d5ff,#c4b5fd);color:#4c1d95;font-size:3.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(168,85,247,.55),inset 0 2px 0 rgba(255,255,255,.6);border:3px solid #a855f7;">?</div>
+    </div>
+    <div class="selene-options">
+      <button class="selene-opt" id="balatronRollBtn" onclick="doBalatronRoll()" style="background:linear-gradient(135deg,#a855f7,#6b21a8);">&#x1F3B2; Roll the Counter Die!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tommy Salami (30) — Regulator chain-dice interactive modal -->
+<div class="selene-overlay" id="tommyOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#92400e,#d97706);">&#x1F3B2; REGULATOR!</div>
+    <h3 id="tommyTitle">Tommy Salami — Regulator!</h3>
+    <p class="selene-sub" id="tommySub">You rolled a 6! Roll a bonus die!</p>
+    <div id="tommyDieDisplay" style="font-size:48px;text-align:center;margin:12px 0;">&#x1F3B2;</div>
+    <button class="selene-opt" id="tommyRollBtn" onclick="doTommyRoll()" style="background:linear-gradient(135deg,#92400e,#d97706);">&#x1F3B2; Roll the Bonus Die!</button>
+  </div>
+</div>
+
+<!-- Toby — Pure Heart declaration modal -->
+<div class="selene-overlay" id="tobyOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#7f1d1d,#450a0a);">&#x1F480; PURE HEART</div>
+    <h3>Toby — Pure Heart!</h3>
+    <p class="selene-sub">Declare this the final roll.<br>A <b>win</b> instantly defeats the enemy ghost.<br><i>Toby is sacrificed next round before rolling.</i></p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doTobyPureHeart(true)" style="background:linear-gradient(135deg,#7f1d1d,#450a0a);">&#x2694;&#xFE0F; Declare!</button>
+      <button class="selene-opt" onclick="doTobyPureHeart(false)" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; Not now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Romy — Valley Guardian prediction modal -->
+<div class="selene-overlay" id="romyOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#0e7490,#164e63);">&#x2744;&#xFE0F; VALLEY GUARDIAN</div>
+    <h3>Romy — Valley Guardian!</h3>
+    <p class="selene-sub">Predict a die number — if any die matches, +3 damage!</p>
+    <div class="selene-options" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+      <button class="selene-opt" onclick="doRomyPrediction(1)" style="background:linear-gradient(135deg,#0e7490,#164e63);font-size:1.3rem;">&#x2680; 1</button>
+      <button class="selene-opt" onclick="doRomyPrediction(2)" style="background:linear-gradient(135deg,#0e7490,#164e63);font-size:1.3rem;">&#x2681; 2</button>
+      <button class="selene-opt" onclick="doRomyPrediction(3)" style="background:linear-gradient(135deg,#0e7490,#164e63);font-size:1.3rem;">&#x2682; 3</button>
+      <button class="selene-opt" onclick="doRomyPrediction(4)" style="background:linear-gradient(135deg,#0e7490,#164e63);font-size:1.3rem;">&#x2683; 4</button>
+      <button class="selene-opt" onclick="doRomyPrediction(5)" style="background:linear-gradient(135deg,#0e7490,#164e63);font-size:1.3rem;">&#x2684; 5</button>
+      <button class="selene-opt" onclick="doRomyPrediction(6)" style="background:linear-gradient(135deg,#0e7490,#164e63);font-size:1.3rem;">&#x2685; 6</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tyler — Heating Up HP-trade modal -->
+<div class="selene-overlay" id="tylerOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#7c1a1a,#c0392b);">&#x1F525; HEATING UP</div>
+    <h3>Tyler — Heating Up!</h3>
+    <p class="selene-sub" id="tylerSub">Spend 2 HP to gain +1 die this roll?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doTylerChoice('yes')" style="background:linear-gradient(135deg,#7c1a1a,#c0392b);">&#x1F525; Yes — spend 2 HP</button>
+      <button class="selene-opt" onclick="doTylerChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep HP</button>
+    </div>
+  </div>
+</div>
+
+<!-- Guardian Fairy — Wish timed button -->
+<div id="gfWishBtn" style="display:none; position:fixed; bottom:120px; left:50%; transform:translateX(-50%); z-index:9999;
+  background:linear-gradient(135deg,#5b21b6,#7c3aed); color:#fff; border:2px solid #a78bfa; border-radius:14px;
+  padding:12px 28px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 0 30px rgba(139,92,246,0.5);
+  text-align:center; min-width:200px; user-select:none; animation:gfPulse 1s ease-in-out infinite;">
+  <div style="font-size:11px;opacity:0.8;margin-bottom:2px;" id="gfWishSub">Guardian Fairy can take this hit!</div>
+  <span>&#x1F9DA; WISH!</span>
+  <div id="gfWishCountdown" style="position:absolute;top:-10px;right:-10px;background:#ef4444;color:#fff;
+    border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;box-shadow:0 0 8px rgba(239,68,68,0.6);"></div>
+</div>
+<style>
+@keyframes gfPulse { 0%,100% { box-shadow:0 0 30px rgba(139,92,246,0.5); } 50% { box-shadow:0 0 50px rgba(139,92,246,0.8); } }
+</style>
+
+<!-- Eloise (85) — Change of Heart -->
+<div class="selene-overlay" id="eloiseOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#0e7490,#06b6d4);">&#x2744;&#xFE0F; CHANGE OF HEART</div>
+    <h3>Eloise — Change of Heart!</h3>
+    <p class="selene-sub" id="eloiseSub">Spend 1 Ice Shard to swap HP with the enemy?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doEloiseChoice('yes')" style="background:linear-gradient(135deg,#0e7490,#06b6d4);">&#x2744;&#xFE0F; Yes — swap HP!</button>
+      <button class="selene-opt" onclick="doEloiseChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep HP</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bogey (53) — Bogus reflect -->
+<div class="selene-overlay" id="bogeyOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#4b5563,#1f2937);">&#x1FA83; BOGUS</div>
+    <h3>Bogey — Bogus!</h3>
+    <p class="selene-sub" id="bogeyReflectSub">Incoming damage! Reflect it?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doBogeyReflectChoice('yes')" style="background:linear-gradient(135deg,#4b5563,#1f2937);">&#x1FA83; Reflect it!</button>
+      <button class="selene-opt" onclick="doBogeyReflectChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x1F6E1; Save it</button>
+    </div>
+  </div>
+</div>
+
+<!-- Boo Brothers (17) — Teamwork -->
+<div class="selene-overlay" id="booOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#374151,#8b95a5);">&#x1F47B; TEAMWORK</div>
+    <h3>Boo Brothers — Teamwork!</h3>
+    <p class="selene-sub" id="booSub">Remove 1 die to gain +1 HP this roll?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doBooChoice('yes')" style="background:linear-gradient(135deg,#374151,#8b95a5);">&#x1F47B; Yes — trade for HP!</button>
+      <button class="selene-opt" onclick="doBooChoice('no')" style="background:linear-gradient(135deg,#1f2937,#374151);">&#x2716; No — keep dice</button>
+    </div>
+  </div>
+</div>
+
+<!-- Gus (31) — Gale Force timed button -->
+<div id="gusGaleBtn" style="display:none; position:fixed; bottom:120px; left:50%; transform:translateX(-50%); z-index:9999;
+  background:linear-gradient(135deg,#0f4c75,#1b6ca8); color:#fff; border:2px solid #60a5fa; border-radius:14px;
+  padding:12px 28px; font-size:15px; font-weight:700; cursor:pointer; box-shadow:0 0 30px rgba(96,165,250,0.5);
+  text-align:center; min-width:200px; user-select:none; animation:gusPulse 1s ease-in-out infinite;">
+  <div style="font-size:11px;opacity:0.8;margin-bottom:2px;" id="gusGaleSub">Force a swap instead of damage!</div>
+  <span>&#x1F4A8; GALE FORCE!</span>
+  <div id="gusGaleCountdown" style="position:absolute;top:-10px;right:-10px;background:#ef4444;color:#fff;
+    border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;box-shadow:0 0 8px rgba(239,68,68,0.6);"></div>
+</div>
+<style>
+@keyframes gusPulse { 0%,100% { box-shadow:0 0 30px rgba(96,165,250,0.5); } 50% { box-shadow:0 0 50px rgba(96,165,250,0.8); } }
+</style>
+
+<!-- Mallow (89) — Dozy Cozy -->
+<div class="selene-overlay" id="mallowOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#be185d,#f472b6);">&#x1F338; DOZY COZY</div>
+    <h3>Mallow — Dozy Cozy!</h3>
+    <p class="selene-sub" id="mallowSub">Spend 2 &#x1F525; Sacred Fire to give your ghost +3 HP and gain 1 Burn?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doMallowChoice('yes')" style="background:linear-gradient(135deg,#be185d,#f472b6);">&#x1F338; Yes — spend 2 fire for +3 HP + 1 Burn!</button>
+      <button class="selene-opt" onclick="doMallowChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — save the fire</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chow (414) — Secret Ingredient -->
+<div class="selene-overlay" id="chowOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#92400e,#d97706);">&#x1F373; SECRET INGREDIENT</div>
+    <h3>Chow — Secret Ingredient!</h3>
+    <p class="selene-sub" id="chowSub">Discard 1 Healing Seed for +2 dice this roll?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doChowChoice('yes')" style="background:linear-gradient(135deg,#92400e,#d97706);">&#x1F373; Yes — spend 1 seed for +2 dice!</button>
+      <button class="selene-opt" onclick="doChowChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — save the seeds</button>
+    </div>
+  </div>
+</div>
+
+<!-- Zork (463) — Stoke -->
+<div class="selene-overlay" id="zorkOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#b45309,#f59e0b);">&#x1F525; STOKE</div>
+    <h3>Zork — Smolder!</h3>
+    <p class="selene-sub" id="zorkSub">Discard all Burn for +1 die each?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doZorkChoice('yes')" style="background:linear-gradient(135deg,#b45309,#f59e0b);">&#x1F525; Yes — burn it all for dice!</button>
+      <button class="selene-opt" onclick="doZorkChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep the Burn</button>
+    </div>
+  </div>
+</div>
+
+<!-- Kaylee (453) — Slipstream -->
+<div class="selene-overlay" id="slipstreamOverlay">
+  <div class="selene-modal" style="max-width:500px;">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#0e7490,#22d3ee);">&#x1F30A; SLIPSTREAM!</div>
+    <h3>Kaylee — Slipstream!</h3>
+    <p class="selene-sub">You rolled a 2! Pick one of YOUR dice, then one of your OPPONENT's dice to swap.</p>
+    <p style="text-align:center;margin:8px 0;color:var(--text2);font-size:13px;" id="slipstreamStep">Step 1: Pick YOUR die to give away</p>
+    <div id="slipstreamMyDice" style="display:flex;gap:8px;justify-content:center;margin:8px 0;"></div>
+    <p style="text-align:center;color:var(--text2);font-size:13px;">Opponent's dice:</p>
+    <div id="slipstreamOppDice" style="display:flex;gap:8px;justify-content:center;margin:8px 0;"></div>
+    <div class="selene-options">
+      <button class="selene-opt" id="slipstreamSkipBtn" onclick="doSlipstreamChoice('skip')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; Skip — don't swap</button>
+    </div>
+  </div>
+</div>
+
+<!-- Miyoshi (454) — Bonzai! -->
+<div class="selene-overlay" id="bonzaiOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#991b1b,#dc2626);">&#x26A1; BONZAI!</div>
+    <h3>Miyoshi — Bonzai!</h3>
+    <p class="selene-sub" id="bonzaiSub">Lose 4 HP to gain +5 dice this roll?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doBonzaiChoice('yes')" style="background:linear-gradient(135deg,#991b1b,#dc2626);">&#x26A1; BONZAI! — sacrifice 4 HP for +5 dice!</button>
+      <button class="selene-opt" onclick="doBonzaiChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — hold back</button>
+    </div>
+  </div>
+</div>
+
+<!-- Castle Gardener (442) — Cultivate -->
+<div class="selene-overlay" id="cultivateOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#2d6a4f,#40916c);">&#x1F331; CULTIVATE!</div>
+    <h3>Castle Gardener — Cultivate!</h3>
+    <p class="selene-sub" id="cultivateSub">Discard 1 Healing Seed for 2 Sacred Fire?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doCultivateChoice('yes')" style="background:linear-gradient(135deg,#2d6a4f,#40916c);">&#x1F331; Yes — trade seed for 2 fire!</button>
+      <button class="selene-opt" onclick="doCultivateChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep seeds</button>
+    </div>
+  </div>
+</div>
+
+<!-- Forest Spirit / Mable Stadango (446) — Hex -->
+<div class="selene-overlay" id="hexOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#1a4731,#059669);">&#x1F33F; HEX</div>
+    <h3>Mable Stadango — Hex!</h3>
+    <p class="selene-sub" id="hexSub">Spend 1 Burn to remove 1 enemy die + gain 1 Sacred Fire?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doHexChoice('yes')" style="background:linear-gradient(135deg,#1a4731,#059669);">&#x1F33F; Yes — trade Burn for die removal + Sacred Fire!</button>
+      <button class="selene-opt" onclick="doHexChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep Burn for later</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nick & Knack (409) — Knick Knack -->
+<div class="selene-overlay" id="nickKnackOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#065f46,#059669);">&#x1F527; KNICK KNACK</div>
+    <h3>Nick &amp; Knack — Knick Knack!</h3>
+    <p class="selene-sub" id="nickKnackSub">Choose a resource to steal from the opponent!</p>
+    <div class="selene-options" id="nickKnackOptions"></div>
+  </div>
+</div>
+
+<!-- Burn Picker — place burn on enemy sideline ghost -->
+<div class="selene-overlay" id="burnOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#7c1a1a,#c0392b);">&#x1F525; PLACE BURN</div>
+    <h3>Choose an enemy sideline ghost to Burn!</h3>
+    <p class="selene-sub" id="burnPickerSub">The selected ghost takes damage when it enters battle.</p>
+    <div class="selene-options" id="burnPickerOptions"></div>
+  </div>
+</div>
+
+<!-- Firefly Picker — convert Magic Fireflies to any resource -->
+<div class="selene-overlay" id="fireflyOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#b8860b,#ffd700);">&#x2728; MAGIC FIREFLIES</div>
+    <h3>Convert a Magic Firefly!</h3>
+    <p class="selene-sub" id="fireflySub">Choose a resource to gain.</p>
+    <div class="selene-options" id="fireflyOptions"></div>
+  </div>
+</div>
+
+<!-- Jasper (428) — Flame Dive -->
+<div class="selene-overlay" id="jasperOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#c2410c,#ea580c);">&#x1F525; FLAME DIVE</div>
+    <h3 id="jasperTitle">Jasper — Flame Dive!</h3>
+    <p class="selene-sub" id="jasperSub">Jasper won — roll the bonus die for extra damage!</p>
+    <div id="jasperDieWrap" style="display:flex;justify-content:center;align-items:center;margin:18px 0;">
+      <div id="jasperDie" style="width:84px;height:84px;border-radius:14px;background:linear-gradient(135deg,#fed7aa,#f97316);color:#7c2d12;font-size:3.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(249,115,22,.55),inset 0 2px 0 rgba(255,255,255,.6);border:3px solid #ea580c;">?</div>
+    </div>
+    <div class="selene-options">
+      <button class="selene-opt" id="jasperRollBtn" onclick="doJasperRoll()" style="background:linear-gradient(135deg,#c2410c,#ea580c);">&#x1F525; Roll the Bonus Die!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sky (72) — Elusive -->
+<div class="selene-overlay" id="skyElusiveOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#1e3a5f,#3b82f6);">&#x1F4A8; ELUSIVE</div>
+    <h3 id="skyElusiveTitle">Sky — Elusive!</h3>
+    <p class="selene-sub" id="skyElusiveSub">Damage negated! Roll for counter damage!</p>
+    <div style="display:flex;justify-content:center;align-items:center;margin:18px 0;">
+      <div id="skyElusiveDie" style="width:84px;height:84px;border-radius:14px;background:linear-gradient(135deg,#bfdbfe,#3b82f6);color:#1e3a5f;font-size:3.2rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(59,130,246,.55),inset 0 2px 0 rgba(255,255,255,.6);border:3px solid #2563eb;">?</div>
+    </div>
+    <div class="selene-options">
+      <button class="selene-opt" id="skyElusiveRollBtn" onclick="doSkyElusiveRoll()" style="background:linear-gradient(135deg,#1e3a5f,#3b82f6);">&#x1F4A8; Roll Counter Die!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Jenkins (94) — Greeting -->
+<div class="selene-overlay" id="jenkinsOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#065f46,#10b981);">&#x1F44B; GREETING!</div>
+    <h3 id="jenkinsTitle">Jenkins — Greeting!</h3>
+    <p class="selene-sub" id="jenkinsSub">Jenkins enters the fight — roll 4 dice for entry damage!</p>
+    <div id="jenkinsDiceWrap" style="display:flex;justify-content:center;align-items:center;gap:10px;margin:18px 0;">
+      <div class="jenkins-die" id="jenkinsDie0" style="width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,#a7f3d0,#34d399);color:#064e3b;font-size:2.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(16,185,129,.45),inset 0 2px 0 rgba(255,255,255,.5);border:3px solid #10b981;">?</div>
+      <div class="jenkins-die" id="jenkinsDie1" style="width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,#a7f3d0,#34d399);color:#064e3b;font-size:2.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(16,185,129,.45),inset 0 2px 0 rgba(255,255,255,.5);border:3px solid #10b981;">?</div>
+      <div class="jenkins-die" id="jenkinsDie2" style="width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,#a7f3d0,#34d399);color:#064e3b;font-size:2.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(16,185,129,.45),inset 0 2px 0 rgba(255,255,255,.5);border:3px solid #10b981;">?</div>
+      <div class="jenkins-die" id="jenkinsDie3" style="width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,#a7f3d0,#34d399);color:#064e3b;font-size:2.4rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(16,185,129,.45),inset 0 2px 0 rgba(255,255,255,.5);border:3px solid #10b981;">?</div>
+    </div>
+    <div id="jenkinsResult" style="display:none;text-align:center;margin:8px 0;font-size:15px;font-weight:700;color:var(--text1);"></div>
+    <div class="selene-options">
+      <button class="selene-opt" id="jenkinsRollBtn" onclick="doJenkinsRoll()" style="background:linear-gradient(135deg,#065f46,#10b981);">&#x1F44B; Roll the Greeting Dice!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Jackson (50) — Regrow -->
+<div class="selene-overlay" id="jacksonOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#1a4a2e,#2d7a4f);">&#x1F33F; REGROW</div>
+    <h3 id="jacksonTitle">Jackson — Regrow!</h3>
+    <p class="selene-sub" id="jacksonSub">Spend 1 HP to reroll 1 die?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doJacksonChoice('yes')" style="background:linear-gradient(135deg,#1a4a2e,#2d7a4f);">&#x1F33F; Yes — spend 1 HP</button>
+      <button class="selene-opt" onclick="doJacksonChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep dice</button>
+    </div>
+    <div id="jacksonDiePicker" style="display:none;margin-top:14px;">
+      <p style="font-size:13px;color:var(--text2);">Pick a die to reroll:</p>
+      <div id="jacksonDiceButtons" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Dark Wing (76) — Precision -->
+<div class="selene-overlay" id="darkWingOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#1a0a2e,#4a1a7a);">&#x1F987; PRECISION</div>
+    <h3 id="darkWingTitle">Dark Wing — Precision!</h3>
+    <p class="selene-sub" id="darkWingSub">No doubles rolled. Reroll all dice?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doDarkWingChoice('yes')" style="background:linear-gradient(135deg,#1a0a2e,#6b21a8);">&#x1F987; Yes — reroll!</button>
+      <button class="selene-opt" onclick="doDarkWingChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep dice</button>
+    </div>
+  </div>
+</div>
+
+<!-- Jeanie (90) — Hidden Treasure -->
+<div class="selene-overlay" id="jeanieOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#0f4c75,#1b7fc4);">&#x1F48E; HIDDEN TREASURE</div>
+    <h3 id="jeanieTitle">Jeanie — Hidden Treasure!</h3>
+    <p class="selene-sub" id="jeanieSub">Force the opponent to reroll all their dice? (Once per game)</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doJeanieChoice('yes')" style="background:linear-gradient(135deg,#0f4c75,#1b7fc4);">&#x1F48E; Yes — force reroll!</button>
+      <button class="selene-opt" onclick="doJeanieChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — save it</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sonya (69) — Mesmerize -->
+<div class="selene-overlay" id="sonyaOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#4a1a7a,#8b2fc9);">&#x2728; MESMERIZE</div>
+    <h3 id="sonyaTitle">Sonya — Mesmerize!</h3>
+    <p class="selene-sub" id="sonyaSub">Change one of your dice to a 2? (Free — once per roll)</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doSonyaChoice('yes')" style="background:linear-gradient(135deg,#4a1a7a,#8b2fc9);">&#x2728; Yes — change a die</button>
+      <button class="selene-opt" onclick="doSonyaChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — keep dice</button>
+    </div>
+    <div id="sonyaDiePicker" style="display:none;margin-top:14px;">
+      <p style="font-size:13px;color:var(--text2);">Pick a die to change to 2:</p>
+      <div id="sonyaDiceButtons" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Raditz (62) — Hunt -->
+<div class="selene-overlay" id="raditzHuntOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#1a1a3e,#4a1a7a);">&#x1F3AF; HUNT</div>
+    <h3>Raditz — Hunt!</h3>
+    <p class="selene-sub" id="raditzHuntSub">Force the opponent to swap their active ghost for a sideline ghost?</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doRaditzHuntChoice('yes')" style="background:linear-gradient(135deg,#1a1a3e,#4a1a7a);">&#x1F3AF; Yes — force swap!</button>
+      <button class="selene-opt" onclick="doRaditzHuntChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — skip</button>
+    </div>
+  </div>
+</div>
+
+<!-- Doug (63) — Caution -->
+<div class="pressure-overlay" id="dougCautionOverlay">
+  <div class="pressure-modal">
+    <div id="dougCautionBanner" class="pm-who-banner blue">&#x26A0;&#xFE0F; CAUTION!</div>
+    <h3>Doug — Caution!</h3>
+    <div class="pm-sub" id="dougCautionSub">Switch Doug to the sideline and bring in a sideline ghost? They gain +1 die this roll. (Once per game)</div>
+    <div id="dougCautionOptions"></div>
+    <div style="margin-top:10px;">
+      <button class="selene-opt" onclick="doDougCautionChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);width:100%;">&#x2716; No — Doug stays in</button>
+    </div>
+  </div>
+</div>
+
+<!-- Calvin & Anna (91) — Toboggan -->
+<div class="pressure-overlay" id="tobogganOverlay">
+  <div class="pressure-modal">
+    <div id="tobogganBanner" class="pm-who-banner blue">&#x1F6F7; TOBOGGAN!</div>
+    <h3>Calvin &amp; Anna — Toboggan!</h3>
+    <div class="pm-sub">You defeated a Ghost! Switch Calvin &amp; Anna to the sideline?</div>
+    <div id="tobogganOptions"></div>
+    <div style="margin-top:10px;">
+      <button onclick="doTobogganChoice(-1)" style="background:linear-gradient(135deg,#374151,#1f2937);color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;">&#x2716; No — C&amp;A stays in</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fang Outside (6) — Skillful Coward -->
+<div class="pressure-overlay" id="fangOutsideOverlay">
+  <div class="pressure-modal">
+    <div id="fangOutsideBanner" class="pm-who-banner blue">&#x1F4A8; SKILLFUL COWARD!</div>
+    <h3>Fang Outside — Skillful Coward!</h3>
+    <div class="pm-sub">Fang won! Slide Fang to the sideline and bring in another Ghost?</div>
+    <div id="fangOutsideOptions"></div>
+    <div style="margin-top:10px;">
+      <button onclick="doFangOutsideChoice(-1)" style="background:linear-gradient(135deg,#374151,#1f2937);color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;">&#x2716; No — Fang stays in</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fang Undercover (7) — Skilled Coward: arm dodge -->
+<div class="selene-overlay" id="fangUndercoverArmOverlay">
+  <div class="selene-modal">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#1f2937,#4b5563);">&#x1F977; SKILLED COWARD</div>
+    <h3>Fang Undercover — Skilled Coward!</h3>
+    <p class="selene-sub" id="fangUndercoverArmSub">Arm the dodge? If Fang takes damage this round, they swap to the sideline and negate the hit.</p>
+    <div class="selene-options">
+      <button class="selene-opt" onclick="doFangUndercoverArmChoice('yes')" style="background:linear-gradient(135deg,#1f2937,#4b5563);">&#x1F977; Yes — arm it!</button>
+      <button class="selene-opt" onclick="doFangUndercoverArmChoice('no')" style="background:linear-gradient(135deg,#374151,#1f2937);">&#x2716; No — fight straight</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fang Undercover (7) — Skilled Coward: ghost-picker after dodge -->
+<div class="pressure-overlay" id="fangUndercoverSwapOverlay">
+  <div class="pm-inner">
+    <div id="fangUndercoverSwapBanner" class="pm-who-banner blue">&#x1F977; SKILLED COWARD!</div>
+    <h3>Fang Undercover — Skilled Coward!</h3>
+    <div class="pm-sub">Fang dodged the hit! Choose a ghost from your sideline to enter.</div>
+    <div id="fangUndercoverSwapOptions"></div>
+  </div>
+</div>
+
+<!-- Winston (15) — Scheme -->
+<div class="pressure-overlay" id="winstonSchemeOverlay">
+  <div class="pressure-modal">
+    <div id="winstonSchemeBanner" class="pm-who-banner red">&#x265F;&#xFE0F; SCHEME!</div>
+    <h3>Winston — Scheme!</h3>
+    <div class="pm-sub">Winston won! Choose an enemy Ghost to swap in — or skip. +2 dice next roll either way!</div>
+    <div id="winstonSchemeOptions"></div>
+    <div style="margin-top:10px;">
+      <button onclick="doWinstonSchemeChoice(-1)" style="background:linear-gradient(135deg,#374151,#1f2937);color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:14px;">&#x2716; Skip — keep current Ghost</button>
+    </div>
+  </div>
+</div>
+
+<!-- Laura (79) — Catchy Tune -->
+<div class="pressure-overlay" id="catchyTuneOverlay">
+  <div class="pressure-modal">
+    <div id="catchyTuneBanner" class="pm-who-banner red">&#x1F3B5; CATCHY TUNE!</div>
+    <h3>Laura — Catchy Tune!</h3>
+    <div class="pm-sub">Choose a die to lock for next roll:</div>
+    <div id="catchyTuneDiceOptions" style="display:flex;gap:12px;justify-content:center;margin:16px 0;"></div>
+  </div>
+</div>
+
+<!-- Tyson (365) — Hop -->
+<div class="pressure-overlay" id="tysonHopOverlay">
+  <div class="pressure-modal">
+    <div id="tysonHopBanner" class="pm-who-banner red">&#x1F525; HOP!</div>
+    <h3>Tyson — Hop!</h3>
+    <div class="pm-sub">Choose an enemy sideline ghost to disable:</div>
+    <div id="tysonHopOptions"></div>
+  </div>
+</div>
+
+<!-- Gus (31) — Gale Force Picker -->
+<div class="pressure-overlay" id="galeForcePickerOverlay">
+  <div class="pressure-modal">
+    <div id="galeForcePickerBanner" class="pm-who-banner blue">&#x1F4A8; GALE FORCE!</div>
+    <h3>Gus — Gale Force!</h3>
+    <div class="pm-sub">Gus wins! Choose a Ghost from your sideline to swap in — the switch is forced!</div>
+    <div id="galeForcePickerOptions"></div>
+  </div>
+</div>
+
+<!-- Hand Limit — discard down to 3 specials -->
+<div class="selene-overlay" id="handLimitOverlay">
+  <div class="selene-modal" style="max-width:420px;">
+    <div class="selene-banner" style="background:linear-gradient(135deg,#b45309,#f59e0b);">&#x270B; HAND LIMIT</div>
+    <h3 id="handLimitTitle">Discard to 3</h3>
+    <p class="selene-sub" id="handLimitSub">You have too many specials. Tap one to destroy it.</p>
+    <div id="handLimitItems" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0;"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     GAME OVER OVERLAY
+     ============================================================ -->
+<div class="game-over" id="gameOver">
+  <div class="go-box">
+    <h2 id="goTitle">VICTORY</h2>
+    <div class="go-rounds" id="goRounds"></div>
+    <div class="go-summary" id="goSummary"></div>
+    <div class="go-buttons">
+      <button class="go-btn-rematch" onclick="rematchBattle()">Rematch (Same Teams)</button>
+      <button class="go-btn-newgame" onclick="resetBattle()">New Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     AUDIO ELEMENTS
+     Audio paths relative to multiplayer/ directory
+     ============================================================ -->
+<!-- bgMusic removed (harmonica disabled) -->
+<audio id="triplesSfx" src="../boo/triples.mp3" preload="auto"></audio>
+<!-- Missing overlays caught by audit -->
+<div class="selene-overlay" id="guardianFairyOverlay" style="display:none;">
+  <div class="selene-card"><h3>Guardian Fairy</h3><p class="selene-sub">Guardian Fairy wishes to protect...</p>
+  <div class="selene-btns"><button class="selene-btn selene-yes" onclick="">Yes</button><button class="selene-btn selene-no" onclick="">No</button></div></div></div>
+<div class="selene-overlay" id="gusOverlay" style="display:none;">
+  <div class="selene-card"><h3>Gus — Gale Force</h3><p class="selene-sub">Choose target...</p>
+  <div class="selene-btns"><button class="selene-btn selene-yes" onclick="">Confirm</button><button class="selene-btn selene-no" onclick="">Cancel</button></div></div></div>
+
+<audio id="sfxDiceRoll" src="../boo/DiceRoll.mp3" preload="auto"></audio>
+<audio id="sfx1Damage" src="../boo/1Damage.mp3" preload="auto"></audio>
+<audio id="sfx2Damage" src="../boo/2Damage.mp3" preload="auto"></audio>
+<audio id="sfx3Damage" src="../boo/3Damage.mp3" preload="auto"></audio>
+<audio id="sfxSpecial" src="../boo/Special.mp3" preload="auto"></audio>
+<audio id="sfxShatter" src="../boo/Shatter.mp3" preload="auto"></audio>
+<audio id="sfxVictory" src="../boo/winningwhistle.mp3" preload="auto"></audio>
+
+</div><!-- /raid-battle-container -->

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Boo! Spirit Battles</title>
+<meta name="theme-color" content="#0a0d16">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:title" content="Boo! Spirit Battles">
+<meta property="og:description" content="Collect Spiritkin. Roll dice. Battle friends. Kickstarter Sept 1.">
+<link rel="manifest" href="manifest.json?v=v0.01">
+<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.01">
+<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.01">
+<script>
+/* cache-version check (beta pattern, boo2-namespaced guard).
+   bump-version.sh keeps LOCAL_V + BOO2_VERSION + cache-version.txt + every ?v= in lockstep. */
+const LOCAL_V = 'v0.01';
+const BOO2_VERSION = 'v0.01';
+fetch('cache-version.txt?t=' + Date.now())
+  .then(r => r.text())
+  .then(v => {
+    v = (v || '').trim();
+    if (v && v !== LOCAL_V && !sessionStorage.boo2_cv_done) {
+      sessionStorage.boo2_cv_done = '1';
+      location.reload();
+    }
+  }).catch(() => {});
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="engine/raid-arena.css?v=v0.01">
+<link rel="stylesheet" href="css/play.css?v=v0.01">
+</head>
+<body class="app">
+
+<main id="shell">
+
+  <!-- ══════════ MENU ══════════ -->
+  <section class="screen active" id="screen-menu">
+    <div class="profile-chip">
+      <div class="pc-name" onclick="BOO2S.openRename()">
+        <span class="pc-name-text">…</span>
+        <small class="pc-record">0W · 0L · 0 RTG</small>
+      </div>
+      <div class="pc-right">
+        <span class="star-chip">★ <b>0</b></span>
+      </div>
+    </div>
+
+    <div class="menu-hero" id="menuFan"></div>
+    <h1 class="logo">BOO!</h1>
+    <div class="logo-sub">Spirit Battles</div>
+
+    <nav class="doors">
+      <button class="door primary" onclick="BOO2S.showScreen('play')">
+        <img class="door-art" id="doorArtPlay" src="" alt="">
+        <span>
+          <span class="door-label">PLAY</span>
+          <span class="door-tease">Quick battle · bring a friend</span>
+        </span>
+      </button>
+      <button class="door" onclick="BOO2S.showScreen('raids')">
+        <img class="door-art" id="doorArtRaids" src="" alt="">
+        <span>
+          <span class="door-label">RAIDS</span>
+          <span class="door-tease">March through the five realms</span>
+        </span>
+        <span class="door-badge">SOON</span>
+      </button>
+      <button class="door" onclick="BOO2S.showScreen('standings')">
+        <img class="door-art" id="doorArtStandings" src="" alt="">
+        <span>
+          <span class="door-label">STANDINGS</span>
+          <span class="door-tease">Daily Champions · 10PM ET</span>
+        </span>
+        <span class="door-badge">SOON</span>
+      </button>
+      <button class="door" onclick="BOO2S.showScreen('store')">
+        <img class="door-art" id="doorArtStore" src="art/booster-pack.webp" alt="">
+        <span>
+          <span class="door-label">STORE</span>
+          <span class="door-tease">Spend ★ on packs & spirits</span>
+        </span>
+        <span class="door-badge">SOON</span>
+      </button>
+      <button class="door" onclick="BOO2S.showScreen('collection')">
+        <img class="door-art" id="doorArtCollection" src="" alt="">
+        <span>
+          <span class="door-label">COLLECTION</span>
+          <span class="door-tease" id="doorCollCount">0 / 200 spirits</span>
+        </span>
+      </button>
+    </nav>
+
+    <div class="ks-banner">🎃 <b>KICKSTARTER · SEPT 1</b> — Boo! the card game, in real cardboard. Be first in line.</div>
+    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.01 · engine v2.76</div>
+  </section>
+
+  <!-- ══════════ PLAY ══════════ -->
+  <section class="screen" id="screen-play">
+    <div class="screen-head">
+      <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
+      <h2>PLAY</h2>
+      <span class="star-chip">★ <b>0</b></span>
+    </div>
+    <div class="team-label">YOUR TEAM — TAP TO SWAP · DRAG TO REORDER</div>
+    <div class="team-strip" id="teamStrip"></div>
+    <div class="strip-hint">Your LEAD spirit fights first.</div>
+    <button class="battle-btn loading" id="battleBtn" onclick="BOO2S.tryBattle()">QUICK BATTLE</button>
+    <div class="play-tile">
+      <span class="pt-icon">🔗</span>
+      <span>
+        <span class="pt-title">FRIEND BATTLE</span><br>
+        <span class="pt-sub">Challenge links arrive with STANDINGS — soon.</span>
+      </span>
+    </div>
+  </section>
+
+  <!-- ══════════ COLLECTION ══════════ -->
+  <section class="screen" id="screen-collection">
+    <div class="screen-head">
+      <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
+      <h2>COLLECTION</h2>
+      <span class="coll-count" id="collCount"><b>0</b> / 200</span>
+    </div>
+    <div class="set-tabs" id="setTabs"></div>
+    <div class="card-grid" id="collGrid"></div>
+  </section>
+
+  <!-- ══════════ RAIDS (M2) ══════════ -->
+  <section class="screen" id="screen-raids">
+    <div class="screen-head">
+      <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
+      <h2>RAIDS</h2>
+    </div>
+    <div class="poster">
+      <img class="po-art" id="doorArtRaidsPoster" src="" alt="">
+      <h3>THE REALMS STIR…</h3>
+      <p>Thirteen bosses guard the five realms. March from the Rolling Hills to the Dark Spire, free the spirits, earn ★.</p>
+      <p style="color:var(--ember);font-weight:900">OPENING SOON</p>
+    </div>
+  </section>
+
+  <!-- ══════════ STANDINGS (M3) ══════════ -->
+  <section class="screen" id="screen-standings">
+    <div class="screen-head">
+      <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
+      <h2>STANDINGS</h2>
+    </div>
+    <div class="poster">
+      <img class="po-art" id="doorArtStandingsPoster" src="" alt="">
+      <h3>DAILY CHAMPIONS</h3>
+      <p>Every night at 10PM ET the board settles — gold, silver and bronze crowns, and a pile of ★.</p>
+      <p class="pc-record" style="font-weight:900">0W · 0L · 0 RTG</p>
+      <p style="color:var(--ember);font-weight:900">OPENING SOON</p>
+    </div>
+  </section>
+
+  <!-- ══════════ STORE (M4) ══════════ -->
+  <section class="screen" id="screen-store">
+    <div class="screen-head">
+      <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
+      <h2>STORE</h2>
+      <span class="star-chip">★ <b>0</b></span>
+    </div>
+    <div class="poster">
+      <img class="po-art" src="art/booster-pack.webp" alt="">
+      <h3>THE PACK PEDDLER</h3>
+      <p>Earn ★ every battle. Spend them on booster packs and rare spirits. The cart is still rolling into town…</p>
+      <p style="color:var(--ember);font-weight:900">OPENING SOON</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- arena (engine DOM injected at boot from engine/raid-arena-template.html) -->
+<div id="raid-screen"></div>
+
+<!-- ══════════ overlays ══════════ -->
+<div class="overlay" id="cardDetail" onclick="if(event.target===this)BOO2C.closeDetail()">
+  <div class="detail-card" id="detailCard"></div>
+  <button class="ov-close" onclick="BOO2C.closeDetail()">CLOSE</button>
+</div>
+
+<div class="overlay" id="packCeremony">
+  <div class="legend-rays"></div>
+  <div class="pack-title" id="cerTitle">BOOSTER PACK</div>
+  <div class="pack-stage" id="cerStage"></div>
+</div>
+
+<div class="overlay" id="welcomeOverlay">
+  <div class="welcome-box">
+    <div class="w-ghost">👻</div>
+    <h1>BOO!</h1>
+    <div class="w-sub">The spirit realm has been waiting for you.<br>A guide drifts close and whispers your name…</div>
+    <div class="w-name" id="welcomeName">…</div>
+    <button class="btn-ember" onclick="BOO2S.acceptWelcome()">CLAIM YOUR PACK</button>
+  </div>
+</div>
+
+<div class="sheet" id="pickerSheet">
+  <h3>CHOOSE A SPIRIT</h3>
+  <div class="card-grid" id="pickerGrid"></div>
+  <button class="ov-close" onclick="BOO2B.closePicker()" style="margin-top:12px">CANCEL</button>
+</div>
+
+<div class="sheet" id="renameSheet" style="top:auto">
+  <h3>YOUR NAME</h3>
+  <input id="renameInput" maxlength="24" autocomplete="off">
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="ov-close" style="flex:1;margin:0" onclick="BOO2S.closeRename()">CANCEL</button>
+    <button class="btn-ember" style="flex:1;font-size:18px;padding:11px" onclick="BOO2S.saveRename()">SAVE</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* globals the engine expects the page to provide (see engine/SNAPSHOT.md) */
+function switchTab() {}
+window.showToast = window.showToast || function (m) { console.log('[toast]', m); };
+</script>
+<script src="js/data.js?v=v0.01"></script>
+<script src="engine/cards.js?v=v0.01"></script>
+<script src="engine/battle-engine.js?v=v0.01"></script>
+<script src="js/meta.js?v=v0.01"></script>
+<script src="js/collection.js?v=v0.01"></script>
+<script src="js/battle.js?v=v0.01"></script>
+<script src="js/shell.js?v=v0.01"></script>
+</body>
+</html>
