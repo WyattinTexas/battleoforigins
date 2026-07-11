@@ -22,6 +22,7 @@
     if (id === 'collection') BOO2C.render();
     if (id === 'play') BOO2B.renderStrip();
     if (id === 'raids' && window.BOO2R) BOO2R.renderMap();
+    if (id === 'standings' && window.BOO2ST) BOO2ST.render();
     if (id === 'menu') renderMenu();
   }
 
@@ -86,8 +87,13 @@
      The raw HTML is cached: cleanupRaidBattle() guts #gameOver and
      leaves inline display:none on #raid-screen/#battle-view, so every
      battle boot calls ensureArenaFresh() to restore a pristine arena. */
-  let _arenaHtml = null;
+  let _arenaHtml = window._BOO2_ARENA_HTML || null;
   async function injectArena() {
+    if (_arenaHtml) { // already injected synchronously pre-engine (livepvp boot needs it)
+      arenaReady = true;
+      document.getElementById('battleBtn').classList.remove('loading');
+      return;
+    }
     try {
       const res = await fetch('engine/raid-arena-template.html?v=' + (window.BOO2_VERSION || 'dev'));
       _arenaHtml = await res.text();
@@ -128,16 +134,29 @@
       localStorage.setItem('boo2Welcome', '1');
       BOO2B.renderStrip();
       renderMenu();
+      BOO2ST.checkChallengeParam(); // friend arrived via a challenge link → straight to the duel
       showToast('Your first three spirits await — GO PLAY!');
     });
   }
 
   async function boot() {
+    BOO2B.boot(); // install engine hooks FIRST — a livepvp match is already running
+    injectArena();
+    const isLive = (typeof LIVE_PVP !== 'undefined' && LIVE_PVP); // engine `let`, NOT window.*
+    if (isLive) {
+      // engine's ?livepvp= IIFE booted the match at script parse; just show it
+      document.body.classList.add('in-battle');
+      await BOO2M.boot();
+      return;
+    }
     await BOO2M.boot();
-    BOO2B.boot();
-    injectArena(); // async; battle button gates on it
     showScreen('menu');
-    if (!localStorage.getItem('boo2Welcome')) runWelcome();
+    if (!localStorage.getItem('boo2Welcome')) {
+      runWelcome(); // challenge param (if any) is re-checked after the ceremony
+    } else {
+      await BOO2ST.checkChallengeParam();
+      BOO2ST.drainChampMsgs();
+    }
   }
 
   window.BOO2S = { showScreen, refreshChrome, openRename, saveRename, closeRename, tryBattle, acceptWelcome, ensureArenaFresh };

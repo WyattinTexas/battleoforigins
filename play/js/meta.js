@@ -293,10 +293,36 @@
   }
 
   async function boot() {
-    // M1: stay local. M3 will call connect() first.
+    await connect(); // firebase when reachable, local tree otherwise
     await readPlayer();
     await settleDue();
     return me;
+  }
+
+  // ── standings reads (mode-aware) ──
+  async function fetchAllTime() {
+    const players = await dbGet('players');
+    return Object.entries(players || {})
+      .map(([u, p]) => ({ uid: u, name: p.name, rating: p.rating || 0, wins: p.wins || 0, losses: p.losses || 0, champs: p.champs || {} }))
+      .filter(p => p.name)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 50);
+  }
+  async function fetchDaily() {
+    const scores = await dbGet(`daily/${currentDateKey()}/scores`);
+    return podiumSort(scores).slice(0, 50);
+  }
+  function msUntilSettle(now = new Date()) {
+    // next 22:00 America/New_York, walked in 5-min steps (DST-proof).
+    // Inside the 22:xx hour the board already flipped — count to tomorrow's.
+    let t = now.getTime();
+    let guard = 0;
+    while (etParts(new Date(t)).h === 22 && guard++ < 20) t += 5 * 60 * 1000;
+    for (let i = 0; i < 24 * 13; i++) {
+      if (etParts(new Date(t)).h === 22) break;
+      t += 5 * 60 * 1000;
+    }
+    return Math.max(0, t - now.getTime());
   }
 
   window.BOO2M = {
@@ -305,6 +331,7 @@
     connect, boot, readPlayer, snapshot, postGameResult, addStars, spendStars,
     ownedIds, ownsCard, addCards, team, setTeam,
     packCount, addPacks, takePack, rollPack, rollWelcomePack,
+    fetchAllTime, fetchDaily, msUntilSettle,
     mode: () => mode,
     STARS_WIN, STARS_LOSS, STAR_AWARDS,
   };

@@ -10,14 +10,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta property="og:title" content="Boo! Spirit Battles">
 <meta property="og:description" content="Collect Spiritkin. Roll dice. Battle friends. Kickstarter Sept 1.">
-<link rel="manifest" href="manifest.json?v=v0.02">
-<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.02">
-<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.02">
+<link rel="manifest" href="manifest.json?v=v0.03">
+<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.03">
+<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.03">
 <script>
 /* cache-version check (beta pattern, boo2-namespaced guard).
    bump-version.sh keeps LOCAL_V + BOO2_VERSION + cache-version.txt + every ?v= in lockstep. */
-const LOCAL_V = 'v0.02';
-const BOO2_VERSION = 'v0.02';
+const LOCAL_V = 'v0.03';
+const BOO2_VERSION = 'v0.03';
 fetch('cache-version.txt?t=' + Date.now())
   .then(r => r.text())
   .then(v => {
@@ -29,8 +29,8 @@ fetch('cache-version.txt?t=' + Date.now())
   }).catch(() => {});
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="engine/raid-arena.css?v=v0.02">
-<link rel="stylesheet" href="css/play.css?v=v0.02">
+<link rel="stylesheet" href="engine/raid-arena.css?v=v0.03">
+<link rel="stylesheet" href="css/play.css?v=v0.03">
 </head>
 <body class="app">
 
@@ -74,7 +74,6 @@ fetch('cache-version.txt?t=' + Date.now())
           <span class="door-label">STANDINGS</span>
           <span class="door-tease">Daily Champions · 10PM ET</span>
         </span>
-        <span class="door-badge">SOON</span>
       </button>
       <button class="door" onclick="BOO2S.showScreen('store')">
         <img class="door-art" id="doorArtStore" src="art/booster-pack.webp" alt="">
@@ -94,7 +93,7 @@ fetch('cache-version.txt?t=' + Date.now())
     </nav>
 
     <div class="ks-banner">🎃 <b>KICKSTARTER · SEPT 1</b> — Boo! the card game, in real cardboard. Be first in line.</div>
-    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.02 · engine v2.76</div>
+    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.03 · engine v2.76</div>
   </section>
 
   <!-- ══════════ PLAY ══════════ -->
@@ -108,13 +107,13 @@ fetch('cache-version.txt?t=' + Date.now())
     <div class="team-strip" id="teamStrip"></div>
     <div class="strip-hint">Your LEAD spirit fights first.</div>
     <button class="battle-btn loading" id="battleBtn" onclick="BOO2S.tryBattle()">QUICK BATTLE</button>
-    <div class="play-tile">
+    <button class="play-tile" onclick="BOO2ST.createChallenge()">
       <span class="pt-icon">🔗</span>
       <span>
         <span class="pt-title">FRIEND BATTLE</span><br>
-        <span class="pt-sub">Challenge links arrive with STANDINGS — soon.</span>
+        <span class="pt-sub">Make a challenge link — first friend to tap it fights you live.</span>
       </span>
-    </div>
+    </button>
   </section>
 
   <!-- ══════════ COLLECTION ══════════ -->
@@ -139,19 +138,19 @@ fetch('cache-version.txt?t=' + Date.now())
     <div id="raidMap"></div>
   </section>
 
-  <!-- ══════════ STANDINGS (M3) ══════════ -->
+  <!-- ══════════ STANDINGS ══════════ -->
   <section class="screen" id="screen-standings">
     <div class="screen-head">
       <button class="back-btn" onclick="BOO2S.showScreen('menu')">‹</button>
       <h2>STANDINGS</h2>
+      <span class="stand-local" id="standLocal" style="display:none">LOCAL</span>
     </div>
-    <div class="poster">
-      <img class="po-art" id="doorArtStandingsPoster" src="" alt="">
-      <h3>DAILY CHAMPIONS</h3>
-      <p>Every night at 10PM ET the board settles — gold, silver and bronze crowns, and a pile of ★.</p>
-      <p class="pc-record" style="font-weight:900">0W · 0L · 0 RTG</p>
-      <p style="color:var(--ember);font-weight:900">OPENING SOON</p>
+    <div class="stand-tabs">
+      <button class="stand-tab active" data-tab="alltime" onclick="BOO2ST.showTab('alltime')">ALL TIME</button>
+      <button class="stand-tab" data-tab="daily" onclick="BOO2ST.showTab('daily')">TODAY</button>
     </div>
+    <div class="stand-countdown" id="standCountdown"></div>
+    <div id="standList"></div>
   </section>
 
   <!-- ══════════ STORE (M4) ══════════ -->
@@ -193,6 +192,24 @@ fetch('cache-version.txt?t=' + Date.now())
     <div class="w-sub">The spirit realm has been waiting for you.<br>A guide drifts close and whispers your name…</div>
     <div class="w-name" id="welcomeName">…</div>
     <button class="btn-ember" onclick="BOO2S.acceptWelcome()">CLAIM YOUR PACK</button>
+  </div>
+</div>
+
+<div class="overlay" id="champOverlay">
+  <div class="welcome-box" id="champBody"></div>
+</div>
+
+<div class="overlay" id="acceptOverlay">
+  <div class="welcome-box" id="acceptBody"></div>
+</div>
+
+<div class="sheet" id="challengeWait" style="top:auto">
+  <h3>CHALLENGE SENT</h3>
+  <div class="cw-sub">Waiting for a brave spirit to accept…</div>
+  <input id="challengeLink" readonly>
+  <div style="display:flex;gap:10px;margin-top:12px">
+    <button class="ov-close" style="flex:1;margin:0" onclick="BOO2ST.cancelChallenge()">CANCEL</button>
+    <button class="btn-ember" style="flex:1;font-size:16px;padding:11px" onclick="BOO2ST.copyChallengeLink()">COPY LINK</button>
   </div>
 </div>
 
@@ -263,15 +280,33 @@ window.showToast = window.showToast || function (m) { console.log('[toast]', m);
   }
 })();
 </script>
-<script src="js/data.js?v=v0.02"></script>
-<script src="engine/cards.js?v=v0.02"></script>
-<script src="engine/battle-engine.js?v=v0.02"></script>
-<script src="engine/raid-engine.js?v=v0.02"></script>
-<script src="engine/raid-battle-bridge.js?v=v0.02"></script>
-<script src="js/meta.js?v=v0.02"></script>
-<script src="js/collection.js?v=v0.02"></script>
-<script src="js/battle.js?v=v0.02"></script>
-<script src="js/raids.js?v=v0.02"></script>
-<script src="js/shell.js?v=v0.02"></script>
+<script>
+/* Arena fragment must exist BEFORE battle-engine.js loads: the engine's
+   ?livepvp= boot IIFE calls startBattle() at script-parse time, and the
+   getElementById dummy-patch would swallow the whole battle into invisible
+   divs. Sync XHR on a small local file — deliberate. */
+(function () {
+  try {
+    const x = new XMLHttpRequest();
+    x.open('GET', 'engine/raid-arena-template.html?v=v0.03', false);
+    x.send();
+    if (x.status === 200 && x.responseText) {
+      document.getElementById('raid-screen').innerHTML = x.responseText;
+      window._BOO2_ARENA_HTML = x.responseText;
+    }
+  } catch (e) { console.warn('[BOO2] sync arena inject failed, shell will retry async', e); }
+})();
+</script>
+<script src="js/data.js?v=v0.03"></script>
+<script src="engine/cards.js?v=v0.03"></script>
+<script src="engine/battle-engine.js?v=v0.03"></script>
+<script src="engine/raid-engine.js?v=v0.03"></script>
+<script src="engine/raid-battle-bridge.js?v=v0.03"></script>
+<script src="js/meta.js?v=v0.03"></script>
+<script src="js/collection.js?v=v0.03"></script>
+<script src="js/battle.js?v=v0.03"></script>
+<script src="js/raids.js?v=v0.03"></script>
+<script src="js/standings.js?v=v0.03"></script>
+<script src="js/shell.js?v=v0.03"></script>
 </body>
 </html>

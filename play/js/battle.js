@@ -173,7 +173,7 @@
     const _rematch = window.rematchBattle;
     window.rematchBattle = function () {
       _rematch();
-      if (!window.LIVE_PVP) {
+      if (!(typeof LIVE_PVP !== 'undefined' && LIVE_PVP)) {
         if (typeof B !== 'undefined' && B) B.duelPhaseMode = false; // see quickBattle note
         startBlueAI();
       }
@@ -190,7 +190,12 @@
         BOO2R.onGameOver(winner);
         return;
       }
-      if (window.RAID_MODE || window.MP_MODE || window.LIVE_PVP) return;
+      if (typeof LIVE_PVP !== 'undefined' && LIVE_PVP) { // engine `let`, NOT window.*
+        B._boo2Awarded = true;
+        onLivePvPOver(winner);
+        return;
+      }
+      if (window.RAID_MODE || window.MP_MODE) return;
       B._boo2Awarded = true;
       onQuickBattleOver(winner);
     };
@@ -218,6 +223,27 @@
     if (newGameBtn) {
       newGameBtn.textContent = 'Back to Menu';
       newGameBtn.onclick = () => exitBattle();
+    }
+  }
+
+  /* live friend battles: engine handles the whole match; we award ★ and
+     replace the engine's '../multiplayer/' return button with a clean exit */
+  async function onLivePvPOver(winner) {
+    const side = (typeof PVP_SIDE !== 'undefined' && PVP_SIDE) || window.PVP_SIDE;
+    const result = winner === side ? 'win' : (winner === 'draw' ? 'draw' : 'loss');
+    const { starDelta } = await BOO2M.postGameResult(result);
+    const go = document.getElementById('gameOver');
+    const rounds = document.getElementById('goRounds');
+    if (go && rounds) {
+      go.querySelectorAll('.go-star-award').forEach(c => c.remove());
+      const chip = document.createElement('div');
+      chip.className = 'go-star-award';
+      chip.innerHTML = `+${starDelta} ★ &nbsp;·&nbsp; ${BOO2M.snapshot().stars} ★ total`;
+      rounds.insertAdjacentElement('afterend', chip);
+    }
+    const goButtons = go && go.querySelector('.go-buttons');
+    if (goButtons) {
+      goButtons.innerHTML = `<button class="go-btn-rematch" onclick="location.href=location.pathname">BACK TO MENU</button>`;
     }
   }
 

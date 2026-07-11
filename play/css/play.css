@@ -238,7 +238,9 @@ body.app::after {
   margin-top: 14px; padding: 14px 16px; border-radius: 16px;
   border: 1.5px solid rgba(126,240,201,0.25); background: rgba(126,240,201,0.05);
   display: flex; align-items: center; gap: 12px;
+  width: 100%; text-align: left; cursor: pointer; transition: transform 0.15s;
 }
+.play-tile:active { transform: scale(0.98); }
 .play-tile .pt-icon { font-size: 26px; }
 .play-tile .pt-title { font-weight: 900; font-size: 14.5px; color: var(--wisp); }
 .play-tile .pt-sub { font-size: 12px; font-weight: 700; color: var(--text-dim); }
@@ -469,6 +471,38 @@ body.app::after {
 .rs-reward {
   font-size: 12px; font-weight: 900; letter-spacing: 1px; color: var(--gold-bright);
   border: 1.5px dashed var(--gold-dim); border-radius: 999px; padding: 6px 14px; margin-bottom: 16px;
+}
+
+/* ---------- standings ---------- */
+.stand-local {
+  font-size: 10px; font-weight: 900; letter-spacing: 1.5px; color: var(--ember);
+  border: 1px dashed rgba(255,140,66,0.6); border-radius: 999px; padding: 4px 10px;
+}
+.stand-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+.stand-tab {
+  flex: 1; padding: 9px; border-radius: 999px; font-size: 12px; font-weight: 900; letter-spacing: 2px;
+  border: 1.5px solid rgba(154,160,180,0.3); background: rgba(20,24,42,0.7); color: var(--text-dim); cursor: pointer;
+}
+.stand-tab.active { border-color: var(--gold); color: var(--gold-bright); background: rgba(212,160,64,0.1); }
+.stand-countdown { font-size: 11px; font-weight: 800; color: var(--text-dim); text-align: center; margin-bottom: 12px; }
+.stand-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 12px; margin-bottom: 6px;
+  border: 1px solid rgba(154,160,180,0.14); background: rgba(20,24,42,0.6);
+}
+.stand-row.me { border-color: var(--gold); background: rgba(212,160,64,0.1); }
+.stand-row .st-medal { width: 30px; text-align: center; font-size: 16px; flex: none; }
+.stand-row .st-rank { font-size: 12px; font-weight: 900; color: var(--text-dim); }
+.stand-row .st-name { flex: 1; font-weight: 900; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stand-row .st-crown { font-size: 11px; color: var(--gold-bright); }
+.stand-row .st-stat { font-size: 12px; font-weight: 800; color: var(--text-dim); flex: none; }
+.stand-row .st-stat b { color: var(--gold-bright); }
+.stand-empty { text-align: center; font-size: 13px; font-weight: 700; color: var(--text-dim); padding: 34px 20px; line-height: 1.6; }
+.cw-sub { font-size: 12.5px; font-weight: 700; color: var(--text-dim); margin: 0 4px 10px; }
+.accept-team { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+.accept-team img {
+  width: 74px; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px;
+  border: 1.5px solid var(--gold-dim);
 }
 
 /* ---------- pack shelf (collection) ---------- */
