@@ -10,14 +10,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta property="og:title" content="Boo! Spirit Battles">
 <meta property="og:description" content="Collect Spiritkin. Roll dice. Battle friends. Kickstarter Sept 1.">
-<link rel="manifest" href="manifest.json?v=v0.07">
-<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.07">
-<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.07">
+<link rel="manifest" href="manifest.json?v=v0.08">
+<link rel="icon" type="image/png" href="art/icon-192.png?v=v0.08">
+<link rel="apple-touch-icon" href="art/icon-192.png?v=v0.08">
 <script>
 /* cache-version check (beta pattern, boo2-namespaced guard).
    bump-version.sh keeps LOCAL_V + BOO2_VERSION + cache-version.txt + every ?v= in lockstep. */
-const LOCAL_V = 'v0.07';
-const BOO2_VERSION = 'v0.07';
+const LOCAL_V = 'v0.08';
+const BOO2_VERSION = 'v0.08';
 fetch('cache-version.txt?t=' + Date.now())
   .then(r => r.text())
   .then(v => {
@@ -29,8 +29,9 @@ fetch('cache-version.txt?t=' + Date.now())
   }).catch(() => {});
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="engine/raid-arena.css?v=v0.07">
-<link rel="stylesheet" href="css/play.css?v=v0.07">
+<link rel="stylesheet" href="engine/raid-arena.css?v=v0.08">
+<link rel="stylesheet" href="css/arena-skin.css?v=v0.08">
+<link rel="stylesheet" href="css/play.css?v=v0.08">
 </head>
 <body class="app">
 
@@ -38,6 +39,7 @@ fetch('cache-version.txt?t=' + Date.now())
 
   <!-- ══════════ MENU ══════════ -->
   <section class="screen active" id="screen-menu">
+    <div class="wisps" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="profile-chip">
       <div class="pc-name" onclick="BOO2S.openRename()">
         <span class="pc-name-text">…</span>
@@ -48,36 +50,38 @@ fetch('cache-version.txt?t=' + Date.now())
       </div>
     </div>
 
-    <div class="menu-hero" id="menuFan"></div>
-    <h1 class="logo">BOO!</h1>
-    <div class="logo-sub">Spirit Battles</div>
-
-    <nav class="doors">
-      <button class="play-now" onclick="BOO2S.showScreen('play')">PLAY NOW</button>
-      <div class="door-grid">
-        <button class="door" onclick="BOO2S.showScreen('raids')">
-          <img class="door-art" id="doorArtRaids" src="" alt="">
-          <span class="door-label">RAIDS</span>
-          <span class="door-badge" id="doorRaidsBadge">0/16</span>
-        </button>
-        <button class="door" onclick="BOO2S.showScreen('standings')">
-          <img class="door-art" id="doorArtStandings" src="" alt="">
-          <span class="door-label">STANDINGS</span>
-        </button>
-        <button class="door" onclick="BOO2S.showScreen('store')">
-          <img class="door-art" id="doorArtStore" src="art/booster-pack.webp" alt="">
-          <span class="door-label">STORE</span>
-        </button>
-        <button class="door" onclick="BOO2S.showScreen('collection')">
-          <img class="door-art" id="doorArtCollection" src="" alt="">
-          <span class="door-label">COLLECTION</span>
-          <span class="door-badge" id="doorCollCount">0/200</span>
-        </button>
+    <div class="menu-stage">
+      <div class="menu-heroWrap">
+        <div class="menu-hero" id="menuFan"></div>
+        <h1 class="logo">BOO!</h1>
+        <div class="logo-sub">Spirit Battles</div>
       </div>
-    </nav>
-
-    <div class="ks-banner">🎃 <b>KICKSTARTER · SEPT 1</b> — Boo! the card game, in real cardboard. Be first in line.</div>
-    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.07 · engine v2.76</div>
+      <nav class="doors">
+        <button class="play-now" onclick="BOO2S.showScreen('play')">PLAY NOW</button>
+        <div class="door-grid">
+          <button class="door" onclick="BOO2S.showScreen('raids')">
+            <img class="door-art" id="doorArtRaids" src="" alt="">
+            <span class="door-label">RAIDS</span>
+            <span class="door-badge" id="doorRaidsBadge">0/16</span>
+          </button>
+          <button class="door" onclick="BOO2S.showScreen('standings')">
+            <img class="door-art" id="doorArtStandings" src="" alt="">
+            <span class="door-label">STANDINGS</span>
+          </button>
+          <button class="door" onclick="BOO2S.showScreen('store')">
+            <img class="door-art" id="doorArtStore" src="art/booster-pack.webp" alt="">
+            <span class="door-label">STORE</span>
+          </button>
+          <button class="door" onclick="BOO2S.showScreen('collection')">
+            <img class="door-art" id="doorArtCollection" src="" alt="">
+            <span class="door-label">COLLECTION</span>
+            <span class="door-badge" id="doorCollCount">0/200</span>
+          </button>
+        </div>
+        <div class="ks-banner">🎃 <b>KICKSTARTER · SEPT 1</b> — Boo! the card game, in real cardboard. Be first in line.</div>
+      </nav>
+    </div>
+    <div class="menu-foot">BOO! SPIRIT BATTLES · v0.08 · engine v2.76</div>
   </section>
 
   <!-- ══════════ PLAY ══════════ -->
@@ -271,7 +275,7 @@ window.showToast = window.showToast || function (m) { console.log('[toast]', m);
 (function () {
   try {
     const x = new XMLHttpRequest();
-    x.open('GET', 'engine/raid-arena-template.html?v=v0.07', false);
+    x.open('GET', 'engine/raid-arena-template.html?v=v0.08', false);
     x.send();
     if (x.status === 200 && x.responseText) {
       document.getElementById('raid-screen').innerHTML = x.responseText;
@@ -280,19 +284,19 @@ window.showToast = window.showToast || function (m) { console.log('[toast]', m);
   } catch (e) { console.warn('[BOO2] sync arena inject failed, shell will retry async', e); }
 })();
 </script>
-<script src="js/data.js?v=v0.07"></script>
-<script src="engine/cards.js?v=v0.07"></script>
-<script src="engine/battle-engine.js?v=v0.07"></script>
-<script src="engine/raid-engine.js?v=v0.07"></script>
-<script src="engine/raid-battle-bridge.js?v=v0.07"></script>
-<script src="js/enginefix.js?v=v0.07"></script>
-<script src="js/meta.js?v=v0.07"></script>
-<script src="js/collection.js?v=v0.07"></script>
-<script src="js/battle.js?v=v0.07"></script>
-<script src="js/raids.js?v=v0.07"></script>
-<script src="js/standings.js?v=v0.07"></script>
-<script src="js/payments.js?v=v0.07"></script>
-<script src="js/store.js?v=v0.07"></script>
-<script src="js/shell.js?v=v0.07"></script>
+<script src="js/data.js?v=v0.08"></script>
+<script src="engine/cards.js?v=v0.08"></script>
+<script src="engine/battle-engine.js?v=v0.08"></script>
+<script src="engine/raid-engine.js?v=v0.08"></script>
+<script src="engine/raid-battle-bridge.js?v=v0.08"></script>
+<script src="js/enginefix.js?v=v0.08"></script>
+<script src="js/meta.js?v=v0.08"></script>
+<script src="js/collection.js?v=v0.08"></script>
+<script src="js/battle.js?v=v0.08"></script>
+<script src="js/raids.js?v=v0.08"></script>
+<script src="js/standings.js?v=v0.08"></script>
+<script src="js/payments.js?v=v0.08"></script>
+<script src="js/store.js?v=v0.08"></script>
+<script src="js/shell.js?v=v0.08"></script>
 </body>
 </html>

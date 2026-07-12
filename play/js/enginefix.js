@@ -38,3 +38,16 @@
     console.warn('[BOO2 enginefix] patch failed, engine original kept:', e);
   }
 })();
+
+/* cards.js points 8 cards at ../testroom/art files that don't exist on disk
+   (457-464 — verified in the roster reconciliation; battle shows a 👻
+   placeholder). All 8 ship in /play/cards/ — point the engine there. */
+(function () {
+  try {
+    if (typeof GHOSTS === 'undefined') return;
+    [457, 458, 459, 460, 461, 462, 463, 464].forEach(id => {
+      const g = GHOSTS.find(x => x.id === id);
+      if (g) g.art = 'cards/' + id + '.webp';
+    });
+  } catch (e) {}
+})();

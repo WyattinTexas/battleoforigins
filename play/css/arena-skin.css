@@ -1,0 +1,179 @@
+/* ============================================================
+   BOO2 ARENA SKIN — loads AFTER engine/raid-arena.css and re-themes
+   the battle scene to the haunted-carnival shell. Engine CSS is
+   never edited; everything here is override-by-cascade.
+
+   Part 1 doubles as a FIX: raid-arena.css consumes CSS vars that
+   beta defined on its own page (--surface, --accent, --moonstone…)
+   — undefined in /play/ until now, so chunks of arena styling were
+   silently unset. Defining them on #raid-screen lights the whole
+   engine stylesheet up in our palette at once.
+   ============================================================ */
+
+/* ── Part 1: the palette the engine expects, tuned to Boo ── */
+#raid-screen {
+  --bg: #0a0d16;
+  --bg-warm: #10131f;
+  --bg-stage: #141a2b;
+  --surface: #131828;
+  --surface2: #1b2135;
+  --surface3: #242b42;
+  --border: rgba(212, 160, 64, 0.22);
+  --text: #f2ead8;
+  --text2: #9aa0b4;
+  --text-dim: #7a8095;
+  --text-warm: #e8d9b0;
+  --accent: #f0564a;          /* red team / danger */
+  --accent2: #ff8a70;
+  --magma: #e06a1f;
+  --rare: #5ea2ff;            /* blue team */
+  --uncommon: #6fdc8c;
+  --common: #aab2c4;
+  --ghost-rare: #c084fc;
+  --legendary: #f0c060;
+  --gold: #d4a040;
+  --gold-bright: #f0c060;
+  --gold-deep: #8a6b20;
+  --gilt: #b8862c;
+  --moonstone: #7ef0c9;       /* the wisp — replaces beta's cyan */
+  --moonstone-deep: #2ea182;
+  --moonstone-glow: rgba(126, 240, 201, 0.45);
+  --win: #6fdc8c;
+  --lose: #f0564a;
+  --hp-green: #6fdc8c;
+}
+
+/* ── Part 2: atmosphere — midnight carnival, not deep space ── */
+#raid-screen .arena-board {
+  background:
+    radial-gradient(circle 200px at 84% 6%, rgba(242,234,216,0.10), rgba(242,234,216,0.03) 55%, transparent 72%),
+    radial-gradient(ellipse at 18% 55%, rgba(240, 86, 74, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 82% 55%, rgba(94, 162, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 85% 60% at 50% 118%, rgba(212, 160, 64, 0.10), transparent 62%),
+    linear-gradient(180deg, #0a0d16 0%, #0e1220 45%, #131120 100%);
+  border: 1px solid rgba(212, 160, 64, 0.20);
+  box-shadow: 0 0 70px rgba(0, 0, 0, 0.8), inset 0 0 130px rgba(212, 160, 64, 0.035);
+}
+body.in-battle #raid-screen { animation: boo2ArenaIn 0.45s ease-out; }
+@keyframes boo2ArenaIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Part 3: chrome — the shell's voice inside the fight ── */
+#raid-screen .turn-indicator {
+  font-family: 'Creepster', cursive;
+  font-size: 17px; font-weight: 400; letter-spacing: 3px;
+  color: var(--gold-bright);
+  text-shadow: 0 0 14px rgba(212, 160, 64, 0.35);
+}
+#raid-screen .narrator-inner {
+  font-family: 'Nunito', sans-serif; font-weight: 700;
+  background: rgba(19, 24, 40, 0.92);
+  border: 1.5px solid rgba(212, 160, 64, 0.3);
+  border-radius: 12px;
+  color: var(--text);
+}
+#raid-screen .narrator-inner b.gold { color: var(--gold-bright); }
+#raid-screen .card-name-banner {
+  font-family: 'Creepster', cursive;
+  letter-spacing: 1.5px; font-weight: 400;
+}
+#raid-screen .hp-text { color: var(--text-dim); }
+#raid-screen .hp-text .hp-num { color: var(--text2); }
+#raid-screen .hp-bar.team-blue {
+  background: linear-gradient(90deg, #3b82c4, #7db8e8);
+  box-shadow: 0 0 8px rgba(125, 184, 232, 0.4);
+}
+
+/* buttons: family of PLAY NOW */
+#raid-screen .action-btn {
+  font-family: 'Nunito', sans-serif; font-weight: 900;
+  border-radius: 12px;
+  letter-spacing: 0.22em;
+}
+#raid-screen .action-btn.roll-red {
+  background: linear-gradient(180deg, #ff8c42 0%, #e06a1f 100%);
+  border: 1.5px solid rgba(255, 170, 90, 0.9);
+  color: #1a0d02;
+  text-shadow: none;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 8px 20px rgba(255, 140, 66, 0.45),
+              inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.22);
+  animation: boo2EmberPulse 2.4s ease-in-out infinite;
+}
+@keyframes boo2EmberPulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 8px 20px rgba(255,140,66,0.40), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.22); }
+  50% { box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 8px 30px rgba(255,140,66,0.75), inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.22); }
+}
+#raid-screen .action-btn.roll-red.locked {
+  background: var(--surface); border: 1.5px solid rgba(255, 140, 66, 0.5); color: #ff9c62;
+}
+/* the engine's mobile layouts re-skin the roll button with
+   #red-team-column id-specificity (+!important in landscape) —
+   match it so the ember reads everywhere */
+#raid-screen #red-team-column .action-btn.team-roll,
+#raid-screen #rollRedBtn.action-btn.roll-red {
+  background: linear-gradient(135deg, #ff8c42, #e06a1f) !important;
+  color: #1a0d02 !important;
+  font-family: 'Nunito', sans-serif !important;
+}
+#raid-screen #red-team-column .action-btn.team-roll:hover:not(:disabled),
+#raid-screen #rollRedBtn.action-btn.roll-red:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ffa25e, #ef7c2c) !important;
+}
+#raid-screen #red-team-column .action-btn.team-roll:disabled,
+#raid-screen #rollRedBtn.action-btn.roll-red:disabled {
+  background: var(--surface2) !important;
+  color: var(--text-dim) !important;
+}
+#raid-screen .action-btn.roll-blue {
+  background: linear-gradient(180deg, #7db8e8 0%, #3b82c4 100%);
+  border: 1.5px solid #9fcbf0; color: #071322;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 8px 18px rgba(125, 184, 232, 0.45),
+              inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -3px 6px rgba(0,0,0,0.2);
+}
+#raid-screen .action-btn.moonstone-btn { color: #05241a; }
+
+/* game over: the shell's ceremony */
+#raid-screen .game-over {
+  background: rgba(5, 7, 14, 0.88);
+  backdrop-filter: blur(10px);
+}
+#raid-screen .game-over h1,
+#raid-screen #goTitle {
+  font-family: 'Creepster', cursive !important;
+  font-weight: 400 !important;
+  letter-spacing: 4px;
+  color: var(--gold-bright);
+  text-shadow: 0 0 28px rgba(212, 160, 64, 0.45), 0 4px 0 rgba(0, 0, 0, 0.55);
+}
+#raid-screen #goTitle.red-win { color: var(--gold-bright); }
+#raid-screen #goTitle.blue-win { color: #b9c6de; text-shadow: 0 0 22px rgba(125,184,232,0.35), 0 4px 0 rgba(0,0,0,0.55); }
+#raid-screen .go-btn-rematch {
+  font-family: 'Creepster', cursive !important;
+  font-size: 19px !important; letter-spacing: 2.5px;
+  background: linear-gradient(135deg, #ff8c42, #e06a1f) !important;
+  color: #1a0d02 !important;
+  border: 1.5px solid rgba(255, 170, 90, 0.9) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 22px rgba(255, 140, 66, 0.35);
+}
+#raid-screen .go-btn-newgame {
+  font-family: 'Nunito', sans-serif !important; font-weight: 900 !important;
+  background: rgba(212, 160, 64, 0.10) !important;
+  color: var(--gold-bright) !important;
+  border: 1.5px solid rgba(212, 160, 64, 0.45) !important;
+  border-radius: 14px !important;
+}
+
+/* vs splash + ability splash headline in the house font */
+#raid-screen .vs-splash .vs-name,
+#raid-screen #vsRedName, #raid-screen #vsBlueName,
+#raid-screen .ability-splash-name {
+  font-family: 'Creepster', cursive !important;
+  font-weight: 400 !important;
+  letter-spacing: 3px;
+}
+
+/* fighter slot gets a faint lantern halo */
+#raid-screen .fighter-slot { filter: drop-shadow(0 0 18px rgba(212, 160, 64, 0.10)); }
+
+/* boss hp pool + raid banners inherit the gold */
+#raid-screen .rib-boss-pool-text { font-family: 'Nunito', sans-serif; font-weight: 900; letter-spacing: 1.5px; }
