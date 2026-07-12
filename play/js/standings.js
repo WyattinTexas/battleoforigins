@@ -12,6 +12,16 @@
 (function () {
   let tab = 'alltime';
   let _countdownTimer = null;
+  let _insightTimer = null;
+
+  /* royal titles for the top of the all-time board — positive framing only */
+  const TITLES = ['👑 THE MONARCH', '🏰 HIGH HAUNT', '✨ ROYAL WISP'];
+
+  function avatarHtml(r) {
+    return r.sig != null
+      ? `<img class="st-av" src="${boo2Art(r.sig)}" alt="" loading="lazy">`
+      : `<span class="st-av st-av-ghost">👻</span>`;
+  }
 
   /* ─────────── standings screen ─────────── */
   async function render() {
@@ -30,20 +40,58 @@
         const me = r.uid === myUid ? ' me' : '';
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span class="st-rank">${i + 1}</span>`;
         const crowns = (r.champs && r.champs.gold) ? ` <span class="st-crown">👑${r.champs.gold > 1 ? r.champs.gold : ''}</span>` : '';
+        const flame = (r.streak || 0) >= 3 ? ` <span class="st-flame">🔥${r.streak}</span>` : '';
+        const title = (tab === 'alltime' && i < 3) ? `<span class="st-title t${i}">${TITLES[i]}</span>` : '';
         const stat = tab === 'alltime'
           ? `<b>${r.rating}</b> RTG · ${r.wins}W`
           : `<b>${r.best}</b> win${r.best !== 1 ? 's' : ''} today`;
-        return `<div class="stand-row${me}">
+        return `<div class="stand-row${me}" style="--li:${Math.min(i, 12)}">
           <span class="st-medal">${medal}</span>
-          <span class="st-name">${escapeHtml(r.name)}${crowns}</span>
+          ${avatarHtml(r)}
+          <span class="st-name">${escapeHtml(r.name)}${crowns}${flame}${title}</span>
           <span class="st-stat">${stat}</span>
         </div>`;
       }).join('');
     }
     startCountdown();
+    renderInsights();
   }
   function showTab(t) { tab = t; render(); }
   function escapeHtml(s) { const d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
+
+  /* ─────────── insights strip — rotating, all positive ─────────── */
+  async function renderInsights() {
+    const el = document.getElementById('standInsights');
+    if (!el) return;
+    clearInterval(_insightTimer);
+    try {
+      const [alltime, daily, last] = await Promise.all([
+        BOO2M.fetchAllTime(), BOO2M.fetchDaily(), BOO2M.fetchLastPodium(),
+      ]);
+      const lines = [];
+      if (daily.length) {
+        lines.push(`⭐ <b>${escapeHtml(daily[0].name)}</b> leads today with ${daily[0].best} win${daily[0].best !== 1 ? 's' : ''}`);
+      }
+      const hotStreak = alltime.filter(r => (r.streak || 0) >= 2).sort((a, b) => b.streak - a.streak)[0];
+      if (hotStreak) lines.push(`🔥 <b>${escapeHtml(hotStreak.name)}</b> is on a ${hotStreak.streak}-win streak`);
+      if (last && last.podium && last.podium[0]) {
+        lines.push(`👑 Yesterday's champion: <b>${escapeHtml(last.podium[0].name)}</b>`);
+      }
+      const humanWins = alltime.filter(r => !r.bot).reduce((n, r) => n + (r.wins || 0), 0);
+      if (humanWins > 0) lines.push(`⚔️ ${humanWins} battle${humanWins !== 1 ? 's' : ''} won by the realm's spirits`);
+      const sigd = alltime.find(r => !r.bot && r.sig != null);
+      if (sigd) lines.push(`👻 <b>${escapeHtml(sigd.name)}</b> fights beside ${escapeHtml(getGhost(sigd.sig).name)}`);
+      if (!lines.length) { el.style.display = 'none'; return; }
+      el.style.display = '';
+      let i = 0;
+      const show = () => {
+        el.innerHTML = `<span class="si-line">${lines[i % lines.length]}</span>`;
+        i++;
+      };
+      show();
+      if (lines.length > 1) _insightTimer = setInterval(show, 6000);
+    } catch (e) { el.style.display = 'none'; }
+  }
 
   function startCountdown() {
     clearInterval(_countdownTimer);

@@ -62,7 +62,8 @@
   function refreshChrome() {
     const s = BOO2M.snapshot();
     document.querySelectorAll('.pc-name-text').forEach(el => el.textContent = BOO2M.myName());
-    document.querySelectorAll('.pc-record').forEach(el => el.textContent = `${s.wins}W · ${s.losses}L · ${s.rating} RTG`);
+    // positive framing only — losses never render anywhere (KICKOFF hard rule)
+    document.querySelectorAll('.pc-record').forEach(el => el.textContent = `${s.wins}W · ${s.rating} RTG`);
     document.querySelectorAll('.star-chip b').forEach(el => el.textContent = s.stars);
   }
 

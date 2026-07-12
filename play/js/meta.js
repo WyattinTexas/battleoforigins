@@ -147,15 +147,31 @@
   function snapshot() { return { stars: me.stars || 0, rating: me.rating || 0, wins: me.wins || 0, losses: me.losses || 0 }; }
 
   // ── post a finished game. result: 'win' | 'loss' | 'draw'
+  // ONE whole-row txn (FAVOR hardening): stars/rating/record/streak/sig
+  // land together, spread preserves msgQueue/owned/champs against races.
   async function postGameResult(result) {
     const starDelta = result === 'win' ? STARS_WIN : STARS_LOSS;
     const ratingDelta = result === 'win' ? RATING_WIN : (result === 'loss' ? RATING_LOSS : 0);
     const u = uid();
-    await dbTxn(`players/${u}/stars`, s => (s || 0) + starDelta);
-    await dbTxn(`players/${u}/rating`, r => Math.max(0, (r || 0) + ratingDelta));
-    await dbTxn(`players/${u}/${result === 'win' ? 'wins' : 'losses'}`, w => (w || 0) + 1);
-    // awaited on purpose — fire-and-forget here can resurrect deleted rows (FAVOR lesson)
-    await dbUpdate(`players/${u}`, { name: myName(), lastSeen: Date.now() });
+    const sig = team()[0]; // signature spirit = current lead (standings avatar)
+    await dbTxn(`players/${u}`, p => {
+      const cur = p || {};
+      const next = Object.assign({}, cur);
+      next.stars = (cur.stars || 0) + starDelta;
+      next.rating = Math.max(0, (cur.rating || 0) + ratingDelta);
+      if (result === 'win') {
+        next.wins = (cur.wins || 0) + 1;
+        next.streak = (cur.streak || 0) + 1;
+        next.bestStreak = Math.max(cur.bestStreak || 0, next.streak);
+      } else {
+        next.losses = (cur.losses || 0) + 1;
+        next.streak = 0;
+      }
+      next.name = myName();
+      if (sig != null) next.sig = sig;
+      next.lastSeen = Date.now();
+      return next;
+    });
     if (result === 'win') {
       // daily board metric: wins today; `at` = when this count was reached (tiebreak: earliest)
       const key = currentDateKey();
@@ -313,14 +329,31 @@
   async function fetchAllTime() {
     const players = await dbGet('players');
     return Object.entries(players || {})
-      .map(([u, p]) => ({ uid: u, name: p.name, rating: p.rating || 0, wins: p.wins || 0, losses: p.losses || 0, champs: p.champs || {} }))
+      .map(([u, p]) => ({ uid: u, name: p.name, rating: p.rating || 0, wins: p.wins || 0, champs: p.champs || {}, sig: p.sig, streak: p.streak || 0, bot: !!p.bot }))
       .filter(p => p.name)
       .sort((a, b) => b.rating - a.rating)
       .slice(0, 50);
   }
   async function fetchDaily() {
     const scores = await dbGet(`daily/${currentDateKey()}/scores`);
-    return podiumSort(scores).slice(0, 50);
+    const rows = podiumSort(scores).slice(0, 50);
+    // borrow avatars/streaks by uid so today's board gets faces too
+    try {
+      const players = await dbGet('players');
+      rows.forEach(r => {
+        const p = players && players[r.uid];
+        if (p) { r.sig = p.sig; r.streak = p.streak || 0; }
+      });
+    } catch (e) {}
+    return rows;
+  }
+  // yesterday's crowned podium (insights strip)
+  async function fetchLastPodium() {
+    const settled = await dbGet('settled');
+    if (!settled) return null;
+    const keys = Object.keys(settled).filter(k => settled[k] && settled[k].podium).sort();
+    if (!keys.length) return null;
+    return { dateKey: keys[keys.length - 1], podium: settled[keys[keys.length - 1]].podium };
   }
   function msUntilSettle(now = new Date()) {
     // next 22:00 America/New_York, walked in 5-min steps (DST-proof).
@@ -341,7 +374,7 @@
     connect, boot, readPlayer, snapshot, postGameResult, addStars, spendStars, txnPlayer,
     ownedIds, ownsCard, addCards, team, setTeam,
     packCount, addPacks, takePack, rollPack, rollWelcomePack,
-    fetchAllTime, fetchDaily, msUntilSettle,
+    fetchAllTime, fetchDaily, fetchLastPodium, msUntilSettle,
     mode: () => mode,
     STARS_WIN, STARS_LOSS, STAR_AWARDS,
   };

@@ -181,7 +181,7 @@
         <div class="vs-side">
           <img src="${boo2Art(rival.lead)}" alt="">
           <div class="vs-name">${rival.name}</div>
-          <div class="vs-rtg">${rival.rating} RTG · ${rival.wins}W ${rival.losses}L</div>
+          <div class="vs-rtg">${rival.rating} RTG · ${rival.wins}W</div>
         </div>
       </div>
       <div class="vs-taunt">“${rival.taunt}”</div>
