@@ -158,7 +158,7 @@
         </div>`}
       </div>
 
-      <div class="store-section">★ BUNDLES <span class="ss-note">· App Store</span></div>
+      <div class="store-section">★ BUNDLES <span class="ss-note">· PayPal</span></div>
       <div class="bundle-row">
         ${products.filter(p => p.kind === 'stars').map(p => `
           <button class="bundle" onclick="BOO2ST2.buyProduct('${p.id}')">
@@ -229,6 +229,10 @@
   async function buyProduct(id) {
     const res = await BOO2PAY.purchase(id);
     if (!res.ok) { showToast(res.message || 'Purchase unavailable'); return; }
+    // WEB (PayPal): the tab is open, the box will credit the account —
+    // the watcher + msgQueue celebration take it from here. Never grant
+    // client-side for web purchases.
+    if (res.pending) { showToast(res.message || 'Finish in the PayPal tab — ★ arrive automatically'); return; }
     // StoreKit provider path (iOS wrap): grant what was bought
     const p = (await BOO2PAY.listProducts()).find(x => x.id === id);
     if (p && p.kind === 'stars') { await BOO2M.addStars(p.stars); BOO2S.refreshChrome(); }

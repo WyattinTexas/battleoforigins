@@ -105,25 +105,40 @@
     _countdownTimer = setInterval(tick, 30000);
   }
 
-  /* champion messages (queued by settleDue for podium finishers) */
-  async function drainChampMsgs() {
-    await BOO2M.drainMsgs(async m => {
+  /* queued-message overlays: daily crowns + star purchases.
+     showMsg is also the celebration hook for BOO2M.watchForStars. */
+  async function showMsg(m) {
+    const body = document.getElementById('champBody');
+    if (m.type === 'star_purchase') {
+      const founders = !!m.founders;
+      body.innerHTML = `
+        <div class="w-ghost">${founders ? '🏮' : '🌟'}</div>
+        <h1>${founders ? 'FOUNDER!' : 'THE PEDDLER DELIVERS'}</h1>
+        <div class="w-sub">${founders
+          ? `Your lantern is lit forever. Thank you for believing early.`
+          : `Your purchase arrived safe and sound.`}</div>
+        ${m.stars ? `<div class="w-name">+${m.stars} ★</div>` : ''}
+        <button class="btn-ember" onclick="document.getElementById('champOverlay').classList.remove('active')">CLAIM</button>`;
+    } else if (m.type === 'daily_champion') {
       const PLACE = ['', 'st', 'nd', 'rd'];
       const CROWN = ['', '🥇', '🥈', '🥉'];
-      document.getElementById('champBody').innerHTML = `
+      body.innerHTML = `
         <div class="w-ghost">${CROWN[m.place] || '🏆'}</div>
         <h1>DAILY CHAMPION</h1>
         <div class="w-sub">You placed <b>${m.place}${PLACE[m.place] || 'th'}</b> on the ${m.dateKey} board!</div>
         <div class="w-name">+${m.stars} ★</div>
         <button class="btn-ember" onclick="document.getElementById('champOverlay').classList.remove('active')">CLAIM</button>`;
-      document.getElementById('champOverlay').classList.add('active');
-      await new Promise(res => {
-        const iv = setInterval(() => {
-          if (!document.getElementById('champOverlay').classList.contains('active')) { clearInterval(iv); res(); }
-        }, 300);
-      });
-      BOO2S.refreshChrome();
+    } else return;
+    document.getElementById('champOverlay').classList.add('active');
+    await new Promise(res => {
+      const iv = setInterval(() => {
+        if (!document.getElementById('champOverlay').classList.contains('active')) { clearInterval(iv); res(); }
+      }, 300);
     });
+    BOO2S.refreshChrome();
+  }
+  async function drainChampMsgs() {
+    await BOO2M.drainMsgs(showMsg);
   }
 
   /* ─────────── friend battles (challenge links) ─────────── */
@@ -224,5 +239,5 @@
     location.href = `${location.pathname}?${q}`;
   }
 
-  window.BOO2ST = { render, showTab, drainChampMsgs, createChallenge, copyChallengeLink, cancelChallenge, checkChallengeParam, acceptChallenge };
+  window.BOO2ST = { render, showTab, drainChampMsgs, showMsg, createChallenge, copyChallengeLink, cancelChallenge, checkChallengeParam, acceptChallenge };
 })();

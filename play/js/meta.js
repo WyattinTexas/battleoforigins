@@ -307,15 +307,56 @@
     return [...STARTERS];
   }
 
-  // ── champion messages (shown by shell at boot when they exist)
+  // ── queued messages (champion crowns, star purchases) — shown at boot
+  // and by the purchase watcher. Returns how many were shown.
   async function drainMsgs(showFn) {
     const msgs = await dbGet(`players/${uid()}/msgQueue`);
-    if (!msgs) return;
+    if (!msgs) return 0;
+    let shown = 0;
     for (const key of Object.keys(msgs)) {
       const m = msgs[key];
-      if (m && m.type === 'daily_champion' && typeof showFn === 'function') await showFn(m);
+      if (m && m.type && typeof showFn === 'function') { await showFn(m); shown++; }
       await dbSet(`players/${uid()}/msgQueue/${key}`, null);
     }
+    return shown;
+  }
+
+  // ── PayPal ★ watcher (FAVOR Royal Mint pattern) ──────────────────
+  // payments.js opens the checkout tab; the box credits the balance
+  // server-side. We just watch our own row until the ★ appear.
+  let _starsWatch = null;
+  function notePendingPurchase(packKey, stars) {
+    localStorage.setItem('boo2PendingStars', JSON.stringify({ packKey, stars, at: Date.now() }));
+  }
+  function clearPendingPurchase() {
+    localStorage.removeItem('boo2PendingStars');
+    _starsWatch = null;
+  }
+  function watchForStars() {
+    let pending = null;
+    try { pending = JSON.parse(localStorage.getItem('boo2PendingStars')); } catch (e) {}
+    if (!pending || Date.now() - pending.at > 30 * 60 * 1000) { clearPendingPurchase(); return; }
+    if (_starsWatch) return;               // one watcher is plenty
+    _starsWatch = { baseline: me.stars || 0 };
+    const tick = async () => {
+      if (!_starsWatch) return;
+      try {
+        const s = (await dbGet(`players/${uid()}/stars`)) || 0;
+        if (s > _starsWatch.baseline) {
+          const gained = s - _starsWatch.baseline;
+          clearPendingPurchase();
+          await readPlayer();
+          BOO2S.refreshChrome();
+          // the IPN also queued a congrats — prefer it (knows the pack);
+          // fall back to our own count if the queue was empty
+          const shown = await drainMsgs(m => window.BOO2ST && BOO2ST.showMsg(m));
+          if (!shown && window.BOO2ST) await BOO2ST.showMsg({ type: 'star_purchase', stars: gained });
+          return;
+        }
+      } catch (e) { /* wire hiccup — keep watching */ }
+      _starsWatch.timer = setTimeout(tick, 5000);
+    };
+    tick();
   }
 
   async function boot() {
@@ -371,6 +412,7 @@
   window.BOO2M = {
     NS, uid, myName, rename, generateName,
     currentDateKey, podiumSort, settleDue, drainMsgs,
+    notePendingPurchase, clearPendingPurchase, watchForStars,
     connect, boot, readPlayer, snapshot, postGameResult, addStars, spendStars, txnPlayer,
     ownedIds, ownsCard, addCards, team, setTeam,
     packCount, addPacks, takePack, rollPack, rollWelcomePack,

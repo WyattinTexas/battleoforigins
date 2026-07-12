@@ -152,13 +152,23 @@
       return;
     }
     await BOO2M.boot();
-    showScreen('menu');
+    // back from a PayPal tab: land on the store; the watcher + IPN
+    // congrats handle the celebration. cancel clears the pending marker.
+    const pp = new URLSearchParams(location.search).get('paypal');
+    if (pp) {
+      history.replaceState({}, '', location.pathname);
+      if (pp === 'cancel') BOO2M.clearPendingPurchase();
+      showScreen(pp === 'return' ? 'store' : 'menu');
+    } else {
+      showScreen('menu');
+    }
     if (!localStorage.getItem('boo2Welcome')) {
       runWelcome(); // challenge param (if any) is re-checked after the ceremony
     } else {
       await BOO2ST.checkChallengeParam();
       BOO2ST.drainChampMsgs();
     }
+    BOO2M.watchForStars(); // resumes only if a pending purchase marker exists
   }
 
   window.BOO2S = { showScreen, refreshChrome, openRename, saveRename, closeRename, tryBattle, acceptWelcome, ensureArenaFresh };
