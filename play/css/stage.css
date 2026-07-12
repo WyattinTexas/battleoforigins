@@ -1,0 +1,488 @@
+/* ============================================================
+   BOO2 STAGE CSS — "characters on screen."
+   Two jobs, both scoped under body.boo2-stage so live-PvP (and
+   any battle where stage.js declines to mount) keeps the classic
+   full-screen arena untouched:
+
+   1. The STAGE (#boo2-stage): a fixed backdrop behind the arena —
+      box-front sky (nebula + aurora + stars), a ridge for the
+      opponent upper-right, a lit floor for your spirit bottom-left,
+      the two active-spirit sprites and their name/HP plates.
+   2. STRIP COMPRESSION: the engine's arena (cards, dice, roll,
+      resources) squeezes into a bottom strip — fully usable, no
+      longer the whole screen. Overrides mirror the engine's own
+      three layouts (base / ≤700w / landscape ≤500h) and match its
+      id-specificity + !important where it uses them (arena-skin
+      precedent). Engine CSS is never edited.
+
+   All motion is transform/opacity only (60fps-on-phone rule).
+   ============================================================ */
+
+/* ─────────────────────────────────────────────
+   STAGE SIZING — --boo2-strip is the height the engine strip
+   owns at the bottom; the stage composes above it.
+   ───────────────────────────────────────────── */
+body.boo2-stage {
+  --boo2-strip: 356px;      /* desktop default */
+  --boo2-opp-top: 92px;     /* opponent sprite top edge */
+  --boo2-opp-h: 210px;      /* opponent sprite height */
+}
+@media (max-width: 700px) {
+  body.boo2-stage {
+    --boo2-strip: 58dvh;
+    --boo2-opp-top: 16dvh;
+    --boo2-opp-h: 13dvh;
+  }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  body.boo2-stage {
+    --boo2-strip: 186px;    /* 150px board + 36px fixed roll bar */
+    --boo2-opp-top: 22px;
+    --boo2-opp-h: 104px;
+  }
+}
+
+/* the strip never shows rules paragraphs — ability names stay,
+   long descriptions live on the collection/detail views */
+body.boo2-stage #raid-screen .fighter-slot .ci-desc { display: none !important; }
+body.boo2-stage #raid-screen .fighter-slot .card-info { padding: 2px 4px; }
+
+/* ─────────────────────────────────────────────
+   THE STAGE — box-front sky, ridge, floor
+   ───────────────────────────────────────────── */
+#boo2-stage { display: none; }
+body.in-battle.boo2-stage #boo2-stage {
+  display: block;
+  position: fixed; inset: 0; z-index: 0;
+  overflow: hidden; pointer-events: none;
+  background:
+    radial-gradient(ellipse 62% 44% at 78% 26%, rgba(232, 138, 232, 0.16), transparent 62%),
+    radial-gradient(ellipse 70% 52% at 16% 18%, rgba(88, 200, 240, 0.13), transparent 62%),
+    radial-gradient(ellipse 95% 55% at 50% 112%, rgba(42, 168, 138, 0.20), transparent 58%),
+    linear-gradient(180deg, #110822 0%, #1d0e38 32%, #341458 60%, #4a1a66 78%, #221038 100%);
+}
+body.boo2-stage #raid-screen { position: relative; z-index: 1; }
+
+/* aurora ribbons — soft, slow drift */
+#boo2-stage .stage-aurora {
+  position: absolute; inset: -4% -6%;
+  background:
+    radial-gradient(46% 15% at 30% 24%, rgba(126, 240, 201, 0.30), transparent 70%),
+    radial-gradient(40% 13% at 64% 15%, rgba(176, 112, 232, 0.28), transparent 70%),
+    radial-gradient(34% 11% at 47% 33%, rgba(88, 200, 240, 0.20), transparent 70%),
+    radial-gradient(26% 9% at 82% 40%, rgba(126, 240, 201, 0.16), transparent 70%);
+  animation: boo2AuroraDrift 26s ease-in-out infinite alternate;
+}
+@keyframes boo2AuroraDrift {
+  from { transform: translateX(-1.5%) translateY(-0.5%); }
+  to   { transform: translateX(1.5%) translateY(0.8%); }
+}
+
+/* star field */
+#boo2-stage .stage-stars {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 8% 12%, rgba(255,255,255,0.7), transparent 100%),
+    radial-gradient(1px 1px at 22% 28%, rgba(255,255,255,0.4), transparent 100%),
+    radial-gradient(2px 2px at 34% 8%, rgba(255,255,255,0.6), transparent 100%),
+    radial-gradient(1px 1px at 47% 22%, rgba(255,255,255,0.45), transparent 100%),
+    radial-gradient(1.5px 1.5px at 58% 6%, rgba(255,255,255,0.65), transparent 100%),
+    radial-gradient(1px 1px at 66% 30%, rgba(255,255,255,0.35), transparent 100%),
+    radial-gradient(2px 2px at 76% 10%, rgba(255,255,255,0.55), transparent 100%),
+    radial-gradient(1px 1px at 88% 20%, rgba(255,255,255,0.45), transparent 100%),
+    radial-gradient(1.5px 1.5px at 94% 34%, rgba(255,255,255,0.5), transparent 100%),
+    radial-gradient(1px 1px at 14% 44%, rgba(255,255,255,0.3), transparent 100%),
+    radial-gradient(1px 1px at 41% 40%, rgba(255,255,255,0.3), transparent 100%);
+  animation: boo2Twinkle 7s ease-in-out infinite alternate;
+}
+@keyframes boo2Twinkle { from { opacity: 0.75; } to { opacity: 1; } }
+
+/* the opponent's perch — a floating rock island (box-art style),
+   anchored directly under the opponent sprite at every viewport */
+#boo2-stage .stage-ridge {
+  position: absolute;
+  right: 8vw;
+  top: calc(var(--boo2-opp-top) + var(--boo2-opp-h) - 16px);
+  width: 330px;
+  height: 84px;
+  background: linear-gradient(196deg, #4e2775 0%, #331652 46%, #1d0c30 100%);
+  border-radius: 48% 52% 44% 56% / 88% 92% 30% 34%;
+  box-shadow:
+    inset 0 4px 0 rgba(126, 240, 201, 0.28),
+    inset 10px 14px 26px rgba(126, 240, 201, 0.10),
+    inset -30px -18px 40px rgba(0, 0, 0, 0.42),
+    0 26px 44px rgba(0, 0, 0, 0.35);
+  transform: rotate(-2.5deg);
+}
+/* a wisp of drift-rock trailing beneath it */
+#boo2-stage .stage-ridge::after {
+  content: '';
+  position: absolute;
+  left: 18%; bottom: -26%;
+  width: 30%; height: 34%;
+  background: linear-gradient(200deg, #3b1c5c, #200e36);
+  border-radius: 50% 50% 42% 58% / 80% 86% 34% 40%;
+  box-shadow: inset 0 2px 0 rgba(126, 240, 201, 0.14);
+}
+
+/* the lit floor your spirit stands on */
+#boo2-stage .stage-floor {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--boo2-strip) - 26px);
+  height: 110px;
+  background:
+    radial-gradient(60% 90% at 26% 100%, rgba(111, 220, 140, 0.30), transparent 65%),
+    linear-gradient(180deg, transparent 0%, rgba(42, 168, 138, 0.16) 45%, rgba(47, 138, 94, 0.34) 100%);
+}
+
+/* drifting wisps */
+#boo2-stage .stage-wisps i {
+  position: absolute;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(242, 234, 216, 0.9), rgba(126, 240, 201, 0.35) 55%, transparent 75%);
+  opacity: 0;
+  animation: boo2WispFloat 13s linear infinite;
+}
+#boo2-stage .stage-wisps i:nth-child(1) { left: 12%; bottom: 32%; animation-delay: 0s; }
+#boo2-stage .stage-wisps i:nth-child(2) { left: 38%; bottom: 24%; width: 6px; height: 6px; animation-delay: 3.4s; animation-duration: 16s; }
+#boo2-stage .stage-wisps i:nth-child(3) { left: 64%; bottom: 40%; width: 12px; height: 12px; animation-delay: 6.8s; animation-duration: 15s; }
+#boo2-stage .stage-wisps i:nth-child(4) { left: 84%; bottom: 28%; width: 7px; height: 7px; animation-delay: 9.5s; animation-duration: 18s; }
+@keyframes boo2WispFloat {
+  0%   { transform: translate(0, 0); opacity: 0; }
+  12%  { opacity: 0.85; }
+  55%  { opacity: 0.5; }
+  100% { transform: translate(6vw, -46vh); opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────
+   ACTORS — the two active spirits
+   .stage-actor > .actor-entry (enter/leave/KO transforms)
+                > .actor-bob   (idle bob + hit jitter host)
+                > img.actor-img / .actor-flash / .actor-shadow
+   ───────────────────────────────────────────── */
+#boo2-stage .stage-actor { position: absolute; }
+#boo2-stage .stage-actor.me  { left: 9vw;  bottom: calc(var(--boo2-strip) - 16px); z-index: 3; }
+#boo2-stage .stage-actor.opp { right: 11vw; top: var(--boo2-opp-top); z-index: 2; }
+
+#boo2-stage .actor-entry { transition: opacity 0.55s ease, transform 0.55s ease; }
+#boo2-stage .actor-bob { position: relative; animation: boo2Bob 3.8s ease-in-out infinite alternate; }
+#boo2-stage .stage-actor.opp .actor-bob { animation-duration: 3.1s; animation-delay: -1.7s; }
+@keyframes boo2Bob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+
+#boo2-stage .actor-img {
+  display: block;
+  height: min(380px, calc(100dvh - var(--boo2-strip) - 130px));
+  width: auto;
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.55));
+}
+#boo2-stage .stage-actor.opp .actor-img { height: var(--boo2-opp-h); }
+
+/* grounding shadow */
+#boo2-stage .actor-shadow {
+  position: absolute; left: 50%; bottom: -7px;
+  width: 72%; height: 16px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse closest-side, rgba(0, 0, 0, 0.5), transparent 75%);
+}
+#boo2-stage .stage-actor.opp .actor-shadow { bottom: -5px; height: 10px; width: 80%; }
+
+/* hit flash overlay */
+#boo2-stage .actor-flash {
+  position: absolute; inset: -6%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.95), rgba(255, 200, 160, 0.4) 55%, transparent 75%);
+  opacity: 0; mix-blend-mode: screen;
+}
+#boo2-stage .actor-bob.hit { animation: boo2Bob 3.8s ease-in-out infinite alternate, boo2Jitter 0.42s linear; }
+#boo2-stage .actor-bob.hit .actor-flash { animation: boo2Flash 0.38s ease-out; }
+@keyframes boo2Flash { 0% { opacity: 0; } 18% { opacity: 0.9; } 100% { opacity: 0; } }
+@keyframes boo2Jitter {
+  0%, 100% { transform: translateX(0); }
+  16% { transform: translateX(-8px); }
+  36% { transform: translateX(7px); }
+  58% { transform: translateX(-5px); }
+  78% { transform: translateX(3px); }
+}
+
+/* entry — you slide up from the left, they descend at the ridge */
+#boo2-stage .stage-actor.me .actor-entry.entering { animation: boo2EnterMe 0.6s cubic-bezier(0.18, 0.9, 0.26, 1.12) both; }
+#boo2-stage .stage-actor.opp .actor-entry.entering { animation: boo2EnterOpp 0.6s 0.12s cubic-bezier(0.18, 0.9, 0.26, 1.12) both; }
+@keyframes boo2EnterMe {
+  from { opacity: 0; transform: translate(-66px, 30px) scale(0.94); }
+  to   { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+@keyframes boo2EnterOpp {
+  from { opacity: 0; transform: translate(48px, -38px) scale(0.92); }
+  to   { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+
+/* swap-out slide */
+#boo2-stage .stage-actor.leaving .actor-entry { opacity: 0; transform: translateX(-48px); transition: opacity 0.22s ease-in, transform 0.22s ease-in; }
+#boo2-stage .stage-actor.opp.leaving .actor-entry { transform: translateX(48px); }
+
+/* KO dissolve — sink and fade */
+#boo2-stage .stage-actor.is-ko .actor-entry {
+  opacity: 0;
+  transform: translateY(28px) scale(0.95);
+  transition: opacity 0.65s ease 0.12s, transform 0.65s ease 0.12s;
+}
+
+/* victory bounce (visible through the game-over glass) */
+#boo2-stage .stage-actor.victory .actor-bob { animation: boo2Victory 0.85s cubic-bezier(0.3, 1.5, 0.4, 1) 3; }
+@keyframes boo2Victory {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-26px) scale(1.04); }
+}
+
+/* token fallback — id not in the sprite manifest yet: framed card art */
+#boo2-stage .stage-actor.token-mode .actor-img {
+  height: auto;
+  width: 210px;
+  border: 2px solid rgba(212, 160, 64, 0.6);
+  border-radius: 18px 18px 12px 12px;
+  box-shadow: 0 0 0 3px rgba(10, 10, 26, 0.7), 0 16px 34px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 0, 0, 0.25);
+  background: #0d0d20;
+}
+#boo2-stage .stage-actor.opp.token-mode .actor-img { width: 140px; }
+
+/* ─────────────────────────────────────────────
+   NAME / HP PLATES
+   ───────────────────────────────────────────── */
+#boo2-stage .stage-plate {
+  position: absolute; z-index: 6;
+  display: flex; align-items: center; gap: 10px;
+}
+#boo2-stage .stage-plate.red { left: 22px; bottom: calc(var(--boo2-strip) + 16px); }
+#boo2-stage .stage-plate.blue { right: 16px; top: 52px; }
+
+#boo2-stage .plate-chip {
+  width: 48px; height: 48px; border-radius: 50%;
+  object-fit: cover; object-position: center 28%;
+  background: #0a0d16;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.55);
+}
+#boo2-stage .stage-plate.red .plate-chip { border: 2px solid rgba(255, 170, 90, 0.85); }
+#boo2-stage .stage-plate.blue .plate-chip { border: 2px solid rgba(125, 184, 232, 0.85); }
+
+#boo2-stage .plate-body {
+  min-width: 158px;
+  background: rgba(10, 10, 26, 0.66);
+  border-radius: 13px;
+  padding: 8px 13px 7px;
+}
+#boo2-stage .stage-plate.red .plate-body { border: 1.5px solid rgba(212, 160, 64, 0.45); }
+#boo2-stage .stage-plate.blue .plate-body { border: 1.5px solid rgba(125, 184, 232, 0.45); }
+
+#boo2-stage .plate-name {
+  font-family: 'Creepster', cursive;
+  font-size: 19px; letter-spacing: 2px; line-height: 1;
+  color: #f2ead8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 46vw;
+  margin-bottom: 6px;
+}
+#boo2-stage .stage-plate.red .plate-name { text-shadow: 0 0 12px rgba(212, 160, 64, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6); }
+#boo2-stage .stage-plate.blue .plate-name { color: #dbe9ff; text-shadow: 0 0 12px rgba(125, 184, 232, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6); }
+
+#boo2-stage .plate-bar {
+  height: 9px; border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+#boo2-stage .plate-bar i {
+  display: block; height: 100%; width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #4caf6d, #7fe09a);
+  box-shadow: 0 0 8px rgba(111, 220, 140, 0.55);
+  transition: width 0.35s ease;
+}
+#boo2-stage .stage-plate.hp-low .plate-bar i { background: linear-gradient(90deg, #d8a12f, #f0c860); box-shadow: 0 0 8px rgba(240, 200, 96, 0.5); }
+#boo2-stage .stage-plate.hp-critical .plate-bar i { background: linear-gradient(90deg, #c03a30, #f0564a); box-shadow: 0 0 10px rgba(240, 86, 74, 0.6); animation: boo2BarPulse 1s ease-in-out infinite; }
+#boo2-stage .stage-plate.hp-over .plate-bar i { background: linear-gradient(90deg, #2ea182, #7ef0c9); box-shadow: 0 0 10px rgba(126, 240, 201, 0.6); }
+@keyframes boo2BarPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+#boo2-stage .plate-hp {
+  margin-top: 4px;
+  font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 12px;
+  color: #b9c2d8; letter-spacing: 0.06em;
+}
+#boo2-stage .stage-plate.is-ko { opacity: 0.45; filter: grayscale(0.8); }
+
+/* ─────────────────────────────────────────────
+   STRIP COMPRESSION — DESKTOP (>700w, >500h)
+   Engine base layout is already [red | dice | blue] — pin it to a
+   bottom strip and shrink the cards.
+   ───────────────────────────────────────────── */
+@media (min-width: 701px) and (min-height: 501px) {
+  body.boo2-stage #raid-screen #battle-view { display: block; }
+  body.boo2-stage #raid-screen .arena-board {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto;
+    height: var(--boo2-strip); max-height: var(--boo2-strip);
+    width: 100%; max-width: none; margin: 0;
+    padding: 8px 18px 10px;
+    border: none; border-top: 1.5px solid rgba(212, 160, 64, 0.30);
+    border-radius: 0;
+    background: linear-gradient(180deg, rgba(12, 12, 28, 0.40), rgba(9, 9, 22, 0.93) 30%, rgba(7, 7, 18, 0.96));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 -20px 55px rgba(0, 0, 0, 0.55);
+  }
+  body.boo2-stage #raid-screen .arena-board::before { display: none; }
+
+  /* strip columns: sidelines | fighter | controls-beside — stacking
+     controls under the card overflows a 356px strip, beside it the
+     cards get to stay big */
+  body.boo2-stage #raid-screen .team-column {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: "sl fighter btn" "sl fighter abilities" "sl fighter info";
+    gap: 4px 12px;
+    align-items: start; justify-items: start;
+    align-content: center;
+  }
+  body.boo2-stage #raid-screen #blue-team-column {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas: "btn fighter sl" "abilities fighter sl" "info fighter sl";
+    justify-items: end;
+  }
+  body.boo2-stage #raid-screen .team-battle-row { display: contents; }
+  body.boo2-stage #raid-screen .sideline-stack {
+    grid-area: sl; display: flex; flex-direction: column; gap: 6px; align-self: center;
+  }
+  body.boo2-stage #raid-screen .fighter-slot {
+    grid-area: fighter; align-self: center;
+    width: clamp(150px, 15vw, 196px); min-width: 140px;
+    margin: 0;
+  }
+  body.boo2-stage #raid-screen .team-info {
+    grid-area: info; align-self: end;
+    align-items: flex-start; width: auto; min-width: 210px;
+    padding-bottom: 6px;
+  }
+  body.boo2-stage #raid-screen #blue-team-column .team-info { align-items: flex-end; }
+  body.boo2-stage #raid-screen .ability-buttons { grid-area: abilities; }
+  body.boo2-stage #raid-screen .action-btn.team-roll,
+  body.boo2-stage #raid-screen .duel-done-btn {
+    grid-area: btn; align-self: center; margin-top: 26px;
+    width: 210px; max-width: 210px; padding: 12px 0;
+  }
+  body.boo2-stage #raid-screen .fighter-slot .card-name-banner { font-size: 13px; padding: 6px 8px; }
+  body.boo2-stage #raid-screen .fighter-slot .ability-banner { font-size: 10px; padding: 3px 8px; }
+  body.boo2-stage #raid-screen .sideline-slot { width: clamp(64px, 6.8vw, 104px); min-width: 58px; }
+  body.boo2-stage #raid-screen .sideline-slot .card-name-banner { font-size: 9px; padding: 2px 4px; }
+  body.boo2-stage #raid-screen .sideline-slot .ability-banner { display: none; }
+  body.boo2-stage #raid-screen .sideline-slot .ci-desc { display: none; }
+  body.boo2-stage #raid-screen .hp-bar-wrap { max-width: 230px; }
+
+  /* narrator floats top-center as the play-by-play caption */
+  body.boo2-stage #raid-screen .narrator-box {
+    position: fixed; top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: min(680px, 88vw);
+    margin: 0; z-index: 520;
+  }
+  body.boo2-stage #raid-screen .log-wrap { display: none !important; }
+  body.boo2-stage #raid-screen #skipSpecialsBtn {
+    position: fixed; right: 16px; bottom: calc(var(--boo2-strip) + 12px);
+    z-index: 460; margin: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   STRIP COMPRESSION — PORTRAIT (≤700w)
+   Engine already stacks [opp / dice / you] in 100dvh with
+   !important — keep its structure, push it into the bottom
+   56dvh with a transparent veil above.
+   ───────────────────────────────────────────── */
+@media (max-width: 700px) {
+  body.boo2-stage #raid-screen .arena-board {
+    padding-top: calc(100dvh - var(--boo2-strip)) !important;
+    background:
+      linear-gradient(180deg,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0) calc(100dvh - var(--boo2-strip) - 46px),
+        rgba(9, 9, 22, 0.62) calc(100dvh - var(--boo2-strip) + 2px),
+        rgba(7, 7, 18, 0.94) calc(100dvh - var(--boo2-strip) + 44px),
+        rgba(7, 7, 18, 0.96) 100%) !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  body.boo2-stage #raid-screen .arena-board::before { display: none; }
+  body.boo2-stage #raid-screen .log-wrap { display: none !important; }
+  body.boo2-stage #raid-screen #skipSpecialsBtn {
+    position: fixed; right: 10px; bottom: calc(var(--boo2-strip) + 8px);
+    z-index: 460; margin: 0;
+  }
+  /* tighter enemy card up top buys room for the roll button below */
+  body.boo2-stage #raid-screen #blue-team-column .fighter-slot { width: clamp(92px, 24vw, 150px) !important; }
+  /* pack the player section to the bottom of the strip — the engine
+     gives it flex-grow and center-aligned grid content, which floats
+     the roll button into the overflow */
+  body.boo2-stage #raid-screen #red-team-column {
+    flex: 0 0 auto !important;
+    align-content: end !important;
+  }
+  body.boo2-stage #raid-screen .arena-center { flex: 1 1 auto; min-height: 0; }
+  body.boo2-stage #raid-screen .hp-bar-wrap { max-width: 230px; margin: 0 auto; }
+
+  #boo2-stage .stage-actor.me { left: 6vw; bottom: calc(var(--boo2-strip) - 10px); }
+  #boo2-stage .stage-actor.opp { right: 5vw; }
+  #boo2-stage .actor-img { height: min(26dvh, 270px); }
+  #boo2-stage .stage-actor.token-mode .actor-img { width: 124px; }
+  #boo2-stage .stage-actor.opp.token-mode .actor-img { width: 92px; }
+  #boo2-stage .stage-ridge { right: 3vw; width: 170px; height: 48px; }
+  #boo2-stage .stage-floor { height: 84px; }
+
+  #boo2-stage .stage-plate.red { left: 10px; bottom: calc(var(--boo2-strip) + 8px); }
+  #boo2-stage .stage-plate.blue { right: 10px; top: 62px; }
+  #boo2-stage .plate-body { min-width: 132px; padding: 6px 11px 6px; }
+  #boo2-stage .plate-name { font-size: 16px; margin-bottom: 5px; }
+  #boo2-stage .plate-chip { width: 40px; height: 40px; }
+  #boo2-stage .plate-bar { height: 8px; }
+  #boo2-stage .plate-hp { font-size: 11px; margin-top: 3px; }
+}
+
+/* ─────────────────────────────────────────────
+   STRIP COMPRESSION — LANDSCAPE (≤500h) · the hero orientation
+   Engine grid [opp | dice | my-cards] pins to a 150px strip above
+   its own fixed 36px roll bar. Stage owns everything above.
+   ───────────────────────────────────────────── */
+@media (max-height: 500px) and (orientation: landscape) {
+  body.boo2-stage #raid-screen .arena-board {
+    position: fixed !important; left: 0 !important; right: 0 !important;
+    bottom: 36px !important; top: auto !important;
+    height: 150px !important; max-height: 150px !important;
+    padding: 4px 8px 2px !important;
+    background: linear-gradient(180deg, rgba(10, 10, 24, 0.32), rgba(8, 8, 20, 0.93) 46%) !important;
+    border: none !important; border-top: 1px solid rgba(212, 160, 64, 0.28) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.5) !important;
+  }
+  body.boo2-stage #raid-screen .arena-board::before { display: none; }
+
+  #boo2-stage .stage-actor.me { left: 15vw; bottom: calc(var(--boo2-strip) - 12px); }
+  #boo2-stage .stage-actor.opp { right: 22vw; }
+  #boo2-stage .actor-img { height: min(158px, calc(100dvh - var(--boo2-strip) - 44px)); }
+  #boo2-stage .stage-actor.token-mode .actor-img { width: 96px; }
+  #boo2-stage .stage-actor.opp.token-mode .actor-img { width: 72px; }
+  #boo2-stage .stage-ridge { right: 17vw; width: 200px; height: 52px; }
+  #boo2-stage .stage-floor { height: 62px; bottom: calc(var(--boo2-strip) - 18px); }
+
+  #boo2-stage .stage-plate.red { left: 12px; bottom: calc(var(--boo2-strip) + 4px); }
+  #boo2-stage .stage-plate.blue { right: 8px; top: 38px; }
+  #boo2-stage .plate-body { min-width: 118px; padding: 5px 10px 5px; }
+  #boo2-stage .plate-name { font-size: 14px; letter-spacing: 1.5px; margin-bottom: 4px; }
+  #boo2-stage .plate-chip { width: 34px; height: 34px; }
+  #boo2-stage .plate-bar { height: 7px; }
+  #boo2-stage .plate-hp { font-size: 10px; margin-top: 2px; }
+}
+
+/* reduced motion: hold the poses, drop the loops */
+@media (prefers-reduced-motion: reduce) {
+  #boo2-stage .actor-bob,
+  #boo2-stage .stage-aurora,
+  #boo2-stage .stage-stars,
+  #boo2-stage .stage-wisps i { animation: none !important; }
+}
