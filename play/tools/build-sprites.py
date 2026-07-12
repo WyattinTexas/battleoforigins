@@ -45,7 +45,25 @@ MODEL_OVERRIDES = {35: "isnet-general-use"}
 ERASE_BOXES = {35: [(140, 128, 198, 247), (585, 312, 672, 400)]}
 
 
+# in-process rembg (one model session for the whole batch) when this
+# script runs under the pipx venv python; CLI fallback otherwise
+try:
+    from rembg import new_session, remove as rembg_remove
+    _SESSIONS = {}
+
+    def _session(model):
+        if model not in _SESSIONS:
+            _SESSIONS[model] = new_session(model)
+        return _SESSIONS[model]
+except ImportError:
+    rembg_remove = None
+
+
 def rembg_cutout(src: Path, card_id: int) -> Image.Image:
+    model = MODEL_OVERRIDES.get(card_id, "u2net")
+    if rembg_remove is not None:
+        out = rembg_remove(Image.open(src).convert("RGBA"), session=_session(model))
+        return out.convert("RGBA")
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
         tmp_path = Path(tmp.name)
     cmd = ["rembg", "i"]
