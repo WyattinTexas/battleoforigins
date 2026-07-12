@@ -158,6 +158,7 @@
     if (pp) {
       history.replaceState({}, '', location.pathname);
       if (pp === 'cancel') BOO2M.clearPendingPurchase();
+      refreshChrome(); // non-menu landing skips renderMenu's refresh
       showScreen(pp === 'return' ? 'store' : 'menu');
     } else {
       showScreen('menu');
