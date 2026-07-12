@@ -114,53 +114,78 @@
   }
   function closePicker() { document.getElementById('pickerSheet').classList.remove('active'); }
 
-  /* ─────────── rival personas — the AI is a somebody, not a slot machine ───────────
-     Every quick battle is vs a named rival with a rating near yours and
-     points on the line. Rematch runs it back vs the SAME rival. */
-  const TAUNTS = [
-    'Your spirits look… delicious.',
-    'I have haunted far scarier teams than yours.',
-    'The dice whisper my name. They scream yours.',
-    'Fresh ectoplasm. Finally.',
-    'Boo. Scared yet?',
-    'I never lose. Well. Rarely. Sometimes.',
-    'Rattle rattle, little ghost.',
-    'My grandmother rolls better than you. She is a tombstone.',
+  /* ─────────── THE RIVALS — permanent personas, Nation-style ───────────
+     Eight named regulars who live in boo2/players/ like anyone else:
+     their ratings drift as real players beat them (or lose to them),
+     they show up on the all-time board, and you learn their names.
+     ⚠ rival_* player rows are PERMANENT — never delete them.
+     Daily Champions stays human: rivals never post daily scores. */
+  const RIVALS = [
+    { key: 'rival_lantern',  name: 'Grim Little Lantern', base: 15,  lead: 9,   taunts: ['Boo. Scared yet?', 'I am small but I flicker with menace.'] },
+    { key: 'rival_pip',      name: 'Pip the Unlucky',     base: 45,  lead: 12,  taunts: ['Today my luck turns. I can feel it.', 'The dice owe me. BIG.'] },
+    { key: 'rival_bones',    name: 'Bones McGraw',        base: 90,  lead: 37,  taunts: ['Rattle rattle, little ghost.', 'I count my wins in knuckles.'] },
+    { key: 'rival_cobweb',   name: 'Countess Cobweb',     base: 140, lead: 108, taunts: ['Your spirits look… delicious.', 'Do come into my parlor.'] },
+    { key: 'rival_shriek',   name: 'Sister Shriek',       base: 200, lead: 53,  taunts: ['I have haunted far scarier teams than yours.', 'Sing with me. SCREAM with me.'] },
+    { key: 'rival_marrow',   name: 'Old Man Marrow',      base: 270, lead: 110, taunts: ['My grandmother rolls better than you. She is a tombstone.', 'Back in my day, ghosts had MANNERS.'] },
+    { key: 'rival_marmint',  name: 'Madame Marrowmint',   base: 350, lead: 114, taunts: ['The dice whisper my name. They scream yours.', 'Fresh ectoplasm. Finally.'] },
+    { key: 'rival_yawning',  name: 'The Yawning King',    base: 460, lead: 432, taunts: ['I never lose. Well. Rarely. Sometimes.', '*yawns* Wake me if you survive round three.'] },
   ];
   let rival = null;
 
-  function makeRival(myTeam) {
+  /* create-if-missing, then return the LIVE row (rating drifts globally) */
+  async function rivalRow(r) {
+    try {
+      const res = await BOO2M.txnPlayer(r.key, p => {
+        if (p) return; // exists — abort, keep live values
+        return { name: r.name, rating: r.base, wins: 0, losses: 0, bot: true };
+      });
+      const live = res && res.value;
+      return (live && live.name) ? live : { name: r.name, rating: r.base, wins: 0, losses: 0 };
+    } catch (e) {
+      return { name: r.name, rating: r.base, wins: 0, losses: 0 };
+    }
+  }
+
+  async function pickRival(myTeam) {
     const mine = BOO2M.snapshot().rating || 0;
-    const spread = [-40, -20, 5, 25, 60][Math.floor(Math.random() * 5)];
+    // fight someone near you — nearest three by base band, weighted random
+    const sorted = [...RIVALS].sort((a, b) => Math.abs(a.base - mine) - Math.abs(b.base - mine));
+    const pool = sorted.slice(0, 3);
+    const r = pool[Math.floor(Math.random() * pool.length)];
+    const live = await rivalRow(r);
     return {
-      name: BOO2M.generateName(),
-      rating: Math.max(0, mine + spread + Math.floor(Math.random() * 21) - 10),
+      key: r.key,
+      name: live.name || r.name,
+      rating: live.rating || 0,
+      wins: live.wins || 0,
+      losses: live.losses || 0,
+      lead: r.lead,
       team: getCuratedTeam(myTeam),
-      taunt: TAUNTS[Math.floor(Math.random() * TAUNTS.length)],
+      taunt: r.taunts[Math.floor(Math.random() * r.taunts.length)],
     };
   }
 
-  function quickBattle() {
+  async function quickBattle() {
     const t = ensureTeam();
     if (t.length < 3) { showToast('Pick 3 spirits first'); return; }
-    rival = makeRival(t);
+    rival = await pickRival(t);
     const me = BOO2M.snapshot();
     document.getElementById('rivalBody').innerHTML = `
       <div class="vs-row">
         <div class="vs-side">
           <img src="${boo2Art(t[0])}" alt="">
           <div class="vs-name">${BOO2M.myName()}</div>
-          <div class="vs-rtg">${me.rating} RTG</div>
+          <div class="vs-rtg">${me.rating} RTG · ${me.wins}W</div>
         </div>
         <div class="vs-mark creep">VS</div>
         <div class="vs-side">
-          <img src="${boo2Art(rival.team[0])}" alt="">
+          <img src="${boo2Art(rival.lead)}" alt="">
           <div class="vs-name">${rival.name}</div>
-          <div class="vs-rtg">${rival.rating} RTG</div>
+          <div class="vs-rtg">${rival.rating} RTG · ${rival.wins}W ${rival.losses}L</div>
         </div>
       </div>
       <div class="vs-taunt">“${rival.taunt}”</div>
-      <div class="vs-stakes">WIN +${15} RTG &nbsp;·&nbsp; LOSE −${10} RTG</div>
+      <div class="vs-stakes">WIN +15 RTG &nbsp;·&nbsp; LOSE −10 RTG</div>
       <button class="btn-ember" onclick="BOO2B.engageRival()">FIGHT</button>`;
     document.getElementById('rivalOverlay').classList.add('active');
   }
@@ -171,6 +196,22 @@
     startVsTeam(rival.team.slice(), rival.name);
   }
   function dismissRival() { document.getElementById('rivalOverlay').classList.remove('active'); rival = null; }
+
+  /* the rival's row drifts too — beat them and they FEEL it */
+  async function updateRivalAfter(result) {
+    if (!rival || !rival.key) return;
+    const won = result === 'win'; // player's result
+    try {
+      await BOO2M.txnPlayer(rival.key, p => {
+        if (!p) return { name: rival.name, rating: rival.base || 0, wins: 0, losses: 0, bot: true };
+        const next = Object.assign({}, p);
+        next.rating = Math.max(0, (p.rating || 0) + (won ? -10 : 15));
+        if (won) next.losses = (p.losses || 0) + 1; else next.wins = (p.wins || 0) + 1;
+        next.lastSeen = Date.now();
+        return next;
+      });
+    } catch (e) {}
+  }
 
   function startVsTeam(blueIds, name) {
     const t = ensureTeam();
@@ -262,6 +303,7 @@
       title.textContent = result === 'win' ? 'YOU WIN!' : (result === 'loss' ? `${oppName || 'THE RIVAL'} WINS` : 'DRAW!');
     }
     const { starDelta, ratingDelta } = await BOO2M.postGameResult(result);
+    updateRivalAfter(result); // persona's rating/record drifts globally
     const go = document.getElementById('gameOver');
     const rounds = document.getElementById('goRounds');
     if (go && rounds) {

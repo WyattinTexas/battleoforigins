@@ -169,6 +169,11 @@
     return { starDelta, ratingDelta };
   }
 
+  // ── whole-record txn on ANY player row (rival personas drift through this)
+  async function txnPlayer(playerUid, fn) {
+    return dbTxn(`players/${playerUid}`, fn);
+  }
+
   // ── spend/earn stars outside games (raid rewards M2, store M4)
   async function addStars(n) { await dbTxn(`players/${uid()}/stars`, s => (s || 0) + n); await readPlayer(); }
   async function spendStars(n) {
@@ -333,7 +338,7 @@
   window.BOO2M = {
     NS, uid, myName, rename, generateName,
     currentDateKey, podiumSort, settleDue, drainMsgs,
-    connect, boot, readPlayer, snapshot, postGameResult, addStars, spendStars,
+    connect, boot, readPlayer, snapshot, postGameResult, addStars, spendStars, txnPlayer,
     ownedIds, ownsCard, addCards, team, setTeam,
     packCount, addPacks, takePack, rollPack, rollWelcomePack,
     fetchAllTime, fetchDaily, msUntilSettle,
