@@ -36,14 +36,19 @@ body.boo2-stage {
   --boo2-eflank: 150px;     /* enemy bench horizontal offset */
 }
 @media (max-width: 700px) {
+  /* PORTRAIT = the mock's own frame (Wyatt 7/14): both teams ON the
+     field — enemy on the gate ~20% down, YOUR party standing on the
+     stairs just above a compact strip (narrator + your 3 cards + roll).
+     The enemy's card block leaves the strip entirely (its info lives
+     on the field + plate) and the dice fly mid-field. */
   body.boo2-stage {
-    --boo2-strip: 58dvh;
-    --boo2-opp-top: 9dvh;
-    --boo2-opp-h: 10dvh;
+    --boo2-strip: 38dvh;
+    --boo2-opp-top: 19dvh;
+    --boo2-opp-h: 12dvh;
     --boo2-me-h: 15dvh;
-    --boo2-flank: 24vw;
-    --boo2-drop: 2.4dvh;
-    --boo2-eflank: 16vw;
+    --boo2-flank: 18vw;
+    --boo2-drop: 2.6dvh;
+    --boo2-eflank: 15vw;
   }
 }
 @media (max-height: 500px) and (orientation: landscape) {
@@ -64,7 +69,7 @@ body.boo2-stage #raid-screen #leaveRaidBtn {
   top: 12px !important; left: 12px !important; right: auto !important;
 }
 @media (max-width: 700px) {
-  body.boo2-stage #raid-screen #leaveRaidBtn { top: 48px !important; left: 8px !important; }
+  body.boo2-stage #raid-screen #leaveRaidBtn { top: 10px !important; left: 8px !important; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   body.boo2-stage #raid-screen #leaveRaidBtn { top: 44px !important; left: 8px !important; }
@@ -170,8 +175,8 @@ body.boo2-stage #raid-screen { position: relative; z-index: 1; }
 }
 #boo2-stage .stage-team.blue .stage-actor.slot-left .actor-img,
 #boo2-stage .stage-team.blue .stage-actor.slot-right .actor-img {
-  filter: brightness(0.34) saturate(0.45) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
-  opacity: 0.85;
+  filter: brightness(0.48) saturate(0.55) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  opacity: 0.9;
 }
 
 /* ─────────────────────────────────────────────
@@ -505,22 +510,65 @@ body.boo2-book-spot #red-resources {
     position: fixed; right: 10px; bottom: calc(var(--boo2-strip) + 8px);
     z-index: 460; margin: 0;
   }
-  /* tighter enemy card up top buys room for the roll button below */
-  body.boo2-stage #raid-screen #blue-team-column .fighter-slot { width: clamp(92px, 24vw, 150px) !important; }
-  /* pack the player section to the bottom of the strip — the engine
-     gives it flex-grow and center-aligned grid content, which floats
-     the roll button into the overflow */
+
+  /* the enemy's card block leaves the strip — the field sprite and
+     the top-right plate ARE the opponent UI now (mock frame) */
+  body.boo2-stage #raid-screen #blue-team-column { display: none !important; }
+
+  /* dice fly over the field (the mock's mid-screen 3D dice zone):
+     enemy row above yours, transparent, over the castle doorway */
+  body.boo2-stage #raid-screen .arena-center {
+    position: fixed !important; left: 0 !important; right: 0 !important;
+    top: 27dvh !important; height: 20dvh !important;
+    flex: none !important; min-height: 0 !important;
+    z-index: 15;
+    display: flex; flex-direction: column; justify-content: center;
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    pointer-events: none;
+  }
+  body.boo2-stage #raid-screen .arena-center .turn-indicator { display: none !important; }
+  body.boo2-stage #raid-screen .arena-center #msInlinePicker { pointer-events: auto; }
+
+  /* your strip: narrator caption at its top (the engine's mobile
+     narrator is a fixed .narrator-inner banner — move it down from
+     the screen top), then your three cards near-equal (mock card
+     row), then the roll button. hp lives on the plate */
+  body.boo2-stage #raid-screen .narrator-inner {
+    top: auto !important;
+    bottom: calc(var(--boo2-strip) - 38px) !important;
+    left: 8px !important; right: 8px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
   body.boo2-stage #raid-screen #red-team-column {
     flex: 0 0 auto !important;
     align-content: end !important;
+    margin-top: 44px !important;
+    background: transparent !important;
+    border: none !important;
+    grid-template-columns: auto auto auto !important;
+    justify-content: center !important;
+    column-gap: 7px !important;
   }
-  body.boo2-stage #raid-screen .arena-center { flex: 1 1 auto; min-height: 0; }
-  body.boo2-stage #raid-screen .hp-bar-wrap { max-width: 230px; margin: 0 auto; }
+  body.boo2-stage #raid-screen #red-team-column .hp-bar-wrap,
+  body.boo2-stage #raid-screen #red-team-column .hp-text { display: none !important; }
+  body.boo2-stage #raid-screen #red-team-column .fighter-slot { width: clamp(104px, 30vw, 150px) !important; }
+  body.boo2-stage #raid-screen #red-team-column .sideline-slot { width: clamp(84px, 24vw, 124px) !important; }
+  body.boo2-stage #raid-screen .dice-stack {
+    background: transparent !important;
+    box-shadow: none !important; border: none !important;
+  }
 
-  #boo2-stage .stage-team.red { bottom: calc(var(--boo2-strip) + 56px); }
+  #boo2-stage .stage-team.red { bottom: calc(var(--boo2-strip) + 10px); }
+  /* the active spirit gets the mock's cool ground glow */
+  #boo2-stage .stage-team.red .stage-actor.slot-active .actor-shadow {
+    background: radial-gradient(ellipse closest-side, rgba(79, 195, 247, 0.55), rgba(79, 195, 247, 0.18) 55%, transparent 78%);
+    width: 92%; height: 18px;
+  }
 
-  #boo2-stage .stage-plate.red { left: 10px; bottom: calc(var(--boo2-strip) + 2px); }
-  #boo2-stage .stage-plate.blue { right: 8px; top: 50px; }
+  #boo2-stage .stage-plate.red { left: 8px; bottom: calc(var(--boo2-strip) + 2px); }
+  #boo2-stage .stage-plate.blue { right: 8px; top: 8px; }
+  #boo2-stage .plate-chip { width: 42px; height: 42px; }
   #boo2-stage .plate-body { min-width: 128px; padding: 6px 13px 6px 20px; }
   #boo2-stage .stage-plate.blue .plate-body { padding: 6px 20px 6px 13px; }
   #boo2-stage .plate-name { font-size: 16px; margin-bottom: 5px; }
