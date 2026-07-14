@@ -105,6 +105,7 @@
     stage.innerHTML = `
       <div class="stage-scene"></div>
       <div class="stage-wisps"><i></i><i></i><i></i><i></i></div>
+      <div class="stage-vs" aria-hidden="true">VS</div>
       <div class="stage-team blue">
         <div class="stage-actor" data-i="0">${ACTOR_HTML}</div>
         <div class="stage-actor" data-i="1">${ACTOR_HTML}</div>
