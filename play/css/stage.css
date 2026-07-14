@@ -1,13 +1,17 @@
 /* ============================================================
-   BOO2 STAGE CSS — "characters on screen."
+   BOO2 STAGE CSS — "the whole party on the field." (v2.1, model_a)
    Two jobs, both scoped under body.boo2-stage so live-PvP (and
    any battle where stage.js declines to mount) keeps the classic
    full-screen arena untouched:
 
-   1. The STAGE (#boo2-stage): a fixed backdrop behind the arena —
-      box-front sky (nebula + aurora + stars), a ridge for the
-      opponent upper-right, a lit floor for your spirit bottom-left,
-      the two active-spirit sprites and their name/HP plates.
+   1. The STAGE (#boo2-stage): the model_a ice-castle scene behind
+      the arena — enemy active on the upper gate platform (bench as
+      dimmed silhouettes flanking it), YOUR full party on the steps
+      (active center-forward + larger, sidelines flanking behind),
+      mock-style name/HP plates, and the blue spellbook button.
+      Party members are SLOT-driven: .slot-active / .slot-left /
+      .slot-right set a transform per slot and slot reassignment
+      transitions = the KO walk-forward choreography.
    2. STRIP COMPRESSION: the engine's arena (cards, dice, roll,
       resources) squeezes into a bottom strip — fully usable, no
       longer the whole screen. Overrides mirror the engine's own
@@ -24,22 +28,46 @@
    ───────────────────────────────────────────── */
 body.boo2-stage {
   --boo2-strip: 356px;      /* desktop default */
-  --boo2-opp-top: 92px;     /* opponent sprite top edge */
-  --boo2-opp-h: 210px;      /* opponent sprite height */
+  --boo2-opp-top: 84px;     /* enemy platform anchor (team top) */
+  --boo2-opp-h: 170px;      /* enemy active sprite height */
+  --boo2-me-h: 220px;       /* your active sprite height */
+  --boo2-flank: 210px;      /* your bench horizontal offset */
+  --boo2-drop: 46px;        /* your bench vertical drop (nearer the viewer) */
+  --boo2-eflank: 150px;     /* enemy bench horizontal offset */
 }
 @media (max-width: 700px) {
   body.boo2-stage {
     --boo2-strip: 58dvh;
-    --boo2-opp-top: 16dvh;
-    --boo2-opp-h: 13dvh;
+    --boo2-opp-top: 9dvh;
+    --boo2-opp-h: 10dvh;
+    --boo2-me-h: 15dvh;
+    --boo2-flank: 24vw;
+    --boo2-drop: 2.4dvh;
+    --boo2-eflank: 16vw;
   }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   body.boo2-stage {
     --boo2-strip: 186px;    /* 150px board + 36px fixed roll bar */
-    --boo2-opp-top: 22px;
-    --boo2-opp-h: 104px;
+    --boo2-opp-top: 30px;
+    --boo2-opp-h: 68px;
+    --boo2-me-h: 102px;
+    --boo2-flank: 140px;
+    --boo2-drop: 16px;
+    --boo2-eflank: 96px;
   }
+}
+
+/* EXIT: the engine parks it top-right where the enemy plate now lives —
+   move it top-left in stage mode (engine mobile rules use !important) */
+body.boo2-stage #raid-screen #leaveRaidBtn {
+  top: 12px !important; left: 12px !important; right: auto !important;
+}
+@media (max-width: 700px) {
+  body.boo2-stage #raid-screen #leaveRaidBtn { top: 48px !important; left: 8px !important; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  body.boo2-stage #raid-screen #leaveRaidBtn { top: 44px !important; left: 8px !important; }
 }
 
 /* the strip never shows rules paragraphs — ability names stay,
@@ -48,99 +76,39 @@ body.boo2-stage #raid-screen .fighter-slot .ci-desc { display: none !important; 
 body.boo2-stage #raid-screen .fighter-slot .card-info { padding: 2px 4px; }
 
 /* ─────────────────────────────────────────────
-   THE STAGE — box-front sky, ridge, floor
+   THE STAGE — the model_a ice-castle scene
    ───────────────────────────────────────────── */
 #boo2-stage { display: none; }
 body.in-battle.boo2-stage #boo2-stage {
   display: block;
   position: fixed; inset: 0; z-index: 0;
   overflow: hidden; pointer-events: none;
-  background:
-    radial-gradient(ellipse 62% 44% at 78% 26%, rgba(232, 138, 232, 0.16), transparent 62%),
-    radial-gradient(ellipse 70% 52% at 16% 18%, rgba(88, 200, 240, 0.13), transparent 62%),
-    radial-gradient(ellipse 95% 55% at 50% 112%, rgba(42, 168, 138, 0.20), transparent 58%),
-    linear-gradient(180deg, #110822 0%, #1d0e38 32%, #341458 60%, #4a1a66 78%, #221038 100%);
+  background: linear-gradient(180deg, #0a1428 0%, #10233f 45%, #0a1830 100%);
 }
 body.boo2-stage #raid-screen { position: relative; z-index: 1; }
 
-/* aurora ribbons — soft, slow drift */
-#boo2-stage .stage-aurora {
-  position: absolute; inset: -4% -6%;
-  background:
-    radial-gradient(46% 15% at 30% 24%, rgba(126, 240, 201, 0.30), transparent 70%),
-    radial-gradient(40% 13% at 64% 15%, rgba(176, 112, 232, 0.28), transparent 70%),
-    radial-gradient(34% 11% at 47% 33%, rgba(88, 200, 240, 0.20), transparent 70%),
-    radial-gradient(26% 9% at 82% 40%, rgba(126, 240, 201, 0.16), transparent 70%);
-  animation: boo2AuroraDrift 26s ease-in-out infinite alternate;
-}
-@keyframes boo2AuroraDrift {
-  from { transform: translateX(-1.5%) translateY(-0.5%); }
-  to   { transform: translateX(1.5%) translateY(0.8%); }
-}
-
-/* star field */
-#boo2-stage .stage-stars {
+/* the castle backdrop (model_a arena_bg) + vignette */
+#boo2-stage .stage-scene {
   position: absolute; inset: 0;
-  background-image:
-    radial-gradient(1.5px 1.5px at 8% 12%, rgba(255,255,255,0.7), transparent 100%),
-    radial-gradient(1px 1px at 22% 28%, rgba(255,255,255,0.4), transparent 100%),
-    radial-gradient(2px 2px at 34% 8%, rgba(255,255,255,0.6), transparent 100%),
-    radial-gradient(1px 1px at 47% 22%, rgba(255,255,255,0.45), transparent 100%),
-    radial-gradient(1.5px 1.5px at 58% 6%, rgba(255,255,255,0.65), transparent 100%),
-    radial-gradient(1px 1px at 66% 30%, rgba(255,255,255,0.35), transparent 100%),
-    radial-gradient(2px 2px at 76% 10%, rgba(255,255,255,0.55), transparent 100%),
-    radial-gradient(1px 1px at 88% 20%, rgba(255,255,255,0.45), transparent 100%),
-    radial-gradient(1.5px 1.5px at 94% 34%, rgba(255,255,255,0.5), transparent 100%),
-    radial-gradient(1px 1px at 14% 44%, rgba(255,255,255,0.3), transparent 100%),
-    radial-gradient(1px 1px at 41% 40%, rgba(255,255,255,0.3), transparent 100%);
-  animation: boo2Twinkle 7s ease-in-out infinite alternate;
+  background: url('../art/stage-castle.webp') center 24% / cover no-repeat;
 }
-@keyframes boo2Twinkle { from { opacity: 0.75; } to { opacity: 1; } }
-
-/* the opponent's perch — a floating rock island (box-art style),
-   anchored directly under the opponent sprite at every viewport */
-#boo2-stage .stage-ridge {
-  position: absolute;
-  right: 8vw;
-  top: calc(var(--boo2-opp-top) + var(--boo2-opp-h) - 16px);
-  width: 330px;
-  height: 84px;
-  background: linear-gradient(196deg, #4e2775 0%, #331652 46%, #1d0c30 100%);
-  border-radius: 48% 52% 44% 56% / 88% 92% 30% 34%;
-  box-shadow:
-    inset 0 4px 0 rgba(126, 240, 201, 0.28),
-    inset 10px 14px 26px rgba(126, 240, 201, 0.10),
-    inset -30px -18px 40px rgba(0, 0, 0, 0.42),
-    0 26px 44px rgba(0, 0, 0, 0.35);
-  transform: rotate(-2.5deg);
-}
-/* a wisp of drift-rock trailing beneath it */
-#boo2-stage .stage-ridge::after {
+#boo2-stage .stage-scene::after {
   content: '';
-  position: absolute;
-  left: 18%; bottom: -26%;
-  width: 30%; height: 34%;
-  background: linear-gradient(200deg, #3b1c5c, #200e36);
-  border-radius: 50% 50% 42% 58% / 80% 86% 34% 40%;
-  box-shadow: inset 0 2px 0 rgba(126, 240, 201, 0.14);
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 42%, transparent 34%, rgba(2, 6, 18, 0.5) 100%);
+}
+@media (max-width: 700px) {
+  #boo2-stage .stage-scene { background-position: center center; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  #boo2-stage .stage-scene { background-position: center 30%; }
 }
 
-/* the lit floor your spirit stands on */
-#boo2-stage .stage-floor {
-  position: absolute;
-  left: 0; right: 0;
-  bottom: calc(var(--boo2-strip) - 26px);
-  height: 110px;
-  background:
-    radial-gradient(60% 90% at 26% 100%, rgba(111, 220, 140, 0.30), transparent 65%),
-    linear-gradient(180deg, transparent 0%, rgba(42, 168, 138, 0.16) 45%, rgba(47, 138, 94, 0.34) 100%);
-}
-
-/* drifting wisps */
+/* drifting wisps — ambient spirits over the ice */
 #boo2-stage .stage-wisps i {
   position: absolute;
   width: 9px; height: 9px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(242, 234, 216, 0.9), rgba(126, 240, 201, 0.35) 55%, transparent 75%);
+  background: radial-gradient(circle, rgba(242, 234, 216, 0.85), rgba(126, 214, 240, 0.35) 55%, transparent 75%);
   opacity: 0;
   animation: boo2WispFloat 13s linear infinite;
 }
@@ -150,42 +118,89 @@ body.boo2-stage #raid-screen { position: relative; z-index: 1; }
 #boo2-stage .stage-wisps i:nth-child(4) { left: 84%; bottom: 28%; width: 7px; height: 7px; animation-delay: 9.5s; animation-duration: 18s; }
 @keyframes boo2WispFloat {
   0%   { transform: translate(0, 0); opacity: 0; }
-  12%  { opacity: 0.85; }
-  55%  { opacity: 0.5; }
+  12%  { opacity: 0.75; }
+  55%  { opacity: 0.45; }
   100% { transform: translate(6vw, -46vh); opacity: 0; }
 }
 
 /* ─────────────────────────────────────────────
-   ACTORS — the two active spirits
-   .stage-actor > .actor-entry (enter/leave/KO transforms)
-                > .actor-bob   (idle bob + hit jitter host)
-                > img.actor-img / .actor-flash / .actor-shadow
+   TEAMS & SLOTS
+   .stage-team = a zero-size anchor point; each .stage-actor is
+   absolutely planted at it and moved wholly by transform, so slot
+   reassignment (active↔bench) transitions as the walk-forward.
+   Your anchor = feet line above the strip; enemy anchor = the
+   gate-platform floor line.
    ───────────────────────────────────────────── */
-#boo2-stage .stage-actor { position: absolute; }
-#boo2-stage .stage-actor.me  { left: 9vw;  bottom: calc(var(--boo2-strip) - 16px); z-index: 3; }
-#boo2-stage .stage-actor.opp { right: 11vw; top: var(--boo2-opp-top); z-index: 2; }
+#boo2-stage .stage-team {
+  position: absolute; left: 50%;
+  width: 0; height: 0;
+}
+#boo2-stage .stage-team.red  { bottom: calc(var(--boo2-strip) + 30px); }
+#boo2-stage .stage-team.blue { top: calc(var(--boo2-opp-top) + var(--boo2-opp-h)); }
 
-#boo2-stage .actor-entry { transition: opacity 0.55s ease, transform 0.55s ease; }
+#boo2-stage .stage-actor {
+  position: absolute; left: 0; bottom: 0;
+  transform: translate(-50%, 0);
+  transition: transform 0.6s cubic-bezier(0.22, 0.9, 0.32, 1.05);
+  will-change: transform;
+}
+#boo2-stage.no-anim .stage-actor,
+#boo2-stage.no-anim .actor-entry { transition: none !important; }
+
+/* your side */
+#boo2-stage .stage-team.red .stage-actor.slot-active {
+  transform: translate(-50%, 0) scale(1); z-index: 3;
+}
+#boo2-stage .stage-team.red .stage-actor.slot-left {
+  transform: translate(calc(-50% - var(--boo2-flank)), var(--boo2-drop)) scale(0.78); z-index: 4;
+}
+#boo2-stage .stage-team.red .stage-actor.slot-right {
+  transform: translate(calc(-50% + var(--boo2-flank)), var(--boo2-drop)) scale(0.78); z-index: 4;
+}
+
+/* enemy side — active on the platform, bench as small silhouettes */
+#boo2-stage .stage-team.blue .stage-actor.slot-active {
+  transform: translate(-50%, 0) scale(1); z-index: 2;
+}
+#boo2-stage .stage-team.blue .stage-actor.slot-left {
+  transform: translate(calc(-50% - var(--boo2-eflank)), -6px) scale(0.52); z-index: 1;
+}
+#boo2-stage .stage-team.blue .stage-actor.slot-right {
+  transform: translate(calc(-50% + var(--boo2-eflank)), -6px) scale(0.52); z-index: 1;
+}
+#boo2-stage .stage-team.blue .stage-actor.slot-left .actor-img,
+#boo2-stage .stage-team.blue .stage-actor.slot-right .actor-img {
+  filter: brightness(0.34) saturate(0.45) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+  opacity: 0.85;
+}
+
+/* ─────────────────────────────────────────────
+   ACTORS — .stage-actor > .actor-entry (enter/KO transforms)
+                          > .actor-bob   (idle bob + hit jitter)
+                          > img.actor-img / .actor-flash / .actor-shadow
+   ───────────────────────────────────────────── */
+#boo2-stage .actor-entry { transition: opacity 0.55s ease, transform 0.55s ease, filter 0.55s ease; }
 #boo2-stage .actor-bob { position: relative; animation: boo2Bob 3.8s ease-in-out infinite alternate; }
-#boo2-stage .stage-actor.opp .actor-bob { animation-duration: 3.1s; animation-delay: -1.7s; }
-@keyframes boo2Bob { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+#boo2-stage .stage-actor[data-i="1"] .actor-bob { animation-duration: 3.2s; animation-delay: -1.3s; }
+#boo2-stage .stage-actor[data-i="2"] .actor-bob { animation-duration: 4.3s; animation-delay: -2.4s; }
+@keyframes boo2Bob { from { transform: translateY(0); } to { transform: translateY(-7px); } }
 
 #boo2-stage .actor-img {
   display: block;
-  height: min(380px, calc(100dvh - var(--boo2-strip) - 130px));
+  height: var(--boo2-me-h);
   width: auto;
-  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.55));
 }
-#boo2-stage .stage-actor.opp .actor-img { height: var(--boo2-opp-h); }
+#boo2-stage .stage-team.blue .actor-img { height: var(--boo2-opp-h); }
 
 /* grounding shadow */
 #boo2-stage .actor-shadow {
   position: absolute; left: 50%; bottom: -7px;
-  width: 72%; height: 16px;
+  width: 72%; height: 14px;
   transform: translateX(-50%);
   background: radial-gradient(ellipse closest-side, rgba(0, 0, 0, 0.5), transparent 75%);
 }
-#boo2-stage .stage-actor.opp .actor-shadow { bottom: -5px; height: 10px; width: 80%; }
+#boo2-stage .stage-team.blue .actor-shadow { bottom: -5px; height: 9px; width: 80%; }
 
 /* hit flash overlay */
 #boo2-stage .actor-flash {
@@ -204,28 +219,28 @@ body.boo2-stage #raid-screen { position: relative; z-index: 1; }
   78% { transform: translateX(3px); }
 }
 
-/* entry — you slide up from the left, they descend at the ridge */
-#boo2-stage .stage-actor.me .actor-entry.entering { animation: boo2EnterMe 0.6s cubic-bezier(0.18, 0.9, 0.26, 1.12) both; }
-#boo2-stage .stage-actor.opp .actor-entry.entering { animation: boo2EnterOpp 0.6s 0.12s cubic-bezier(0.18, 0.9, 0.26, 1.12) both; }
+/* entry — your party rises from the steps, the enemy descends */
+#boo2-stage .stage-team.red .actor-entry.entering { animation: boo2EnterMe 0.6s cubic-bezier(0.18, 0.9, 0.26, 1.12) both; }
+#boo2-stage .stage-team.red .stage-actor[data-i="1"] .actor-entry.entering { animation-delay: 0.07s; }
+#boo2-stage .stage-team.red .stage-actor[data-i="2"] .actor-entry.entering { animation-delay: 0.14s; }
+#boo2-stage .stage-team.blue .actor-entry.entering { animation: boo2EnterOpp 0.6s 0.12s cubic-bezier(0.18, 0.9, 0.26, 1.12) both; }
 @keyframes boo2EnterMe {
-  from { opacity: 0; transform: translate(-66px, 30px) scale(0.94); }
-  to   { opacity: 1; transform: translate(0, 0) scale(1); }
+  from { opacity: 0; transform: translateY(38px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes boo2EnterOpp {
-  from { opacity: 0; transform: translate(48px, -38px) scale(0.92); }
-  to   { opacity: 1; transform: translate(0, 0) scale(1); }
+  from { opacity: 0; transform: translateY(-34px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* swap-out slide */
-#boo2-stage .stage-actor.leaving .actor-entry { opacity: 0; transform: translateX(-48px); transition: opacity 0.22s ease-in, transform 0.22s ease-in; }
-#boo2-stage .stage-actor.opp.leaving .actor-entry { transform: translateX(48px); }
-
-/* KO dissolve — sink and fade */
+/* KO — the fallen spirit sinks and stays on the field greyed out
+   (mock's .dead); the walk-forward is the slot transition above */
 #boo2-stage .stage-actor.is-ko .actor-entry {
-  opacity: 0;
-  transform: translateY(28px) scale(0.95);
-  transition: opacity 0.65s ease 0.12s, transform 0.65s ease 0.12s;
+  opacity: 0.28;
+  filter: grayscale(1) brightness(0.75);
+  transform: translateY(16px) scale(0.96);
 }
+#boo2-stage .stage-actor.is-ko .actor-bob { animation: none; }
 
 /* victory bounce (visible through the game-over glass) */
 #boo2-stage .stage-actor.victory .actor-bob { animation: boo2Victory 0.85s cubic-bezier(0.3, 1.5, 0.4, 1) 3; }
@@ -237,82 +252,157 @@ body.boo2-stage #raid-screen { position: relative; z-index: 1; }
 /* token fallback — id not in the sprite manifest yet: framed card art */
 #boo2-stage .stage-actor.token-mode .actor-img {
   height: auto;
-  width: 210px;
+  width: 150px;
   border: 2px solid rgba(212, 160, 64, 0.6);
-  border-radius: 18px 18px 12px 12px;
-  box-shadow: 0 0 0 3px rgba(10, 10, 26, 0.7), 0 16px 34px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 0, 0, 0.25);
+  border-radius: 16px 16px 11px 11px;
+  box-shadow: 0 0 0 3px rgba(10, 10, 26, 0.7), 0 14px 30px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 0, 0, 0.25);
   background: #0d0d20;
 }
-#boo2-stage .stage-actor.opp.token-mode .actor-img { width: 140px; }
+#boo2-stage .stage-team.blue .stage-actor.token-mode .actor-img { width: 118px; }
+@media (max-width: 700px) {
+  #boo2-stage .stage-actor.token-mode .actor-img { width: 96px; }
+  #boo2-stage .stage-team.blue .stage-actor.token-mode .actor-img { width: 78px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  #boo2-stage .stage-actor.token-mode .actor-img { width: 70px; }
+  #boo2-stage .stage-team.blue .stage-actor.token-mode .actor-img { width: 56px; }
+}
 
 /* ─────────────────────────────────────────────
-   NAME / HP PLATES
+   NAME / HP PLATES — mock-style: round art chip + angled dark
+   banner + green chevron bar. Enemy top-right, yours lower-left.
    ───────────────────────────────────────────── */
 #boo2-stage .stage-plate {
   position: absolute; z-index: 6;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center;
 }
-#boo2-stage .stage-plate.red { left: 22px; bottom: calc(var(--boo2-strip) + 16px); }
-#boo2-stage .stage-plate.blue { right: 16px; top: 52px; }
+#boo2-stage .stage-plate.red { left: 18px; bottom: calc(var(--boo2-strip) + 14px); }
+#boo2-stage .stage-plate.blue { right: 14px; top: 14px; }
 
 #boo2-stage .plate-chip {
-  width: 48px; height: 48px; border-radius: 50%;
+  width: 58px; height: 58px; border-radius: 50%;
   object-fit: cover; object-position: center 28%;
   background: #0a0d16;
-  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.55);
+  position: relative; z-index: 2;
+  flex-shrink: 0;
 }
-#boo2-stage .stage-plate.red .plate-chip { border: 2px solid rgba(255, 170, 90, 0.85); }
-#boo2-stage .stage-plate.blue .plate-chip { border: 2px solid rgba(125, 184, 232, 0.85); }
+#boo2-stage .stage-plate.red .plate-chip {
+  border: 2.5px solid rgba(126, 200, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(16, 42, 84, 0.9), 0 0 14px rgba(79, 195, 247, 0.45), 0 6px 16px rgba(0, 0, 0, 0.55);
+  margin-right: -14px;
+}
+#boo2-stage .stage-plate.blue .plate-chip {
+  border: 2.5px solid rgba(180, 186, 205, 0.85);
+  box-shadow: 0 0 0 3px rgba(24, 26, 36, 0.92), 0 0 14px rgba(150, 160, 190, 0.3), 0 6px 16px rgba(0, 0, 0, 0.55);
+  margin-left: -14px;
+}
 
 #boo2-stage .plate-body {
-  min-width: 158px;
-  background: rgba(10, 10, 26, 0.66);
-  border-radius: 13px;
-  padding: 8px 13px 7px;
+  min-width: 168px;
+  padding: 7px 16px 7px 24px;
+  position: relative; z-index: 1;
 }
-#boo2-stage .stage-plate.red .plate-body { border: 1.5px solid rgba(212, 160, 64, 0.45); }
-#boo2-stage .stage-plate.blue .plate-body { border: 1.5px solid rgba(125, 184, 232, 0.45); }
+#boo2-stage .stage-plate.red .plate-body {
+  background: linear-gradient(175deg, #1c4076 0%, #122a52 55%, #0b1c3a 100%);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+}
+#boo2-stage .stage-plate.blue .plate-body {
+  padding: 7px 24px 7px 16px;
+  background: linear-gradient(175deg, #2b2f3c 0%, #1a1d28 55%, #101219 100%);
+  clip-path: polygon(16px 0, 100% 0, 100% 100%, 0 100%);
+}
 
 #boo2-stage .plate-name {
   font-family: 'Creepster', cursive;
   font-size: 19px; letter-spacing: 2px; line-height: 1;
-  color: #f2ead8;
+  color: #f4f7ff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 46vw;
   margin-bottom: 6px;
+  text-align: center;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.75);
 }
-#boo2-stage .stage-plate.red .plate-name { text-shadow: 0 0 12px rgba(212, 160, 64, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6); }
-#boo2-stage .stage-plate.blue .plate-name { color: #dbe9ff; text-shadow: 0 0 12px rgba(125, 184, 232, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6); }
 
+/* green chevron pill (mock's recessed slot) */
 #boo2-stage .plate-bar {
-  height: 9px; border-radius: 6px;
-  background: rgba(255, 255, 255, 0.12);
+  height: 9px;
+  background: rgba(0, 0, 0, 0.55);
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  clip-path: polygon(5px 0, calc(100% - 3px) 0, 100% 50%, calc(100% - 3px) 100%, 5px 100%, 0 50%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 #boo2-stage .plate-bar i {
   display: block; height: 100%; width: 100%;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #4caf6d, #7fe09a);
-  box-shadow: 0 0 8px rgba(111, 220, 140, 0.55);
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 55%, #16a34a 100%);
+  clip-path: polygon(5px 0, calc(100% - 3px) 0, 100% 50%, calc(100% - 3px) 100%, 5px 100%, 0 50%);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.55);
   transition: width 0.35s ease;
 }
-#boo2-stage .stage-plate.hp-low .plate-bar i { background: linear-gradient(90deg, #d8a12f, #f0c860); box-shadow: 0 0 8px rgba(240, 200, 96, 0.5); }
-#boo2-stage .stage-plate.hp-critical .plate-bar i { background: linear-gradient(90deg, #c03a30, #f0564a); box-shadow: 0 0 10px rgba(240, 86, 74, 0.6); animation: boo2BarPulse 1s ease-in-out infinite; }
-#boo2-stage .stage-plate.hp-over .plate-bar i { background: linear-gradient(90deg, #2ea182, #7ef0c9); box-shadow: 0 0 10px rgba(126, 240, 201, 0.6); }
+#boo2-stage .stage-plate.hp-low .plate-bar i { background: linear-gradient(180deg, #facc15, #eab308 60%, #ca8a04); box-shadow: 0 0 8px rgba(250, 204, 21, 0.5); }
+#boo2-stage .stage-plate.hp-critical .plate-bar i { background: linear-gradient(180deg, #f87171, #dc2626 60%, #b91c1c); box-shadow: 0 0 10px rgba(248, 113, 113, 0.6); animation: boo2BarPulse 1s ease-in-out infinite; }
+#boo2-stage .stage-plate.hp-over .plate-bar i { background: linear-gradient(180deg, #7ef0c9, #2ea182 60%, #1f7a63); box-shadow: 0 0 10px rgba(126, 240, 201, 0.6); }
 @keyframes boo2BarPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 
 #boo2-stage .plate-hp {
   margin-top: 4px;
-  font-family: 'Nunito', sans-serif; font-weight: 800; font-size: 12px;
-  color: #b9c2d8; letter-spacing: 0.06em;
+  font-family: 'Creepster', cursive; font-size: 12px;
+  color: #cfd8ea; letter-spacing: 0.12em;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
 }
 #boo2-stage .stage-plate.is-ko { opacity: 0.45; filter: grayscale(0.8); }
 
 /* ─────────────────────────────────────────────
+   THE SPELLBOOK — the mock's blue book with a count badge,
+   presentation over the engine's specials UI. Clicking it
+   spotlights #red-ability-buttons (body.boo2-book-spot).
+   ───────────────────────────────────────────── */
+body .stage-book { display: none; }
+body.in-battle.boo2-stage .stage-book {
+  display: block;
+  position: fixed; z-index: 530;
+  left: 12px; bottom: calc(var(--boo2-strip) / 2 - 32px);
+  width: 56px; height: 60px;
+  padding: 0; border: none; background: none; cursor: pointer;
+  pointer-events: auto;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.55));
+  transition: transform 0.15s ease;
+}
+body.boo2-stage .stage-book:active { transform: scale(0.9); }
+body.boo2-stage .stage-book img { width: 100%; height: 100%; object-fit: contain; }
+body.boo2-stage .stage-book .book-badge {
+  position: absolute; bottom: -2px; right: -5px;
+  min-width: 20px; height: 20px; border-radius: 10px;
+  background: #123f66; color: #8fe3ff;
+  font-family: 'Nunito', sans-serif; font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px;
+  border: 1px solid rgba(79, 195, 247, 0.55);
+}
+body.boo2-stage .stage-book.has-specials {
+  animation: boo2BookGlow 1.5s ease-in-out infinite;
+}
+@keyframes boo2BookGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(79, 195, 247, 0.7)) drop-shadow(0 0 16px rgba(79, 195, 247, 0.35)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(79, 195, 247, 0.95)) drop-shadow(0 0 24px rgba(79, 195, 247, 0.55)); }
+}
+
+/* clicking the book spotlights the engine's own ability buttons */
+body.boo2-book-spot #red-ability-buttons .ability-btn:not([disabled]) {
+  animation: boo2AbilitySpot 0.85s ease-in-out 3;
+}
+body.boo2-book-spot #red-resources {
+  animation: boo2AbilitySpot 0.85s ease-in-out 3;
+}
+@keyframes boo2AbilitySpot {
+  0%, 100% { transform: translateY(0); box-shadow: none; }
+  50%      { transform: translateY(-2px); box-shadow: 0 0 14px rgba(79, 195, 247, 0.9); }
+}
+
+/* ─────────────────────────────────────────────
    STRIP COMPRESSION — DESKTOP (>700w, >500h)
    Engine base layout is already [red | dice | blue] — pin it to a
-   bottom strip and shrink the cards.
+   bottom strip and shrink the cards. (padding-left clears the book)
    ───────────────────────────────────────────── */
 @media (min-width: 701px) and (min-height: 501px) {
   body.boo2-stage #raid-screen #battle-view { display: block; }
@@ -320,7 +410,7 @@ body.boo2-stage #raid-screen { position: relative; z-index: 1; }
     position: fixed; left: 0; right: 0; bottom: 0; top: auto;
     height: var(--boo2-strip); max-height: var(--boo2-strip);
     width: 100%; max-width: none; margin: 0;
-    padding: 8px 18px 10px;
+    padding: 8px 18px 10px 82px;
     border: none; border-top: 1.5px solid rgba(212, 160, 64, 0.30);
     border-radius: 0;
     background: linear-gradient(180deg, rgba(12, 12, 28, 0.40), rgba(9, 9, 22, 0.93) 30%, rgba(7, 7, 18, 0.96));
@@ -427,21 +517,23 @@ body.boo2-stage #raid-screen { position: relative; z-index: 1; }
   body.boo2-stage #raid-screen .arena-center { flex: 1 1 auto; min-height: 0; }
   body.boo2-stage #raid-screen .hp-bar-wrap { max-width: 230px; margin: 0 auto; }
 
-  #boo2-stage .stage-actor.me { left: 6vw; bottom: calc(var(--boo2-strip) - 10px); }
-  #boo2-stage .stage-actor.opp { right: 5vw; }
-  #boo2-stage .actor-img { height: min(26dvh, 270px); }
-  #boo2-stage .stage-actor.token-mode .actor-img { width: 124px; }
-  #boo2-stage .stage-actor.opp.token-mode .actor-img { width: 92px; }
-  #boo2-stage .stage-ridge { right: 3vw; width: 170px; height: 48px; }
-  #boo2-stage .stage-floor { height: 84px; }
+  #boo2-stage .stage-team.red { bottom: calc(var(--boo2-strip) + 56px); }
 
-  #boo2-stage .stage-plate.red { left: 10px; bottom: calc(var(--boo2-strip) + 8px); }
-  #boo2-stage .stage-plate.blue { right: 10px; top: 62px; }
-  #boo2-stage .plate-body { min-width: 132px; padding: 6px 11px 6px; }
+  #boo2-stage .stage-plate.red { left: 10px; bottom: calc(var(--boo2-strip) + 2px); }
+  #boo2-stage .stage-plate.blue { right: 8px; top: 50px; }
+  #boo2-stage .plate-body { min-width: 128px; padding: 6px 13px 6px 20px; }
+  #boo2-stage .stage-plate.blue .plate-body { padding: 6px 20px 6px 13px; }
   #boo2-stage .plate-name { font-size: 16px; margin-bottom: 5px; }
-  #boo2-stage .plate-chip { width: 40px; height: 40px; }
+  #boo2-stage .plate-chip { width: 46px; height: 46px; }
+  #boo2-stage .stage-plate.red .plate-chip { margin-right: -11px; }
+  #boo2-stage .stage-plate.blue .plate-chip { margin-left: -11px; }
   #boo2-stage .plate-bar { height: 8px; }
   #boo2-stage .plate-hp { font-size: 11px; margin-top: 3px; }
+
+  body.in-battle.boo2-stage .stage-book {
+    left: 8px; bottom: 8px;
+    width: 46px; height: 50px;
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -462,27 +554,29 @@ body.boo2-stage #raid-screen { position: relative; z-index: 1; }
   }
   body.boo2-stage #raid-screen .arena-board::before { display: none; }
 
-  #boo2-stage .stage-actor.me { left: 15vw; bottom: calc(var(--boo2-strip) - 12px); }
-  #boo2-stage .stage-actor.opp { right: 22vw; }
-  #boo2-stage .actor-img { height: min(158px, calc(100dvh - var(--boo2-strip) - 44px)); }
-  #boo2-stage .stage-actor.token-mode .actor-img { width: 96px; }
-  #boo2-stage .stage-actor.opp.token-mode .actor-img { width: 72px; }
-  #boo2-stage .stage-ridge { right: 17vw; width: 200px; height: 52px; }
-  #boo2-stage .stage-floor { height: 62px; bottom: calc(var(--boo2-strip) - 18px); }
+  #boo2-stage .stage-team.red { bottom: calc(var(--boo2-strip) + 6px); }
 
   #boo2-stage .stage-plate.red { left: 12px; bottom: calc(var(--boo2-strip) + 4px); }
-  #boo2-stage .stage-plate.blue { right: 8px; top: 38px; }
-  #boo2-stage .plate-body { min-width: 118px; padding: 5px 10px 5px; }
+  #boo2-stage .stage-plate.blue { right: 8px; top: 44px; }
+  #boo2-stage .plate-body { min-width: 116px; padding: 5px 12px 5px 18px; }
+  #boo2-stage .stage-plate.blue .plate-body { padding: 5px 18px 5px 12px; }
   #boo2-stage .plate-name { font-size: 14px; letter-spacing: 1.5px; margin-bottom: 4px; }
-  #boo2-stage .plate-chip { width: 34px; height: 34px; }
+  #boo2-stage .plate-chip { width: 38px; height: 38px; }
+  #boo2-stage .stage-plate.red .plate-chip { margin-right: -9px; }
+  #boo2-stage .stage-plate.blue .plate-chip { margin-left: -9px; }
   #boo2-stage .plate-bar { height: 7px; }
   #boo2-stage .plate-hp { font-size: 10px; margin-top: 2px; }
+
+  body.in-battle.boo2-stage .stage-book {
+    left: 8px; bottom: 2px;
+    width: 32px; height: 34px;
+  }
 }
 
 /* reduced motion: hold the poses, drop the loops */
 @media (prefers-reduced-motion: reduce) {
+  #boo2-stage .stage-actor,
   #boo2-stage .actor-bob,
-  #boo2-stage .stage-aurora,
-  #boo2-stage .stage-stars,
-  #boo2-stage .stage-wisps i { animation: none !important; }
+  body.boo2-stage .stage-book,
+  #boo2-stage .stage-wisps i { animation: none !important; transition: none !important; }
 }

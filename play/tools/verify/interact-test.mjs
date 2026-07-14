@@ -19,10 +19,10 @@ await page.evaluateOnNewDocument(() => {
 });
 await page.goto('http://localhost:8787/play/', { waitUntil: 'networkidle2' });
 const probe = () => page.evaluate(() => ({
-  red: document.querySelector('#boo2-stage .stage-actor.me .actor-img')?.getAttribute('src'),
-  blue: document.querySelector('#boo2-stage .stage-actor.opp .actor-img')?.getAttribute('src'),
-  redCls: document.querySelector('#boo2-stage .stage-actor.me')?.className,
-  blueCls: document.querySelector('#boo2-stage .stage-actor.opp')?.className,
+  red: document.querySelector('#boo2-stage .stage-team.red .stage-actor.slot-active .actor-img')?.getAttribute('src'),
+  blue: document.querySelector('#boo2-stage .stage-team.blue .stage-actor.slot-active .actor-img')?.getAttribute('src'),
+  redCls: document.querySelector('#boo2-stage .stage-team.red .stage-actor.slot-active')?.className,
+  blueCls: document.querySelector('#boo2-stage .stage-team.blue .stage-actor.slot-active')?.className,
   plateRed: document.querySelector('#boo2-stage .stage-plate.red .plate-hp')?.textContent,
   plateBlue: document.querySelector('#boo2-stage .stage-plate.blue .plate-hp')?.textContent,
   inBattle: document.body.classList.contains('in-battle'),
@@ -55,7 +55,7 @@ await page.evaluate(() => showGameOver('red'));
 await new Promise(r => setTimeout(r, 700));
 const go = await page.evaluate(() => ({
   overlay: document.querySelector('#raid-screen .game-over')?.classList.contains('active'),
-  victory: document.querySelector('#boo2-stage .stage-actor.me')?.classList.contains('victory'),
+  victory: document.querySelector('#boo2-stage .stage-team.red .stage-actor.slot-active')?.classList.contains('victory'),
   title: document.querySelector('#raid-screen #goTitle')?.textContent,
 }));
 console.log('3 GAMEOVER:', JSON.stringify(go));

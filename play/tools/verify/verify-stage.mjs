@@ -43,8 +43,8 @@ for (const vp of VIEWPORTS) {
   const info = await page.evaluate(() => ({
     stage: !!document.querySelector('#boo2-stage'),
     bodyCls: document.body.className,
-    redSrc: document.querySelector('#boo2-stage .stage-actor.me .actor-img')?.getAttribute('src'),
-    blueSrc: document.querySelector('#boo2-stage .stage-actor.opp .actor-img')?.getAttribute('src'),
+    redSrc: document.querySelector('#boo2-stage .stage-team.red .stage-actor.slot-active .actor-img')?.getAttribute('src'),
+    blueSrc: document.querySelector('#boo2-stage .stage-team.blue .stage-actor.slot-active .actor-img')?.getAttribute('src'),
     plateRed: document.querySelector('#boo2-stage .stage-plate.red .plate-name')?.textContent,
     plateBlue: document.querySelector('#boo2-stage .stage-plate.blue .plate-name')?.textContent,
     hpRed: document.querySelector('#boo2-stage .stage-plate.red .plate-hp')?.textContent,
