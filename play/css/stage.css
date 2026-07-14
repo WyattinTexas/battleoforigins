@@ -29,8 +29,8 @@
 body.boo2-stage {
   --boo2-strip: 240px;      /* desktop default (duel framing) */
   --boo2-opp-top: 84px;     /* (portrait) enemy platform anchor */
-  --boo2-opp-h: 190px;      /* enemy active sprite height */
-  --boo2-me-h: 250px;       /* your active sprite height */
+  --boo2-opp-h: 150px;      /* enemy active sprite height */
+  --boo2-me-h: 215px;       /* your active sprite height */
   --boo2-flank: 210px;      /* (portrait) bench horizontal offset */
   --boo2-drop: 46px;        /* (portrait) bench vertical drop */
   --boo2-eflank: 150px;     /* (portrait) enemy bench offset */
@@ -58,8 +58,8 @@ body.boo2-stage {
      at their plate; slim tray below with just your 3 cards + roll */
   body.boo2-stage {
     --boo2-strip: 118px;
-    --boo2-opp-h: 27dvh;
-    --boo2-me-h: 34dvh;
+    --boo2-opp-h: 19dvh;
+    --boo2-me-h: 27dvh;
   }
 }
 
@@ -211,6 +211,10 @@ body.boo2-stage #raid-screen .turn-indicator {
 #boo2-stage .stage-team.blue .stage-actor.slot-right .actor-img {
   filter: brightness(0.48) saturate(0.55) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
   opacity: 0.9;
+}
+#boo2-stage .stage-team.blue .stage-actor.token-mode:not(.slot-active) .actor-img {
+  opacity: 0.45;
+  filter: brightness(0.55) saturate(0.4) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
 }
 
 /* ─────────────────────────────────────────────
@@ -445,22 +449,22 @@ body.boo2-book-spot #red-resources {
    ───────────────────────────────────────────── */
 @media (min-width: 701px) and (min-height: 501px) {
   /* ── THE DUEL, desktop scale: actives clash mid-ring over the dice ── */
-  #boo2-stage .stage-team.red { left: 36%; bottom: calc(var(--boo2-strip) + 62px); }
-  #boo2-stage .stage-team.blue { left: 64%; top: auto; bottom: calc(var(--boo2-strip) + 170px); }
+  #boo2-stage .stage-team.red { left: 50%; bottom: calc(var(--boo2-strip) + 36px); }
+  #boo2-stage .stage-team.blue { left: 50%; top: auto; bottom: calc(var(--boo2-strip) + 280px); }
 
   /* your squad waits at your corner, above your plate */
   #boo2-stage .stage-team.red .stage-actor.slot-left {
-    transform: translate(calc(-50% - 190px), 48px) scale(0.58);
+    transform: translate(calc(-50% - 260px), 14px) scale(0.8);
   }
   #boo2-stage .stage-team.red .stage-actor.slot-right {
-    transform: translate(calc(-50% - 68px), 64px) scale(0.58);
+    transform: translate(calc(-50% + 260px), 14px) scale(0.8);
   }
   /* their sideline spirits hover by their plate, upper-right */
   #boo2-stage .stage-team.blue .stage-actor.slot-left {
-    transform: translate(calc(-50% + 160px), -56px) scale(0.45);
+    transform: translate(calc(-50% - 180px), -12px) scale(0.5);
   }
   #boo2-stage .stage-team.blue .stage-actor.slot-right {
-    transform: translate(calc(-50% + 250px), -44px) scale(0.45);
+    transform: translate(calc(-50% + 180px), -12px) scale(0.5);
   }
 
   /* ground glows under both actives */
@@ -476,8 +480,8 @@ body.boo2-book-spot #red-resources {
   /* the VS burst between them */
   body.in-battle.boo2-stage #boo2-stage .stage-vs {
     display: block;
-    bottom: calc(var(--boo2-strip) + 190px);
-    font-size: 108px;
+    bottom: calc(var(--boo2-strip) + 252px);
+    font-size: 84px;
   }
 
   /* the TURN flag, top-left beside EXIT */
@@ -492,8 +496,8 @@ body.boo2-book-spot #red-resources {
 
   /* dice + ability callouts land mid-ring between the actives */
   body.boo2-stage #raid-screen .arena-center {
-    position: fixed !important; left: 30% !important; right: 30% !important;
-    top: 34% !important; height: 36% !important;
+    position: fixed !important; left: 32% !important; right: 32% !important;
+    top: 40% !important; height: 24% !important;
     flex: none !important; min-height: 0 !important; min-width: 0 !important; width: auto !important;
     z-index: 15;
     display: flex !important; flex-direction: column; justify-content: center;
@@ -519,9 +523,10 @@ body.boo2-book-spot #red-resources {
     padding: 8px 250px 10px 90px;
     border: none; border-top: 1.5px solid rgba(212, 160, 64, 0.30);
     border-radius: 0;
-    background: linear-gradient(180deg, rgba(12, 12, 28, 0.40), rgba(9, 9, 22, 0.93) 30%, rgba(7, 7, 18, 0.96));
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    /* ⚠ NO backdrop-filter here: it would become the containing block
+       for the position:fixed .arena-center and pull the dice into the
+       tray (found live 7/14) */
+    background: linear-gradient(180deg, rgba(12, 12, 28, 0.55), rgba(9, 9, 22, 0.95) 30%, rgba(7, 7, 18, 0.97));
     box-shadow: 0 -20px 55px rgba(0, 0, 0, 0.55);
     overflow: visible;
   }
@@ -578,6 +583,13 @@ body.boo2-book-spot #red-resources {
     display: flex; align-items: center; justify-content: center;
     z-index: 470;
   }
+
+  body.boo2-stage #raid-screen #red-team-column .action-btn.team-roll:hover:not(:disabled),
+  body.boo2-stage #raid-screen #red-team-column .duel-done-btn:hover:not(:disabled) {
+    background: linear-gradient(145deg, #9d71f8 0%, #7c3aed 55%, #5b21b6 100%) !important;
+    color: #fff !important;
+  }
+
 
   /* narrator floats top-center as the play-by-play caption */
   body.boo2-stage #raid-screen .narrator-box {
@@ -699,22 +711,22 @@ body.boo2-book-spot #red-resources {
    ───────────────────────────────────────────── */
 @media (max-height: 500px) and (orientation: landscape) {
   /* ── THE DUEL: actives clash mid-ring, left vs right ── */
-  #boo2-stage .stage-team.red { left: 36%; bottom: 146px; }
-  #boo2-stage .stage-team.blue { left: 65%; top: auto; bottom: 196px; }
+  #boo2-stage .stage-team.red { left: 50%; bottom: 124px; }
+  #boo2-stage .stage-team.blue { left: 50%; top: auto; bottom: 246px; }
 
   /* your squad waits at your corner, bottom-left */
   #boo2-stage .stage-team.red .stage-actor.slot-left {
-    transform: translate(calc(-50% - 13vw), 30px) scale(0.55);
+    transform: translate(calc(-50% - 19vw), 8px) scale(0.8);
   }
   #boo2-stage .stage-team.red .stage-actor.slot-right {
-    transform: translate(calc(-50% - 7vw), 40px) scale(0.55);
+    transform: translate(calc(-50% + 19vw), 8px) scale(0.8);
   }
   /* their sideline spirits hover by their plate, upper-right */
   #boo2-stage .stage-team.blue .stage-actor.slot-left {
-    transform: translate(calc(-50% + 15vw), -42px) scale(0.42);
+    transform: translate(calc(-50% - 13vw), -10px) scale(0.5);
   }
   #boo2-stage .stage-team.blue .stage-actor.slot-right {
-    transform: translate(calc(-50% + 23vw), -34px) scale(0.42);
+    transform: translate(calc(-50% + 13vw), -10px) scale(0.5);
   }
 
   /* both actives get ground glows (concept: colored swirls at feet) */
@@ -730,7 +742,7 @@ body.boo2-book-spot #red-resources {
   /* the VS burst between them */
   body.in-battle.boo2-stage #boo2-stage .stage-vs {
     display: block;
-    bottom: 205px; font-size: 58px;
+    bottom: 180px; font-size: 42px;
   }
 
   /* the TURN flag, top-left under the narrator ribbon */
@@ -743,8 +755,8 @@ body.boo2-book-spot #red-resources {
 
   /* dice + ability callouts land mid-ring between the actives */
   body.boo2-stage #raid-screen .arena-center {
-    position: fixed !important; left: 24% !important; right: 24% !important;
-    top: 90px !important; height: 150px !important;
+    position: fixed !important; left: 30% !important; right: 30% !important;
+    top: 116px !important; height: 130px !important;
     flex: none !important; min-height: 0 !important; min-width: 0 !important; width: auto !important;
     z-index: 15;
     display: flex !important; flex-direction: column; justify-content: center;
@@ -812,6 +824,13 @@ body.boo2-book-spot #red-resources {
     box-shadow: 0 0 22px rgba(124, 58, 237, 0.55), 0 8px 20px rgba(0, 0, 0, 0.45) !important;
     z-index: 470;
   }
+
+  body.boo2-stage #raid-screen #red-team-column .action-btn.team-roll:hover:not(:disabled),
+  body.boo2-stage #raid-screen #red-team-column .duel-done-btn:hover:not(:disabled) {
+    background: linear-gradient(145deg, #9d71f8 0%, #7c3aed 55%, #5b21b6 100%) !important;
+    color: #fff !important;
+  }
+
   body.boo2-stage #raid-screen #red-team-column .ability-buttons {
     right: 128px !important;
   }
