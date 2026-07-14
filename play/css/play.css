@@ -111,7 +111,10 @@ body.app::after {
 /* the box front, alive — full-bleed hero behind everything.
    DOM order keeps the wisps drifting IN FRONT of it. */
 #screen-menu .menu-bg {
-  position: absolute; inset: 0;
+  /* FIXED, not absolute: the menu can scroll a hair, and an absolute
+     bg would stretch to content height and slide the baked logo out
+     of its crop window */
+  position: fixed; inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
@@ -126,38 +129,38 @@ body.app::after {
   from { transform: scale(1.04) translate(-0.8%, 0.4%); }
   to   { transform: scale(1.13) translate(1.1%, -0.9%); }
 }
-/* scrim: the two spirits stay bright on the flanks; a vertical
-   center band dims the art's baked logo into a watermark so OUR
-   logo + PLAY NOW own the middle; floor deepens for the doors */
+/* scrim: the art's baked BATTLE OF ORIGINS logo IS the title now —
+   no center band, light mid so the logo reads bright, floor still
+   deepens for the doors */
 #screen-menu .menu-bg::after {
   content: ''; position: absolute; inset: 0;
   background:
-    linear-gradient(90deg,
-      transparent 12%,
-      rgba(10, 8, 22, 0.62) 32%,
-      rgba(10, 8, 22, 0.62) 68%,
-      transparent 88%),
     linear-gradient(180deg,
-      rgba(10, 8, 22, 0.38) 0%,
-      rgba(10, 8, 22, 0.14) 26%,
-      rgba(10, 8, 22, 0.28) 52%,
-      rgba(10, 9, 24, 0.78) 76%,
+      rgba(10, 8, 22, 0.34) 0%,
+      rgba(10, 8, 22, 0.10) 24%,
+      rgba(10, 8, 22, 0.12) 58%,
+      rgba(10, 9, 24, 0.74) 78%,
       rgba(10, 9, 24, 0.92) 100%);
 }
 @media (prefers-reduced-motion: reduce) { #screen-menu .menu-bg img { animation: none; } }
-/* portrait: only one column of the art fits — show the ice-dragon
-   side as the poster instead of the logo column, flat-dimmed */
+/* portrait: only one column of the art fits — show the LOGO column
+   (the baked title is the menu title at every viewport) */
 @media (max-width: 699px) {
-  #screen-menu .menu-bg img { object-position: 4% 30%; }
+  #screen-menu .menu-bg img { object-position: center center; }
   #screen-menu .menu-bg::after {
     background:
       linear-gradient(180deg,
-        rgba(10, 8, 22, 0.52) 0%,
-        rgba(10, 8, 22, 0.40) 24%,
-        rgba(10, 8, 22, 0.52) 52%,
-        rgba(10, 9, 24, 0.84) 76%,
+        rgba(10, 8, 22, 0.44) 0%,
+        rgba(10, 8, 22, 0.18) 26%,
+        rgba(10, 8, 22, 0.26) 56%,
+        rgba(10, 9, 24, 0.84) 78%,
         rgba(10, 9, 24, 0.94) 100%);
   }
+  /* the logo window eats most of the height — everything below it
+     compacts so PLAY NOW + doors + KS still make the fold */
+  #screen-menu .play-now { font-size: 30px; padding: 14px; letter-spacing: 4px; }
+  #screen-menu .doors { gap: 9px; }
+  #screen-menu .ks-banner { font-size: 11px; padding: 8px 12px; }
 }
 
 /* drifting wisps — the room is haunted */
@@ -196,42 +199,30 @@ body.app::after {
 .profile-chip .pc-name small { display: block; font-size: 10.5px; font-weight: 700; color: var(--text-dim); letter-spacing: 1px; }
 .profile-chip .pc-right { display: flex; align-items: center; gap: 8px; }
 
-.menu-hero { position: relative; margin: 18px 0 4px; height: 218px; width: 100%; }
+/* the heroWrap is the LOGO WINDOW — empty space that lets the box
+   art's baked title read as the menu title; the card fan shrinks
+   and tucks below it (margin-top pushes the fan under the logo) */
+.menu-hero { position: relative; margin: 52dvh 0 4px; height: 68px; width: 100%; }
 .fan-card {
-  position: absolute; left: 50%; top: 12px;
-  width: 128px; aspect-ratio: 3/4;
-  border-radius: 12px; object-fit: cover;
-  border: 2px solid rgba(240,192,96,0.65);
+  position: absolute; left: 50%; top: 8px;
+  width: 56px; aspect-ratio: 3/4;
+  border-radius: 7px; object-fit: cover;
+  border: 1.5px solid rgba(240,192,96,0.65);
   box-shadow: 0 14px 34px rgba(0,0,0,0.6), 0 0 24px rgba(212,160,64,0.22);
   background: var(--midnight-2);
   animation: fanFloat 5.2s ease-in-out infinite;
 }
-.fan-card.f1 { transform: translateX(-50%) translateX(-74px) rotate(-11deg); z-index: 1; animation-delay: 0.4s; }
-.fan-card.f2 { transform: translateX(-50%) translateY(-12px) scale(1.1); z-index: 3; }
-.fan-card.f3 { transform: translateX(-50%) translateX(74px) rotate(11deg); z-index: 2; animation-delay: 0.9s; }
+.fan-card.f1 { transform: translateX(-50%) translateX(-34px) rotate(-11deg); z-index: 1; animation-delay: 0.4s; }
+.fan-card.f2 { transform: translateX(-50%) translateY(-8px) scale(1.08); z-index: 3; }
+.fan-card.f3 { transform: translateX(-50%) translateX(34px) rotate(11deg); z-index: 2; animation-delay: 0.9s; }
 @keyframes fanFloat {
   0%, 100% { margin-top: 0; }
   50% { margin-top: -7px; }
 }
 .menu-hero::after { /* lantern pool under the fan */
   content: ''; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
-  width: 220px; height: 26px; border-radius: 50%;
+  width: 120px; height: 14px; border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(212,160,64,0.28), transparent 70%);
-}
-
-.logo {
-  font-family: 'Creepster', cursive; font-size: 64px; line-height: 0.9;
-  color: var(--gold-bright); letter-spacing: 4px;
-  text-shadow: 0 0 30px rgba(212,160,64,0.45), 0 4px 0 rgba(0,0,0,0.55);
-  animation: logoBreath 4.6s ease-in-out infinite;
-}
-@keyframes logoBreath {
-  0%, 100% { text-shadow: 0 0 26px rgba(212,160,64,0.35), 0 4px 0 rgba(0,0,0,0.55); }
-  50% { text-shadow: 0 0 44px rgba(212,160,64,0.65), 0 0 90px rgba(212,160,64,0.18), 0 4px 0 rgba(0,0,0,0.55); }
-}
-.logo-sub {
-  font-size: 12px; font-weight: 900; letter-spacing: 7px; color: var(--wisp);
-  text-transform: uppercase; margin: 6px 0 16px; opacity: 0.9;
 }
 
 .doors { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-bottom: 12px; }
@@ -872,22 +863,25 @@ body.in-battle #raid-screen { display: block; }
   #screen-collection{ padding-left: max(24px, calc((100% - 1080px) / 2)); padding-right: max(24px, calc((100% - 1080px) / 2)); }
   #screen-raids     { padding-left: max(24px, calc((100% - 960px) / 2)); padding-right: max(24px, calc((100% - 960px) / 2)); }
 
-  /* menu: the Favor-scale hero moment */
-  .menu-hero { height: 348px; }
-  .fan-card { width: 200px; border-radius: 18px; }
-  .fan-card.f1 { transform: translateX(-50%) translateX(-118px) rotate(-11deg); }
-  .fan-card.f2 { transform: translateX(-50%) translateY(-16px) scale(1.1); }
-  .fan-card.f3 { transform: translateX(-50%) translateX(118px) rotate(11deg); }
-  .menu-hero::after { width: 340px; height: 36px; bottom: -10px; }
-  .logo { font-size: 96px; letter-spacing: 6px; }
-  .logo-sub { font-size: 15px; letter-spacing: 10px; margin: 8px 0 24px; }
-  .play-now { font-size: 46px; padding: 24px; border-radius: 22px; letter-spacing: 7px; }
-  .door-grid { gap: 11px; }
-  .door { padding: 13px 15px; border-radius: 16px; gap: 12px; }
+  /* menu: the box art's logo is the hero — a wider crop lifts the
+     baked title into the top half, the chip tucks into the corner,
+     the fan sits below the logo, doors own the floor */
+  #screen-menu .menu-bg img { width: 120%; margin-left: -10%; object-position: center 88%; }
+  /* compact centered crest above the logo instead of a full-width bar */
+  #screen-menu .profile-chip { align-self: center; width: auto; }
+  .menu-hero { height: 138px; margin-top: 41vh; }
+  .fan-card { width: 104px; border-radius: 11px; }
+  .fan-card.f1 { transform: translateX(-50%) translateX(-62px) rotate(-11deg); }
+  .fan-card.f2 { transform: translateX(-50%) translateY(-10px) scale(1.1); }
+  .fan-card.f3 { transform: translateX(-50%) translateX(62px) rotate(11deg); }
+  .menu-hero::after { width: 210px; height: 24px; bottom: -8px; }
+  .play-now { font-size: 40px; padding: 16px; border-radius: 22px; letter-spacing: 7px; }
+  .door-grid { gap: 9px; }
+  .door { padding: 11px 15px; border-radius: 16px; gap: 12px; }
   .door .door-art { width: 48px; height: 48px; border-radius: 12px; }
   .door .door-label { font-size: 20px; letter-spacing: 2px; }
   .door .door-badge { font-size: 10px; top: 7px; right: 8px; }
-  .ks-banner { font-size: 14.5px; padding: 13px 18px; }
+  .ks-banner { font-size: 14px; padding: 10px 16px; }
   .profile-chip { padding: 10px 16px; }
   .profile-chip .pc-name { font-size: 17px; }
 
@@ -916,13 +910,11 @@ body.in-battle #raid-screen { display: block; }
 
 /* wide but short (laptops): tuck the hero so PLAY NOW stays above the fold */
 @media (min-width: 700px) and (max-height: 860px) {
-  .menu-hero { height: 264px; }
-  .fan-card { width: 158px; }
-  .fan-card.f1 { transform: translateX(-50%) translateX(-96px) rotate(-11deg); }
-  .fan-card.f3 { transform: translateX(-50%) translateX(96px) rotate(11deg); }
-  .logo { font-size: 66px; }
-  .logo-sub { margin-bottom: 14px; }
-  .play-now { font-size: 36px; padding: 17px; }
+  .menu-hero { height: 120px; margin-top: 39vh; }
+  .fan-card { width: 86px; }
+  .fan-card.f1 { transform: translateX(-50%) translateX(-52px) rotate(-11deg); }
+  .fan-card.f3 { transform: translateX(-50%) translateX(52px) rotate(11deg); }
+  .play-now { font-size: 36px; padding: 15px; }
   #screen-menu { padding-top: 8px; }
   .profile-chip { padding: 7px 14px; }
 }
@@ -937,17 +929,20 @@ body.in-battle #raid-screen { display: block; }
     padding-right: max(20px, calc((100% - 940px) / 2));
     padding-top: calc(var(--safe-top) + 6px);
   }
-  .menu-stage { flex-direction: row; align-items: center; justify-content: center; gap: 40px; }
-  .menu-heroWrap { flex: 0 1 380px; }
-  .doors { flex: 0 1 380px; margin-bottom: 0; gap: 8px; }
-  .menu-hero { height: 176px; margin: 4px 0 0; }
-  .fan-card { width: 104px; border-radius: 10px; }
-  .fan-card.f1 { transform: translateX(-50%) translateX(-62px) rotate(-11deg); }
-  .fan-card.f2 { transform: translateX(-50%) translateY(-9px) scale(1.1); }
-  .fan-card.f3 { transform: translateX(-50%) translateX(62px) rotate(11deg); }
-  .menu-hero::after { width: 190px; height: 20px; }
-  .logo { font-size: 46px; }
-  .logo-sub { font-size: 10px; letter-spacing: 6px; margin: 4px 0 0; }
+  .menu-stage { flex-direction: row; align-items: stretch; justify-content: center; gap: 40px; }
+  /* left column = the logo window (bg recropped below); fan tucks at
+     its foot. profile chip becomes a compact corner pill so the top
+     band belongs to the art */
+  .menu-heroWrap { flex: 0 1 380px; justify-content: flex-end; }
+  .doors { flex: 0 1 380px; margin-bottom: 0; gap: 8px; align-self: center; }
+  #screen-menu .menu-bg img { width: 150%; margin-left: -28%; object-position: center 50%; }
+  #screen-menu .profile-chip { align-self: center; width: auto; gap: 8px; padding: 5px 10px; }
+  .menu-hero { height: 96px; margin: 0 0 6px; }
+  .fan-card { width: 64px; border-radius: 7px; border-width: 1.5px; }
+  .fan-card.f1 { transform: translateX(-50%) translateX(-40px) rotate(-11deg); }
+  .fan-card.f2 { transform: translateX(-50%) translateY(-7px) scale(1.1); }
+  .fan-card.f3 { transform: translateX(-50%) translateX(40px) rotate(11deg); }
+  .menu-hero::after { width: 130px; height: 14px; }
   .play-now { font-size: 27px; padding: 13px; border-radius: 15px; letter-spacing: 4px; }
   .door { padding: 7px 10px; gap: 8px; }
   .door .door-art { width: 30px; height: 30px; border-radius: 8px; }
