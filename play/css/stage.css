@@ -52,10 +52,10 @@ body.boo2-stage {
   }
 }
 @media (max-height: 500px) and (orientation: landscape) {
-  /* LANDSCAPE = the hero orientation (Wyatt 7/14): the concept-art
-     arena duel — your active and theirs clash mid-ring left vs
-     right over the dice, your squad tucked at your corner, theirs
-     at their plate; slim tray below with just your 3 cards + roll */
+  /* LANDSCAPE = THE orientation (Wyatt 7/14, image-6 staging):
+     TOP vs BOTTOM — enemy team far/high on the upper steps, YOUR
+     row of three near/low on the arena floor, dice mid-ring
+     between them; slim tray below with just your 3 cards + roll */
   body.boo2-stage {
     --boo2-strip: 118px;
     --boo2-opp-h: 19dvh;
