@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#b3202f">
+<title>BOO! Spirit Battles — Tournament Signup</title>
+<link rel="preconnect" href="https://www.gstatic.com">
+<style>
+  :root{
+    --red:#c22232; --red-dark:#7c1620; --purple:#6b2ede; --purple-lt:#8b5cf6;
+    --cyan:#3fd0ff; --ink:#1a0e10; --paper:#fff; --good:#1fbf5a; --bad:#ff5a6a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:#fff; min-height:100vh;
+    background:linear-gradient(160deg,#d8323f 0%,#b3202f 42%,#5a1a3a 100%) fixed;
+  }
+  .wrap{max-width:520px; margin:0 auto; padding:22px 18px 60px;}
+  .crown{font-size:34px; text-align:center; line-height:1; letter-spacing:6px;}
+  h1{
+    text-align:center; font-weight:900; font-size:34px; line-height:.98;
+    margin:6px 0 2px; text-shadow:0 3px 0 rgba(0,0,0,.25);
+  }
+  h1 .boo{color:#fff; -webkit-text-stroke:1px rgba(0,0,0,.15);}
+  .sub{text-align:center; font-weight:800; letter-spacing:2px; font-size:13px; opacity:.9; margin-bottom:14px;}
+  .when{
+    text-align:center; background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.14);
+    border-radius:14px; padding:10px 12px; margin:0 auto 20px; font-weight:800;
+  }
+  .when b{color:var(--cyan);}
+
+  /* ---- Signup card ---- */
+  .card{
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16);
+    border-radius:20px; padding:22px 18px; backdrop-filter:blur(6px);
+    box-shadow:0 12px 40px rgba(0,0,0,.28);
+  }
+  label{display:block; font-weight:800; font-size:13px; letter-spacing:1px; text-transform:uppercase; margin:0 0 8px; opacity:.9;}
+  input[type=text]{
+    width:100%; font-size:22px; font-weight:800; padding:16px 16px; border-radius:14px;
+    border:2px solid rgba(255,255,255,.25); background:rgba(0,0,0,.28); color:#fff; outline:none;
+  }
+  input[type=text]::placeholder{color:rgba(255,255,255,.45); font-weight:600;}
+  input[type=text]:focus{border-color:var(--cyan); background:rgba(0,0,0,.4);}
+  .q{margin-top:20px;}
+  .toggle{display:flex; gap:12px; margin-top:8px;}
+  .toggle button{
+    flex:1; font-size:19px; font-weight:900; padding:16px 0; border-radius:14px; cursor:pointer;
+    border:2px solid rgba(255,255,255,.25); background:rgba(0,0,0,.2); color:#fff; transition:.12s;
+  }
+  .toggle button.yes.on{background:var(--good); border-color:#fff; box-shadow:0 0 0 3px rgba(31,191,90,.35);}
+  .toggle button.no.on{background:var(--bad); border-color:#fff; box-shadow:0 0 0 3px rgba(255,90,106,.35);}
+  .submit{
+    width:100%; margin-top:24px; font-size:24px; font-weight:900; letter-spacing:1px;
+    padding:18px 0; border:none; border-radius:16px; cursor:pointer; color:#fff;
+    background:linear-gradient(180deg,var(--purple-lt),var(--purple));
+    box-shadow:0 8px 0 #4a1fb0, 0 14px 24px rgba(0,0,0,.3); transition:.08s;
+  }
+  .submit:active{transform:translateY(4px); box-shadow:0 4px 0 #4a1fb0, 0 8px 16px rgba(0,0,0,.3);}
+  .submit[disabled]{opacity:.55; box-shadow:none; cursor:not-allowed; transform:none;}
+  .fineprint{text-align:center; opacity:.7; font-size:12px; margin-top:16px; line-height:1.5;}
+
+  /* ---- Success ---- */
+  .done{text-align:center; padding:24px 6px;}
+  .done .big{font-size:60px; line-height:1; margin-bottom:10px;}
+  .done h2{font-size:32px; font-weight:900; margin:6px 0;}
+  .done p{font-size:17px; opacity:.92; margin:4px 0;}
+  .again{margin-top:22px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25);
+    color:#fff; font-weight:800; padding:12px 22px; border-radius:12px; cursor:pointer; font-size:15px;}
+
+  .hidden{display:none!important;}
+
+  /* ---- Admin ---- */
+  .adminbar{display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;}
+  .adminbar h2{margin:0; font-size:22px; font-weight:900;}
+  .pill{background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.18); border-radius:999px; padding:5px 12px; font-weight:800; font-size:13px;}
+  .pill .n{color:var(--cyan);}
+  .roster{list-style:none; margin:0; padding:0;}
+  .row{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:8px;
+    background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.12); border-radius:12px;
+  }
+  .row.out{opacity:.5;}
+  .row .name{flex:1; font-weight:800; font-size:17px; border:none; background:transparent; color:#fff; outline:none; min-width:0;}
+  .row .att{font-size:12px; font-weight:900; padding:4px 9px; border-radius:8px; cursor:pointer; border:1px solid transparent; white-space:nowrap;}
+  .row .att.y{background:rgba(31,191,90,.25); color:#8affb4; border-color:rgba(31,191,90,.5);}
+  .row .att.n{background:rgba(255,90,106,.2); color:#ffb3bb; border-color:rgba(255,90,106,.4);}
+  .row .del{background:transparent; border:none; color:#ff8a95; font-size:19px; cursor:pointer; padding:2px 6px;}
+  .empty{opacity:.6; text-align:center; padding:24px; font-style:italic;}
+  .btnrow{display:flex; gap:10px; margin:18px 0 8px; flex-wrap:wrap;}
+  .btnrow button{
+    flex:1; min-width:130px; font-weight:900; font-size:15px; padding:13px 10px; border-radius:12px; cursor:pointer;
+    border:1px solid rgba(255,255,255,.2); background:rgba(0,0,0,.25); color:#fff;
+  }
+  .btnrow button.primary{background:linear-gradient(180deg,var(--purple-lt),var(--purple)); border:none;}
+  .btnrow button.danger{color:#ffb3bb;}
+
+  /* ---- Bracket ---- */
+  #bracket{overflow-x:auto; padding:8px 0 4px; -webkit-overflow-scrolling:touch;}
+  .brk{display:flex; gap:26px; min-width:min-content; padding:4px 2px;}
+  .rnd{display:flex; flex-direction:column; justify-content:space-around; gap:12px; min-width:150px;}
+  .rnd .rtitle{font-size:11px; font-weight:900; letter-spacing:1px; text-transform:uppercase; opacity:.65; text-align:center; margin-bottom:2px;}
+  .match{display:flex; flex-direction:column; gap:3px; background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:5px;}
+  .slot{
+    display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:7px; cursor:pointer;
+    background:rgba(255,255,255,.06); font-weight:800; font-size:14px; min-height:36px; transition:.1s;
+  }
+  .slot:hover{background:rgba(255,255,255,.14);}
+  .slot.win{background:rgba(63,208,255,.22); border:1px solid rgba(63,208,255,.6); box-shadow:0 0 0 1px rgba(63,208,255,.3) inset;}
+  .slot.bye{opacity:.4; cursor:default; font-style:italic;}
+  .slot.tbd{opacity:.45; cursor:default;}
+  .slot .seed{font-size:10px; opacity:.55; min-width:14px;}
+  .champ{margin-top:14px; text-align:center; font-size:19px; font-weight:900;}
+  .champ b{color:var(--cyan);}
+  .qrbox{text-align:center; margin-top:22px; padding-top:18px; border-top:1px solid rgba(255,255,255,.14);}
+  .qrbox img{width:150px; height:150px; background:#fff; padding:8px; border-radius:10px;}
+  .qrbox .u{font-size:12px; opacity:.7; margin-top:6px; word-break:break-all;}
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(30px);
+    background:#101; color:#fff; padding:12px 20px; border-radius:12px; font-weight:800;
+    border:1px solid rgba(255,255,255,.2); opacity:0; transition:.25s; pointer-events:none; z-index:50;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= SIGNUP (default) ================= -->
+  <section id="signup">
+    <div class="crown">👑</div>
+    <h1><span class="boo">BOO!</span> SPIRIT BATTLES</h1>
+    <div class="sub">LEGACY TOURNAMENT</div>
+    <div class="when">Saturday July 18th · <b>3:00 PM</b> · TCG Takeover, Tampa</div>
+
+    <div class="card" id="form">
+      <label for="nick">Your Nickname</label>
+      <input id="nick" type="text" maxlength="24" autocomplete="off" autocapitalize="words"
+             placeholder="e.g. GhostSlayer" />
+
+      <div class="q">
+        <label>Playing in the 3PM tournament?</label>
+        <div class="toggle">
+          <button type="button" class="yes on" id="btnYes">YES 👻</button>
+          <button type="button" class="no" id="btnNo">Just Learning</button>
+        </div>
+      </div>
+
+      <button class="submit" id="go">I'M IN! 🔥</button>
+      <div class="fineprint">Free to enter · Free booster set with entry · We'll teach you in minutes</div>
+    </div>
+
+    <div class="card done hidden" id="thanks">
+      <div class="big">🎉</div>
+      <h2 id="thanksName">You're in!</h2>
+      <p id="thanksMsg">See you at the 3PM tournament.</p>
+      <button class="again" id="again">Sign up someone else</button>
+    </div>
+  </section>
+
+  <!-- ================= ADMIN ================= -->
+  <section id="admin" class="hidden">
+    <div class="adminbar">
+      <h2>🏆 Tournament Admin</h2>
+      <span class="pill">In: <span class="n" id="cntIn">0</span></span>
+      <span class="pill">Total: <span class="n" id="cntAll">0</span></span>
+    </div>
+
+    <ul class="roster" id="roster"></ul>
+    <div class="empty hidden" id="rosterEmpty">No signups yet — scan the QR to add the first player.</div>
+
+    <div class="btnrow">
+      <button class="primary" id="genBracket">⚔️ Generate Bracket</button>
+      <button id="reseed" class="hidden">🔀 Reshuffle</button>
+      <button class="danger" id="clearBracket">Clear Bracket</button>
+    </div>
+
+    <div id="bracket"></div>
+    <div class="champ hidden" id="champ"></div>
+
+    <div class="qrbox">
+      <div id="qrImg"></div>
+      <div class="u">battleoforigins.com/tournament</div>
+    </div>
+
+    <div class="btnrow" style="margin-top:22px;">
+      <button id="exit">← Back to signup view</button>
+      <button class="danger" id="wipeAll">Delete ALL signups</button>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Embedded QR (points to battleoforigins.com/tournament) -->
+<script>window.__QR_DATA_URI__ = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMYAAADGAQMAAACzVW0eAAAABlBMVEVaGjr///+9CiOqAAABRUlEQVR42u1YQW4EMQhDzQPyJL6eJ+UBSBQbdqQetoceKh82ikaJcrEA2zCWb1bY5+XXl2u11rWVJ6+HOe7m8WXv1n+9FDYvjMB2eb6+6n5VsFWUKmixD0E6cSphuxZ12cd2ymHLRI3VFsOGVObp3Thl6q156s8W4mmvO9nsMEJdROoNFABPiw6L+Q0VfWPlI2ier4Tq1FsWCyi5gJeQkdo6PA2mNZsLW4in8NBNfaM11HeJcIGqmzB6SkcVXuuwiIa0v9PxjVSVwXYea5jaY/REsAWICXri0BUog+1RtiBVo3Gq+AJ7DzA0mxpKPEUSJ2Lo4lIGG2x0Evo668SNMtLG2maqM8vMnPWjP1fyU3RuI79O90+peaE73k7oksLG2ZkkBR1SbAbsVD59ptKcNcNCt5cyXBieTsfLXk7GTz//q/7w8g2mdt7bvxRWywAAAABJRU5ErkJggg==";</script>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+/* ---------------- Firebase (shared testroom-75200 RTDB) ---------------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyDzYoQqXoOu4uj2wzTwSn6d_gAlo6e8WSI",
+  authDomain: "testroom-75200.firebaseapp.com",
+  databaseURL: "https://testroom-75200-default-rtdb.firebaseio.com",
+  projectId: "testroom-75200"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const SIGNUPS = db.ref("tournament/signups");
+const BRACKET = db.ref("tournament/bracket");
+
+/* ---------------- helpers ---------------- */
+const $ = id => document.getElementById(id);
+const esc = s => (s||"").replace(/[<>&"]/g, c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+let toastTimer;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1800); }
+
+/* ================= SIGNUP ================= */
+let attending = true;
+$("btnYes").onclick = ()=>{ attending=true; $("btnYes").classList.add("on"); $("btnNo").classList.remove("on"); };
+$("btnNo").onclick  = ()=>{ attending=false; $("btnNo").classList.add("on"); $("btnYes").classList.remove("on"); };
+
+$("go").onclick = function(){
+  const nick = $("nick").value.trim();
+  if(!nick){ $("nick").focus(); toast("Enter a nickname first!"); return; }
+  this.disabled = true; this.textContent = "Saving…";
+  SIGNUPS.push({ nickname: nick, attending: attending, ts: firebase.database.ServerValue.TIMESTAMP })
+    .then(()=>{
+      $("thanksName").textContent = attending ? `You're in, ${nick}!` : `Thanks, ${nick}!`;
+      $("thanksMsg").textContent  = attending
+        ? "See you at the 3PM tournament. 👻"
+        : "Come find us at the booth — we'll teach you to play!";
+      $("form").classList.add("hidden");
+      $("thanks").classList.remove("hidden");
+    })
+    .catch(err=>{ toast("Save failed — try again"); console.error(err); })
+    .finally(()=>{ this.disabled=false; this.textContent="I'M IN! 🔥"; });
+};
+$("again").onclick = ()=>{
+  $("nick").value=""; attending=true;
+  $("btnYes").classList.add("on"); $("btnNo").classList.remove("on");
+  $("thanks").classList.add("hidden"); $("form").classList.remove("hidden"); $("nick").focus();
+};
+
+/* ================= ADMIN ================= */
+const isAdmin = /admin/i.test(location.hash);
+if(isAdmin){
+  $("signup").classList.add("hidden");
+  $("admin").classList.remove("hidden");
+  if(window.__QR_DATA_URI__ && window.__QR_DATA_URI__.indexOf("__QR")!==0){
+    $("qrImg").innerHTML = `<img src="${window.__QR_DATA_URI__}" alt="QR to signup">`;
+  }
+  startAdmin();
+}
+$("exit").onclick = ()=>{ location.hash=""; location.reload(); };
+
+let signupData = {};   // id -> {nickname, attending, ts}
+let bracketData = null;
+
+function startAdmin(){
+  SIGNUPS.on("value", snap=>{ signupData = snap.val() || {}; renderRoster(); });
+  BRACKET.on("value", snap=>{ bracketData = snap.val(); renderBracket(); });
+}
+
+function sortedSignups(){
+  return Object.entries(signupData).sort((a,b)=>(a[1].ts||0)-(b[1].ts||0));
+}
+
+function renderRoster(){
+  const items = sortedSignups();
+  const inCount = items.filter(([,v])=>v.attending).length;
+  $("cntIn").textContent = inCount;
+  $("cntAll").textContent = items.length;
+  const ul = $("roster");
+  $("rosterEmpty").classList.toggle("hidden", items.length>0);
+  ul.innerHTML = items.map(([id,v])=>`
+    <li class="row ${v.attending?'':'out'}" data-id="${id}">
+      <input class="name" value="${esc(v.nickname)}" data-id="${id}" maxlength="24" />
+      <span class="att ${v.attending?'y':'n'}" data-id="${id}">${v.attending?'PLAYING':'learning'}</span>
+      <button class="del" data-id="${id}" title="Remove">✕</button>
+    </li>`).join("");
+
+  ul.querySelectorAll(".name").forEach(inp=>{
+    inp.onchange = ()=> SIGNUPS.child(inp.dataset.id+"/nickname").set(inp.value.trim()||"Player");
+  });
+  ul.querySelectorAll(".att").forEach(b=>{
+    b.onclick = ()=>{ const cur = signupData[b.dataset.id].attending;
+      SIGNUPS.child(b.dataset.id+"/attending").set(!cur); };
+  });
+  ul.querySelectorAll(".del").forEach(b=>{
+    b.onclick = ()=>{ if(confirm("Remove "+ (signupData[b.dataset.id]?.nickname||"this player") +"?"))
+      SIGNUPS.child(b.dataset.id).remove(); };
+  });
+}
+
+/* ---- Bracket: single elimination ---- */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+$("genBracket").onclick = ()=>{
+  const players = sortedSignups().filter(([,v])=>v.attending).map(([,v])=>v.nickname);
+  if(players.length<2){ toast("Need at least 2 players marked PLAYING"); return; }
+  buildBracket(players);
+};
+$("reseed").onclick = ()=>{
+  if(!confirm("Reshuffle seeds? This clears current results.")) return;
+  const players = sortedSignups().filter(([,v])=>v.attending).map(([,v])=>v.nickname);
+  buildBracket(players);
+};
+$("clearBracket").onclick = ()=>{ if(confirm("Clear the bracket?")) BRACKET.remove(); };
+
+// NOTE: bracket is stored as a JSON *string* in Firebase. RTDB strips null fields
+// and drops empty trailing array elements, which corrupts sparse brackets (empty
+// Final round, shifted matches). JSON.parse restores nulls/shape exactly.
+// Stored shape: { seeds:[...], rounds:[[{a,b,w}...]...] }
+function saveBracket(b){ BRACKET.set({ data: JSON.stringify(b), ts: Date.now() }); }
+function getBracket(){
+  if(!bracketData || !bracketData.data) return null;
+  try { const b = JSON.parse(bracketData.data); return (b && b.rounds) ? b : null; } catch(e){ return null; }
+}
+
+// True structural BYE: the seed range feeding this slot has ZERO real players,
+// so it can never be filled. Distinct from a slot merely pending an upstream result.
+function isDeadSlot(seeds,r,m,slot){
+  const half = 1<<r;                 // seeds feeding one slot at round r
+  const start = m*(half*2) + (slot==='a'?0:half);
+  for(let i=start;i<start+half;i++){ if(seeds[i]!=null) return false; }
+  return true;
+}
+
+function buildBracket(players){
+  shuffle(players);
+  let size=1; while(size<players.length) size*=2;
+  const seeds = players.slice();
+  while(seeds.length<size) seeds.push(null); // BYEs
+  const rounds=[]; let r0=[];
+  for(let i=0;i<size;i+=2) r0.push({a:seeds[i], b:seeds[i+1], w:null});
+  rounds.push(r0);
+  let n=r0.length;
+  while(n>1){ n=n/2; rounds.push(Array.from({length:n},()=>({a:null,b:null,w:null}))); }
+  const b = {seeds, rounds};
+  recompute(b);
+  saveBracket(b);
+}
+
+// Forward pass: auto-advance real BYEs (opposing seed range empty), invalidate
+// stale winners, propagate winners forward. Idempotent — safe after any change.
+function recompute(b){
+  const {seeds, rounds} = b;
+  for(let r=1;r<rounds.length;r++) rounds[r].forEach(m=>{ m.a=null; m.b=null; });
+  for(let r=0;r<rounds.length;r++){
+    rounds[r].forEach((m,i)=>{
+      // only auto-advance when the empty side is a structural bye, not pending
+      if(m.a && !m.b && isDeadSlot(seeds,r,i,'b')) m.w = m.a;
+      else if(!m.a && m.b && isDeadSlot(seeds,r,i,'a')) m.w = m.b;
+      if(m.w && m.w!==m.a && m.w!==m.b) m.w = null; // winner no longer valid
+      if(m.w && r+1<rounds.length){
+        const nm = rounds[r+1][Math.floor(i/2)];
+        if(i%2===0) nm.a = m.w; else nm.b = m.w;
+      }
+    });
+  }
+}
+
+function pickWinner(r,m,slot){
+  const b = getBracket(); if(!b) return;
+  const match = b.rounds[r][m];
+  const player = slot==='a'?match.a:match.b;
+  if(!player) return;
+  match.w = (match.w===player) ? null : player; // tap again to undo
+  recompute(b);
+  saveBracket(b);
+}
+
+const ROUND_NAMES = (total)=>{
+  const names=[];
+  for(let i=0;i<total;i++){
+    const left = total-i;
+    if(left===1) names.push("Final");
+    else if(left===2) names.push("Semis");
+    else if(left===3) names.push("Quarters");
+    else names.push("Round "+(i+1));
+  }
+  return names;
+};
+
+function renderBracket(){
+  const box=$("bracket"), champ=$("champ");
+  const b = getBracket();
+  if(!b){ box.innerHTML=""; champ.classList.add("hidden"); $("reseed").classList.add("hidden"); return; }
+  $("reseed").classList.remove("hidden");
+  const {seeds, rounds} = b, names=ROUND_NAMES(rounds.length);
+  let html='<div class="brk">';
+  rounds.forEach((rnd,r)=>{
+    html+=`<div class="rnd"><div class="rtitle">${names[r]}</div>`;
+    rnd.forEach((m,mi)=>{
+      html+=`<div class="match">${slotHTML(seeds,m,'a',r,mi)}${slotHTML(seeds,m,'b',r,mi)}</div>`;
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  box.innerHTML=html;
+  box.querySelectorAll("[data-pick]").forEach(el=>{
+    el.onclick=()=>{ const [r,m,s]=el.dataset.pick.split("-"); pickWinner(+r,+m,s); };
+  });
+  // champion — only once the final has two real contenders AND a winner
+  const finalM = rounds[rounds.length-1][0];
+  if(finalM && finalM.a && finalM.b && finalM.w){
+    champ.innerHTML=`👑 Champion: <b>${esc(finalM.w)}</b>`; champ.classList.remove("hidden");
+  } else champ.classList.add("hidden");
+}
+function slotHTML(seeds,m,slot,r,mi){
+  const p = slot==='a'?m.a:m.b;
+  if(p===null){
+    return isDeadSlot(seeds,r,mi,slot)
+      ? `<div class="slot bye">— BYE —</div>`
+      : `<div class="slot tbd">TBD</div>`;
+  }
+  const won = m.w===p;
+  const clickable = m.a && m.b;   // both real contenders present
+  return `<div class="slot ${won?'win':''}" ${clickable?`data-pick="${r}-${mi}-${slot}"`:''}>${esc(p)}</div>`;
+}
+</script>
+</body>
+</html>
