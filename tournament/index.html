@@ -144,7 +144,7 @@
       <div class="q">
         <label>Playing in the 3PM tournament?</label>
         <div class="toggle">
-          <button type="button" class="yes on" id="btnYes">YES 👻</button>
+          <button type="button" class="yes on" id="btnYes">YES</button>
           <button type="button" class="no" id="btnNo">Just Learning</button>
         </div>
       </div>
@@ -233,7 +233,7 @@ $("go").onclick = function(){
     .then(()=>{
       $("thanksName").textContent = attending ? `You're in, ${nick}!` : `Thanks, ${nick}!`;
       $("thanksMsg").textContent  = attending
-        ? "See you at the 3PM tournament. 👻"
+        ? "See you at the 3PM tournament."
         : "Come find us at the booth — we'll teach you to play!";
       $("form").classList.add("hidden");
       $("thanks").classList.remove("hidden");
