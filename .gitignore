@@ -1,3 +1,4 @@
 .claude/
 server/**/__pycache__/
 play/tools/verify/shots/
+kickstarter/src/
