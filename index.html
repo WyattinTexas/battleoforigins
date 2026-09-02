@@ -17,7 +17,9 @@
 <style>
   html, body { margin: 0; padding: 0; background: #fff; }
   body { -webkit-text-size-adjust: 100%; }
-  .ks { max-width: 960px; margin: 0 auto; font-size: 0; line-height: 0; }
+  /* column: as wide as the screen's height allows so the opening (GET READY FOR + logo + banner,
+     1.21x as tall as the column is wide) fits the first screen; never wider than 960px */
+  .ks { max-width: 960px; max-width: clamp(500px, 82vh, 960px); margin: 0 auto; font-size: 0; line-height: 0; }
   .ks img { display: block; width: 100%; height: auto; }
 </style>
 </head>

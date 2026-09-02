@@ -3,6 +3,7 @@
 Build battleoforigins.com's Kickstarter preview page from the designer's PDF.
 
     python3 kickstarter/tools/build.py [path/to/preview.pdf]
+    python3 kickstarter/tools/build.py --html-only      # rewrite /index.html from strips.json, strips untouched
 
 What it does
   1. Renders every PDF page at DPI (default 100 -> 2040px wide, the native
@@ -15,6 +16,15 @@ What it does
   4. Writes kickstarter/img/NN.jpg + NN.webp, kickstarter/og.jpg (link card),
      and the root index.html that stacks the strips gap-free.
 
+The column (the .ks rule in write_index) is as wide as the screen's HEIGHT allows:
+max-width: clamp(500px, 82vh, 960px). The opening of page 1 (GET READY FOR, the
+logo, the TRADING CARD GAME banner down to its tails: rows 0-2466 of the 2040 px
+art) is 1.21x as tall as the column is wide, so at 82vh it ends ~1% above the
+bottom of the first screen on any laptop or desktop (6-8 px at 620-950 px tall);
+960px is the old fixed width (the cap), 500px the floor for windows shorter than
+~610 px. Phones and tablets are narrower than the clamp and stay edge to edge.
+This file owns index.html: edit the rule HERE, then run --html-only.
+
 Requires: poppler (pdftocairo, pdfinfo) + Pillow with WebP.
 Source PDF lives in kickstarter/src/ (gitignored - 81 MB).
 """
@@ -24,7 +34,9 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-PDF = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'kickstarter', 'src', 'kickstarter-preview.pdf')
+HTML_ONLY = '--html-only' in sys.argv[1:]
+_args = [a for a in sys.argv[1:] if not a.startswith('--')]
+PDF = _args[0] if _args else os.path.join(ROOT, 'kickstarter', 'src', 'kickstarter-preview.pdf')
 IMG_DIR = os.path.join(ROOT, 'kickstarter', 'img')
 DPI = 100
 STRIP_H = 2000        # target strip height (px)
@@ -136,7 +148,9 @@ def write_index(strips):
 <style>
   html, body {{ margin: 0; padding: 0; background: #fff; }}
   body {{ -webkit-text-size-adjust: 100%; }}
-  .ks {{ max-width: 960px; margin: 0 auto; font-size: 0; line-height: 0; }}
+  /* column: as wide as the screen's height allows so the opening (GET READY FOR + logo + banner,
+     1.21x as tall as the column is wide) fits the first screen; never wider than 960px */
+  .ks {{ max-width: 960px; max-width: clamp(500px, 82vh, 960px); margin: 0 auto; font-size: 0; line-height: 0; }}
   .ks img {{ display: block; width: 100%; height: auto; }}
 </style>
 </head>
@@ -152,5 +166,13 @@ def write_index(strips):
     print('wrote index.html')
 
 
+def rebuild_html():
+    """--html-only: regenerate /index.html from strips.json without touching a strip."""
+    with open(os.path.join(ROOT, 'kickstarter', 'strips.json')) as f:
+        strips = [(s['file'], s['w'], s['h'], s['page'], s['y']) for s in json.load(f)]
+    print(f'{len(strips)} strips from strips.json')
+    write_index(strips)
+
+
 if __name__ == '__main__':
-    main()
+    rebuild_html() if HTML_ONLY else main()
